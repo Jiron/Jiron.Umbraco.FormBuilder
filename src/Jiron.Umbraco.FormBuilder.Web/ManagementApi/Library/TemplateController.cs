@@ -23,7 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/template")]
 [ApiExplorerSettings(GroupName = "Template")]
-internal sealed class TemplateController(FormTemplateGallery gallery, FormTemplateLibrary library, IFormBuilderAccessService access) : FormBuilderManagementApiController
+internal sealed class TemplateController(FormTemplateGallery gallery, FormTemplateLibrary library, IFormBuilderAccessService access, IFormBuilderFormService forms, ActionGrantChecks grants) : FormBuilderManagementApiController
 {
     /// <summary>A page of the gallery: its form templates, or with <c>kind=group</c> the site's saved groups.</summary>
     /// <param name="skip">How many templates to pass over.</param>
@@ -60,6 +60,12 @@ internal sealed class TemplateController(FormTemplateGallery gallery, FormTempla
         if ((await access.GetGlobalAsync(RequestAccess.User, cancellationToken) & FormBuilderPermissions.ManageLibrary) == FormBuilderPermissions.None)
         {
             return FormBuilderProblems.Missing(FormBuilderPermissions.ManageLibrary);
+        }
+
+        // A template is offered site-wide, so a secret as itself in a draft saved before the check stays where it is (16.5's review).
+        if (await forms.GetDraftAsync(formKey, cancellationToken) is { Definition: { } draft } && grants.LiteralSecrets(null, draft) is { Count: > 0 } literal)
+        {
+            throw new FormBuilderValidationException(literal);
         }
 
         var saved = await library.SaveFormAsync(formKey, request.Name, request.Description, RequestAccess.User.Key, cancellationToken);

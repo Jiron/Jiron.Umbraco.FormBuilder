@@ -176,6 +176,14 @@ internal static class ThemeCss
     private static void WriteFontFace(ICssFontFaceRule fontFace, StringBuilder output, List<ThemeCssRemoval> removed, int depth)
     {
         var sources = fontFace.Source ?? string.Empty;
+        // The rule is written as typed, so an escape that could spell an address (u\72l( is url() takes it, as it takes a
+        // declaration; a font family's own quoted escapes stay.
+        if (EscapesOutsideQuotes(fontFace.CssText))
+        {
+            removed.Add(new ThemeCssRemoval("escape", Short(fontFace.Family ?? fontFace.CssText)));
+            return;
+        }
+
         if (Addresses(sources).Any(address => !IsLocal(address, imageOnly: false)) || IsScript(sources))
         {
             removed.Add(new ThemeCssRemoval("fontFace", Short(fontFace.Family ?? fontFace.CssText)));

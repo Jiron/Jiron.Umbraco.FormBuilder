@@ -113,4 +113,16 @@ An ASVS-style list, by area, with where each requirement is held and where it is
 | X7 | Info | Slack and Teams make links of bare addresses in answers | Documented in [webhooks.md](webhooks.md); their own link and mention syntax in answers is already written as text |
 | O9 | Info | Umbraco's own webhooks go where Umbraco sends them, outside the allowed hosts | Documented in [webhooks.md](webhooks.md): who may manage Umbraco's webhooks decides; the payload holds no answer |
 
+## Follow-ups from the Phase 16 review (step 16.5)
+
+The phase review read the code again with these findings in mind and found four gaps around them, each closed with a test
+in the review's own commit:
+
+| Id | Severity | Finding | Status |
+| --- | --- | --- | --- |
+| P1 | Medium | X3's escape check held a declaration but not a web font's rule, so `u\72l(...)` in an `@font-face` could still load a font from another host | Fixed: a web font with an escape outside quotes is removed as `escape` (`ThemeCssTests`) |
+| P2 | Medium | Any socket error counted as no mail server, so a connection reset while a mail went out put it back without spending an attempt, and it could go out twice | Fixed: only errors that made no connection count ([ADR-0237](decisions/0237-resilience.md), `MailServerReachTests`, `EmailAttemptTests`) |
+| P3 | Low | Past the limiter's bound, an address's uploads were counted in its overflow window, which the share's check never read | Fixed: the check reads the window the count wrote ([ADR-0148](decisions/0148-what-uploads-may-hold.md), `FormBuilderRateLimiterTests`) |
+| P4 | Low | O5's refusal held saves, restores, replaces and imports, but a duplicate, copied actions, a saved template and a form from one carried a stored secret on | Fixed: each refuses it at the source's setting ([ADR-0236](decisions/0236-what-the-security-review-changed.md), `ActionGrantApiTests`) |
+
 No high or critical finding is open.

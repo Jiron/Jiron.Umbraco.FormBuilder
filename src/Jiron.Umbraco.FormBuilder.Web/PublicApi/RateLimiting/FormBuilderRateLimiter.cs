@@ -185,7 +185,7 @@ internal sealed class FormBuilderRateLimiter
 
         foreach (var (key, _) in UploadShares(http))
         {
-            if (_windows.TryGetValue(key, out var window) && window.IsFull(out var retryAfter))
+            if (CountedIn(key) is { } window && window.IsFull(out var retryAfter))
             {
                 return new RateLimitDecision(false, retryAfter, true);
             }
@@ -294,6 +294,24 @@ internal sealed class FormBuilderRateLimiter
         {
             yield return new Partition(PartitionKind.Site, limits.SitePerSecond, Second, UsesClient: false, UsesForm: false);
         }
+    }
+
+    // The window a client's count would go to, without making one: its own, or past the bound the overflow window it
+    // shares, as WindowFor chooses (16.5's review: a client past the bound was counted in its overflow window, which the
+    // check never read, so its uploads went on without a share).
+    private RateWindow? CountedIn(WindowKey key)
+    {
+        if (_windows.TryGetValue(key, out var own))
+        {
+            return own;
+        }
+
+        if (key.Client is null || Volatile.Read(ref _tracked) < _maxTracked)
+        {
+            return null;
+        }
+
+        return _windows.TryGetValue(key with { Client = OverflowOf(key.Client) }, out var overflow) ? overflow : null;
     }
 
     // The window of a key. The site-wide windows are few and always kept; past the bound a new client's or form's window

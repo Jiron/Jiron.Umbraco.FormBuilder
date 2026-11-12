@@ -256,6 +256,44 @@ public sealed class ActionGrantApiTests : ManagementApiTestBase
         });
     }
 
+    [Test]
+    public async Task ASecretAsItselfInAStoredDraft_IsNotCarriedOn_ByADuplicateCopiedActionsATemplateOrAFormFromOne()
+    {
+        // 16.5's review: a draft saved before the check keeps its secret, which none of these may spread to forms of their own.
+        var form = await FormAsync("Leads");
+        await FillAsync(form);
+        var target = await FormAsync("Partners");
+        await FillAsync(target);
+        var forms = GetRequiredService<IFormBuilderFormService>();
+        var draft = (await forms.GetDraftAsync(form))!;
+        var plain = Webhook("https://crm.example.com/plain");
+        await forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, draft.Definition! with { Actions = [plain, LiteralWebhook()] }, null, null);
+        var stored = (await forms.GetDraftAsync(form))!.Definition!;
+        var templates = GetRequiredService<IFormTemplateRepository>();
+        var legacy = await templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Legacy leads", FormDefinitionSerializer.WriteString(stored)));
+        var targetVersion = (await forms.GetDraftAsync(target))!.Form.ConcurrencyVersion;
+
+        var duplicate = await CallAsync("admin", HttpMethod.Post, $"form/{form}/duplicate", new { name = "Leads (copy)", includeActions = true });
+        var bare = await CallAsync("admin", HttpMethod.Post, $"form/{form}/duplicate", new { name = "Leads (bare)", includeActions = false });
+        var copiedAll = await CallAsync("admin", HttpMethod.Post, $"form/{form}/copy-actions", new { targetKey = target, concurrencyVersion = targetVersion });
+        var copiedPlain = await CallAsync("admin", HttpMethod.Post, $"form/{form}/copy-actions", new { targetKey = target, concurrencyVersion = targetVersion, actionKeys = new[] { plain.Key } });
+        var saved = await CallAsync("admin", HttpMethod.Post, $"template/form/{form}", new { name = "Leads template" });
+        var fromLegacy = await CallAsync("admin", HttpMethod.Post, "form/from-template", new { templateKey = legacy.Key, name = "From the legacy template" });
+
+        var expected = new[] { "$.actions[1].settings.secret", "$.actions[1].settings.headers" }.Select(path => ("secretReference", path));
+        Assert.Multiple(() =>
+        {
+            foreach (var refused in new[] { duplicate, copiedAll, saved, fromLegacy })
+            {
+                Assert.That(refused.Status, Is.EqualTo(System.Net.HttpStatusCode.BadRequest), refused.ToString());
+                Assert.That(Problems(refused), Is.EqualTo(expected), refused.ToString());
+            }
+
+            Assert.That(bare.Status, Is.EqualTo(System.Net.HttpStatusCode.Created), "without its actions a copy takes nothing of it");
+            Assert.That(copiedPlain.Status, Is.EqualTo(System.Net.HttpStatusCode.OK), "the actions taken are what counts");
+        });
+    }
+
     // A webhook whose signing secret and credential header are themselves, not references.
     private static FormAction LiteralWebhook() => new()
     {

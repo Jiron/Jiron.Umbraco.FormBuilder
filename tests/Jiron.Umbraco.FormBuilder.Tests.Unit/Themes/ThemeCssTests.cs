@@ -191,6 +191,44 @@ public sealed class ThemeCssTests
         Assert.That(result.Removed.Select(removal => removal.Code), Is.EqualTo(new[] { "fontFace" }));
     }
 
+    [TestCase("@font-face { font-family: Far; src: u\\72l(https://evil.example/far.woff2); }")]
+    [TestCase("@font-face { font-family: Far; src: U\\52L(https://evil.example/far.woff2); }")]
+    [TestCase("@font-face { font-family: Far; src: \\75rl(https://evil.example/far.woff2) format(\"woff2\"); }")]
+    public void AnEscapeInAWebFont_TakesTheRule_AsItTakesADeclaration(string css)
+    {
+        var result = Of(css);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Css, Does.Not.Contain("evil.example"));
+            Assert.That(result.Removed.Select(removal => removal.Code), Is.EqualTo(new[] { "escape" }));
+        });
+    }
+
+    [Test]
+    public void AnEscapedPropertyNameInAWebFont_IsReadAsTheNameItSpells_SoAFarSourceIsTakenAsAnyOther()
+    {
+        var result = Of("@font-face { font-family: Far; s\\72 c: url(https://evil.example/far.woff2); }");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Css, Does.Not.Contain("evil.example"));
+            Assert.That(result.Removed.Select(removal => removal.Code), Is.EqualTo(new[] { "fontFace" }));
+        });
+    }
+
+    [Test]
+    public void AWebFontWithAQuotedEscapeInItsFamily_Stays()
+    {
+        var result = Of("@font-face { font-family: \"Near\\20Sans\"; src: url(/fonts/near.woff2) format(\"woff2\"); }");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Removed, Is.Empty);
+            Assert.That(result.Css, Does.Contain("/fonts/near.woff2"));
+        });
+    }
+
     [Test]
     public void NestedRules_Go_TheirParentsOwnDeclarationsStay()
     {

@@ -433,6 +433,37 @@ public sealed class FormBuilderRateLimiterTests
     }
 
     [Test]
+    public void PastTheBound_AnAddressesShareOfUploads_HoldsInItsOverflowBucket()
+    {
+        // 16.5's review: past the bound the bytes were counted in the overflow bucket, which the check never read.
+        var limiter = Limiter(
+            limits =>
+            {
+                limits.MaxTrackedClients = 1_000;
+                limits.Read.PerAddressPerMinute = 5;
+                limits.Read.SitePerSecond = 0;
+            },
+            share: 3 * 1_048_576);
+        _ = Enumerable.Range(0, 1_000).Count(i => limiter.Take(Address(Ip(i)), FormBuilderRateLimitPolicies.Read, null).Allowed);
+        var late = Enumerable.Range(0, 500).Select(i => $"198.51.{i / 200}.{i % 200}").ToList();
+        var first = late[0];
+        var elsewhere = late.First(address => FormBuilderRateLimiter.OverflowOf("address:" + address) != FormBuilderRateLimiter.OverflowOf("address:" + first));
+
+        var atFirst = limiter.CheckUploadShare(Address(first)).Allowed;
+        limiter.CountUploadShare(Address(first), 3 * 1_048_576);
+        var full = limiter.CheckUploadShare(Address(first));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(atFirst, Is.True);
+            Assert.That(full.Allowed, Is.False, "its bytes count in its bucket, and the check reads it");
+            Assert.That(full.Renders, Is.True);
+            Assert.That(limiter.CheckUploadShare(Address(elsewhere)).Allowed, Is.True, "a client in another bucket is not held by it");
+            Assert.That(limiter.TrackedWindows, Is.LessThanOrEqualTo(1_000));
+        });
+    }
+
+    [Test]
     public void NearTheBound_ASweepForgetsWindowsThatCountedOneRequest_AndKeepsTheOthers()
     {
         var limiter = Limiter(limits =>

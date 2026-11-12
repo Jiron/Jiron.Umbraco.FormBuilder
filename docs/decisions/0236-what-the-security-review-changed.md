@@ -241,3 +241,13 @@ website code may not parse HTML through `DOMParser`, `createContextualFragment` 
 - A refused trash, a post over a share and a full server say so as the existing refusals do; no new words for visitors.
 - The tamper of the cleanup showed that a test whose loop ends only on a deadline hangs on a regression; the test now
   moves its clock with each step, so a regression fails instead.
+
+## Amendment (2026-11-12, step 16.5)
+
+The phase review found four ways around the refusal of a secret as itself: a duplicate with its actions, copied actions,
+saving a form as a template and a new form from a template took a stored draft's actions as they were, so an action saved
+before the check carried its secret on into another form and its History, and a template offered it to every designer of
+the site. Each now refuses such an action with `secretReference` at its setting in the source, as an import does: a
+duplicate and a template look at every action, copied actions at the actions taken, and a duplicate without its actions
+takes nothing to refuse. Tested in `ActionGrantApiTests`
+(`ASecretAsItselfInAStoredDraft_IsNotCarriedOn_ByADuplicateCopiedActionsATemplateOrAFormFromOne`).

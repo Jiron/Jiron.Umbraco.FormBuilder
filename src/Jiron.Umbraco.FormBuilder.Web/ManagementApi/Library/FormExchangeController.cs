@@ -59,6 +59,11 @@ internal sealed class FormExchangeController(
             return refusal;
         }
 
+        if (request.IncludeActions && await forms.GetDraftAsync(key, cancellationToken) is { Definition: { } source })
+        {
+            RefuseLiteralSecrets(source);
+        }
+
         var copy = await exchange.DuplicateAsync(key, new DuplicateFormRequest(request.Name, request.IncludeActions, FolderKey: folderKey, UserKey: RequestAccess.User.Key), cancellationToken);
         return copy is null ? FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form) : await CreatedAsync(copy, cancellationToken);
     }
@@ -96,6 +101,11 @@ internal sealed class FormExchangeController(
             {
                 return FormBuilderProblems.Missing(needed);
             }
+        }
+
+        if (await forms.GetDraftAsync(key, cancellationToken) is { Definition: { } source })
+        {
+            RefuseLiteralSecrets(source, request.ActionKeys);
         }
 
         var copied = await exchange.CopyActionsAsync(new CopyActionsRequest(key, request.TargetKey, request.ConcurrencyVersion, request.ActionKeys, RequestAccess.User.Key), cancellationToken);
@@ -138,6 +148,8 @@ internal sealed class FormExchangeController(
         {
             return refusal;
         }
+
+        RefuseLiteralSecrets(template.Definition);
 
         var form = await exchange.CreateFromTemplateAsync(new TemplateFormRequest(templateKey, request.Name, FolderKey: request.FolderKey, UserKey: RequestAccess.User.Key), cancellationToken);
         return form is null ? FormBuilderProblems.TemplateNotFound() : await CreatedAsync(form, cancellationToken);
@@ -284,6 +296,18 @@ internal sealed class FormExchangeController(
         return withActions && (held & FormBuilderPermissions.ManageActions) == FormBuilderPermissions.None
             ? FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions)
             : null;
+    }
+
+    // What a new draft takes from a stored one holds no secret as itself, as a draft save refuses (16.5's review): a draft
+    // saved before that check kept one, and a duplicate, copied actions or a form from a template would carry it on to
+    // forms and readers of its own. Each problem is at the source's setting; keys, when given, are the actions taken.
+    private void RefuseLiteralSecrets(FormDefinition source, IReadOnlyList<Guid>? keys = null)
+    {
+        var before = keys is null ? null : source with { Actions = [.. source.Actions.Where(action => !keys.Contains(action.Key))] };
+        if (grants.LiteralSecrets(before, source) is { Count: > 0 } literal)
+        {
+            throw new FormBuilderValidationException(literal);
+        }
     }
 
     // A file with actions needs manageActions in its folder, and none of its actions may hold a secret as itself, as a draft

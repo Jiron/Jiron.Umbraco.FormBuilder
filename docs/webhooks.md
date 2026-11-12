@@ -33,7 +33,7 @@ A plain address is allowed as it is. If yours holds a key, in its path or query,
 
 A form whose secret is missing still publishes, and each run fails with `secret_missing`, its message naming the configuration key it lacks (never a value). An import names a missing secret the action names itself, but not the signing secret or address it takes from the integrations settings.
 
-The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft. A call that skips the sidebar is answered `400` with `secretReference` at the setting. An action saved with such a value before this check keeps it until it is changed, so other edits to its form still save; publishing refuses it as before.
+The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft. A call that skips the sidebar is answered `400` with `secretReference` at the setting. A duplicate, copied actions, a form saved as a template and a new form from a template refuse an action that holds one the same way, at its setting in the form it comes from. An action saved with such a value before this check keeps it until it is changed, so other edits to its form still save; publishing refuses it as before.
 
 ## The webhook action
 

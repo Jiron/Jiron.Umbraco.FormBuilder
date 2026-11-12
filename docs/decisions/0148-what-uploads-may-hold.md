@@ -61,6 +61,9 @@ flood. Once in ten seconds per server, with what the server stores itself added 
   could fill the cap in about ten minutes and shut every form's uploads for a day; now it takes eleven, for the whole day.
   Amended by [ADR-0236](0236-what-the-security-review-changed.md): an IPv6 address's share is its /64's, and the /48 around it holds four shares
   together, as a whole /48 (65,536 /64 networks) is what a site is usually given, and is free from tunnel brokers.
+  Past the limiter's bound of tracked clients (`Limits:MaxTrackedClients`), a new address counts in the overflow window it
+  shares with others, as its requests do, and is held to that window's share; until the review of step 16.5 the check read
+  only an address's own window, so an address counted in an overflow window had no share.
 - **The cleanup** is `OrphanFileJob`, on the server that schedules, every minute, for at most 30 seconds. It is no longer a
   part of the retention job.
 - **A scan:** what an entry holds goes first. Uploads are looked at in batches of ten, so a new entry's file waits for at most
