@@ -16,7 +16,7 @@ internal sealed record VisitorTextKey(string Key, string Group, ImmutableArray<s
 /// The package's visitor texts a site or a form may reword, by key (ADR-0230): every message (<c>message.</c>, a counting
 /// one as <c>.one</c> and <c>.other</c>, a cookie category's name as <c>message.captchaCategories.marketing</c>), every
 /// word a rendered form brings (<c>form.</c>, Web's <c>RenderingWords</c> by name) but the three buttons, which have
-/// fields of their own, and the note only backoffice users see, and the words for yes and no (<c>answer.yes</c>,
+/// fields of their own, and the notes only backoffice users see, and the words for yes and no (<c>answer.yes</c>,
 /// <c>answer.no</c>). Each sits in one group the editor lists it under; a test holds the list to the tables.
 /// </summary>
 internal static partial class VisitorTextKeys

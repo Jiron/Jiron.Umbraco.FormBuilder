@@ -37,6 +37,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<FormPreviewDocuments>();
         builder.Services.TryAddSingleton<ThemePreviewDocuments>();
         builder.Services.TryAddSingleton<FormRendering>();
+        builder.Services.TryAddSingleton<FormRenderFailures>();
         builder.Services.TryAddSingleton<IFormBuilderRenderer, FormBuilderRenderer>();
         builder.Services.TryAddSingleton<FormPostHandler>();
         builder.Services.TryAddSingleton<FormPostFilesMiddleware>();

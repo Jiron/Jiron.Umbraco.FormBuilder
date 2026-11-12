@@ -441,12 +441,31 @@ internal sealed class FormSubmissions(
                 ? new Served(shown.Published, row)
                 : null;
 
-    // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing (step 1).
-    private async Task<Served?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
-        await cache.GetAsync(key, cancellationToken) is { } cached
-        && await forms.GetAsync(key, cancellationToken) is { TrashedUtc: null, PublishedVersionId: not null } row
-            ? new Served(cached.Published, row)
-            : null;
+    // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing (step 1). Where
+    // the row shows this server's copy is behind, as another server published a newer revision or published a form kept
+    // here as unpublished, and its instruction has not come yet, the copy is read again (a late cache refresher, 16.4,
+    // ADR-0237): the visitor who loaded the newer revision there is not told the form changed here. A key that names no
+    // form still costs one lookup.
+    private async Task<Served?> ServedAsync(Guid key, CancellationToken cancellationToken)
+    {
+        var cached = await cache.GetAsync(key, cancellationToken);
+        if (cached is null && !cache.IsKeptAsNotServed(key))
+        {
+            return null;
+        }
+
+        if (await forms.GetAsync(key, cancellationToken) is not { TrashedUtc: null, PublishedVersionId: not null } row)
+        {
+            return null;
+        }
+
+        if (cached is null || row.PublicRevision > cached.Published.Form.PublicRevision)
+        {
+            cached = await cache.RenewAsync(key, cancellationToken);
+        }
+
+        return cached is null ? null : new Served(cached.Published, row);
+    }
 
     // Whether the form is for members (ADR-0095), which the gate admits only its members to (ADR-0231).
     private static bool IsForMembers(PublishedForm form) => form.Definition.Settings.Availability.Access != MemberAccess.Anyone;

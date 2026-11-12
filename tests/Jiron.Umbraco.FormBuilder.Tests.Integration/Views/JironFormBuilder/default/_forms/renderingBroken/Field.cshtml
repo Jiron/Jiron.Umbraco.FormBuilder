@@ -1,0 +1,9 @@
+@* jfb-view: Field 1 *@
+@* The form renderingBroken's own field wrapper, which fails as a site's broken override would (ROADMAP 16.4, ADR-0237). *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+<div class="jfb-field" data-jfb-field="@Model.Key" data-test-broken="field">
+    @if (Model is not null)
+    {
+        throw new InvalidOperationException("A view of this site that fails.");
+    }
+</div>

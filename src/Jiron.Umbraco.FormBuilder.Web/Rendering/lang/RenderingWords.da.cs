@@ -32,6 +32,8 @@ internal sealed partial record RenderingWords
         AlreadySentText = "Hvert medlem kan sende den én gang.",
         PendingHeading = "Formularen venter på en opdatering",
         PendingText = "Besøgende ser intet her, før Jiron Form Builders databaseopdatering er kørt. Kun brugere, der er logget ind i backoffice, ser denne note.",
+        BrokenHeading = "Formularen kunne ikke vises",
+        BrokenText = "Noget gik galt, da den blev vist ({0}). Besøgende ser intet her, og sidens log har detaljerne. Kun brugere, der er logget ind i backoffice, ser denne note.",
         Other = "Andet",
         OtherText = "Dit eget svar",
         Choose = "Vælg en mulighed",

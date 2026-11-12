@@ -294,6 +294,29 @@ describe('the frame', () => {
   });
 
   // Vitest fails the run on an unhandled rejection, so a failed load that leaked one would fail here.
+  it('goes on to the other forms when one throws as it is enhanced, and reports what it threw', () => {
+    // One broken form on a page (16.4, ADR-0237), whatever it throws.
+    const broken = new Error('broken');
+    const reported: unknown[] = [];
+    vi.stubGlobal('reportError', (error: unknown) => reported.push(error));
+    const first = form('jfb-1');
+    Object.defineProperty(first, 'querySelector', {
+      value: () => {
+        throw broken;
+      },
+    });
+    document.body.append(first, form('jfb-2'), form('jfb-3'));
+    const heard = readies();
+    const frame = createFrame(chunk().load);
+
+    expect(() => frame.init()).not.toThrow();
+    expect(heard.map((detail) => detail.alias)).toEqual(['jfb-2', 'jfb-3']);
+    expect(reported).toEqual([broken]);
+    expect(frame.get(first), 'the broken one is left to the post without JavaScript').toBeNull();
+    expect(reported, 'asked for again, it throws again, and says so').toEqual([broken, broken]);
+    vi.unstubAllGlobals();
+  });
+
   it('leaves the forms to the post without JavaScript when the logic cannot load, and tries once', async () => {
     const failing = vi.fn(() => Promise.reject(new Error('offline')));
     document.body.append(form('jfb-1'), form('jfb-2'));
@@ -510,6 +533,30 @@ describe('counting what visitors do with a form', () => {
       sent.map(([, body]) => body),
       'an event a script dispatches is not trusted, and a focus a script moves is no touch',
     ).toEqual([{ type: 'view' }]);
+  });
+
+  it('works a form whose address for counting the browser refuses, and reports what it threw', () => {
+    const refused = new TypeError('Refused to send beacon to invalid URL');
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      sendBeacon: (url: string) => {
+        if (url === 'http://[refused') throw refused;
+        return true;
+      },
+    });
+    const reported: unknown[] = [];
+    vi.stubGlobal('reportError', (error: unknown) => reported.push(error));
+    const uncounted = form('jfb-1');
+    uncounted.dataset['jfbInsights'] = 'http://[refused';
+    document.body.append(uncounted, form('jfb-2'));
+    const heard = readies();
+    const frame = createFrame(chunk().load);
+
+    frame.init();
+
+    expect(heard.map((detail) => detail.alias)).toEqual(['jfb-1', 'jfb-2']);
+    expect(reported).toEqual([refused]);
+    expect(frame.get(uncounted)).not.toBeNull();
   });
 
   it('leaves a page whose browser sends no beacons working, every form on it enhanced', () => {

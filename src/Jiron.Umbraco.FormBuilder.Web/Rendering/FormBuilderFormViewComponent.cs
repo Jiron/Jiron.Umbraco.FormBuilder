@@ -1,7 +1,10 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewComponents;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -11,7 +14,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// Renders a published form on a page (ADR-0004, ADR-0093):
 /// <c>@await Component.InvokeAsync("FormBuilderForm", new { form = "contact" })</c>, the one path
 /// <c>&lt;jfb-render&gt;</c> takes too. The form's instance ids, its markup and its model data are the same for every
-/// visitor of the page. A reference that names no published form renders nothing, so a page never breaks for its form.
+/// visitor of the page. A reference that names no published form renders nothing, and a form that fails while it renders
+/// renders nothing for a visitor and a short note for a signed-in backoffice user (ADR-0237), so a page and its other forms
+/// never break for one form: the form is written to the page only once its view has rendered in full.
 /// </summary>
 [ViewComponent(Name = Name)]
 public sealed class FormBuilderFormViewComponent : ViewComponent
@@ -40,6 +45,26 @@ public sealed class FormBuilderFormViewComponent : ViewComponent
     /// </param>
     public async Task<IViewComponentResult> InvokeAsync(object? form, bool? assets = null, IReadOnlyDictionary<string, string?>? context = null, string? theme = null)
     {
+        if (FormRenderTargets.Get(HttpContext) is not null)
+        {
+            // The render endpoint renders its one form, and answers a failure as its own (ADR-0237).
+            return await ResultAsync(form, assets, context, theme);
+        }
+
+        try
+        {
+            return new HtmlContentViewComponentResult(await HtmlAsync(form, assets, context, theme));
+        }
+        catch (Exception exception) when (FormRenderFailures.Caught(exception, HttpContext.RequestAborted))
+        {
+            var failures = HttpContext.RequestServices.GetRequiredService<FormRenderFailures>();
+            return new HtmlContentViewComponentResult(failures.InPlace(HttpContext, form, exception) ?? HtmlString.Empty);
+        }
+    }
+
+    // The form as the render endpoint answers it: its view runs as the response is written.
+    private async Task<IViewComponentResult> ResultAsync(object? form, bool? assets, IReadOnlyDictionary<string, string?>? context, string? theme)
+    {
         var rendered = await HttpContext.RequestServices.GetRequiredService<FormRendering>().RenderAsync(HttpContext, form, context, theme, HttpContext.RequestAborted);
         if (rendered is not { } found)
         {
@@ -53,9 +78,57 @@ public sealed class FormBuilderFormViewComponent : ViewComponent
         }
 
         PageAssets.Use(HttpContext, formTheme);
-        var included = assets ?? HttpContext.RequestServices.GetRequiredService<IOptions<FormBuilderOptions>>().Value.Rendering.IncludeAssetsAutomatically;
-        return included ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext, formTheme), view) : view;
+        return Included(assets) ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext, formTheme), view) : view;
     }
+
+    // The form on a page: its view rendered in full, then its assets, which decide when the page is written whether they are
+    // still to write, before it.
+    private async Task<IHtmlContent> HtmlAsync(object? form, bool? assets, IReadOnlyDictionary<string, string?>? context, string? theme)
+    {
+        var rendered = await HttpContext.RequestServices.GetRequiredService<FormRendering>().RenderAsync(HttpContext, form, context, theme, HttpContext.RequestAborted);
+        if (rendered is not { } found)
+        {
+            return HtmlString.Empty;
+        }
+
+        if (found.Theme is { } formTheme)
+        {
+            PageAssets.Use(HttpContext, formTheme);
+        }
+
+        var markup = await WriteAsync(found.View, found.Model);
+        if (found.Theme is not { } used || !Included(assets))
+        {
+            return new HtmlString(markup);
+        }
+
+        return new HtmlContentBuilder()
+            .AppendHtml(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext, used))
+            .AppendHtml(markup);
+    }
+
+    // The view as a view component's result renders it, into text of its own, so nothing of a view that fails reaches the page.
+    private async Task<string> WriteAsync(string path, object model)
+    {
+        var found = ViewEngine.GetView(ViewContext.ExecutingFilePath, path, isMainPage: false);
+        if (!found.Success)
+        {
+            found = ViewEngine.FindView(ViewContext, path, isMainPage: false);
+        }
+
+        if (!found.Success)
+        {
+            throw new InvalidOperationException($"The view '{path}' cannot be found.");
+        }
+
+        await using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        var data = new ViewDataDictionary<object>(ViewData, model);
+        await found.View.RenderAsync(new ViewContext(ViewContext, found.View, data, writer));
+        return writer.ToString();
+    }
+
+    private bool Included(bool? assets) =>
+        assets ?? HttpContext.RequestServices.GetRequiredService<IOptions<FormBuilderOptions>>().Value.Rendering.IncludeAssetsAutomatically;
 
     /// <summary>
     /// The form's assets, which decide when the page is written whether they are still to write, then the form.

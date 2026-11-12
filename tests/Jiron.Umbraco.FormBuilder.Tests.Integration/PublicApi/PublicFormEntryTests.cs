@@ -289,6 +289,41 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AServerWhoseCopyIsBehind_TakesThePostOfANewerRevision_BeforeTheOtherServersInstructionComes()
+    {
+        // A late cache refresher (ROADMAP 16.4, ADR-0237): another server published, and a visitor who loaded the form there
+        // posts here, where the copy is still the older one. Here, the change drops this server's copy; putting the older one
+        // back is what a server the instruction has not reached yet holds.
+        var runtime = GetRequiredService<global::Umbraco.Cms.Core.Cache.AppCaches>().RuntimeCache;
+        var cache = GetRequiredService<PublishedFormCache>();
+        var key = await PublishAsync(fields: [NameField]);
+        var older = (await cache.GetAsync(key))!;
+        await SaveAndPublishAsync(key, definition => WithFields(definition, NameField, Email));
+        var newer = (await FormRows.GetAsync(key))!.PublicRevision;
+        runtime.Insert(FormCacheKeys.Published(key), () => older, TimeSpan.FromHours(1));
+        var unpublished = await PublishAsync("Published elsewhere", fields: [NameField]);
+        await Forms.UnpublishAsync(unpublished, (await FormRows.GetAsync(unpublished))!.ConcurrencyVersion, Editor);
+        _ = await cache.GetAsync(unpublished);
+        var notServed = runtime.Get(FormCacheKeys.Published(unpublished));
+        await Forms.PublishAsync(unpublished, (await FormRows.GetAsync(unpublished))!.ConcurrencyVersion, null, Editor);
+        runtime.Insert(FormCacheKeys.Published(unpublished), () => notServed, TimeSpan.FromHours(1));
+        var again = (await FormRows.GetAsync(unpublished))!.PublicRevision;
+        Assert.That((cache.IsKeptAsNotServed(unpublished), (await cache.GetAsync(key))!.Published.Form.PublicRevision), Is.EqualTo((true, older.Published.Form.PublicRevision)), "both copies are behind");
+
+        using var post = await PostAsync(key, $$$"""{"revision":{{{newer}}},"values":{"name":"Ada","email":"ada@example.com"}}""");
+        using var elsewhere = await PostAsync(unpublished, $$$"""{"revision":{{{again}}},"values":{"name":"Ada"}}""");
+        using var unknown = await PostAsync(Guid.NewGuid(), """{"revision":1,"values":{"name":"Ada"}}""");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await ErrorsAsync(post), Is.EqualTo("200"), "not form_changed");
+            Assert.That((await cache.GetAsync(key))!.Published.Form.PublicRevision, Is.EqualTo(newer), "this server's copy renewed");
+            Assert.That(await ErrorsAsync(elsewhere), Is.EqualTo("200"), "a form kept here as unpublished, published since");
+            Assert.That(unknown.StatusCode, Is.EqualTo(HttpStatusCode.NotFound), "a key that names no form is none");
+        });
+    }
+
+    [Test]
     public async Task AClosedForm_AFormForMembers_ATrashedForm_AndASubmissionWithoutAnAnswer_AreRefused_AndStoreNothing()
     {
         var notYet = await PublishAsync("Not yet", change: definition => definition with

@@ -70,13 +70,15 @@ internal abstract class HealthProbe
 
 /// <summary>
 /// Mail (ADR-0007): Umbraco's gate says whether a mail server is set up, and passes without a From address, which the site then
-/// needs from the settings or from Umbraco's own.
+/// needs from the settings or from Umbraco's own. A mail server that is set up and that this server found not there on its
+/// last try is an outage, said apart from the setup (ADR-0237).
 /// </summary>
 /// <param name="sender">Umbraco's mail sender.</param>
 /// <param name="settings">The settings.</param>
 /// <param name="global">Umbraco's global settings.</param>
 /// <param name="navigation">Finds the sites, each of which may have its own sender.</param>
-internal sealed class EmailHealth(IEmailSender sender, IFormBuilderSettingsService settings, IOptionsMonitor<GlobalSettings> global, IDocumentNavigationQueryService navigation) : HealthProbe
+/// <param name="reach">Whether this server reached the mail server on its last try.</param>
+internal sealed class EmailHealth(IEmailSender sender, IFormBuilderSettingsService settings, IOptionsMonitor<GlobalSettings> global, IDocumentNavigationQueryService navigation, MailServerReach reach) : HealthProbe
 {
     /// <summary>Whether Umbraco can send mail at all.</summary>
     public bool CanSend => sender.CanSendRequiredEmail();
@@ -114,6 +116,11 @@ internal sealed class EmailHealth(IEmailSender sender, IFormBuilderSettingsServi
         if (!CanSend)
         {
             found.Add(new HealthFinding("emailNoServer", words.EmailNoServer, CoversEmail: true));
+        }
+        else if (reach.Unreached)
+        {
+            // Set up, but not there just now: an outage, which the setup checklist has no part in (ADR-0237).
+            found.Add(new HealthFinding("emailUnreached", words.EmailUnreached));
         }
 
         if (!await HasFromAsync(cancellationToken))

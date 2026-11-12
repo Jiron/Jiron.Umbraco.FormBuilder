@@ -60,6 +60,8 @@ internal sealed partial record RenderingWords
             AlreadySentText = "Each member can send it once.",
             PendingHeading = "This form waits for an update",
             PendingText = "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
+            BrokenHeading = "This form couldn't be shown",
+            BrokenText = "Something went wrong while it was rendered ({0}). Visitors see nothing here, and the site's log has the details. Only signed-in backoffice users see this note.",
             Other = "Other",
             OtherText = "Your own answer",
             Choose = "Choose one",
@@ -172,6 +174,8 @@ internal sealed partial record RenderingWords
             AlreadySentText = "Jedes Mitglied kann es einmal senden.",
             PendingHeading = "Dieses Formular wartet auf ein Update",
             PendingText = "Auf der Website ist hier nichts zu sehen, bis das Datenbank-Update von Jiron Form Builder ausgef" + UUmlaut + "hrt wurde. Diesen Hinweis sieht nur, wer im Backoffice angemeldet ist.",
+            BrokenHeading = "Dieses Formular konnte nicht angezeigt werden",
+            BrokenText = "Beim Darstellen ist ein Fehler aufgetreten ({0}). Auf der Website ist hier nichts zu sehen; die Einzelheiten stehen im Log der Website. Diesen Hinweis sieht nur, wer im Backoffice angemeldet ist.",
             Other = "Sonstiges",
             OtherText = "Ihre eigene Antwort",
             Choose = "Bitte w" + AUmlaut + "hlen",
@@ -371,6 +375,12 @@ internal sealed partial record RenderingWords
 
     /// <summary>The text of the note a signed-in backoffice user sees in a form's place while the migrations are pending.</summary>
     public required string PendingText { get; init; }
+
+    /// <summary>The heading of the note a signed-in backoffice user sees where a form failed while it rendered (ADR-0237).</summary>
+    public required string BrokenHeading { get; init; }
+
+    /// <summary>That note's text; <c>{0}</c> takes the exception's type.</summary>
+    public required string BrokenText { get; init; }
 
     /// <summary>The label of the "Other" choice of a field that does not label it.</summary>
     public required string Other { get; init; }

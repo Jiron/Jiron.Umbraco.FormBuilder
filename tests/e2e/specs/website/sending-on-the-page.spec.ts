@@ -10,7 +10,8 @@ import { formPages, pathOf, type Language } from '../../support/demo-content.ts'
 // send sends nothing; a refused or failed send shows the notice above the buttons, takes the focus and keeps every
 // answer; the server's errors show at their fields with the summary; a redirect after a message counts down with "Go
 // now" and "Stay here"; the send works from a plain-HTTP origin, where crypto.randomUUID() does not exist; and axe
-// finds nothing in any of these states.
+// finds nothing in any of these states. A send whose answer the network loses after the entry was stored shows that
+// entry on the retry, and a browser that blocks storage sends all the same (ROADMAP 16.4, ADR-0237).
 
 const ENTRIES = '**/jfb/api/v1/forms/*/entries';
 
@@ -220,6 +221,57 @@ test('a retry after a failed send carries the same submission id', async ({ page
 
   expect(ids[0]).toBe(ids[1]);
   await expect(form.locator('[data-jfb-notice]'), 'one notice').toHaveCount(1);
+});
+
+test('a send whose answer the network loses after the entry was stored shows that entry on the retry, and no second', async ({
+  page,
+}) => {
+  await page.goto(pathOfContact());
+  const form = formOn(page);
+  await fill(form);
+  let lost: { receipt?: unknown } | undefined;
+  await page.route(ENTRIES, async (route) => {
+    // It reaches the server and is stored; its answer never comes back.
+    lost = (await (await route.fetch()).json()) as { receipt?: unknown };
+    await route.abort('connectionreset');
+  });
+  await pressOnThePage(send(form));
+  await expect(form.locator('[data-jfb-notice="timeout"]')).toBeFocused();
+  await answersKept(form);
+  expect(lost?.receipt, 'the entry was stored').toBeDefined();
+
+  await page.unroute(ENTRIES);
+  const retried = page.waitForResponse((response) => response.url().includes('/entries'));
+  await pressOnThePage(send(form));
+  const answer = await retried;
+  expect(answer.status()).toBe(200);
+  expect(((await answer.json()) as { receipt?: unknown }).receipt, 'the stored entry, not a second').toEqual(
+    lost?.receipt,
+  );
+  await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
+});
+
+test('a browser that blocks storage sends all the same: the form keeps nothing there', async ({ page }) => {
+  // Blocked storage throws at the first touch, as a browser that blocks a site's data does.
+  await page.addInitScript(() => {
+    for (const name of ['localStorage', 'sessionStorage', 'indexedDB']) {
+      Object.defineProperty(window, name, {
+        configurable: true,
+        get: () => {
+          throw new DOMException('The operation is insecure.', 'SecurityError');
+        },
+      });
+    }
+  });
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(pathOfContact());
+  const form = formOn(page);
+  await fill(form);
+  await pressOnThePage(send(form));
+
+  await expect(page.locator('main [data-jfb-outcome]')).toBeFocused();
+  expect(errors, 'nothing failed on the page').toEqual([]);
 });
 
 test("the server's errors of a 422 show in place, with the error summary, which takes the focus", async ({ page }) => {

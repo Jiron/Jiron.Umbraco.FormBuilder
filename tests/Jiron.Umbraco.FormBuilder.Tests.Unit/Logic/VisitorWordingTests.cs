@@ -16,7 +16,7 @@ public sealed class VisitorWordingTests
     private static readonly string[] Buttons = ["back", "next", "send"];
 
     [Test]
-    public void TheKeys_AreTheTablesTexts_ButTheButtonsAndTheBackofficeNote()
+    public void TheKeys_AreTheTablesTexts_ButTheButtonsAndTheBackofficeNotes()
     {
         var english = RenderingWords.Of("en").ByName();
         var formKeys = VisitorTextKeys.All.Where(key => key.Key.StartsWith(VisitorTextKeys.FormPrefix, StringComparison.Ordinal)).ToList();
@@ -25,8 +25,8 @@ public sealed class VisitorWordingTests
         {
             Assert.That(
                 formKeys.Select(key => key.Key[VisitorTextKeys.FormPrefix.Length..]),
-                Is.EquivalentTo(english.Keys.Except(Buttons).Except(["pendingHeading", "pendingText"])),
-                "every word a rendered form brings but the buttons and the backoffice note");
+                Is.EquivalentTo(english.Keys.Except(Buttons).Except(["pendingHeading", "pendingText", "brokenHeading", "brokenText"])),
+                "every word a rendered form brings but the buttons and the notes only a backoffice user sees");
             foreach (var key in formKeys)
             {
                 Assert.That(key.Values, Is.EqualTo(VisitorTextKeys.ValuesOf(english[key.Key[VisitorTextKeys.FormPrefix.Length..]])), key.Key);

@@ -41,7 +41,7 @@ public sealed class SetupDetectorsTests
         _values.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((string?)null);
     }
 
-    private SetupDetectors Detectors => new(new EmailHealth(_sender, _settings, _global, _navigation), _forms, _references, _contentTypes, _access, _groups);
+    private SetupDetectors Detectors => new(new EmailHealth(_sender, _settings, _global, _navigation, new MailServerReach(TimeProvider.System)), _forms, _references, _contentTypes, _access, _groups);
 
     private SetupChecklist Checklist => new(Detectors, _access, _forms, _values);
 

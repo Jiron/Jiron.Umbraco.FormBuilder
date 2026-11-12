@@ -184,6 +184,38 @@ internal sealed partial class PublishedFormCache(
         return (kept as FormKey)?.Key;
     }
 
+    /// <summary>
+    /// The form read again past what this server keeps, for a request whose own read of the form's row shows the copy here is
+    /// older than the database's: another server changed it, and its instruction has not come yet (a late cache refresher,
+    /// ROADMAP 16.4, ADR-0237). Only this server's copy is renewed; the server that changed the form told the others itself.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">Stops waiting for the read; the read itself goes on for the other requests.</param>
+    public Task<CachedForm?> RenewAsync(Guid key, CancellationToken cancellationToken = default)
+    {
+        FormBuilderFormCacheRefresher.Forget(appCaches.RuntimeCache, new FormCacheChange(key));
+        return GetAsync(key, cancellationToken);
+    }
+
+    /// <summary>
+    /// For a post to a form this server keeps as one the website does not serve: the form read again when its row says it is
+    /// published now, as another server published it and its instruction has not come yet (ADR-0237); null otherwise. It
+    /// reads the row only for a form kept so, never for a key that names no form.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">Stops waiting for the reads.</param>
+    public async Task<CachedForm?> CatchUpAsync(Guid key, CancellationToken cancellationToken = default) =>
+        IsKeptAsNotServed(key) && await forms.GetAsync(key, cancellationToken) is { IsPublished: true, TrashedUtc: null }
+            ? await RenewAsync(key, cancellationToken)
+            : null;
+
+    /// <summary>
+    /// Whether this server keeps the form as one the website does not serve, which takes no read: a form that exists, kept
+    /// as unpublished, trashed or unreadable when it was last read.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    public bool IsKeptAsNotServed(Guid key) => appCaches.RuntimeCache.Get(FormCacheKeys.Published(key)) is NotServedForm;
+
     /// <summary>Whether this server keeps the form as the website serves it, which takes no read (ADR-0149).</summary>
     /// <param name="key">The form's key.</param>
     public bool IsKept(Guid key) => appCaches.RuntimeCache.Get(FormCacheKeys.Published(key)) is CachedForm;

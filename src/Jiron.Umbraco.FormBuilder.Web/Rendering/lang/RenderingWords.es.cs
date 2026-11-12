@@ -32,6 +32,8 @@ internal sealed partial record RenderingWords
         AlreadySentText = "Cada miembro puede enviarlo una sola vez.",
         PendingHeading = "Este formulario está pendiente de una actualización",
         PendingText = "Los visitantes no ven nada aquí hasta que se ejecute la actualización de la base de datos de Jiron Form Builder. Solo los usuarios con sesión iniciada en el backoffice ven esta nota.",
+        BrokenHeading = "No se ha podido mostrar este formulario",
+        BrokenText = "Algo falló al mostrarlo ({0}). Los visitantes no ven nada aquí y el registro del sitio tiene los detalles. Solo los usuarios con sesión iniciada en el backoffice ven esta nota.",
         Other = "Otro",
         OtherText = "Su propia respuesta",
         Choose = "Elija una opción",

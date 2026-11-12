@@ -678,10 +678,12 @@ internal sealed class FormController(
 
     // The form an action that takes the preview's requests reads: the version a preview's ticket names, as though it were
     // published, or the published one (ADR-0203); the filter let only a ticket for this form through.
+    // A post to a form this server keeps as unpublished reads the form once more, as another server may have published it a
+    // moment ago (a late cache refresher, ADR-0237); a read answers from what this server keeps.
     private async Task<CachedForm?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
         PreviewRequest.Of(HttpContext) is { } preview
             ? await previews.GetAsync(key, preview.Version, cancellationToken)
-            : await forms.GetAsync(key, cancellationToken);
+            : await forms.GetAsync(key, cancellationToken) ?? (HttpMethods.IsPost(Request.Method) ? await forms.CatchUpAsync(key, cancellationToken) : null);
 
     // The field with this key, a repeatable group's child among them, when it has options of its own or from a source.
     private static FormField? OptionField(FormDefinition definition, Guid key) =>

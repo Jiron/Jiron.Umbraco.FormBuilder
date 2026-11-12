@@ -115,7 +115,7 @@ public sealed class HealthProbeTests
     }
 
     // Mail (ADR-0007).
-    private static EmailHealth EmailProbe(bool canSend, string? address)
+    private static EmailHealth EmailProbe(bool canSend, string? address, MailServerReach? reach = null)
     {
         var sender = Substitute.For<IEmailSender>();
         sender.CanSendRequiredEmail().Returns(canSend);
@@ -124,7 +124,7 @@ public sealed class HealthProbeTests
             new SettingsSnapshot<EmailSettings>(new EmailSettings { SenderAddress = address }, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>())));
         var global = Substitute.For<IOptionsMonitor<GlobalSettings>>();
         global.CurrentValue.Returns(new GlobalSettings());
-        return new EmailHealth(sender, settings, global, Substitute.For<IDocumentNavigationQueryService>());
+        return new EmailHealth(sender, settings, global, Substitute.For<IDocumentNavigationQueryService>(), reach ?? new MailServerReach(new TestTimeProvider()));
     }
 
     [Test]
@@ -142,6 +142,30 @@ public sealed class HealthProbeTests
             Assert.That(noFrom[0].Link, Is.EqualTo(HealthLink.SettingsEmail));
             Assert.That(Codes(noServer), Is.EqualTo(new[] { "emailNoServer" }));
             Assert.That(await EmailProbe(true, "forms@jfb.test").FindAsync(English), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task Mail_SaysWhenThisServerFoundNoMailServer_TillAMailLeaves_AndLeavesTheChecklistAlone()
+    {
+        // An outage of a mail server that is set up (ADR-0237).
+        var reach = new MailServerReach(new TestTimeProvider());
+        reach.Refusal();
+
+        var found = await EmailProbe(true, "forms@jfb.test", reach).FindAsync(English);
+        var german = await EmailProbe(true, "forms@jfb.test", reach).FindAsync(HealthWords.Of("de"));
+        var notSetUp = await EmailProbe(false, "forms@jfb.test", reach).FindAsync(English);
+        reach.Reached();
+        var back = await EmailProbe(true, "forms@jfb.test", reach).FindAsync(English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Codes(found), Is.EqualTo(new[] { "emailUnreached" }));
+            Assert.That(found[0].Message, Does.Contain("couldn't reach the mail server").And.Contain("without using up their attempts"));
+            Assert.That(found[0].CoversEmail, Is.False, "the setup checklist is about setting up");
+            Assert.That(german[0].Message, Does.Contain("Mailserver zuletzt nicht erreicht"));
+            Assert.That(Codes(notSetUp), Is.EqualTo(new[] { "emailNoServer" }), "said once: no server set up is the finding");
+            Assert.That(back, Is.Empty);
         });
     }
 

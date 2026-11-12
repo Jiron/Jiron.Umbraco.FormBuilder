@@ -11,10 +11,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Email;
 
 /// <summary>
 /// The mail of a pass (ADR-0007, ADR-0159): it marks expired leases, then claims and sends up to <see cref="PerPass"/> due mails,
-/// <see cref="AtATime"/> at a time. While Umbraco could not send, it claims nothing, so no attempt is used and nothing is
-/// dropped; the job and the next wake look again.
+/// <see cref="AtATime"/> at a time. While Umbraco could not send, or this server waits after the mail server could not be
+/// reached (<see cref="MailServerReach"/>), it claims nothing, so no attempt is used and nothing is dropped; the job and the
+/// next wake look again.
 /// </summary>
-internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender sender, EmailAttempts attempts, OutboxWake wake, TimeProvider time, ILogger<EmailQueue> logger) : IOutboxQueue
+internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender sender, EmailAttempts attempts, MailServerReach reach, OutboxWake wake, TimeProvider time, ILogger<EmailQueue> logger) : IOutboxQueue
 {
     /// <summary>How many due mails a pass takes.</summary>
     public const int PerPass = 25;
@@ -32,7 +33,7 @@ internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender s
     public async Task<bool> PassAsync(string claimant, DateTimeOffset deadline, CancellationToken stopping)
     {
         await emails.ExpireLeasesAsync(EmailOutbox.Keep, stopping);
-        if (!sender.CanSendRequiredEmail())
+        if (!sender.CanSendRequiredEmail() || reach.Paused)
         {
             return false;
         }
@@ -43,7 +44,7 @@ internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender s
             new ParallelOptions { MaxDegreeOfParallelism = AtATime },
             async (id, _) =>
             {
-                if (time.GetUtcNow() >= deadline || wake.Paused || stopping.IsCancellationRequested)
+                if (time.GetUtcNow() >= deadline || wake.Paused || reach.Paused || stopping.IsCancellationRequested)
                 {
                     return;
                 }
@@ -76,7 +77,8 @@ internal sealed partial class EmailQueue(IEmailRepository emails, IEmailSender s
 /// One attempt of a claimed mail (ADR-0007): through <see cref="IEmailSender"/>, so a site's own sender and its handlers see
 /// every mail. An error goes back to the queue with the back-off of action runs and fails for good after as many attempts; an
 /// attempt that was cut off, by its time limit or by the host stopping, becomes uncertain, because it may have left, and its
-/// result replaces that when it does end (the late finisher).
+/// result replaces that when it does end (the late finisher). An attempt that found no mail server sent nothing: the mail goes
+/// back with its attempt, and this server waits (<see cref="MailServerReach"/>, ADR-0237).
 /// </summary>
 internal sealed partial class EmailAttempts(
     IEmailRepository emails,
@@ -86,12 +88,16 @@ internal sealed partial class EmailAttempts(
     IEnumerable<IFormBuilderFileScanner> scanners,
     ActionSettlement settlement,
     DeliveryNotices notices,
+    MailServerReach reach,
     IOptionsMonitor<FormBuilderOptions> options,
     TimeProvider time,
     ILogger<EmailAttempts> logger)
 {
     /// <summary>What Umbraco's sender and a site's handlers know this mail by.</summary>
     public const string EmailType = "JironFormBuilder";
+
+    /// <summary>The code of an attempt that found no mail server; its message is the exception's type.</summary>
+    public const string NoConnection = "no_connection";
 
     /// <summary>How long Umbraco's sender gets (ADR-0007).</summary>
     public static readonly TimeSpan Expires = TimeSpan.FromSeconds(45);
@@ -114,7 +120,7 @@ internal sealed partial class EmailAttempts(
         {
             // Nothing left, so the next attempt may go without a question, and failing to read uses no attempt.
             await CloseAsync(opened);
-            await ReleaseAsync(mail, exception);
+            await ReleaseAsync(mail, exception is OperationCanceledException ? new DeliveryError(ActionAttempts.HostStopped) : new DeliveryError(ActionAttempts.Threw, exception.GetType().FullName), ActionAttempts.BackOff[0]);
             return;
         }
 
@@ -123,6 +129,7 @@ internal sealed partial class EmailAttempts(
         try
         {
             await attempt.WaitAsync(Expires + ActionAttempts.Grace, time, stopping);
+            reach.Reached();
             await RecordAsync(mail, Outcome.Sent);
         }
         catch (Exception exception) when (exception is TimeoutException || (exception is OperationCanceledException && !attempt.IsFaulted))
@@ -132,6 +139,13 @@ internal sealed partial class EmailAttempts(
 
             // Also when it has ended by now: its result may have come while the cut-off was written.
             _ = FinishLateAsync(mail, attempt);
+        }
+        catch (Exception exception) when (MailServerReach.Refused(exception))
+        {
+            // No mail server answered, so nothing left: the mail keeps its attempt, and this server waits before it tries again.
+            var pause = reach.Refusal();
+            LogUnreached(logger, mail.Id, exception.GetType().FullName, pause);
+            await ReleaseAsync(mail, new DeliveryError(NoConnection, exception.GetType().FullName), pause);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -276,13 +290,13 @@ internal sealed partial class EmailAttempts(
         }
     }
 
-    private async Task ReleaseAsync(StoredEmail mail, Exception exception)
+    // Back to the queue with its attempt: nothing left.
+    private async Task ReleaseAsync(StoredEmail mail, DeliveryError error, TimeSpan delay)
     {
         var token = mail.LockedBy ?? throw new ArgumentException("A claimed mail has its token.", nameof(mail));
-        var error = exception is OperationCanceledException ? new DeliveryError(ActionAttempts.HostStopped) : new DeliveryError(ActionAttempts.Threw, exception.GetType().FullName);
         try
         {
-            await emails.ReleaseAsync(mail.Id, token, ActionAttempts.BackOff[0], error, CancellationToken.None);
+            await emails.ReleaseAsync(mail.Id, token, delay, error, CancellationToken.None);
         }
         catch (Exception recording) when (recording is not OutOfMemoryException)
         {
@@ -295,6 +309,9 @@ internal sealed partial class EmailAttempts(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not send mail {Email}: {Exception}")]
     private static partial void LogSendFailed(ILogger logger, long email, string? exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not reach the mail server for mail {Email} ({Exception}); it stays queued with its attempt, and this server waits {Pause} before it sends again")]
+    private static partial void LogUnreached(ILogger logger, long email, string? exception, TimeSpan pause);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Mail {Email} of Jiron Form Builder ended after it was cut off: {Exception}")]
     private static partial void LogLateFailed(ILogger logger, long email, string? exception);

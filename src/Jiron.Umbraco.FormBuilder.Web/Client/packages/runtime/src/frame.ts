@@ -8,7 +8,7 @@
  * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123). It
  * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9). Where the
  * form's markup names where to count (`data-jfb-insights`), it counts what visitors do with the form (ROADMAP 11.5,
- * ADR-0211).
+ * ADR-0211). What one form throws is reported as an uncaught error is, and the page's other forms go on (16.4, ADR-0237).
  */
 import { checkGround, followSteps } from './fit';
 import type { JironFormBuilderForm } from './global';
@@ -55,6 +55,22 @@ function count(form: HTMLFormElement): void {
       .errors)
       if (field) send({ type: 'invalid', field, kind }, field);
   });
+}
+
+/**
+ * Runs one form's work, so that what it throws stops no other form: it is reported as an uncaught error would be, for the
+ * console and a site's error handler, and that form is left to the post without JavaScript (16.4, ADR-0237).
+ */
+function alone(work: () => void): void {
+  try {
+    work();
+  } catch (error) {
+    if (typeof reportError === 'function') reportError(error);
+    else
+      setTimeout(() => {
+        throw error;
+      });
+  }
 }
 
 /** What a form's logic offers a site's code. */
@@ -116,7 +132,8 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       );
     };
     wakes.set(form, touched);
-    count(form);
+    // Counting is the site's, not the visitor's: a form that cannot count works all the same.
+    alone(() => count(form));
     for (const type of TOUCHES) form.addEventListener(type, touched);
     if (form.querySelector('[data-jfb-default]') !== null || form.hasAttribute('data-jfb-asks')) touched();
     form.dispatchEvent(
@@ -140,7 +157,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
   return {
     get(form: Element): JironFormBuilderForm | null {
       if (!(form instanceof HTMLFormElement) || !form.matches('[data-jfb-form]')) return null;
-      enhance(form);
+      alone(() => enhance(form));
       if (!form.hasAttribute(WOKEN) && !wakes.has(form)) return null;
       return Object.freeze({
         validate: async () => (await (await sessionOf(form))?.validate('send')) ?? true,
@@ -152,10 +169,10 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     },
     init(root: ParentNode = document): void {
       const roots = root.querySelectorAll(`.jfb-form[data-jfb-contract="${CONTRACT}"]`);
-      if (root instanceof Element && root.matches(`.jfb-form[data-jfb-contract="${CONTRACT}"]`)) fit(root);
-      for (const each of roots) fit(each);
-      if (root instanceof HTMLFormElement && root.matches('[data-jfb-form]')) enhance(root);
-      for (const form of root.querySelectorAll<HTMLFormElement>('form[data-jfb-form]')) enhance(form);
+      if (root instanceof Element && root.matches(`.jfb-form[data-jfb-contract="${CONTRACT}"]`)) alone(() => fit(root));
+      for (const each of roots) alone(() => fit(each));
+      if (root instanceof HTMLFormElement && root.matches('[data-jfb-form]')) alone(() => enhance(root));
+      for (const form of root.querySelectorAll<HTMLFormElement>('form[data-jfb-form]')) alone(() => enhance(form));
       for (const button of root.querySelectorAll<HTMLButtonElement>(
         `[data-jfb-contract="${CONTRACT}"] [data-jfb-print]`,
       )) {

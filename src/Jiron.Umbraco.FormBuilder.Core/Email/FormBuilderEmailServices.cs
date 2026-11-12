@@ -21,6 +21,7 @@ internal static class FormBuilderEmailServices
         builder.Services.TryAddSingleton<EmailLayouts>();
         builder.Services.TryAddSingleton<EmailOutbox>();
         builder.Services.TryAddSingleton<EmailAttempts>();
+        builder.Services.TryAddSingleton<MailServerReach>();
         builder.Services.TryAddSingleton<DeliveryNotices>();
         builder.Services.TryAddSingleton<TestEmails>();
         builder.Services.TryAddSingleton<EmailLayoutLibrary>();

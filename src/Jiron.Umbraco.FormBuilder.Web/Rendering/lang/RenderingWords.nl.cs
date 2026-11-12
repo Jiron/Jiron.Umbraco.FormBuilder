@@ -32,6 +32,8 @@ internal sealed partial record RenderingWords
         AlreadySentText = "Elk lid kan het één keer versturen.",
         PendingHeading = "Dit formulier wacht op een update",
         PendingText = "Bezoekers zien hier niets totdat de database-update van Jiron Form Builder is uitgevoerd. Alleen ingelogde backoffice-gebruikers zien deze melding.",
+        BrokenHeading = "Dit formulier kon niet worden getoond",
+        BrokenText = "Er ging iets mis bij het weergeven ({0}). Bezoekers zien hier niets, en het logboek van de site bevat de details. Alleen ingelogde backoffice-gebruikers zien deze melding.",
         Other = "Anders",
         OtherText = "Uw eigen antwoord",
         Choose = "Kies een optie",

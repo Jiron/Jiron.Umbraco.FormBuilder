@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net.Sockets;
 using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Email;
@@ -125,6 +126,51 @@ public sealed class EmailAttemptTests : EmailTestBase
         await Pass.RunAsync(CancellationToken.None);
 
         Assert.That((await Emails.GetAsync(mail.Id))!.State, Is.EqualTo(EmailState.Sent));
+    }
+
+    [Test]
+    public async Task WhileTheMailServerCannotBeReached_NoAttemptIsUsed_TheServerWaits_AndEveryMailLeavesOnceItIsBack()
+    {
+        // An hour's outage (ROADMAP 16.4, ADR-0237): five attempts' back-off would have failed every mail by then.
+        var mails = new List<long>();
+        for (var guest = 0; guest < 10; guest++)
+        {
+            mails.Add((await Outbox.QueueAsync(Mail($"guest{guest}@jfb.test")))!.Id);
+        }
+
+        Sender.Script = _ => throw new SocketException((int)SocketError.ConnectionRefused);
+        var reach = GetRequiredService<MailServerReach>();
+        var mail = GetRequiredService<IEnumerable<IOutboxQueue>>().OfType<EmailQueue>().Single();
+        var perPass = new List<int>();
+        for (var minute = 0; minute < 60; minute += 5)
+        {
+            var before = Sender.Calls.Count;
+            await Pass.RunAsync(CancellationToken.None);
+            perPass.Add(Sender.Calls.Count - before);
+            await Pass.RunAsync(CancellationToken.None);
+            Assert.That(Sender.Calls, Has.Count.EqualTo(before + perPass[^1]), "nothing while this server waits");
+            Assert.That(await mail.PassAsync("server", Clock.GetUtcNow().AddMinutes(1), CancellationToken.None), Is.False, "nor does it ask for another pass at once, though mails are due");
+            Clock.Advance(MailServerReach.Pauses[^1]);
+        }
+
+        var waiting = await Task.WhenAll(mails.Select(id => Emails.GetAsync(id)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(perPass, Has.All.InRange(1, EmailQueue.AtATime), "one try a pause, and only what was under way when it was refused");
+            Assert.That(waiting.Select(mail => (mail!.State, mail.Attempts)), Has.All.EqualTo((EmailState.Queued, 0)), "no attempt used");
+            Assert.That(waiting.Where(mail => mail!.LastError is not null).Select(mail => mail!.LastError), Has.All.EqualTo(new DeliveryError(EmailAttempts.NoConnection, typeof(SocketException).FullName)));
+            Assert.That(reach.Unreached, Is.True);
+        });
+
+        Sender.Script = null;
+        await SendDueAsync();
+
+        var sent = await Task.WhenAll(mails.Select(id => Emails.GetAsync(id)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.Select(mail => (mail!.State, mail.Attempts)), Has.All.EqualTo((EmailState.Sent, 1)), "each left at its first attempt");
+            Assert.That(reach.Unreached, Is.False, "the mail server is there again");
+        });
     }
 
     [Test]

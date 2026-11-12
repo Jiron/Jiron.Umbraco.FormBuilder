@@ -1,0 +1,9 @@
+@* A form whose view fails while it renders, before two that work, each way a page names a form, and a page that goes on (ROADMAP 16.4, ADR-0237). *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<jfb-render form="renderingBroken" />
+<jfb-render form="renderingContact" />
+@await Component.InvokeAsync("FormBuilderForm", new { form = "renderingBroken" })
+@await Component.InvokeAsync("FormBuilderForm", new { form = "renderingSecond" })
+<p id="after">The page goes on.</p>

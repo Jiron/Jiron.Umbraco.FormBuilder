@@ -319,6 +319,11 @@ your site caches others.
 no view invokes `<jfb-render>`, for example in a controller that answers a fragment, with the same markup, assets and
 post back to the page. Its assets come once per request; pass `Assets = false` for a page that has them already.
 
+A form that fails while it renders, in a view override of yours or a field type's view, breaks neither the page nor its
+other forms: `<jfb-render>`, the view component and `IFormBuilderRenderer` give nothing in its place to a visitor and a
+short note naming the exception's type to a signed-in backoffice user, keep the page out of caches, and log the
+exception's type and stack ([ADR-0237](decisions/0237-resilience.md)).
+
 ## 6. The website
 
 - **Placing a form:** `<jfb-render form="contact" />` (by alias, key or the form picker's value), with `theme`,

@@ -30,6 +30,11 @@ internal sealed class HealthWords
         ? "E-Mails k\u00f6nnen nicht gesendet werden, weil keine Mailserver-Verbindung eingerichtet ist. Sie wird unter Umbraco:CMS:Global:Smtp festgelegt."
         : "Emails can't be sent because no mail server is set up. It is set under Umbraco:CMS:Global:Smtp.";
 
+    /// <summary>This server's last try found no mail server.</summary>
+    public string EmailUnreached => _german
+        ? "Dieser Server hat den Mailserver zuletzt nicht erreicht. E-Mails warten und werden gesendet, sobald er wieder antwortet; dabei geht kein Versuch verloren."
+        : "This server couldn't reach the mail server on its last try. Emails wait and go out once it answers again, without using up their attempts.";
+
     /// <summary>Mail has no address to come from.</summary>
     public string EmailNoFrom => _german
         ? "E-Mails haben keine Absenderadresse. Tragen Sie eine in den E-Mail-Einstellungen ein."

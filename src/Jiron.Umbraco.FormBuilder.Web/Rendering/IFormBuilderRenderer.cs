@@ -44,12 +44,14 @@ public sealed record FormBuilderRenderRequest(object Form)
 
 /// <summary>The renderer: the view component's path, written to a string with the request's culture.</summary>
 /// <param name="rendering">What a page renders for a form.</param>
+/// <param name="failures">What shows in the place of a form that fails while it renders (ADR-0237).</param>
 /// <param name="engine">Finds the form's view.</param>
 /// <param name="tempData">The views' temp data.</param>
 /// <param name="assets">The page's assets.</param>
 /// <param name="options">Whether assets come along by default.</param>
 internal sealed class FormBuilderRenderer(
     FormRendering rendering,
+    FormRenderFailures failures,
     IRazorViewEngine engine,
     ITempDataProvider tempData,
     PageAssets assets,
@@ -60,6 +62,19 @@ internal sealed class FormBuilderRenderer(
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(request);
+        try
+        {
+            return await RenderInAsync(httpContext, request, cancellationToken);
+        }
+        catch (Exception exception) when (FormRenderFailures.Caught(exception, cancellationToken))
+        {
+            // The page outlives its form (ADR-0237).
+            return failures.InPlace(httpContext, request.Form, exception);
+        }
+    }
+
+    private async Task<IHtmlContent?> RenderInAsync(HttpContext httpContext, FormBuilderRenderRequest request, CancellationToken cancellationToken)
+    {
         if (await rendering.RenderAsync(httpContext, request.Form, request.Context, request.Theme, cancellationToken) is not { } rendered)
         {
             return null;
