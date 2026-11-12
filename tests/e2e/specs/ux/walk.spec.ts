@@ -390,11 +390,19 @@ const treeRow = (page: Page, name: string): Locator =>
 async function loadedIn(tree: Locator, row: Locator): Promise<Locator> {
   const more = tree.locator('umb-tree-load-more-button').filter({ visible: true }).first();
   const items = tree.locator('uui-menu-item');
-  for (let round = 0; round < 10 && (await row.count()) === 0 && (await more.count()) > 0; round++) {
-    const before = await items.count();
-    await more.click();
-    await expect.poll(() => items.count()).toBeGreaterThan(before);
-  }
+  // The tree's first page before anything else: with no row yet there is no Load more either, and the row never came.
+  await expect(items.first()).toBeVisible();
+  // Load more can show a moment after the first page, so a round without the row and without the button is tried again
+  // rather than taken as the end of the tree.
+  await expect(async () => {
+    if ((await row.count()) > 0) return;
+    if ((await more.count()) > 0) {
+      const before = await items.count();
+      await more.click();
+      await expect.poll(() => items.count()).toBeGreaterThan(before);
+    }
+    expect(await row.count()).toBeGreaterThan(0);
+  }).toPass({ timeout: 90_000 });
   return row;
 }
 
@@ -939,8 +947,10 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       const details = actionsView.locator('jfb-action-list .run button.details').first();
       await expect(async () => {
         await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
+        // The view first, as a reload of the backoffice can take longer than the run's own few seconds.
+        await expect(actionsView.locator('jfb-action-list .card').first()).toBeVisible({ timeout: 30_000 });
         await expect(details).toBeVisible({ timeout: 5_000 });
-      }).toPass({ timeout: 90_000 });
+      }).toPass({ timeout: 120_000 });
       await details.click();
       await expect(page.locator('jfb-action-run-modal .part').first()).toBeVisible();
     });

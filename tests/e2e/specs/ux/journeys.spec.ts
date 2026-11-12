@@ -143,8 +143,14 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
         await design.locator('jfb-designer-inspector .add-rule').first().click();
         const builder = editor.locator('jfb-rule-builder-modal');
         await builder.locator('select.subject').first().selectOption({ index: 3 });
-        const value = builder.locator('.value input').first();
-        if (await value.isVisible()) await value.fill(german ? 'Ja' : 'Yes');
+        // The question pasted as "Have you joined a circle before?" is a yes or no question, whose answers the builder
+        // lists (ADR-0241 decision 10); a question of text takes a typed value.
+        const value = builder.locator('.value > :is(select:not(.source), input)').first();
+        await expect(value).toBeVisible();
+        if ((await value.evaluate((element) => element.localName)) === 'select') {
+          await value.selectOption({ value: 'yes' });
+          await expect(value).toHaveValue('yes');
+        } else await value.fill(german ? 'Ja' : 'Yes');
       },
       editor,
     );
@@ -174,6 +180,10 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
         const address = sidebar.locator('details.add[open] .add-panel input').first();
         await address.fill('circle@lindenhall.example');
         await address.press('Enter');
+        // The preview asks again once the changes pause; the shot waits until it names the address.
+        await expect(sidebar.locator('jfb-email-preview .meta')).toContainText('circle@lindenhall.example', {
+          timeout: 15_000,
+        });
       },
       editor,
     );
@@ -199,7 +209,12 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       'j1-9-published',
       async () => {
         const dialog = editor.locator('jfb-publish-modal');
+        // The publish answers after the dialog closes; a reload before that would cut it off.
+        const published = editor.waitForResponse(
+          (response) => response.url().endsWith(`/form/${formKey}/publish`) && response.request().method() === 'POST',
+        );
         await dialog.locator('uui-button[look="primary"]').click();
+        expect((await published).ok()).toBe(true);
         await expect(dialog).toHaveCount(0);
         await editor.goto(workspaceOf(formKey));
         await expect(design.locator('jfb-canvas-field').first()).toBeVisible({ timeout: 60_000 });
