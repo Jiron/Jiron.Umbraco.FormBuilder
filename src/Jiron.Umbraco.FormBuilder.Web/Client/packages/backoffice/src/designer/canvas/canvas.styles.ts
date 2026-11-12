@@ -325,8 +325,14 @@ export const canvasChrome = css`
 
   /* A layer of its own, so the browser scrolls it without painting the sheet again (ADR-0169). The host's colour shows
      through it: a scroller's own background is painted with its contents, so every move, duplicate or delete painted
-     the whole view again, where only what changed needs it (ADR-0221). */
+     the whole view again, where only what changed needs it (ADR-0221).
+     Umbraco hides its own controls' focus rings after a press of the pointer by setting --uui-show-focus-outline on the
+     body, at the first press after a load or a Tab. The property is inherited, so that one change restyled every element
+     of the form drawn: most of the 9 to 18 ms of restyling it added to the first click on a form of 300 fields. The
+     sheet's rings are its own and never read it; with a value of the sheet's own, the change stops at its edge, and a
+     control of Umbraco's on the sheet keeps its ring, as the sheet's own controls keep theirs (ADR-0243). */
   .bo-viewport {
+    --uui-show-focus-outline: 1;
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
