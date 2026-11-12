@@ -3,6 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API } from '../../support/forms-api.ts';
 import { headerOf } from '../../support/mail.ts';
+import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 
 // The global settings screens (ROADMAP 12.4a, IA 8 and 9, ADR-0218), one journey per section: an administrator opens
 // each from the sidebar, changes what the section holds, saves, and finds it after a reload; a value that can't be kept
@@ -43,10 +44,10 @@ async function restore(
   expect(kept.ok(), await kept.text()).toBe(true);
 }
 
-/** Opens a settings screen from the sidebar, by its item's label, and waits for its first box. */
-async function open(page: Page, label: string, tag: string): Promise<Locator> {
+/** Opens a settings screen from the sidebar, by its item's label, and waits for its first box; the item's click counts. */
+async function open(page: Page, label: string, tag: string, clicks = new ClickCounter()): Promise<Locator> {
   await page.goto(SECTION);
-  await page.locator(`umb-menu-item-layout[label="${label}"], uui-menu-item[label="${label}"]`).first().click();
+  await clicks.click(page.locator(`umb-menu-item-layout[label="${label}"], uui-menu-item[label="${label}"]`).first());
   const screen = page.locator(tag);
   await expect(screen.locator('uui-box[headline]').first()).toBeVisible({ timeout: 60_000 });
   return screen;
@@ -142,13 +143,18 @@ test('Settings \u203a Email saves its sender and sends a test mail of it to the 
   const api = await apiAs('admin');
   const before = await read(api, 'email');
   await loginAs('admin');
-  const screen = await open(page, 'Email', 'jfb-settings-email');
+  // The administrator's top tasks 1 and 2 (docs/ux/top-tasks.md, ROADMAP 16.6): the sender is one click away, the
+  // name and Save being the task's own, and a test mail one more.
+  const clicks = new ClickCounter();
+  const screen = await open(page, 'Email', 'jfb-settings-email', clicks);
+  expectTaskClicks(clicks, 'Administrator', 2);
   await axeInside(page, 'jfb-settings-email');
   const admin = accountOf('admin');
 
   try {
     await screen.getByRole('textbox', { name: 'Name' }).fill('Nordwind settings test');
-    await screen.getByRole('button', { name: 'Send test email' }).click();
+    await clicks.click(screen.getByRole('button', { name: 'Send test email' }));
+    expectTaskClicks(clicks, 'Administrator', 1);
     await expect(
       page.locator('uui-toast-notification').filter({ hasText: `Test email sent to you (${admin.email}).` }),
     ).toBeVisible();

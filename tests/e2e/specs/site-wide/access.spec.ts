@@ -2,12 +2,13 @@ import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, created, unique } from '../../support/forms-api.ts';
+import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { openRowActions } from '../../support/tree.ts';
 
 // Settings > Access (ROADMAP 12.4a, IA 8, ADR-0013, ADR-0218): an administrator gives a group a permission in the
 // matrix, which brings the one it needs, and saves it; then restricts a new folder to one group from its Permissions
 // sidebar, which the Access list then names. The groups' grants go back as they were, so no other journey's site
-// differs.
+// differs. Both are the administrator's top tasks 3 and 4 (docs/ux/top-tasks.md), whose clicks it counts (ROADMAP 16.6).
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -34,7 +35,8 @@ test('Settings \u203a Access gives a group a permission with the one it needs, a
 
   await loginAs('admin');
   await page.goto(SECTION);
-  await page.locator('umb-menu-item-layout[label="Access"], uui-menu-item[label="Access"]').first().click();
+  const giving = new ClickCounter();
+  await giving.click(page.locator('umb-menu-item-layout[label="Access"], uui-menu-item[label="Access"]').first());
   await expect(page).toHaveURL(/workspace\/jfb-settings-access$/);
   const screen = page.locator('jfb-access-screen');
   const matrix = screen.getByRole('region', { name: 'What each user group may do with every form' });
@@ -49,17 +51,19 @@ test('Settings \u203a Access gives a group a permission with the one it needs, a
     await expect(screen.getByRole('status')).toHaveText('View entries is on too: Export entries needs it.');
     await screen.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('uui-toast-notification').filter({ hasText: 'Access is saved.' })).toBeVisible();
+    // The ticks and Save are the task's own.
+    expectTaskClicks(giving, 'Administrator', 3);
     expect((await read(api)).groups.find((group) => group.key === hr!.key)?.permissions).toEqual([
       'viewEntries',
       'export',
     ]);
 
     // The folder's own sidebar, from its "...": only the HR team may see it.
-    await openRowActions(page, folderName);
-    await page
-      .locator('umb-entity-action-list uui-menu-item[label="Permissions\u2026"]')
-      .filter({ visible: true })
-      .click();
+    const closing = new ClickCounter();
+    await closing.step(() => openRowActions(page, folderName));
+    await closing.click(
+      page.locator('umb-entity-action-list uui-menu-item[label="Permissions\u2026"]').filter({ visible: true }),
+    );
     const sidebar = page.locator('jfb-permissions-modal');
     await expect(sidebar.getByText('None yet. Access given to every form reaches this folder.')).toBeVisible();
     await axeInside(page, 'jfb-permissions-modal');
@@ -70,6 +74,8 @@ test('Settings \u203a Access gives a group a permission with the one it needs, a
     await expect(
       page.locator('uui-toast-notification').filter({ hasText: `The permissions of ${folderName} are saved.` }),
     ).toBeVisible();
+    // The group, its permission, Only these groups and Save are the task's own.
+    expectTaskClicks(closing, 'Administrator', 4);
 
     await page.reload();
     const item = screen.getByRole('button', { name: `Permissions for ${folderName}` });

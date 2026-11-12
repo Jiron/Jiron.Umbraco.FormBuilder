@@ -4,13 +4,15 @@ import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
 import { FRESH_BASE_URL, FRESH_PORT } from '../../support/paths.ts';
+import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { readSecrets } from '../../support/users.ts';
 
 // The setup checklist end to end (ROADMAP 12.6, 9.1, ADR-0165): the demo reset and started as a new site has it, without
 // its content (Demo:Seed off), without the test team, and with Umbraco's From under a display name, which forms' mail
 // cannot use as its sender, so all five steps are open. The admin follows each step from the Overview as its button
 // leads, does what the step asks, and sees it turn green; once all five are done the checklist stays away, and asked
-// for again it shows five of five.
+// for again it shows five of five. Putting the form on a page is the administrator's top task 5 (docs/ux/top-tasks.md),
+// whose clicks it counts (ROADMAP 16.6).
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -105,9 +107,14 @@ test('the setup checklist, followed from the Overview, turns each step green', a
 
   // Put the form on a page: the dialog creates the form block type.
   shown = await overview(page);
-  await stepOf(shown, 'Put the form on a page').getByRole('button', { name: 'Create a form block type\u2026' }).click();
+  const block = new ClickCounter();
+  await block.click(
+    stepOf(shown, 'Put the form on a page').getByRole('button', { name: 'Create a form block type\u2026' }),
+  );
   const dialog = page.locator('jfb-form-block-modal');
   await dialog.getByRole('button', { name: 'Create', exact: true }).click();
+  // The dialog's Create is the task's confirming button.
+  expectTaskClicks(block, 'Administrator', 5);
   await expect(dialog).toContainText('One step is left');
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(stepOf(page.locator('jfb-overview'), 'Put the form on a page').locator('.mark--done')).toBeVisible();

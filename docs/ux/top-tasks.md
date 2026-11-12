@@ -17,7 +17,7 @@ counted as its "Rules" section says, from the section's start page.
 | # | Task | Path | Clicks |
 | --- | --- | --- | --- |
 | 1 | Start a new, empty form. | sidebar header "+" → Form | 2 |
-| 2 | Start a form from a ready-made contact form. | "+" → Form from a template… → the contact card → (Use template) | 3 |
+| 2 | Start a form from a ready-made contact form. | "+" → Form from a template… → (Use template; the gallery has the contact form chosen) | 2 |
 | 3 | Add an email field to a form. | the form → Email in the palette | 2 |
 | 4 | Change the wording of a question. | the form → the question → (its label) | 2 |
 | 5 | Make a question compulsory. | the form → the question → (Required) | 2 |
@@ -64,7 +64,7 @@ Tasks 3 to 6 take 2 clicks for several entries at once: tick their boxes, then u
 | 1 | See what came in lately. | the Overview's Recent entries | 0 |
 | 2 | Read one entry. | Inbox → the entry's row | 2 |
 | 3 | Find an entry by someone's email address. | Inbox → (search the address) → the row | 2 |
-| 4 | See only last month's entries. | Inbox → Filter → (Last month) | 2 |
+| 4 | See only last month's entries. | Inbox → Filter → Received → (Last month, Apply filter) | 3 |
 | 5 | Use the filter set saved yesterday. | Inbox → Filter → (the saved set) | 2 |
 | 6 | Add the "Company" answer as a column of the list. | the form → the column chooser → (Company) | 2 |
 | 7 | See the entries of one form only. | the form | 1 |
@@ -76,6 +76,9 @@ Tasks 3 to 6 take 2 clicks for several entries at once: tick their boxes, then u
 | 13 | Compare all forms at a glance. | the Overview's Forms at a glance | 0 |
 | 14 | Look at what was caught as spam. | Entries › Spam | 1 |
 | 15 | Get a weekly summary by email. | Inbox → "…" → Email me a summary… → (Weekly, Save) | 3 |
+
+Task 4's Filter menu names what to filter by first (Received, State, Form and the form's fields), so the period is
+one step in.
 
 ## Administrator
 
@@ -107,8 +110,8 @@ information-architecture.md, section 8).
 | # | Task | Path | Clicks |
 | --- | --- | --- | --- |
 | 1 | Find everything stored about a person, by email address. | Privacy › People → (the address, Find) | 1 |
-| 2 | Find everything stored about a website member. | Privacy › People → (the member, Find) | 1 |
-| 3 | Give a person a copy of their data. | Privacy › People → (Find) → Export everything | 2 |
+| 2 | Find everything stored about a website member. | Privacy › People → (the member's email address, Find) | 1 |
+| 3 | Give a person a copy of their data. | Privacy › People → (Find) → Export everything → the ready toast's Download | 3 |
 | 4 | Erase a person's data after a request. | Privacy › People → (Find) → Erase… | 2 |
 | 5 | See what retention will delete in the coming weeks. | Privacy › Retention | 1 |
 | 6 | Check what a visitor agreed to when they sent a form. | Inbox → the entry's row | 2 |
@@ -121,6 +124,11 @@ information-architecture.md, section 8).
 | 13 | Find an entry by a person's name. | Inbox → (search the name) → the row | 2 |
 | 14 | See all entries of one form. | the form | 1 |
 | 15 | See one form's entries from a date range. | the form → Filter → (Received: the range) | 2 |
+
+Task 3's export is put together in the background, as a person's data may be large, and its toast's Download saves it.
+Task 2's search by address finds the member's entries too, those sent while signed in among them. A user who may
+also open Umbraco's Members section can pick the member instead: Privacy › People → Find a member instead… → (the
+member, Choose) (2); Umbraco lists its members to nobody else.
 
 ## No access
 

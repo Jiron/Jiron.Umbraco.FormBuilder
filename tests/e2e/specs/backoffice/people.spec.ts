@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
-import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
+import { API, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 
 // Privacy > People (ROADMAP 13.1 part 13.2, IA 9, ADR-0223): a privacy officer finds a person's two entries by their
 // address, puts one on legal hold from the sidebar, exports everything as a ZIP from the ready toast, and erases: the
@@ -12,53 +12,11 @@ import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts'
 const SECTION = '/umbraco/section/jfb-forms';
 
 /** A published headless form with a name and an email field; its key. */
-async function seed(api: APIRequestContext, name: string): Promise<string> {
-  const key = await formWithFields(api, name, [
-    { type: 'text', alias: 'name', label: { '': 'Your name' } },
-    { type: 'email', alias: 'email', label: { '': 'Email' } },
-  ]);
-  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
-    form: { concurrencyVersion: number };
-    definition: Record<string, unknown> & { settings?: Record<string, unknown> };
-  };
-  const saved = await api.put(`${API}/form/${key}/draft`, {
-    data: {
-      concurrencyVersion: draft.form.concurrencyVersion,
-      definition: {
-        ...draft.definition,
-        settings: {
-          ...draft.definition.settings,
-          developer: { ...(draft.definition.settings?.['developer'] as object | undefined), headless: true },
-        },
-      },
-    },
-  });
-  expect(saved.ok(), await saved.text()).toBe(true);
-  const published = await api.post(`${API}/form/${key}/publish`, {
-    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
-  });
-  expect(published.ok(), await published.text()).toBe(true);
-  return key;
-}
+const seed = headlessPersonForm;
 
 /** Sends the form as a visitor would, through the public API. */
-async function send(request: APIRequestContext, key: string, name: string, email: string) {
-  let revision = 0;
-  await expect
-    .poll(async () => {
-      const served = await request.get(`/jfb/api/v1/forms/${key}`);
-      revision = served.ok() ? ((await served.json()) as { revision: number }).revision : 0;
-      return revision;
-    })
-    .toBeGreaterThan(0);
-  const asked = await request.post(`/jfb/api/v1/forms/${key}/challenge`);
-  expect(asked.ok(), await asked.text()).toBe(true);
-  const { challenge } = (await asked.json()) as { challenge: string };
-  const sent = await request.post(`/jfb/api/v1/forms/${key}/entries`, {
-    data: { revision, challenge, values: { name, email } },
-  });
-  expect(sent.ok(), await sent.text()).toBe(true);
-}
+const send = (request: APIRequestContext, key: string, name: string, email: string) =>
+  sendAsVisitor(request, key, { name, email });
 
 /** The entries the People search finds for an address. */
 const found = async (api: APIRequestContext, email: string) =>

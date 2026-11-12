@@ -66,6 +66,57 @@ export const formOf = async (api: APIRequestContext, key: string) =>
     isPublished: boolean;
   };
 
+/** A published headless form with a name and an email field, which a visitor sends through the public API; its key. */
+export async function headlessPersonForm(api: APIRequestContext, name: string): Promise<string> {
+  const key = await formWithFields(api, name, [
+    { type: 'text', alias: 'name', label: { '': 'Your name' } },
+    { type: 'email', alias: 'email', label: { '': 'Email' } },
+  ]);
+  const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: Record<string, unknown> & { settings?: Record<string, unknown> };
+  };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: {
+      concurrencyVersion: draft.form.concurrencyVersion,
+      definition: {
+        ...draft.definition,
+        settings: {
+          ...draft.definition.settings,
+          developer: { ...(draft.definition.settings?.['developer'] as object | undefined), headless: true },
+        },
+      },
+    },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  const published = await api.post(`${API}/form/${key}/publish`, {
+    data: { concurrencyVersion: (await formOf(api, key)).concurrencyVersion },
+  });
+  expect(published.ok(), await published.text()).toBe(true);
+  return key;
+}
+
+/** Sends a published headless form as a visitor would, through the public API, once it is served. */
+export async function sendAsVisitor(
+  request: APIRequestContext,
+  key: string,
+  values: Readonly<Record<string, string>>,
+): Promise<void> {
+  let revision = 0;
+  await expect
+    .poll(async () => {
+      const served = await request.get(`/jfb/api/v1/forms/${key}`);
+      revision = served.ok() ? ((await served.json()) as { revision: number }).revision : 0;
+      return revision;
+    })
+    .toBeGreaterThan(0);
+  const asked = await request.post(`/jfb/api/v1/forms/${key}/challenge`);
+  expect(asked.ok(), await asked.text()).toBe(true);
+  const { challenge } = (await asked.json()) as { challenge: string };
+  const sent = await request.post(`/jfb/api/v1/forms/${key}/entries`, { data: { revision, challenge, values } });
+  expect(sent.ok(), await sent.text()).toBe(true);
+}
+
 /** Gives the form's first field this label and publishes it, so the field catalogue holds the label; the field's key. */
 export async function publishWithLabel(api: APIRequestContext, key: string, label: string): Promise<string> {
   const draft = (await (await api.get(`${API}/form/${key}/draft`)).json()) as {
