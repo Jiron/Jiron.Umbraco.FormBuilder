@@ -76,7 +76,8 @@ export const manifests: UmbExtensionManifest[] = [
     element: () => import('./form-picker.element'),
     meta: {
       label: 'Jiron Form Builder form picker',
-      icon: 'icon-document',
+      // The brand's mark as a line icon (icons/icons.ts), which Umbraco's list of property editors shows beside it.
+      icon: 'icon-jfb',
       group: 'pickers',
       propertyEditorSchemaAlias: FORM_PICKER_SCHEMA_ALIAS,
       supportsReadOnly: true,

@@ -1,0 +1,8 @@
+// Jiron Form Builder's backoffice icon (ROADMAP 17.1, assets/brand.md): assets/icon-section.svg, which a test keeps it
+// equal to: the card, its two fields and the check mark in the submit button's place, as a line icon in Umbraco's style.
+export default `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+  <path d="M7.5 7h9" />
+  <path d="M7.5 10.5h9" />
+  <path d="m7.5 15.5 1.75 1.75 3.5-3.5" />
+</svg>`;
