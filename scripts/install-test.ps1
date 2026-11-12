@@ -151,16 +151,18 @@ function Test-Page([string] $Path) {
 }
 
 function Get-StartTime([int] $Id) {
+    # The start as its ticks in digits: PowerShell 7's ConvertFrom-Json turns a date in a string into a date, which never
+    # equals the string again, so the run would not know its own site (16.5's review). Neither edition reads digits as a date.
     $process = Get-Process -Id $Id -ErrorAction SilentlyContinue
     if ($null -eq $process) { return $null }
-    return $process.StartTime.ToUniversalTime().ToString('o')
+    return [string]$process.StartTime.ToUniversalTime().Ticks
 }
 
 function Get-RecordedSite {
     # The site this script started, as its record names it; null when there is none or its process is another now.
     if (-not (Test-Path $PidFile)) { return $null }
     $record = [System.IO.File]::ReadAllText($PidFile) | ConvertFrom-Json
-    if ((Get-StartTime ([int]$record.pid)) -ne $record.startedAt) { return $null }
+    if ((Get-StartTime ([int]$record.pid)) -ne [string]$record.startedAt) { return $null }
     return $record
 }
 

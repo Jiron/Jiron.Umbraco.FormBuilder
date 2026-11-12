@@ -3,7 +3,10 @@
 // never written down twice, and the schema read from SQLite in the form of the integration tests' SchemaInspector, which
 // UpgradeFixtureTests compares with what today's first steps build. Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { normaliseFilter, schemaOf, SEEDED } from '../install-test/jfb-db.mjs';
@@ -70,4 +73,44 @@ test("the seeded tables come parents first: a form before its versions and field
   before('jfbFormVersion', 'jfbEntry');
   before('jfbEntry', 'jfbEntryFile');
   before('jfbEntryFile', 'jfbEntryValue');
+});
+
+// The functions of install-test.ps1 that know the run's own site by its record, cut from the script as they stand.
+function recordFunctions() {
+  const script = readFileSync(new URL('../install-test.ps1', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const start = script.indexOf('function Get-StartTime');
+  const end = script.indexOf('function Stop-RecordedSite');
+  assert.ok(start >= 0 && end > start, 'install-test.ps1 has Get-StartTime and Get-RecordedSite before Stop-RecordedSite');
+  return script.slice(start, end);
+}
+
+test("the install test knows its own site by a record of digits, which no edition of PowerShell reads as a date (16.5's review)", (t) => {
+  if (process.platform !== 'win32') return t.skip('Windows PowerShell runs only on Windows');
+  const folder = mkdtempSync(join(tmpdir(), 'jfb-install-record-'));
+  try {
+    const run = [
+      recordFunctions(),
+      `$PidFile = '${join(folder, 'site.pid.json').replace(/'/g, "''")}'`,
+      // The record as the run writes it, for this very process.
+      "$record = [pscustomobject]@{ pid = $PID; startedAt = (Get-StartTime $PID) }",
+      "[System.IO.File]::WriteAllText($PidFile, ($record | ConvertTo-Json))",
+      "$own = $null -ne (Get-RecordedSite)",
+      "$digits = (Get-StartTime $PID) -match '^[0-9]+$'",
+      // Another process's start under the same pid, and a record an older run wrote as a date.
+      "[System.IO.File]::WriteAllText($PidFile, (@{ pid = $PID; startedAt = '1' } | ConvertTo-Json))",
+      "$other = $null -eq (Get-RecordedSite)",
+      "[System.IO.File]::WriteAllText($PidFile, (@{ pid = $PID; startedAt = (Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o') } | ConvertTo-Json))",
+      "$dated = $null -eq (Get-RecordedSite)",
+      "Write-Output ('own=' + $own + ' digits=' + $digits + ' other=' + $other + ' dated=' + $dated)",
+    ].join('\n');
+    const answer = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', '-'], {
+      input: run,
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    assert.equal(answer.stderr.trim(), '');
+    assert.equal(answer.stdout.trim(), 'own=True digits=True other=True dated=True');
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 });
