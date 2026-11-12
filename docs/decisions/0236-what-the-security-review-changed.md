@@ -89,6 +89,12 @@ their own, and a ticket reads only for the form its link names. The file answers
 `nosniff` and its sandbox. A ticket still counts more than once in its minute, as a ticket used once would need a store that
 every server shares.
 
+### Captcha: a stub's address may be plain http only on this machine
+
+`Captcha:<provider>:VerifyAddress` points a provider at a test host's stub, and took any http address, so a host could send
+its secret key, which goes with each token, unencrypted to another machine ([ADR-0142](0142-the-captcha-providers.md)). The
+site now starts only with an https address, or an http one on a loopback host (`localhost`, `127.0.0.1`, `::1`).
+
 ### The public API: a form for members is no shared cache's
 
 The form and options endpoints answered `no-cache` with an `ETag`, which lets a shared cache keep an answer and check it

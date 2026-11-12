@@ -109,7 +109,10 @@ public sealed class FormBuilderCaptchaKeys
     /// <summary>The secret key tokens are verified with; it never leaves the server except to the provider.</summary>
     public string? SecretKey { get; set; }
 
-    /// <summary>Another address to verify tokens at, for a test host's stub; null for the provider's own.</summary>
+    /// <summary>
+    /// Another address to verify tokens at, for a test host's stub; null for the provider's own. An https address, or an http
+    /// one on this machine, as the secret key goes with each token.
+    /// </summary>
     public string? VerifyAddress { get; set; }
 }
 

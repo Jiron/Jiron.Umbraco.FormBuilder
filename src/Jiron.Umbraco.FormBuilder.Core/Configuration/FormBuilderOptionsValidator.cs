@@ -322,9 +322,11 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             failures.Add($"{Root}:Captcha:{name} needs both its SiteKey and its SecretKey, or neither.");
         }
 
-        if (keys.VerifyAddress is { } address && !(Uri.TryCreate(address, UriKind.Absolute, out var verify) && verify.Scheme is "https" or "http"))
+        // The secret key goes with each token, so only a stub on this machine may take it unencrypted (16.1's review).
+        if (keys.VerifyAddress is { } address
+            && !(Uri.TryCreate(address, UriKind.Absolute, out var verify) && (verify.Scheme == Uri.UriSchemeHttps || (verify.Scheme == Uri.UriSchemeHttp && verify.IsLoopback))))
         {
-            failures.Add($"{Root}:Captcha:{name}:VerifyAddress must be an http or https address.");
+            failures.Add($"{Root}:Captcha:{name}:VerifyAddress must be an https address, or an http one on this machine (localhost, 127.0.0.1 or ::1) for a test stub, as the secret key goes with each token.");
         }
     }
 

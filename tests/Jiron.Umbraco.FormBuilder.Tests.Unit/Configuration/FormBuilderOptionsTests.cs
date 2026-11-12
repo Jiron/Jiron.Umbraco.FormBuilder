@@ -558,8 +558,12 @@ public sealed class FormBuilderOptionsTests
     [TestCase("Hcaptcha", "stub.example", false)]
     [TestCase("Hcaptcha", "https://stub.example/verify", true)]
     [TestCase("Hcaptcha", "http://localhost:5560/verify", true)]
-    public void ACaptchaProvidersVerifyAddress_IsOne(string provider, string address, bool saved) =>
-        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an http or https address." }));
+    [TestCase("Hcaptcha", "http://127.0.0.1:5560/verify", true)]
+    [TestCase("Hcaptcha", "http://[::1]:5560/verify", true)]
+    [TestCase("Hcaptcha", "http://stub.example/verify", false)]
+    [TestCase("RecaptchaV2", "http://10.0.0.5/verify", false)]
+    public void ACaptchaProvidersVerifyAddress_IsHttps_OrHttpOnThisMachine(string provider, string address, bool saved) =>
+        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an https address, or an http one on this machine (localhost, 127.0.0.1 or ::1) for a test stub, as the secret key goes with each token." }));
 
     [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Definitions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]

@@ -24,7 +24,8 @@ shown at all.
 - **Keys live in host configuration only:** `JironFormBuilder:Captcha:RecaptchaV2|RecaptchaV3|Hcaptcha`, each with its
   `SiteKey` and `SecretKey`. One key without the other refuses start-up, so a half-set provider is not silently off.
   `VerifyAddress` points a provider at a test host's stub, and `UseRecaptchaNet` moves reCAPTCHA's script and verification to
-  `recaptcha.net`.
+  `recaptcha.net`. Amended by [ADR-0236](0236-what-the-security-review-changed.md): `VerifyAddress` is an https address, or an
+  http one on this machine only, as the secret key goes with each token.
 - **Only the secret and the token go out,** never the visitor's address, which a provider does not need to answer. An answer
   passes when it says so, its host is one of the site's, its age is inside the provider's limit (five minutes, two for the
   scored v3, 30 seconds of skew both ways), and, for v3, its action is `submit` and its score reaches the form's threshold.

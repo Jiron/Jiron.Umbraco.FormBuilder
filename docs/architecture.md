@@ -982,7 +982,7 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   caps (`Files:MaxFileBytes`, `Files:MaxWaitingBytes`, `Files:MaxWaitingBytesPerAddress`, `Files:BlockedExtensions`), the rate limits (`Limits:Read`, `Challenge`, `Submit`,
   `Upload`, `Events` and `Verify`, with `Limits:MaxTrackedClients` and `Limits:ServerKeyFactor`; [ADR-0137](decisions/0137-the-rate-limiter.md); the mail limits in `Limits:Mail`, [ADR-0159](decisions/0159-mail-the-queue-the-layouts-and-the-limits.md)),
   privacy permissions, captcha keys (`Captcha:RecaptchaV2`, `Captcha:RecaptchaV3` and `Captcha:Hcaptcha`, each with
-  `SiteKey` and `SecretKey`, both or neither, and an optional `VerifyAddress`, and `Captcha:UseRecaptchaNet`;
+  `SiteKey` and `SecretKey`, both or neither, and an optional `VerifyAddress` (https, or http on this machine for a stub), and `Captcha:UseRecaptchaNet`;
   [ADR-0142](decisions/0142-the-captcha-providers.md)), the hosts the site calls (`Webhooks:AllowedHosts`, each on its scheme's
   standard port unless its entry names one as `host:port`, and `Webhooks:AllowHttp`;
   [ADR-0076](decisions/0076-url-and-file-lists.md), [ADR-0082](decisions/0082-ports-of-calls-to-other-hosts.md)), the
