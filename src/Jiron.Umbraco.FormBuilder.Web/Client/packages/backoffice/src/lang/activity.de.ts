@@ -57,6 +57,8 @@ export default {
     to_teams: 'Microsoft Teams',
     to_secret: (key: string) => `Die Adresse in ${key}`,
     to_unknown: 'Seine Adresse',
+    to_visitor: 'Die Adresse einer besuchenden Person',
+    visitorAddress: 'die Adresse einer besuchenden Person',
     mail_action: 'Eine E-Mail-Aktion',
     mail_resume: 'Ein Link zum Fortsetzen eines Formulars',
     mail_verification: 'Eine Adressbestätigung',

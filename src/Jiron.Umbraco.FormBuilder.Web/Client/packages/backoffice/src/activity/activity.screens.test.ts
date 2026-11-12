@@ -82,6 +82,7 @@ function delivery(more: Partial<DeliveryResponseModel>): DeliveryResponseModel {
     state: 'failed',
     emailKind: 'action',
     recipients: ['team@example.com'],
+    recipientsHidden: false,
     actionType: 'email',
     actionName: 'Email the team',
     typeName: null,

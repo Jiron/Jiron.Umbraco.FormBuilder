@@ -30,6 +30,15 @@ so. The recipients list says which users may see them, and the sidebar offers th
 for the others. A forward address of the site's settings, which only someone who manages settings names, gets what the
 sender chose, as before.
 
+### Deliveries: a visitor's address shows only to who may see sensitive answers
+
+The deliveries log (`manageSettings`) showed every mail's recipients, so the address a visitor typed into a sensitive email
+field reached someone who may not see the form's sensitive answers ([ADR-0219](0219-deliveries-and-the-audit-log.md)). The
+log cannot tell whether that answer was sensitive, so it holds every visitor's address as if it were: a mail whose
+recipient a visitor typed (its stored `recipientKey`) shows "A visitor's address" to a user without `viewSensitive` on the
+mail's form, in the list, the details and a limited mail's story, and the search looks at such addresses only for a user who
+may see sensitive answers on every form. Addresses the site's own actions name show as before.
+
 ### A post without JavaScript: nothing is written down that its checks would refuse
 
 A post that names its form in its address is read before Umbraco's routing, and its files went to temporary files before

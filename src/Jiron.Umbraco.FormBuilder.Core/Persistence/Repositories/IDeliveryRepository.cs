@@ -77,6 +77,12 @@ internal sealed record DeliveryQuery
 
     /// <summary>Only mail whose recipients hold this text, or deliveries of a form whose name holds it.</summary>
     public string? Search { get; init; }
+
+    /// <summary>
+    /// Whether the search looks at the recipient of mail to an address a visitor typed; false for a user who may not see
+    /// sensitive answers, as such an address may be one (16.1's review).
+    /// </summary>
+    public bool SearchesVisitors { get; init; } = true;
 }
 
 /// <summary>One row of the deliveries log: a mail, or a run that queued none (ADR-0219).</summary>
@@ -100,6 +106,7 @@ internal sealed record DeliveryQuery
 /// <param name="StartedUtc">When a run's first attempt started, since a retry from the log.</param>
 /// <param name="LastAttemptUtc">When a run's latest attempt started.</param>
 /// <param name="FinishedUtc">When it reached a final state: a mail sent, or a run finished.</param>
+/// <param name="ToVisitor">Whether a mail went to an address a visitor typed.</param>
 internal sealed record DeliveryRow(
     bool IsEmail,
     long Id,
@@ -120,7 +127,8 @@ internal sealed record DeliveryRow(
     DateTimeOffset CreatedUtc,
     DateTimeOffset? StartedUtc,
     DateTimeOffset? LastAttemptUtc,
-    DateTimeOffset? FinishedUtc);
+    DateTimeOffset? FinishedUtc,
+    bool ToVisitor = false);
 
 /// <summary>
 /// The deliveries log over <c>jfbEmail</c> and <c>jfbActionRun</c> (section 4.4, ADR-0219): every mail, and every run that

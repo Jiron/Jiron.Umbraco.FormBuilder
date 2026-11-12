@@ -44,6 +44,9 @@ Open questions:
    is how long mail is kept. The API takes a form too, for an integration or a later link from a form; no screen sends
    it yet (the phase review, 12.6), and the screen finds a form by its name in the search. The search finds a mail's recipients and a form's name; a run's target is
    not searched, as it lives in the form's version.
+   Amended by [ADR-0236](0236-what-the-security-review-changed.md): a mail to an address a visitor typed shows "A
+   visitor's address" to a user who may not see that form's sensitive answers, and the search finds such an address only
+   for a user who may see sensitive answers on every form.
 4. **A row:** its state; **to**: a mail's recipients, a webhook's host (a reference shows the key that holds the
    address, never the address), Slack or Microsoft Teams; **what**: the action's name in the version that queued it,
    or the kind of mail (a resume link, an address check, a test mail, a forwarded entry, a notice of a failed delivery,

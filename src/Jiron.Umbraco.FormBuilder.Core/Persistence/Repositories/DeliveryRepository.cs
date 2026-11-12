@@ -167,7 +167,9 @@ internal sealed class DeliveryRepository : IDeliveryRepository
                 break;
         }
 
-        Common(n, a, query, where, "e", e => $"e.{n.C("toAddresses")} LIKE {e} {SqlNames.EscapeClause}");
+        Common(n, a, query, where, "e", e => query.SearchesVisitors
+            ? $"e.{n.C("toAddresses")} LIKE {e} {SqlNames.EscapeClause}"
+            : $"(e.{n.C("toAddresses")} LIKE {e} {SqlNames.EscapeClause} AND e.{n.C("recipientKey")} IS NULL)");
         return $"SELECT 1 AS {n.C("isEmail")}, e.{n.C("id")} AS {n.C("id")}, CASE WHEN {problem} THEN 1 ELSE 0 END AS {n.C("problem")}, e.{n.C("createdUtc")} AS {n.C("createdUtc")} "
             + $"FROM {n.T(FormBuilderTables.Email)} e LEFT JOIN {n.T(FormBuilderTables.Entry)} en ON en.{n.C("id")} = e.{n.C("entryId")} LEFT JOIN {n.T(FormBuilderTables.Form)} f ON f.{n.C("id")} = en.{n.C("formId")}"
             + (where.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", where));
@@ -247,7 +249,7 @@ internal sealed class DeliveryRepository : IDeliveryRepository
 
         var a = new SqlArgs();
         var rows = await db.FetchListAsync<DeliveryMailDto>(
-            $"SELECT e.{n.C("id")}, e.{n.C("kind")}, e.{n.C("toAddresses")}, e.{n.C("actionRunId")}, e.{n.C("state")}, e.{n.C("attempts")}, e.{n.C("nextAttemptUtc")}, "
+            $"SELECT e.{n.C("id")}, e.{n.C("kind")}, e.{n.C("toAddresses")}, e.{n.C("recipientKey")}, e.{n.C("actionRunId")}, e.{n.C("state")}, e.{n.C("attempts")}, e.{n.C("nextAttemptUtc")}, "
             + $"e.{n.C("lastErrorCode")}, e.{n.C("lastErrorMessage")}, e.{n.C("createdUtc")}, e.{n.C("sentUtc")}, "
             + $"r.{n.C("actionType")}, r.{n.C("actionKey")}, r.{n.C("formVersionId")}, en.{n.C("key")} AS {n.C("entryKey")}, en.{n.C("number")} AS {n.C("entryNumber")}, "
             + $"f.{n.C("key")} AS {n.C("formKey")}, f.{n.C("name")} AS {n.C("formName")} "
@@ -279,7 +281,8 @@ internal sealed class DeliveryRepository : IDeliveryRepository
                 FormBuilderDbTime.Read(row.CreatedUtc),
                 null,
                 null,
-                FormBuilderDbTime.Read(row.SentUtc));
+                FormBuilderDbTime.Read(row.SentUtc),
+                row.RecipientKey is not null);
         });
     }
 
@@ -350,6 +353,9 @@ internal sealed class DeliveryMailDto
 
     [Column("toAddresses")]
     public string ToAddresses { get; set; } = string.Empty;
+
+    [Column("recipientKey")]
+    public string? RecipientKey { get; set; }
 
     [Column("actionRunId")]
     public long? ActionRunId { get; set; }

@@ -16733,6 +16733,7 @@
           "id",
           "kind",
           "recipients",
+          "recipientsHidden",
           "state"
         ],
         "type": "object",
@@ -16756,6 +16757,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "recipientsHidden": {
+            "type": "boolean"
           },
           "actionType": {
             "type": "string",

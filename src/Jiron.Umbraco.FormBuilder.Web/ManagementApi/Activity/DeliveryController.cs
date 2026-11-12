@@ -107,11 +107,13 @@ internal sealed class DeliveryController(DeliveryLog log, IFormBuilderFormServic
             FormKey = form,
             FromUtc = days is { } span ? time.GetUtcNow().AddDays(-span) : null,
             Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim(),
+            SearchesVisitors = (await access.GetGlobalAsync(RequestAccess.User, cancellationToken)).HasFlag(FormBuilderPermissions.ViewSensitive),
         };
         var page = await log.QueryAsync(query, new PageRequest(skip, take), cancellationToken);
+        var hidden = await VisitorsHiddenAsync(page.Items.Select(item => item.Row), cancellationToken);
         return Ok(new DeliveryListResponseModel
         {
-            Items = [.. page.Items.Select(DeliveryResponseModel.Of)],
+            Items = [.. page.Items.Select(item => DeliveryResponseModel.Of(item, Hides(item.Row, hidden)))],
             Total = page.Total,
             Paused = log.Paused,
         });
@@ -212,9 +214,10 @@ internal sealed class DeliveryController(DeliveryLog log, IFormBuilderFormServic
     {
         var row = item.Row;
         var retryable = row.State is DeliveryState.Failed or DeliveryState.Uncertain;
+        var hidden = await VisitorsHiddenAsync([row], cancellationToken);
         return new DeliveryDetailResponseModel
         {
-            Delivery = DeliveryResponseModel.Of(item),
+            Delivery = DeliveryResponseModel.Of(item, Hides(row, hidden)),
             Retryable = retryable,
             MayRetry = retryable && await MayRetryAsync(row, cancellationToken),
             Limit = row.State == DeliveryState.Limited ? LimitOf(row.Error?.Code) : null,
@@ -235,6 +238,28 @@ internal sealed class DeliveryController(DeliveryLog log, IFormBuilderFormServic
 
     // manageActions on the delivery's form, as the entry's retry needs (ADR-0013); a mail of no entry needs manageSettings,
     // which reading the log takes already. A form that is gone leaves nothing to retry.
+    // Whether the row's recipient stays hidden: a mail to an address a visitor typed, of a form whose sensitive answers the
+    // user may not see, or of no form they may see. The log cannot tell whether the address was a sensitive answer, so it
+    // holds it as one (16.1's review).
+    private static bool Hides(DeliveryRow row, HashSet<Guid> hidden) =>
+        row.ToVisitor && (row.FormKey is not { } form || hidden.Contains(form));
+
+    // The forms of these rows whose visitors' addresses the user may not see.
+    private async Task<HashSet<Guid>> VisitorsHiddenAsync(IEnumerable<DeliveryRow> rows, CancellationToken cancellationToken)
+    {
+        var hidden = new HashSet<Guid>();
+        foreach (var form in rows.Where(row => row.ToVisitor && row.FormKey is not null).Select(row => row.FormKey!.Value).Distinct())
+        {
+            if (await forms.GetAsync(form, cancellationToken) is not { } info
+                || !(await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(info), cancellationToken)).HasFlag(FormBuilderPermissions.ViewSensitive))
+            {
+                hidden.Add(form);
+            }
+        }
+
+        return hidden;
+    }
+
     private async Task<bool> MayRetryAsync(DeliveryRow row, CancellationToken cancellationToken)
     {
         if (row.FormKey is not { } formKey)

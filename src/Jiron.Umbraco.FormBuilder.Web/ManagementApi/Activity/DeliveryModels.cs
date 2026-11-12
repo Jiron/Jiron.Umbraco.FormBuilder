@@ -34,8 +34,14 @@ internal sealed record DeliveryResponseModel
     /// <summary>What a mail is for (<c>action</c>, <c>resume</c>, <c>verification</c>, <c>test</c>, ...); null for a run.</summary>
     public string? EmailKind { get; init; }
 
-    /// <summary>A mail's recipients; empty for a run.</summary>
+    /// <summary>A mail's recipients; empty for a run, and for a recipient that stays hidden.</summary>
     public required IReadOnlyList<string> Recipients { get; init; }
+
+    /// <summary>
+    /// Whether the recipient is an address a visitor typed, which stays hidden from a user who may not see the form's
+    /// sensitive answers.
+    /// </summary>
+    public required bool RecipientsHidden { get; init; }
 
     /// <summary>The action type's alias of the run, or of the run that queued the mail.</summary>
     public string? ActionType { get; init; }
@@ -86,7 +92,9 @@ internal sealed record DeliveryResponseModel
     public DateTimeOffset? FinishedUtc { get; init; }
 
     /// <summary>The model of an item of the log.</summary>
-    public static DeliveryResponseModel Of(DeliveryItem item)
+    /// <param name="item">The item.</param>
+    /// <param name="hidesRecipients">Whether its recipient stays hidden from the user.</param>
+    public static DeliveryResponseModel Of(DeliveryItem item, bool hidesRecipients = false)
     {
         ArgumentNullException.ThrowIfNull(item);
         var row = item.Row;
@@ -96,7 +104,8 @@ internal sealed record DeliveryResponseModel
             Id = row.Id,
             State = StoredNames.Of(row.State),
             EmailKind = row.EmailKind is { } kind ? StoredNames.Of(kind) : null,
-            Recipients = row.Recipients?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [],
+            Recipients = hidesRecipients ? [] : row.Recipients?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [],
+            RecipientsHidden = hidesRecipients,
             ActionType = row.ActionType,
             ActionName = item.ActionName,
             TypeName = item.TypeName,

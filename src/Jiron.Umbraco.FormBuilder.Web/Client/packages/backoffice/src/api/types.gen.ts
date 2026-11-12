@@ -364,6 +364,7 @@ export type DeliveryResponseModel = {
     state: string;
     emailKind?: string | null;
     recipients: Array<string>;
+    recipientsHidden: boolean;
     actionType?: string | null;
     actionName?: string | null;
     typeName?: string | null;

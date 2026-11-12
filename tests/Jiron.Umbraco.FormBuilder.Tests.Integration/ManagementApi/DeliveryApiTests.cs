@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -203,6 +204,39 @@ public sealed class DeliveryApiTests : ManagementApiTestBase
             Assert.That(mail.Outcome, Is.EqualTo("403 forbidden"), mail.ToString());
             Assert.That(test.Outcome, Is.EqualTo("200"), test.ToString());
             Assert.That(designer.Outcome, Is.EqualTo("403 forbidden"), "managing actions does not show the log");
+        });
+    }
+
+    [Test]
+    public async Task AVisitorsAddress_StaysHiddenFromWhoMayNotSeeTheFormsSensitiveAnswers_InTheListTheDetailsAndTheSearch()
+    {
+        var site = await SeedAsync();
+        var hr = People.GroupKeys["hr"];
+        await GrantAsync(hr, PermissionTarget.Global, Guid.Empty, FormBuilderPermissions.ManageSettings);
+
+        var list = await CallAsync("hr", HttpMethod.Get, "delivery");
+        var detail = await CallAsync("hr", HttpMethod.Get, $"delivery/email/{site.LimitedMail}");
+        var searched = await CallAsync("hr", HttpMethod.Get, "delivery?search=visitor%40example");
+        var byAdmin = await CallAsync(Admin, HttpMethod.Get, "delivery?search=visitor%40example");
+
+        // With the form's sensitive answers, the address shows; the search still needs them on every form.
+        await GrantAsync(hr, PermissionTarget.Form, site.Form, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.ViewSensitive);
+        var granted = await CallAsync("hr", HttpMethod.Get, $"delivery/email/{site.LimitedMail}");
+        var grantedSearch = await CallAsync("hr", HttpMethod.Get, "delivery?search=visitor%40example");
+
+        static IEnumerable<string> Shown(JsonNode? delivery) => delivery!["recipients"]!.AsArray().Select(each => each!.GetValue<string>());
+        var visitors = list.Body!["items"]!.AsArray().Where(item => item!["recipientsHidden"]!.GetValue<bool>()).ToList();
+        Assert.Multiple(() =>
+        {
+            Assert.That(visitors, Has.Count.EqualTo(2), "both mails to the visitor");
+            Assert.That(visitors.SelectMany(Shown), Is.Empty);
+            Assert.That(list.Text, Does.Not.Contain("visitor@example.com"));
+            Assert.That(list.Text, Does.Contain("team@example.com"), "an address of the action's own stays");
+            Assert.That((detail.Body!["delivery"]!["recipientsHidden"]!.GetValue<bool>(), detail.Text.Contains("visitor@example.com", StringComparison.Ordinal)), Is.EqualTo((true, false)), detail.ToString());
+            Assert.That(searched.Body!["total"]!.GetValue<long>(), Is.Zero, "a search finds no hidden address");
+            Assert.That(byAdmin.Body!["total"]!.GetValue<long>(), Is.EqualTo(2));
+            Assert.That(Shown(granted.Body!["delivery"]), Is.EqualTo(new[] { "visitor@example.com" }), granted.ToString());
+            Assert.That(grantedSearch.Body!["total"]!.GetValue<long>(), Is.Zero);
         });
     }
 

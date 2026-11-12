@@ -157,6 +157,7 @@ function delivery(more: Partial<DeliveryResponseModel>): DeliveryResponseModel {
     state: 'failed',
     emailKind: 'action',
     recipients: ['team@example.com'],
+    recipientsHidden: false,
     actionType: 'email',
     actionName: null,
     typeName: '#jfbActionTypes_email',
@@ -191,6 +192,10 @@ describe('a delivery in words', () => {
     );
     expect(toOf({ ...run, target: { kind: 'slack', text: null } }, term)).toBe('Slack');
     expect(toOf({ ...run, actionType: 'setState' }, term)).toBe('');
+  });
+
+  it("says a visitor's address that stays hidden as such, never an address", () => {
+    expect(toOf(delivery({ recipients: [], recipientsHidden: true }), term)).toBe("A visitor's address");
   });
 
   it("says what it is: the action's name, its type's, or the kind of mail", () => {
@@ -259,6 +264,17 @@ describe('a delivery in words', () => {
       runTerm,
     );
     expect(limited.lines[0]).toContain('3 emails to anna@example.org that day');
+    const hidden = storyOf(
+      detail(
+        { state: 'limited', recipients: [], recipientsHidden: true },
+        { kind: 'recipient', count: 3, key: 'JironFormBuilder:Limits:Mail:PerRecipientPerDay' },
+      ),
+      now,
+      'en-GB',
+      term,
+      runTerm,
+    );
+    expect(hidden.lines[0]).toContain("3 emails to a visitor's address that day");
     expect(limited.lines[1]).toContain("so it can't be retried");
     expect(limited.tries).toBe('');
     const uncertain = storyOf(

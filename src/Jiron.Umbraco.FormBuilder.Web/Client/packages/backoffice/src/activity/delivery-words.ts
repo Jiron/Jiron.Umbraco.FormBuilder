@@ -34,6 +34,7 @@ export function toneOf(state: string): Tone {
 /** Whom it went to: a mail's first recipient with how many more, a webhook's host or chat, or '' for another action. */
 export function toOf(delivery: DeliveryResponseModel, term: Term): string {
   if (delivery.kind === 'email') {
+    if (delivery.recipientsHidden) return term('to_visitor');
     const [first = '', ...more] = delivery.recipients;
     return more.length === 0 ? first : term('toMore', first, more.length);
   }
@@ -120,7 +121,11 @@ export function storyOf(
       if (!limit) return { lines: [], tries: '' };
       const held =
         limit.kind === 'recipient'
-          ? term('limitedRecipient', limit.count, delivery.recipients[0] ?? '')
+          ? term(
+              'limitedRecipient',
+              limit.count,
+              delivery.recipientsHidden ? term('visitorAddress') : (delivery.recipients[0] ?? ''),
+            )
           : term('limitedSite', limit.count);
       return { lines: [held, term('limitedWhy', limit.key)], tries: '' };
     }
