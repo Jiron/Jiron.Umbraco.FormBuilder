@@ -66,7 +66,9 @@ below is this record's.
    sensitive fields went along): protected by Data Protection under a purpose of its own, naming the user, the form and
    the export, for one minute. The download's endpoint is anonymous and declares its ticket
    (`FormBuilderTicketAccessAttribute`), the permission matrix's reviewed exception beside the form picker's, and a
-   ticket that does not hold finds nothing. A worker holds an export under a lease of 5 minutes that it renews after
+   ticket that does not hold finds nothing. Amended by [ADR-0236](0236-what-the-security-review-changed.md): the download makes the ticket's checks again for its
+   user, who must still be enabled and hold `export` (and `viewSensitive` when sensitive fields went along), and answers
+   `Referrer-Policy: no-referrer`. A worker holds an export under a lease of 5 minutes that it renews after
    each page and every minute meanwhile, as a page of many files or the storing of a large file can take longer; an
    export that fails is tried three times, any failure counting, a cancellation the worker did not ask for (a file
    store's timeout) among them; when the host stops, what the worker stored goes, and another server takes the export
@@ -103,5 +105,6 @@ below is this record's.
 - Negative: a background export that its server stopped starts again from the beginning on another server.
 - Negative: a ZIP of a few files waits for the background too, a moment longer than a download would.
 - Negative: a download's ticket travels in its link's address, which a server's access log may keep; it holds for
-  one minute, for one user's own file.
+  one minute, for one user's own file, and only while that user may still download it. It may be followed more than once
+  in its minute: a ticket used once would need a store every server shares, and the minute and the checks bound it as well.
 - Negative: a repeatable group in CSV is one cell with a line per row, which spreadsheet programs show in one cell.

@@ -44,7 +44,8 @@ Three things shape the design:
    must be among those found. The audit log's entries stand for the entity `person` with no key, and name the counts
    and the kind of search, never the address; an export's record keeps the entries' keys, not the address.
 4. **Export everything** runs in the background as an export of its own kind (ADR-0210): the same record, worker, lease,
-   24 hours and ticket for the download, with the entries' keys in place of a form (the record's form is the empty key),
+   24 hours and ticket for the download (Amended by [ADR-0236](0236-what-the-security-review-changed.md): under a Data Protection purpose of its own, and only while its user
+   is enabled and holds `privacyTools`), with the entries' keys in place of a form (the record's form is the empty key),
    and no `ExportCompletedNotification`, since it is no form's. The ZIP, `personal-data-<date>.zip`, holds a folder
    per entry, `<form alias>-<number>` (a draft `<form alias>-draft-<n>`), with `entry.json`: the form, the entry's
    number, state, culture, times and page; every answer by page, group and label, with its files, each consent's exact

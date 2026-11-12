@@ -29,6 +29,7 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddSingleton<Library.ActionGrantChecks>();
         builder.Services.TryAddSingleton<Picker.FormBlockTypes>();
         builder.Services.TryAddSingleton<Entries.ExportDownloadTickets>();
+        builder.Services.TryAddScoped<Entries.ExportDownloadHolders>();
         builder.Services.TryAddSingleton<FormBuilderExceptionFilter>();
         builder.Services.TryAddSingleton<Settings.SettingsSites>();
         builder.Services.TryAddSingleton<Activity.AuditNames>();

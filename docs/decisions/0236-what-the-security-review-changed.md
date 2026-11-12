@@ -78,6 +78,17 @@ held 65,536 shares and filled `Files:MaxWaitingBytes` for a day ([ADR-0148](0148
 an IPv6 address now holds four shares together, beside each /64's own; a server key keeps its own share alone. IPv4 addresses
 are not grouped, as one address is often a whole office.
 
+### Exports: a download's ticket counts only while its user may download
+
+A background export's link carries a ticket that counted for its minute whatever happened in it: a user disabled, or
+without `viewSensitive` any more, still downloaded the file, and a person's export shared its tickets' purpose with a form's
+([ADR-0210](0210-entry-exports.md), [ADR-0223](0223-data-subject-tools.md)). The download now makes the checks the ticket was
+issued after again, for the ticket's user (`ExportDownloadHolders`): enabled, `export` on the form and `viewSensitive` when
+sensitive fields went along, or `privacyTools` for a person's export. A person's tickets have a Data Protection purpose of
+their own, and a ticket reads only for the form its link names. The file answers `Referrer-Policy: no-referrer` beside
+`nosniff` and its sandbox. A ticket still counts more than once in its minute, as a ticket used once would need a store that
+every server shares.
+
 ### The public API: a form for members is no shared cache's
 
 The form and options endpoints answered `no-cache` with an `ETag`, which lets a shared cache keep an answer and check it

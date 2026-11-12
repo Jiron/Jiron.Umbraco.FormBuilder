@@ -30,6 +30,7 @@ internal sealed class PeopleController(
     PersonData people,
     EntryExportJobs jobs,
     ExportDownloadTickets tickets,
+    ExportDownloadHolders holders,
     IUserService users,
     TimeProvider time) : FormBuilderManagementApiController
 {
@@ -238,7 +239,8 @@ internal sealed class PeopleController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Download(Guid exportKey, [FromQuery] string? ticket, CancellationToken cancellationToken = default)
     {
-        if (tickets.Read(ticket) is not { } read || read.FormKey != PersonExports.Scope || read.ExportKey != exportKey
+        if (tickets.Read(ticket, PersonExports.Scope) is not { } read || read.ExportKey != exportKey
+            || !await holders.MayDownloadPersonExportAsync(read, cancellationToken)
             || await jobs.OpenAsync(PersonExports.Scope, exportKey, read.UserKey, cancellationToken) is not { } download)
         {
             return FormBuilderProblems.ExportNotFound();
@@ -246,6 +248,7 @@ internal sealed class PeopleController(
 
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'";
+        Response.Headers["Referrer-Policy"] = "no-referrer";
         return File(download.Content, download.ContentType, download.FileName);
     }
 

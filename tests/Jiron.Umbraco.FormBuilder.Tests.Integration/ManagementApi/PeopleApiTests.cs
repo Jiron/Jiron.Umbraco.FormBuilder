@@ -6,6 +6,8 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -104,6 +106,11 @@ public sealed class PeopleApiTests : ManagementApiTestBase
         var withoutTicket = await CallAsync(null, HttpMethod.Get, $"people/export/{key}/file");
         var asAForm = await CallAsync(null, HttpMethod.Get, $"form/{contact}/entries/export/jobs/{key}/file?{link[(link.IndexOf('?', StringComparison.Ordinal) + 1)..]}");
 
+        // Its user disabled within the ticket's minute, the link downloads nothing.
+        var users = GetRequiredService<IUserService>();
+        await users.DisableAsync(Constants.Security.SuperUserKey, new HashSet<Guid> { users.GetByEmail("api-privacyOfficer@jfb.test")!.Key });
+        var disabled = await CallAsync(null, HttpMethod.Get, link);
+
         using var archive = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         Assert.Multiple(() =>
         {
@@ -115,6 +122,8 @@ public sealed class PeopleApiTests : ManagementApiTestBase
             Assert.That(archive.Entries.Select(entry => entry.Name), Is.EqualTo(new[] { "entry.json" }));
             Assert.That(withoutTicket.Outcome, Is.EqualTo("404 export_not_found"));
             Assert.That(asAForm.Outcome, Is.EqualTo("404 export_not_found"), "its ticket reaches no form's export");
+            Assert.That(download.Headers.GetValues("Referrer-Policy"), Is.EqualTo(new[] { "no-referrer" }));
+            Assert.That(disabled.Outcome, Is.EqualTo("404 export_not_found"), "a disabled user's ticket");
         });
     }
 

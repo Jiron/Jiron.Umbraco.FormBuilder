@@ -31,7 +31,8 @@ internal sealed class EntryExportController(
     EntryUserSettings settings,
     IFormBuilderAccessService access,
     IUserService users,
-    ExportDownloadTickets tickets) : FormBuilderManagementApiController
+    ExportDownloadTickets tickets,
+    ExportDownloadHolders holders) : FormBuilderManagementApiController
 {
     /// <summary>What the export dialog opens with: the formats, the user's last choices, and their background exports.</summary>
     /// <param name="key">The form.</param>
@@ -195,8 +196,10 @@ internal sealed class EntryExportController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Download(Guid key, Guid exportKey, [FromQuery] string? ticket, CancellationToken cancellationToken = default)
     {
-        // A ticket that does not hold, or holds for another export, finds nothing, as an export of someone else's does.
-        if (tickets.Read(ticket) is not { } read || read.FormKey != key || read.ExportKey != exportKey
+        // A ticket that does not hold, holds for another export, or whose user may no longer download it finds nothing, as an
+        // export of someone else's does.
+        if (tickets.Read(ticket, key) is not { } read || read.ExportKey != exportKey
+            || !await holders.MayDownloadFormExportAsync(read, cancellationToken)
             || await jobs.OpenAsync(key, exportKey, read.UserKey, cancellationToken) is not { } download)
         {
             return FormBuilderProblems.ExportNotFound();
@@ -239,6 +242,9 @@ internal sealed class EntryExportController(
     {
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'";
+
+        // The link carries its ticket: nothing it leads to names it onward.
+        Response.Headers["Referrer-Policy"] = "no-referrer";
     }
 
     // An export written straight to the response, once the filters of the result have run, as nothing may touch the

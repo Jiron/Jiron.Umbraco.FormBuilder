@@ -158,6 +158,7 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
             Assert.That(download.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/json"));
             Assert.That(download.Content.Headers.ContentDisposition?.DispositionType, Is.EqualTo("attachment"));
             Assert.That(download.Headers.GetValues("X-Content-Type-Options"), Is.EqualTo(new[] { "nosniff" }));
+            Assert.That(download.Headers.GetValues("Referrer-Policy"), Is.EqualTo(new[] { "no-referrer" }), "the link names its ticket to nothing it leads to");
             Assert.That(download.Headers.CacheControl?.NoStore, Is.True);
             Assert.That(json, Does.Contain("\"name\": \"Ada\""));
             Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.OK), "until the ticket expires");
@@ -173,7 +174,7 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
     }
 
     [Test]
-    public async Task ABackgroundExportWithSensitiveFields_GetsNoTicket_OnceItsOwnerMayNoLongerSeeThem()
+    public async Task ABackgroundExportWithSensitiveFields_GetsNoTicket_AndItsTicketDownloadsNothing_OnceItsOwnerMayNoLongerSeeThem()
     {
         var form = await PublishedAsync();
         await EntryAsync(form, "Ada", salary: "90000");
@@ -186,14 +187,19 @@ public sealed class EntryExportApiTests : ManagementApiTestBase
         var key = started.Body!["key"]!.GetValue<Guid>();
         await GetRequiredService<EntryExportJobs>().PassAsync("test", CancellationToken.None);
         var allowed = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+        var link = allowed.Body!["url"]!.GetValue<string>()[ManagementApiCaller.BasePath.Length..];
+        using var before = await Api.SendAsync(null, link);
         await access.ChangeGrantAsync(new AccessGrantChange(group, PermissionTarget.Form, form, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.ViewSensitive, FormBuilderPermissions.ViewEntries, null));
         var refused = await CallAsync("entryHandler", HttpMethod.Post, $"form/{form}/entries/export/jobs/{key}/ticket");
+        var after = await CallAsync(null, HttpMethod.Get, link);
 
         Assert.Multiple(() =>
         {
             Assert.That(started.Outcome, Is.EqualTo("200"), started.ToString());
             Assert.That(allowed.Outcome, Is.EqualTo("200"), allowed.ToString());
             Assert.That((refused.Outcome, refused.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "viewSensitive")), refused.ToString());
+            Assert.That(before.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(after.Outcome, Is.EqualTo("404 export_not_found"), "the ticket issued before downloads nothing now");
         });
     }
 

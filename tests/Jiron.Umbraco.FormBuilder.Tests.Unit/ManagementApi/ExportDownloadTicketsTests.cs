@@ -1,4 +1,5 @@
 using System.Buffers.Text;
+using Jiron.Umbraco.FormBuilder.Core.Privacy;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -34,9 +35,9 @@ public sealed class ExportDownloadTicketsTests
     {
         var issued = _tickets.Issue(User, Form, Export);
 
-        var read = _tickets.Read(issued.Value);
+        var read = Read(issued.Value);
         _clock.Advance(ExportDownloadTickets.Lifetime - TimeSpan.FromTicks(1));
-        var last = _tickets.Read(issued.Value);
+        var last = Read(issued.Value);
         _clock.Advance(TimeSpan.FromTicks(1));
 
         Assert.Multiple(() =>
@@ -45,7 +46,7 @@ public sealed class ExportDownloadTicketsTests
             Assert.That(issued.ExpiresUtc, Is.EqualTo(_clock.GetUtcNow()), "a minute after it was issued");
             Assert.That(ExportDownloadTickets.Lifetime, Is.EqualTo(TimeSpan.FromMinutes(1)));
             Assert.That(last, Is.Not.Null, "until the last tick");
-            Assert.That(_tickets.Read(issued.Value), Is.Null, "expired");
+            Assert.That(Read(issued.Value), Is.Null, "expired");
             Assert.That(issued.Value, Does.Match("^[A-Za-z0-9_-]+$"), "a value an address carries as it is");
             Assert.That(issued.Value, Has.Length.LessThanOrEqualTo(ExportDownloadTickets.MaxLength));
             Assert.That(issued.Value, Does.Not.Contain(Export.ToString("N")));
@@ -73,17 +74,38 @@ public sealed class ExportDownloadTicketsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(_tickets.Read(Changed(payload => payload))?.ExportKey, Is.EqualTo(Export), "protected again unchanged, it holds");
-            Assert.That(_tickets.Read(Base64Url.EncodeToString(bytes)), Is.Null, "changed");
-            Assert.That(_tickets.Read(value[..^4]), Is.Null, "cut");
-            Assert.That(_tickets.Read(value + new string('A', ExportDownloadTickets.MaxLength)), Is.Null, "longer than any");
-            Assert.That(_tickets.Read(Changed(payload => { payload[0] = 2; return payload; })), Is.Null, "another layout's version");
-            Assert.That(_tickets.Read(Changed(payload => payload[..^1])), Is.Null, "a payload of another length");
-            Assert.That(_tickets.Read(preview), Is.Null, "another purpose's ticket");
-            Assert.That(_tickets.Read(otherSite), Is.Null, "another site's key ring");
-            Assert.That(_tickets.Read("not a ticket!"), Is.Null);
-            Assert.That(_tickets.Read(string.Empty), Is.Null);
-            Assert.That(_tickets.Read(null), Is.Null);
+            Assert.That(Read(Changed(payload => payload))?.ExportKey, Is.EqualTo(Export), "protected again unchanged, it holds");
+            Assert.That(Read(Base64Url.EncodeToString(bytes)), Is.Null, "changed");
+            Assert.That(Read(value[..^4]), Is.Null, "cut");
+            Assert.That(Read(value + new string('A', ExportDownloadTickets.MaxLength)), Is.Null, "longer than any");
+            Assert.That(Read(Changed(payload => { payload[0] = 2; return payload; })), Is.Null, "another layout's version");
+            Assert.That(Read(Changed(payload => payload[..^1])), Is.Null, "a payload of another length");
+            Assert.That(Read(preview), Is.Null, "another purpose's ticket");
+            Assert.That(Read(otherSite), Is.Null, "another site's key ring");
+            Assert.That(Read("not a ticket!"), Is.Null);
+            Assert.That(Read(string.Empty), Is.Null);
+            Assert.That(Read(null), Is.Null);
         });
     }
+
+    [Test]
+    public void AFormsTicketAndAPersonsTicket_HaveTheirOwnPurposes_AndNeitherReadsAsTheOther()
+    {
+        var formTicket = _tickets.Issue(User, Form, Export).Value;
+        var personTicket = _tickets.Issue(User, PersonExports.Scope, Export).Value;
+        var people = _protection.CreateProtector(ExportDownloadTickets.PersonPurpose);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_tickets.Read(personTicket, PersonExports.Scope)?.ExportKey, Is.EqualTo(Export));
+            Assert.That(_tickets.Read(personTicket, Form), Is.Null, "a person's ticket on a form's link");
+            Assert.That(_tickets.Read(formTicket, PersonExports.Scope), Is.Null, "a form's ticket on a person's link");
+            Assert.That(_tickets.Read(formTicket, Guid.NewGuid()), Is.Null, "a form's ticket on another form's link");
+            Assert.That(people.Unprotect(Base64Url.DecodeFromChars(personTicket)), Has.Length.GreaterThan(0), "under its own purpose");
+            Assert.Throws<System.Security.Cryptography.CryptographicException>(() => people.Unprotect(Base64Url.DecodeFromChars(formTicket)));
+        });
+    }
+
+    // A ticket read as the form's export link reads it.
+    private ExportDownloadTicket? Read(string? value) => _tickets.Read(value, Form);
 }
