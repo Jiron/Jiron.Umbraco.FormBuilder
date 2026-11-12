@@ -84,10 +84,22 @@ export async function sayRefusal(host: UmbClassInterface, error: unknown): Promi
   notifications?.peek('danger', { data: { message } });
 }
 
+/** What a content action needs in Umbraco, as a refusal names what the user lacks of it (ADR-0235). */
+export const CONTENT_GAPS: readonly string[] = ['contentSection', 'content', 'languages', 'mediaSection', 'media'];
+
+// The gap a content_rights refusal names, or undefined for one this backoffice has no words for.
+function gapOf(error: unknown): string | undefined {
+  if (!error || !UmbApiError.isUmbApiError(error)) return undefined;
+  const gap = (error.problemDetails as { gap?: unknown } | null | undefined)?.gap;
+  return typeof gap === 'string' && CONTENT_GAPS.includes(gap) ? gap : undefined;
+}
+
 /** A refusal in words: those its code has here, the server's title, or that it failed. */
 export function refusalText(localize: UmbLocalizationController, error: unknown): string {
   const code = codeOf(error);
   const permission = permissionOf(error);
+  const gap = code === 'content_rights' ? gapOf(error) : undefined;
+  if (gap) return localize.term(`jfbLibrary_contentRights_${gap}`);
   const known: Record<string, string> = {
     folder_not_empty: localize.term('jfbLibrary_folderNotEmpty'),
     entries_held: localize.term('jfbLibrary_entriesHeld'),

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -29,6 +30,9 @@ internal static class FormBuilderProblems
 
     /// <summary>The user sees the item but lacks a permission it needs.</summary>
     public const string ForbiddenCode = "forbidden";
+
+    /// <summary>A content action reaches what the user may not do in Umbraco (ADR-0235); <c>gap</c> names what they lack.</summary>
+    public const string ContentRightsCode = "content_rights";
 
     /// <summary>The request's route, query or body holds values the endpoint cannot read.</summary>
     public const string InvalidRequestCode = "invalid_request";
@@ -376,6 +380,25 @@ internal static class FormBuilderProblems
     {
         var problem = Problem(StatusCodes.Status403Forbidden, ForbiddenCode, "You do not have the permission to do this.", $"It needs Umbraco's section '{section}'.");
         problem.Problem.Extensions["section"] = section;
+        return problem;
+    }
+
+    /// <summary>
+    /// A content action the user may not set up, publish or run: they lack <paramref name="gap"/> in Umbraco, which the
+    /// answer names as <c>gap</c> (ADR-0235).
+    /// </summary>
+    public static FormBuilderProblemResult ContentRights(ContentRightsGap gap)
+    {
+        var title = gap switch
+        {
+            ContentRightsGap.ContentSection => "A content action needs Umbraco's Content section.",
+            ContentRightsGap.Content => "A content action may only create, update or publish where you may do so in Umbraco.",
+            ContentRightsGap.Languages => "A content action whose document type varies by language needs every language of the site.",
+            ContentRightsGap.MediaSection => "A content action that stores uploaded files needs Umbraco's Media section.",
+            _ => "A content action may only store uploaded files in a media folder you may use.",
+        };
+        var problem = Problem(StatusCodes.Status403Forbidden, ContentRightsCode, title);
+        problem.Problem.Extensions["gap"] = JsonNamingPolicy.CamelCase.ConvertName(gap.ToString());
         return problem;
     }
 

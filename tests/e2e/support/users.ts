@@ -49,7 +49,8 @@ export interface Account {
  * The user groups the test host creates before the users: one per persona, each with the Forms section and its global
  * permissions (ADR-0013). Designers also get Content, where they place forms on pages (6.7), the whole media library,
  * which a card's image is picked from (9.4b), and the whole content tree, which a field's options are picked from
- * (9.4c); the others work in the Forms section only.
+ * (9.4c), with Umbraco's create, update and publish there, which a content action they set up needs (ADR-0235); the
+ * others work in the Forms section only.
  */
 export const USER_GROUPS = [
   {
@@ -59,6 +60,7 @@ export const USER_GROUPS = [
     permissions: ['design', 'manageActions', 'manageLibrary'],
     mediaRootAccess: true,
     contentRootAccess: true,
+    contentEditing: true,
   },
   // Designs forms but may not change their actions: the Actions view is read-only for it (IA 5.3, ADR-0188).
   { alias: 'jfbLayoutDesigners', name: 'Layout designers', sections: [FORMS_SECTION], permissions: ['design'] },

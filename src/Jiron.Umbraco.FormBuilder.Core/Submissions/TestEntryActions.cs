@@ -55,6 +55,17 @@ internal sealed class TestEntryActions(
             ? new TestEntry(read.Entry.Key, read.Entry.Number, read.Ran, read.Ran ? [] : [.. read.Queued.Select(run => run.ActionKey)], read.Entry.State == EntryState.Unverified)
             : null;
 
+    /// <summary>The definition of the version the form's test entry was sent with, whose actions Run actions... runs; null for none.</summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="submissionId">The submission id the preview sent it with.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<Definitions.FormDefinition?> DefinitionOfAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default) =>
+        await forms.GetAsync(form, cancellationToken) is { TrashedUtc: null } row
+        && await entries.GetBySubmissionAsync(row.Id, submissionId, cancellationToken) is { IsTest: true } entry
+        && await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is { } version
+            ? documents.Readable(version)
+            : null;
+
     /// <summary>Queues the test entry's actions, once (ADR-0204).</summary>
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission id the preview sent it with.</param>

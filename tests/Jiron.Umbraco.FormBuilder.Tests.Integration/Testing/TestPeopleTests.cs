@@ -64,6 +64,14 @@ public sealed class TestPeopleTests : FormBuilderMigrationTestBase
     }
 
     [Test]
+    public async Task EnsureUserGroupAsync_ThatEditsContent_MayCreateUpdateAndPublishEverywhere_AsAContentActionNeeds()
+    {
+        var group = await People.EnsureUserGroupAsync(new TestUserGroup { Alias = "jfbContentDesigners", Sections = { "content" }, ContentRootAccess = true, ContentEditing = true });
+
+        Assert.That(group.Permissions, Is.EquivalentTo(new[] { ActionBrowse.ActionLetter, ActionNew.ActionLetter, ActionUpdate.ActionLetter, ActionPublish.ActionLetter }), "ADR-0235");
+    }
+
+    [Test]
     public async Task EnsureUserAsync_RunTwice_LeavesTheUserAsItIs()
     {
         var password = TestPeople.NewPassword();

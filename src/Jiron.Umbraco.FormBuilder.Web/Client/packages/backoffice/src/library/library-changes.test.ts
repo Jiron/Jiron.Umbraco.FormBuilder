@@ -98,6 +98,21 @@ describe('a refusal', () => {
     );
   });
 
+  it('says what a content action needs in Umbraco that the user lacks, and the title for a gap it does not know', () => {
+    expect(
+      ['contentSection', 'content', 'languages', 'mediaSection', 'media'].map((gap) =>
+        refusalText(localize, problem({ code: 'content_rights', gap })),
+      ),
+    ).toEqual([
+      'jfbLibrary_contentRights_contentSection',
+      'jfbLibrary_contentRights_content',
+      'jfbLibrary_contentRights_languages',
+      'jfbLibrary_contentRights_mediaSection',
+      'jfbLibrary_contentRights_media',
+    ]);
+    expect(refusalText(localize, problem({ code: 'content_rights', gap: 'somewhere' }))).toBe('The server says no.');
+  });
+
   it("says the server's title for a code it does not know, and that it failed for anything else", () => {
     expect(refusalText(localize, problem({ code: 'something_new' }))).toBe('The server says no.');
     expect(refusalText(localize, new Error('offline'))).toBe('jfbLibrary_failed');

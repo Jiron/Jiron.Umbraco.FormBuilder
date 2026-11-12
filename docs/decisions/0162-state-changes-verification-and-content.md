@@ -1,6 +1,6 @@
 # ADR-0162: State changes, email verification and the content action
 
-Status: accepted, 2026-11-02 (ROADMAP 8.5). Builds on ADR-0007 (the outbox), ADR-0023 (undo), ADR-0140 (the spam folder), ADR-0144 (scanned files), ADR-0158 (letting go) and ADR-0159 (visitor mail).
+Status: accepted, 2026-11-02 (ROADMAP 8.5); who may set up a content action amended in 16.1 ([ADR-0235](0235-what-an-action-needs-beyond-manage-actions.md)). Builds on ADR-0007 (the outbox), ADR-0023 (undo), ADR-0140 (the spam folder), ADR-0144 (scanned files), ADR-0158 (letting go) and ADR-0159 (visitor mail).
 
 ## Context
 

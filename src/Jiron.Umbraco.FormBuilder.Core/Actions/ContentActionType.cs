@@ -480,6 +480,12 @@ internal sealed partial class ContentActionType(
     private static string Cut(string name) =>
         name.Length <= MaxNameLength ? name : name[..(char.IsHighSurrogate(name[MaxNameLength - 1]) ? MaxNameLength - 1 : MaxNameLength)];
 
+    /// <summary>Whether a run of the action may put files in the media library: a mapping names a file field of the form.</summary>
+    /// <param name="settings">The action's settings.</param>
+    /// <param name="form">The form it belongs to.</param>
+    internal static bool PutsFilesInMedia(ContentActionSettings settings, FormDefinition form) =>
+        (MappingOf(settings.Mapping) ?? []).Any(mapping => IsFileMapping(mapping, form));
+
     private static bool IsFileMapping(ContentMapping mapping, FormDefinition form) =>
         mapping.Field is { } key && DefinitionKeys.Fields(form).Any(field => field.Key == key && field.Type == FileFieldType);
 

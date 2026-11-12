@@ -31,7 +31,8 @@ internal sealed class FormPreviewController(
     IFormBuilderFormVersionService versions,
     ILanguageService languages,
     IFormBuilderAccessService access,
-    TestEntryActions testEntries) : FormBuilderManagementApiController
+    TestEntryActions testEntries,
+    Library.ActionGrantChecks grants) : FormBuilderManagementApiController
 {
     /// <summary>The saved draft as visitors would get it, in a language of the site, light or dark, empty or with the sample answers.</summary>
     /// <param name="key">The form.</param>
@@ -56,6 +57,13 @@ internal sealed class FormPreviewController(
         if (actions && !await ManagesActionsAsync(draft.Form, cancellationToken))
         {
             return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
+        }
+
+        // The test entries run the draft's actions as they are, so a content action among them needs the user's own rights (ADR-0235).
+        if (actions && draft.Definition is { } definition
+            && await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), null, definition, sensitive: false, cancellationToken) is { } refusal)
+        {
+            return refusal;
         }
 
         var shown = (culture is { Length: > 0 } asked ? await languages.GetAsync(asked) : null)?.IsoCode ?? await languages.GetDefaultIsoCodeAsync();
@@ -95,7 +103,7 @@ internal sealed class FormPreviewController(
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
         }
 
-        if (request.Version < 1 || await versions.GetVersionAsync(key, request.Version, cancellationToken) is null)
+        if (request.Version < 1 || await versions.GetVersionAsync(key, request.Version, cancellationToken) is not { } version)
         {
             return FormBuilderProblems.VersionNotFound();
         }
@@ -103,6 +111,12 @@ internal sealed class FormPreviewController(
         if (request.RunActions && !await ManagesActionsAsync(form, cancellationToken))
         {
             return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
+        }
+
+        if (request.RunActions && version.Definition is { } definition
+            && await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(form), null, definition, sensitive: false, cancellationToken) is { } refusal)
+        {
+            return refusal;
         }
 
         var ticket = tickets.Issue(key, request.Version, request.RunActions);
@@ -139,13 +153,21 @@ internal sealed class FormPreviewController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> RunActions(Guid key, Guid submissionId, CancellationToken cancellationToken = default) =>
-        await testEntries.RunAsync(key, submissionId, cancellationToken) switch
+    public async Task<IActionResult> RunActions(Guid key, Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        if (await testEntries.DefinitionOfAsync(key, submissionId, cancellationToken) is { } definition
+            && await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(RequestAccess.Form!), null, definition, sensitive: false, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return await testEntries.RunAsync(key, submissionId, cancellationToken) switch
         {
             TestEntryRun.Queued => NoContent(),
             TestEntryRun.AlreadyRan => FormBuilderProblems.ActionsRan(),
             _ => FormBuilderProblems.TestEntryNotFound(),
         };
+    }
 
     // Whether the user may manage the form's actions, as a ticket whose entries run them asks (ADR-0204).
     private async Task<bool> ManagesActionsAsync(FormInfo form, CancellationToken cancellationToken) =>

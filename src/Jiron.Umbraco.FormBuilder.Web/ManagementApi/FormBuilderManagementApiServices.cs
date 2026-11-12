@@ -26,6 +26,7 @@ internal static class FormBuilderManagementApiServices
         builder.AddFormBuilderControllers(typeof(FormBuilderManagementApiController).Assembly);
         builder.Services.TryAddScoped<FormBuilderAccessFilter>();
         builder.Services.TryAddSingleton<Library.FormSensitivityChecks>();
+        builder.Services.TryAddSingleton<Library.ActionGrantChecks>();
         builder.Services.TryAddSingleton<Picker.FormBlockTypes>();
         builder.Services.TryAddSingleton<Entries.ExportDownloadTickets>();
         builder.Services.TryAddSingleton<FormBuilderExceptionFilter>();

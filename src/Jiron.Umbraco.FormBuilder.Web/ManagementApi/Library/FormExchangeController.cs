@@ -32,7 +32,8 @@ internal sealed class FormExchangeController(
     IFormBuilderFormService forms,
     IFormBuilderAccessService access,
     FormTemplateGallery gallery,
-    FormDefinitionSerializer serializer)
+    FormDefinitionSerializer serializer,
+    ActionGrantChecks grants)
     : FormBuilderManagementApiController
 {
     /// <summary>
@@ -311,9 +312,12 @@ internal sealed class FormExchangeController(
         }
 
         var held = await access.GetForFormAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), cancellationToken);
-        return (held & FormBuilderPermissions.ManageActions) == FormBuilderPermissions.None && DefinitionDiff.ChangesActions(draft.Definition, envelope.Definition)
-            ? FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions)
-            : null;
+        if ((held & FormBuilderPermissions.ManageActions) == FormBuilderPermissions.None && DefinitionDiff.ChangesActions(draft.Definition, envelope.Definition))
+        {
+            return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
+        }
+
+        return await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), draft.Definition, envelope.Definition, sensitive: true, cancellationToken);
     }
 
     private async Task<IActionResult> CreatedAsync(FormInfo form, CancellationToken cancellationToken)

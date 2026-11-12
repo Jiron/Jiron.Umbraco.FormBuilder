@@ -48,7 +48,9 @@ public sealed class TestPeople(
             HasAccessToAllLanguages = true,
             StartMediaId = group.MediaRootAccess ? Constants.System.Root : null,
             StartContentId = group.ContentRootAccess ? Constants.System.Root : null,
-            Permissions = group.ContentRootAccess ? new HashSet<string> { ActionBrowse.ActionLetter } : new HashSet<string>(),
+            Permissions = !group.ContentRootAccess ? new HashSet<string>()
+                : group.ContentEditing ? new HashSet<string> { ActionBrowse.ActionLetter, ActionNew.ActionLetter, ActionUpdate.ActionLetter, ActionPublish.ActionLetter }
+                : new HashSet<string> { ActionBrowse.ActionLetter },
         };
         foreach (var section in group.Sections)
         {

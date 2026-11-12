@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
 import { SECTION_ITEMS } from '../activity/audit-words';
+import { CONTENT_GAPS } from '../library/library-changes';
 import { SIDEBAR } from '../section/sidebar';
 import actionsDe from './actions.de';
 import actionsEn from './actions.en';
@@ -251,6 +252,8 @@ describe('the dictionaries', () => {
     ]) {
       used.add(`jfbLibrary_permission_${permission}`);
     }
+    // What a content action needs in Umbraco, by the gap a refusal names (ADR-0235).
+    for (const gap of CONTENT_GAPS) used.add(`jfbLibrary_contentRights_${gap}`);
     // Every built-in template, by the alias its file in Core has (ADR-0217).
     const templates = readdirSync(join(repositoryRoot(), 'src', 'Jiron.Umbraco.FormBuilder.Core', 'Forms', 'Templates'))
       .filter((file) => file.endsWith('.json'))

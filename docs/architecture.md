@@ -906,11 +906,12 @@ permission each needs:
 | A folder, a form's name and state | seeing it |
 | Forms and folders: the draft, create, save draft, publish, unpublish, duplicate, rename, move, trash, restore, references | `design` on the form or folder (creating: on the folder it goes in; a move, and a restore that lands somewhere else: on the new one too, and `managePermissions` with a confirmation when it widens access; a save that changes the actions: `manageActions` too) |
 | Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
+| A folder's trash and restore | `design` on every folder and form it takes (ADR-0236) |
 | Empty the trash | any user of the section; it removes only what the user may delete for good |
 | Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too; one that makes a sensitive field no longer so: `viewSensitive` too, ADR-0150) |
 | Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md); the action types, [ADR-0158](decisions/0158-the-action-framework.md)) | any user of the section; they describe the site's code, the same for everyone |
-| Designer support: the form check, preview render, preview tickets | `design` |
-| Actions: edit, test against a sample entry | `manageActions` |
+| Designer support: the form check, preview render, preview tickets | `design` (test entries that run their actions: `manageActions` too, and the Umbraco rights of every content action the draft holds, ADR-0235) |
+| Actions: edit, test against a sample entry | `manageActions`; an action that is new or changed in a save, restore, replace or publish also needs `viewSensitive` when it copies sensitive answers, and a content action the user's own Umbraco rights where it creates, updates or publishes (ADR-0235) |
 | Entries: list, get, mark seen, notes, timeline, files, action runs, counts, the inbox and Spam, and a member's entries (`GET members/{key}/entries`, the member editor's Form entries view, ADR-0231) | `viewEntries` |
 | Entries: change state, edit, forward | `editEntries` |
 | Entries: delete, empty Spam | `deleteEntries` |
@@ -1166,6 +1167,8 @@ others in a cluster.
 | Elevation of privilege | An editor bypasses a host lock | locks enforced on the server and where values are used | ADR-0008 | 4.4 |
 | Elevation of privilege | An open redirect through an outcome | the editor fixes scheme and host; merge tags only after the host; publishing refuses the rest | ADR-0002, ADR-0035 | 4.2b, 6.1, 16.1 |
 | Elevation of privilege | A move widens access to a restricted form | moves that widen access need `managePermissions` | ADR-0013 | 4.6 |
+| Elevation of privilege | A form designer writes to Umbraco content they may not touch through a content action | the action is held against the Umbraco rights of whoever saves, publishes or previews it: create, update and publish where it writes, the languages, the media folder | ADR-0235 | 16.1 |
+| Information disclosure | A user who manages actions sends themselves sensitive answers through an action | a new or changed action that copies a sensitive field needs `viewSensitive` | ADR-0235 | 16.1 |
 
 Phase reviews 6.8 and 7.4 and the security review 16.1 repeat this pass on the code as it is.
 

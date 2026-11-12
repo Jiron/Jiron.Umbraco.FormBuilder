@@ -167,6 +167,16 @@ export default {
     missingPermission: (permission: string) =>
       `This needs the "${permission}" permission. An administrator can grant it in Settings › Access.`,
     failed: "That didn't work. Try again, or reload the page.",
+    contentRights_contentSection:
+      "A content action needs Umbraco's Content section. Ask someone who has it to set this up.",
+    contentRights_content:
+      'A content action may only create, update or publish where you may do that in Umbraco. Ask someone who may to set this up.',
+    contentRights_languages:
+      "This content action's document type varies by language, so it needs every language of the site. Ask someone who has them to set this up.",
+    contentRights_mediaSection:
+      "A content action that stores uploaded files needs Umbraco's Media section. Ask someone who has it to set this up.",
+    contentRights_media:
+      'A content action may only store uploaded files in a media folder you may use. Ask someone who may to set this up.',
     permission_design: 'Design forms',
     permission_manageActions: 'Manage actions',
     permission_viewEntries: 'View entries',

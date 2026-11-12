@@ -188,6 +188,16 @@ export default {
     missingPermission: (permission: string) =>
       `Dafür brauchen Sie die Berechtigung „${permission}“. Wer Administratorrechte hat, kann sie unter Einstellungen › Zugriff vergeben.`,
     failed: 'Das hat nicht geklappt. Versuchen Sie es erneut, oder laden Sie die Seite neu.',
+    contentRights_contentSection:
+      'Eine Inhaltsaktion braucht Umbracos Bereich „Inhalt“. Bitten Sie jemanden, der ihn hat, sie einzurichten.',
+    contentRights_content:
+      'Eine Inhaltsaktion darf nur dort anlegen, ändern oder veröffentlichen, wo Sie das in Umbraco dürfen. Bitten Sie jemanden, der es darf, sie einzurichten.',
+    contentRights_languages:
+      'Der Dokumenttyp dieser Inhaltsaktion variiert nach Sprache, deshalb braucht sie alle Sprachen der Website. Bitten Sie jemanden, der sie hat, sie einzurichten.',
+    contentRights_mediaSection:
+      'Eine Inhaltsaktion, die hochgeladene Dateien ablegt, braucht Umbracos Bereich „Medien“. Bitten Sie jemanden, der ihn hat, sie einzurichten.',
+    contentRights_media:
+      'Eine Inhaltsaktion darf hochgeladene Dateien nur in einem Medienordner ablegen, den Sie nutzen dürfen. Bitten Sie jemanden, der es darf, sie einzurichten.',
     permission_design: 'Formulare gestalten',
     permission_manageActions: 'Aktionen verwalten',
     permission_viewEntries: 'Einträge ansehen',

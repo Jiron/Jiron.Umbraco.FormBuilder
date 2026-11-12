@@ -1,7 +1,8 @@
 # 0013. Permissions
 
 - Status: accepted; the cache, host grants and the audit actions amended in 4.6a ([ADR-0048](0048-permission-evaluation-and-visibility-filter.md));
-  the form picker's rule built in 6.7e ([ADR-0133](0133-the-form-pickers-endpoints.md))
+  the form picker's rule built in 6.7e ([ADR-0133](0133-the-form-pickers-endpoints.md)); what an action needs beyond
+  `manageActions` added in 16.1 ([ADR-0235](0235-what-an-action-needs-beyond-manage-actions.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 4.6a (the model and its evaluation), 4.6b (the policies and handlers), 4.7
   (the permission matrix), 12.4a (the editor), and used by every step that adds a management endpoint or a screen

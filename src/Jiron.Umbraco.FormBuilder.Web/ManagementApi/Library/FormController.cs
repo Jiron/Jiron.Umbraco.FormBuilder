@@ -37,7 +37,8 @@ internal sealed class FormController(
     IFormBuilderAccessService access,
     IAuthorizationService authorization,
     FormDefinitionSerializer serializer,
-    FormSensitivityChecks sensitivity)
+    FormSensitivityChecks sensitivity,
+    ActionGrantChecks grants)
     : FormBuilderManagementApiController
 {
     /// <summary>How long a search text may be.</summary>
@@ -201,6 +202,11 @@ internal sealed class FormController(
             return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
         }
 
+        if (await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), draft.Definition, definition, sensitive: true, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
         return await forms.SaveDraftAsync(key, request.ConcurrencyVersion, definition, request.Comment, RequestAccess.User.Key, cancellationToken) is { } saved
             ? Ok(await SavedAsync(saved, cancellationToken))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
@@ -226,10 +232,19 @@ internal sealed class FormController(
 
         // A stale publish meets its conflict below, and names no permission for someone else's draft.
         if (await forms.GetDraftAsync(key, cancellationToken) is { Definition: { } definition } draft
-            && draft.Form.ConcurrencyVersion == request.ConcurrencyVersion
-            && await sensitivity.RefusesAsync(RequestAccess.User, draft.Form, definition, cancellationToken))
+            && draft.Form.ConcurrencyVersion == request.ConcurrencyVersion)
         {
-            return FormBuilderProblems.Missing(FormBuilderPermissions.ViewSensitive);
+            if (await sensitivity.RefusesAsync(RequestAccess.User, draft.Form, definition, cancellationToken))
+            {
+                return FormBuilderProblems.Missing(FormBuilderPermissions.ViewSensitive);
+            }
+
+            // What goes live is compared with what is live: the actions a publish makes run as they now are (ADR-0235).
+            var live = (await forms.GetPublishedAsync(key, cancellationToken))?.Definition;
+            if (await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), live, definition, sensitive: true, cancellationToken) is { } refusal)
+            {
+                return refusal;
+            }
         }
 
         return await forms.PublishAsync(key, request.ConcurrencyVersion, request.Comment, RequestAccess.User.Key, cancellationToken) is { } published

@@ -113,6 +113,10 @@ test('the host environment creates every persona but the admin, with its groups,
       env[`JironFormBuilderTesting__UserGroups__${g}__ContentRootAccess`],
       group.alias === 'jfbDesigners' ? 'true' : undefined,
     );
+    assert.equal(
+      env[`JironFormBuilderTesting__UserGroups__${g}__ContentEditing`],
+      group.alias === 'jfbDesigners' ? 'true' : undefined,
+    );
   });
   RESTRICTED_FOLDERS.forEach((folder, f) => {
     assert.equal(env[`JironFormBuilderTesting__RestrictedFolders__${f}__Name`], folder.name);

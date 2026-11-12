@@ -82,6 +82,39 @@ internal static class DefinitionDiff
             || (change.ElementKind == DefinitionElementKind.Rule && (actions.Contains(change.ParentKey) || actions.Contains(change.PreviousParentKey))));
     }
 
+    /// <summary>
+    /// The keys of the actions <paramref name="to"/> adds, or whose settings, switches or rule it changes, against
+    /// <paramref name="from"/> (ADR-0235): what a run of them may now do differently. An action only moved in the run order
+    /// is not among them. A <paramref name="from"/> that could not be read counts as one without actions.
+    /// </summary>
+    internal static IReadOnlySet<Guid> ChangedActions(FormDefinition? from, FormDefinition to)
+    {
+        ArgumentNullException.ThrowIfNull(to);
+        var older = from ?? new FormDefinition { Key = to.Key };
+        var current = to.Actions.Select(action => action.Key).ToHashSet();
+        var changed = new HashSet<Guid>();
+        foreach (var change in Compare(older, to))
+        {
+            if (change is { ElementKind: DefinitionElementKind.Action, Key: { } key } && current.Contains(key)
+                && (change.ChangeKind == DefinitionChangeKind.Added || change.Properties.Count > 0))
+            {
+                changed.Add(key);
+            }
+            else if (change.ElementKind == DefinitionElementKind.Rule)
+            {
+                foreach (var parent in new[] { change.ParentKey, change.PreviousParentKey })
+                {
+                    if (parent is { } action && current.Contains(action))
+                    {
+                        changed.Add(action);
+                    }
+                }
+            }
+        }
+
+        return changed;
+    }
+
     private static DefinitionChange Change(Element element, Element? before, Element? after, DefinitionChangeKind kind, bool moved, IReadOnlyList<DefinitionPropertyChange> properties) => new(
         element.Kind,
         element.Key,

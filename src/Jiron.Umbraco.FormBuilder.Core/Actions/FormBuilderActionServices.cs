@@ -30,6 +30,7 @@ internal static class FormBuilderActionServices
         // asked first.
         builder.JironFormBuilder().ActionTypes();
         builder.Services.TryAddSingleton(provider => new ActionTypeRegistry(provider.GetRequiredService<FormBuilderActionTypeCollection>()));
+        builder.Services.TryAddSingleton<ContentActionRights>();
         builder.Services.TryAddSingleton<ActionSettingLocks>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ActionTypeStartupCheck>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ActionSettingLockStartupCheck>());

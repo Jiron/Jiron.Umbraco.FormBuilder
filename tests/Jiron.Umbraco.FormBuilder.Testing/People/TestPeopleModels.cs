@@ -26,6 +26,13 @@ public sealed class TestUserGroup
     public bool ContentRootAccess { get; set; }
 
     /// <summary>
+    /// Whether the group may also create, update and publish everywhere in the content tree (Umbraco's own permissions),
+    /// as a designer who sets up a content action needs where it creates and publishes (ADR-0235); read only with
+    /// <see cref="ContentRootAccess"/>, browsing only by default.
+    /// </summary>
+    public bool ContentEditing { get; set; }
+
+    /// <summary>
     /// The group's global Jiron Form Builder permissions by name, for example <c>viewEntries</c> (ADR-0013); the seed
     /// sets the group's global grant to exactly these, none by default.
     /// </summary>
