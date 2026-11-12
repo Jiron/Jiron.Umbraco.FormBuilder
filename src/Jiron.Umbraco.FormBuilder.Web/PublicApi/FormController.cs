@@ -56,7 +56,8 @@ internal sealed class FormController(
     /// <summary>
     /// A published form for headless rendering, when its settings allow it: its public projection with its texts in the
     /// culture, and what the endpoint adds. <c>Cache-Control: no-cache</c> with an <c>ETag</c> that is a hash of the
-    /// answer, so it follows the publish, the culture, the dictionary and the host's designer locks.
+    /// answer, so it follows the publish, the culture, the dictionary and the host's designer locks; <c>private</c> too for a
+    /// form for members, so no shared cache keeps it.
     /// </summary>
     /// <param name="keyOrAlias">The form's key, or its alias in any letter case.</param>
     /// <param name="culture">The culture: one of the site's languages, otherwise the default language.</param>
@@ -103,7 +104,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.MemberRequired();
         }
 
-        return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken));
+        return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken), ForMembers(form.Published.Definition));
     }
 
     /// <summary>
@@ -112,7 +113,7 @@ internal sealed class FormController(
     /// unless an option has it (ADR-0081). Every published form not in the trash answers, as the page that shows it; a form
     /// for members only a member it admits and a server key, as the form endpoint (ADR-0150, ADR-0231).
     /// <c>available</c> is false when the field's source could not give its options. <c>Cache-Control: no-cache</c>
-    /// with an <c>ETag</c> that is a hash of the answer.
+    /// with an <c>ETag</c> that is a hash of the answer, and <c>private</c> for a form for members.
     /// </summary>
     /// <param name="key">The form's key.</param>
     /// <param name="fieldKey">The key of a field of the form, a repeatable group's among them, that has options.</param>
@@ -182,7 +183,7 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.InvalidRequest("parent");
         }
 
-        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken));
+        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content, Request.Host.Value), cancellationToken), ForMembers(form.Published.Definition));
     }
 
     /// <summary>
@@ -720,11 +721,12 @@ internal sealed class FormController(
         return answers;
     }
 
-    // An answer with its tag and no-cache, or 304 when the client holds it.
-    private IActionResult Answered(FormAnswer answer)
+    // An answer with its tag and no-cache, or 304 when the client holds it. A form for members answers only whom it admits,
+    // so no shared cache may keep its answer (private, 16.1's review).
+    private IActionResult Answered(FormAnswer answer, bool forMembers)
     {
         Response.Headers.ETag = answer.ETag;
-        Response.Headers.CacheControl = "no-cache";
+        Response.Headers.CacheControl = forMembers ? "private, no-cache" : "no-cache";
         if (Matches(Request.GetTypedHeaders().IfNoneMatch, answer.ETag))
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -732,6 +734,9 @@ internal sealed class FormController(
 
         return File(answer.Body, "application/json; charset=utf-8");
     }
+
+    // Whether the form is for members, whose definition and options a shared cache may not keep.
+    private static bool ForMembers(FormDefinition definition) => definition.Settings.Availability.Access != MemberAccess.Anyone;
 
     // The start of a query name that gives the answers of a field up the chain.
     private const string ParentPrefix = "parent.";

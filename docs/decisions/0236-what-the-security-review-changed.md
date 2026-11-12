@@ -78,6 +78,14 @@ held 65,536 shares and filled `Files:MaxWaitingBytes` for a day ([ADR-0148](0148
 an IPv6 address now holds four shares together, beside each /64's own; a server key keeps its own share alone. IPv4 addresses
 are not grouped, as one address is often a whole office.
 
+### The public API: a form for members is no shared cache's
+
+The form and options endpoints answered `no-cache` with an `ETag`, which lets a shared cache keep an answer and check it
+before it serves it again; for a form for members, which answers only a member it admits or a server key, a cache in front of
+the site that left out the check, or keyed it without the member, could hand it to anyone
+([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)). Both now answer `private, no-cache` for such a form, as
+every other endpoint answers `no-store`.
+
 ### The public API: a refusal of unknown names stays short
 
 A body within its limit could name tens of thousands of fields the form does not have, and the refusal named each. It now

@@ -116,6 +116,8 @@ path only, in any letter case:
 - **Caching:** `Cache-Control: no-cache` with an `ETag` of the first 32 hex digits of the SHA-256 of the answer's
   bytes, so it follows the publish, the culture, the dictionary, the site's zone, the sanitiser and the host's designer
   locks (ADR-0060) without a version of its own. `If-None-Match` compares weakly and answers `304`.
+  Amended by [ADR-0236](0236-what-the-security-review-changed.md): a form for members, and its options, answer
+  `private, no-cache`, so a shared cache never keeps what only whom the form admits may read.
 
 ### The visitor's form
 

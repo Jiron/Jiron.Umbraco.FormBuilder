@@ -480,6 +480,36 @@ public sealed class PublicFormChallengeTests : PublicApiTestBase
             Assert.That(await byKey.Content.ReadAsStringAsync(), Does.Not.Contain("fields"), "nothing of the form");
             Assert.That(signed.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a server signs for its own visitors");
             Assert.That(other.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(Header(signed, "Cache-Control"), Does.Contain("private").And.Contain("no-cache"), "no shared cache keeps a form for members");
+            Assert.That(Header(other, "Cache-Control"), Is.EqualTo("no-cache"), "a form open to all may be kept and checked");
+        });
+    }
+
+    [Test]
+    public async Task AFormForMembers_GivesItsOptionsToAServerKey_ForNoSharedCacheToKeep()
+    {
+        var meal = new FormField
+        {
+            Key = Guid.NewGuid(),
+            Type = "dropdown",
+            Alias = "meal",
+            Label = new LocalizedText("Meal"),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "veg", Label = new LocalizedText("Vegetarian") }] },
+        };
+        var members = await PublishAsync("Members only", change: definition => definition with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { Access = MemberAccess.Members } },
+        }, fields: meal);
+        var open = await PublishAsync("Open to all", fields: meal);
+
+        using var signed = await GetAsync($"{Root}/forms/{members}/options/{meal.Key}", request => request.Headers.TryAddWithoutValidation("Authorization", "Jfb-Key " + ShopKey));
+        using var visitor = await GetAsync($"{Root}/forms/{open}/options/{meal.Key}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(signed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(Header(signed, "Cache-Control"), Does.Contain("private").And.Contain("no-cache"));
+            Assert.That(Header(visitor, "Cache-Control"), Is.EqualTo("no-cache"));
         });
     }
 
