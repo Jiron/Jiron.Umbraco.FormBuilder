@@ -3,6 +3,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inLanguage } from '../../support/backoffice-look.ts';
 import { API, contactForm, created, formOf, unique } from '../../support/forms-api.ts';
+import { settle } from '../../support/ux-shots.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section at its narrowest (ROADMAP 9.6a, ADR-0182). Umbraco's backoffice keeps a width of its own below a window
@@ -175,6 +176,89 @@ for (const window of [
     expect([shown.cut, shown.scrolls], 'the gallery').toEqual([[], []]);
   });
 }
+
+// At a phone's width Umbraco's page is 920 px wide and the window shows its first part (ADR-0182). The Settings and
+// Actions views keep their column inside the window, an action's card offers Test in its "..." and puts its switch on a
+// row of its own, and a rule's target takes a line of its own under what the rule does (16.6, ADR-0241). In German, whose
+// words are the longest; measured by place, not by words.
+test("at 375 px the Settings and Actions views keep to the window, a card's Test is in its menu, and a rule's target has its own line, in German", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(180_000);
+  const api = await apiAs('designer');
+  const key = await contactForm(api, unique('Telefon'));
+  const read = await api.get(`${API}/form/${key}/draft`);
+  const draft = (await read.json()) as { form: { concurrencyVersion: number }; definition: Record<string, unknown> };
+  const saved = await api.put(`${API}/form/${key}/draft`, {
+    data: {
+      concurrencyVersion: draft.form.concurrencyVersion,
+      definition: {
+        ...draft.definition,
+        actions: [
+          {
+            key: crypto.randomUUID(),
+            type: 'email',
+            name: 'Das Team per E-Mail benachrichtigen',
+            enabled: true,
+            trigger: 'submitted',
+            stopOnFailure: false,
+            settings: { to: ['team@example.com'], subject: { '': 'Neuer Eintrag' }, body: { '': '<p>Neu.</p>' } },
+          },
+        ],
+      },
+    },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  await inLanguage(page, 'de-DE');
+  await page.setViewportSize({ width: 375, height: 812 });
+  await loginAs('designer');
+  const right = async (locator: ReturnType<Page['locator']>) => {
+    const box = await locator.boundingBox();
+    return (box?.x ?? 0) + (box?.width ?? 0);
+  };
+
+  for (const view of ['settings', 'actions'] as const) {
+    await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/${view}`);
+    const column = page.locator(`jfb-form-${view}-view .page`).first();
+    await expect(column).toBeVisible({ timeout: 60_000 });
+    // Panned to the workspace's start, where a phone's reader reads it (ADR-0241).
+    await settle(page);
+    expect(await right(column), `the ${view} view's column`).toBeLessThanOrEqual(375.5);
+  }
+
+  const card = page.locator('jfb-form-actions-view jfb-action-list .card').first();
+  await expect(card).toBeVisible();
+  expect(await right(card), 'the card').toBeLessThanOrEqual(375.5);
+  await expect(card.locator('.end .test'), 'Test beside the name').toBeHidden();
+  const name = await card.locator('.name').first().boundingBox();
+  const end = await card.locator('.end').boundingBox();
+  expect(end?.y ?? 0, 'the switch and "..." under the name').toBeGreaterThan((name?.y ?? 0) + (name?.height ?? 0) - 1);
+  await card.locator('.more').click();
+  await expect(page.locator('jfb-form-actions-view jfb-action-list .menu .test-item').first()).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // A field's rule: the builder's first line puts the target under what the rule does.
+  await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}`);
+  const design = page.locator('jfb-form-design-view');
+  await design.locator('jfb-canvas-field [data-control="select"]').first().click();
+  const inspector = design.locator('jfb-designer-inspector');
+  await expect(inspector).toHaveAttribute('mode', 'overlay');
+  await inspector.getByRole('button', { name: 'Regel hinzuf\u00fcgen' }).click();
+  const builder = page.locator('jfb-rule-builder-modal');
+  const target = builder.locator('.first-line #target');
+  await expect(target).toBeVisible();
+  await settle(page);
+  const line = await builder.locator('.first-line').boundingBox();
+  const effect = await builder.locator('.first-line #effect').boundingBox();
+  const own = await target.boundingBox();
+  expect(own?.y ?? 0, 'the target under what the rule does').toBeGreaterThan(
+    (effect?.y ?? 0) + (effect?.height ?? 0) - 1,
+  );
+  expect(own?.width ?? 0, 'the target takes the line').toBeGreaterThan((line?.width ?? 0) * 0.9);
+  expect(await right(target), 'the target inside the window').toBeLessThanOrEqual(375.5);
+});
 
 // The form's header beside all six of its views, as the admin has them: Umbraco's bar shares its row with the views'
 // tabs, which leave the name and the chip about 166 px at the narrowest. The chip goes under the name rather than under

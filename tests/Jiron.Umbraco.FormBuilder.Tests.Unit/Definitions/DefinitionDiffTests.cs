@@ -514,6 +514,34 @@ public sealed class DefinitionDiffTests
         }
     }
 
+    // 16.5's review: the rights an action needs are asked again only for what a run of it may now do differently.
+    [Test]
+    public void ChangedActions_AreTheAddedOrEditedOnes_NotThoseOnlyRunInAnotherOrder()
+    {
+        var before = Base();
+        before["actions"] = new JsonArray(Action(71, "One"), Action(72, "Two"), Action(73, "Three"));
+        var reordered = Base();
+        reordered["actions"] = new JsonArray(Action(73, "Three"), Action(71, "One"), Action(72, "Two"));
+        var reorderedAndRenamed = Base();
+        reorderedAndRenamed["actions"] = new JsonArray(Action(73, "Three"), Action(71, "One"), Action(72, "Second"));
+        var withRule = Base();
+        withRule["actions"] = new JsonArray(Action(71, "One"), Action(72, "Two"), Action(73, "Three"));
+        withRule["actions"]![1]!["rules"] = new JsonArray(Rule(81, "run", K(13)));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Changed(before, reordered), Is.Empty, "only the run order changed");
+            Assert.That(DefinitionDiff.ChangesActions(Read(before), Read(reordered)), Is.True, "the run order is still a change of the actions, which needs manageActions");
+            Assert.That(Changed(before, reorderedAndRenamed), Is.EqualTo(new[] { K(72) }), "the one edited, wherever it runs now");
+            Assert.That(Changed(before, withRule), Is.EqualTo(new[] { K(72) }), "a rule given to an action");
+            Assert.That(DefinitionDiff.ChangedActions(null, Read(before)).Order(), Is.EqualTo(new[] { K(71), K(72), K(73) }), "against nothing, every action");
+        });
+
+        static FormDefinition Read(JsonObject root) => DefinitionFixtures.Read(root.ToJsonString());
+
+        static Guid[] Changed(JsonObject from, JsonObject to) => [.. DefinitionDiff.ChangedActions(Read(from), Read(to)).Order()];
+    }
+
     private static void AssertRebuilt(IReadOnlyList<DefinitionChange> changes, string what)
     {
         foreach (var change in changes.Where(change => change.ChangeKind == DefinitionChangeKind.Changed))

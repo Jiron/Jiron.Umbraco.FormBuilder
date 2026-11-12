@@ -60,6 +60,26 @@ public sealed class AddOnShapeTests
     }
 
     [Test]
+    public void EveryLogMessageThatTakesAnException_TakesALoggedException()
+    {
+        // As LoggedExceptionTests holds for Core and Web (ADR-0226, 16.5's review): a provider's message may hold what was sent.
+        var methods = AddOn.GetTypes()
+            .SelectMany(type => type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            .Where(method => method.GetCustomAttribute<Microsoft.Extensions.Logging.LoggerMessageAttribute>() is not null)
+            .ToList();
+        var raw = methods
+            .Where(method => method.GetParameters().Any(parameter => typeof(Exception).IsAssignableFrom(parameter.ParameterType) && parameter.ParameterType != typeof(Core.LoggedException)))
+            .Select(method => $"{method.DeclaringType!.FullName}.{method.Name}")
+            .ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(methods, Has.Count.GreaterThanOrEqualTo(3), "the add-on's log messages were found");
+            Assert.That(raw, Is.Empty, string.Join(Environment.NewLine, raw));
+        });
+    }
+
+    [Test]
     public void TheCorePackages_NeverReferenceUmbracoAI_AndTheAddOnDoes()
     {
         static IEnumerable<string> References(Assembly assembly) => assembly.GetReferencedAssemblies().Select(name => name.Name ?? string.Empty);
