@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The upgrade test's seed (ROADMAP 16.5, ADR-0240): scripts/install-test.ps1 copies this folder into its run, the
+    baseline site references it, and the run removes it before the upgrade, so it never reaches a package or the
+    upgraded site. Its assembly takes the name of a friend assembly the baseline's Core already names
+    (InternalsVisibleTo Jiron.Umbraco.FormBuilder.Testing), so it writes through the baseline's own services with
+    nothing in the baseline changed. The script passes the baseline's version as JfbBaselineVersion.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Jiron.Umbraco.FormBuilder.Testing</AssemblyName>
+    <RootNamespace>JfbInstallTest</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jiron.Umbraco.FormBuilder.Core" Version="$(JfbBaselineVersion)" />
+  </ItemGroup>
+
+</Project>
