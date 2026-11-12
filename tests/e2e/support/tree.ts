@@ -12,7 +12,8 @@ export const treeRow = (page: Page, name: string): Locator =>
  */
 export async function openRowActions(page: Page, name: string): Promise<void> {
   const row = treeRow(page, name).first();
-  const more = page.getByRole('button', { name: `View actions for '${name}'`, exact: true });
+  // The row's own "...", found without words, so a walk in German opens it too.
+  const more = row.locator('umb-entity-actions-dropdown uui-button').first();
   const menu = page.locator('umb-entity-action-list').filter({ visible: true }).first();
   await expect(async () => {
     await row.evaluate((element) => element.scrollIntoView({ block: 'center' }));

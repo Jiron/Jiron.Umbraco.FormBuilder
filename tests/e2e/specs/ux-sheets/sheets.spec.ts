@@ -11,17 +11,18 @@ import {
   type ShotReport,
 } from '../../support/ux-walk.ts';
 
-// The walk's contact sheets (ROADMAP 9.6a): after the ux project's walks, one sheet per screen with its twelve shots,
+// The walk's contact sheets (ROADMAP 9.6a): after the ux project's walks and journeys (16.6), one sheet per screen with its twelve shots,
 // rows the widths and columns the looks, and summary.json with what each shot found, screen by screen, for the review.
 
 test("the walk's contact sheets", async ({ page }) => {
   test.setTimeout(10 * 60_000);
   const dir = walkDir();
+  // The walk's shots, then the journeys' (journeys.spec.ts), each look in its own folder.
   const reports = COMBOS.map((combo) => {
-    const file = join(dir, comboName(combo), 'report.json');
-    const screens = existsSync(file)
-      ? (JSON.parse(readFileSync(file, 'utf8')) as { screens: ShotReport[] }).screens
-      : [];
+    const screens = ['report.json', 'journeys.json'].flatMap((name) => {
+      const file = join(dir, comboName(combo), name);
+      return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as { screens: ShotReport[] }).screens : [];
+    });
     return { combo, screens };
   });
   const screens = [...new Set(reports.flatMap((report) => report.screens.map((shot) => shot.screen)))];
