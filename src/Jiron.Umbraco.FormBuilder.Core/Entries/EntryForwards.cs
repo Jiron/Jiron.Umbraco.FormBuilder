@@ -21,7 +21,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// <summary>A backoffice user an entry may be forwarded to.</summary>
 /// <param name="Key">The user.</param>
 /// <param name="Name">Their name.</param>
-internal sealed record EntryForwardUser(Guid Key, string Name);
+/// <param name="SeesSensitive">Whether they may see the form's sensitive answers, which go to them only then.</param>
+internal sealed record EntryForwardUser(Guid Key, string Name, bool SeesSensitive);
 
 /// <summary>Whom an entry may be forwarded to: the users who may view its form's entries, and the site's forward addresses.</summary>
 /// <param name="Users">The users with an address who may view the form's entries, by name.</param>
@@ -122,9 +123,9 @@ internal sealed class EntryForwards(
             var found = page.Result?.Items.ToList() ?? [];
             foreach (var user in found)
             {
-                if (await MayGetAsync(user, target, cancellationToken))
+                if (await HeldIfMayGetAsync(user, target, cancellationToken) is { } held)
                 {
-                    allowed.Add(new EntryForwardUser(user.Key, user.Name ?? user.Username));
+                    allowed.Add(new EntryForwardUser(user.Key, user.Name ?? user.Username, held.HasFlag(FormBuilderPermissions.ViewSensitive)));
                 }
             }
 
@@ -146,7 +147,10 @@ internal sealed class EntryForwards(
     /// <param name="userKey">The user it goes to, or null for an address.</param>
     /// <param name="address">The forward address it goes to, when no user.</param>
     /// <param name="message">The sender's message, at most <see cref="MaxMessageLength"/> characters, or none.</param>
-    /// <param name="includeSensitive">Whether sensitive values go along; the caller checked that the sender may see them.</param>
+    /// <param name="includeSensitive">
+    /// Whether sensitive values go along; the caller checked that the sender may see them. A user who may not see them gets
+    /// them masked, whatever the sender chose; a forward address of the site's settings gets what the sender chose.
+    /// </param>
     /// <param name="cancellationToken">Cancels the reads and the unit of work.</param>
     public async Task<EntryForwardStatus> ForwardAsync(Guid formKey, Guid entryKey, Guid senderKey, Guid? userKey, string? address, string? message, bool includeSensitive, CancellationToken cancellationToken = default)
     {
@@ -159,14 +163,18 @@ internal sealed class EntryForwards(
 
         string to, recipient, culture;
         var sender = await users.GetAsync(senderKey);
+        var sensitive = includeSensitive;
         if (userKey is { } key)
         {
             if (await users.GetAsync(key) is not { } user
-                || !await MayGetAsync(user, FormAccessTarget.Of(await infos.InfoAsync(form, cancellationToken)), cancellationToken))
+                || await HeldIfMayGetAsync(user, FormAccessTarget.Of(await infos.InfoAsync(form, cancellationToken)), cancellationToken) is not { } held)
             {
                 return EntryForwardStatus.NotAllowed;
             }
 
+            // Sensitive answers go to a user only when they may see them (16.1's review), or a forward would read to them
+            // what the form's permissions hide.
+            sensitive &= held.HasFlag(FormBuilderPermissions.ViewSensitive);
             (to, recipient, culture) = (user.Email, user.Name ?? user.Username, user.Language ?? "en");
         }
         else
@@ -186,7 +194,7 @@ internal sealed class EntryForwards(
         }
 
         var site = (await pages.EntryPageAsync(entry)).Site;
-        var body = await BodyAsync(read, entry, sender?.Name ?? sender?.Username ?? string.Empty, message, includeSensitive, site, culture, cancellationToken);
+        var body = await BodyAsync(read, entry, sender?.Name ?? sender?.Username ?? string.Empty, message, sensitive, site, culture, cancellationToken);
         var words = WordsOf(culture);
         // "Entry #3 of Job application", after the entry's title, and a middle dot, when it has one.
         var title = await titles.RenderAsync(read.Scope, entry.Key, cancellationToken);
@@ -212,8 +220,8 @@ internal sealed class EntryForwards(
             async _ =>
             {
                 await outbox.QueueAsync(prepared, cancellationToken);
-                await events.AddAsync(new NewEntryEvent(entry.Id, ForwardedEvent, senderKey, Details: JsonSerializer.Serialize(new { to = recipient, sensitive = includeSensitive })), cancellationToken);
-                var details = new AuditDetails().Add("form", form.Key).Add("sensitive", includeSensitive);
+                await events.AddAsync(new NewEntryEvent(entry.Id, ForwardedEvent, senderKey, Details: JsonSerializer.Serialize(new { to = recipient, sensitive })), cancellationToken);
+                var details = new AuditDetails().Add("form", form.Key).Add("sensitive", sensitive);
                 details = userKey is { } user ? details.Add("user", user) : details.Add("teamAddress", true);
                 await audit.AddAsync(new NewAuditEntry(ForwardedAction, EntryPanels.EntityType, entry.Key, senderKey, details), cancellationToken);
                 return true;
@@ -222,11 +230,18 @@ internal sealed class EntryForwards(
         return EntryForwardStatus.Queued;
     }
 
-    // Whether a user may get the entry: not disabled, with an address, and allowed to view the form's entries.
-    private async Task<bool> MayGetAsync(IUser user, FormAccessTarget target, CancellationToken cancellationToken) =>
-        user.UserState is not (UserState.Disabled or UserState.LockedOut)
-        && !string.IsNullOrWhiteSpace(user.Email)
-        && (await access.GetForFormAsync(AccessUser.Of(user), target, cancellationToken)).HasFlag(FormBuilderPermissions.ViewEntries);
+    // What a user holds on the form when they may get the entry: not disabled, with an address, and allowed to view the
+    // form's entries; null otherwise.
+    private async Task<FormBuilderPermissions?> HeldIfMayGetAsync(IUser user, FormAccessTarget target, CancellationToken cancellationToken)
+    {
+        if (user.UserState is UserState.Disabled or UserState.LockedOut || string.IsNullOrWhiteSpace(user.Email))
+        {
+            return null;
+        }
+
+        var held = await access.GetForFormAsync(AccessUser.Of(user), target, cancellationToken);
+        return held.HasFlag(FormBuilderPermissions.ViewEntries) ? held : null;
+    }
 
     // The forward addresses of the entry's site.
     private async Task<IReadOnlyList<string>> AddressesAsync(StoredEntry entry, CancellationToken cancellationToken) =>

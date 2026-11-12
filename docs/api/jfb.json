@@ -18101,7 +18101,8 @@
       "EntryForwardUserResponseModel": {
         "required": [
           "key",
-          "name"
+          "name",
+          "seesSensitive"
         ],
         "type": "object",
         "properties": {
@@ -18111,6 +18112,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "seesSensitive": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

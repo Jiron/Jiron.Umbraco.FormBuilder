@@ -41,8 +41,8 @@ beforeEach(() => {
     forms: { e7: 'form1' },
     recipients: {
       users: [
-        { key: 'u1', name: 'Ana Silva' },
-        { key: 'u2', name: 'Ben Okafor' },
+        { key: 'u1', name: 'Ana Silva', seesSensitive: true },
+        { key: 'u2', name: 'Ben Okafor', seesSensitive: false },
       ],
       addresses: ['hr@example.org'],
     },
@@ -132,6 +132,32 @@ describe('the Forward... sidebar', () => {
     ]);
   });
 
+  it('offers no box for a user who may not see sensitive values, and says they stay hidden', async () => {
+    const { element, button } = await sidebar(true);
+    const select = must(shadow(element).querySelector('select'), 'the recipients');
+    const box = must(shadow(element).querySelector<HTMLInputElement>('uui-checkbox'), 'the box');
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    select.value = 'user:u2';
+    select.dispatchEvent(new Event('change'));
+    await settle(element);
+    expect(shadow(element).querySelector('uui-checkbox')).toBeNull();
+    expect(text(shadow(element).querySelectorAll('p.help')[1] ?? null)).toBe(
+      'Ben Okafor may not see sensitive values, so they stay hidden.',
+    );
+    button('Forward').click();
+    await settle(element);
+    select.value = 'address:hr@example.org';
+    select.dispatchEvent(new Event('change'));
+    await settle(element);
+    button('Forward').click();
+    await settle(element);
+    expect(server.forwards).toEqual([
+      { user: 'u2', message: null, includeSensitive: false },
+      { address: 'hr@example.org', message: null, includeSensitive: true },
+    ]);
+  });
+
   it('says when nobody may receive the entry, and when the forward fails', async () => {
     server.recipients = { users: [], addresses: [] };
     const nobody = await sidebar(false);
@@ -140,7 +166,7 @@ describe('the Forward... sidebar', () => {
     );
     document.body.replaceChildren();
 
-    server.recipients = { users: [{ key: 'u1', name: 'Ana Silva' }], addresses: [] };
+    server.recipients = { users: [{ key: 'u1', name: 'Ana Silva', seesSensitive: true }], addresses: [] };
     server.forwardFails = true;
     const failing = await sidebar(false);
     failing.button('Forward').click();

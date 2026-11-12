@@ -705,6 +705,7 @@ export type EntryForwardRequestModel = {
 export type EntryForwardUserResponseModel = {
     key: string;
     name: string;
+    seesSensitive: boolean;
 };
 
 export type EntryFullOptionResponseModel = {

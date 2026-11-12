@@ -163,6 +163,7 @@ public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFor
 public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryForwardUserResponseModel
   ctor()
   required Guid Key { get; init; }
+  required bool SeesSensitive { get; init; }
   required string Name { get; init; }
 
 public sealed class Jiron.Umbraco.FormBuilder.Web.ManagementApi.Entries.EntryFullOptionResponseModel

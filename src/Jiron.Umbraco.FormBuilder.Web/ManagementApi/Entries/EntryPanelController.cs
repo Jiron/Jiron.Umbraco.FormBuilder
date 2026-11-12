@@ -243,7 +243,7 @@ internal sealed class EntryPanelController(
         await forwards.RecipientsAsync(key, entryKey, RequestAccess.User.Key, cancellationToken) is { } recipients
             ? Ok(new EntryForwardRecipientsResponseModel
             {
-                Users = [.. recipients.Users.Select(user => new EntryForwardUserResponseModel { Key = user.Key, Name = user.Name })],
+                Users = [.. recipients.Users.Select(user => new EntryForwardUserResponseModel { Key = user.Key, Name = user.Name, SeesSensitive = user.SeesSensitive })],
                 Addresses = recipients.Addresses,
             })
             : FormBuilderProblems.EntryNotFound();

@@ -1,6 +1,7 @@
 // Forward... of the entry panel (ROADMAP 11.2, IA 6.3, ADR-0208): a sidebar that sends the entry to someone the site
 // already trusts, a backoffice user who may view the form's entries or a team address of Settings, Email, with an
-// optional message, and sensitive values only for a user who may see them and ticks them.
+// optional message, and sensitive values only when the sender may see them and ticks them, and never to a user who may
+// not see them (16.1's review).
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import type { EntryForwardRecipientsResponseModel } from '../api';
@@ -105,6 +106,19 @@ export class EntryForwardModalElement extends UmbModalBaseElement<EntryForwardMo
     this._to = first ? `user:${first.key}` : recipients?.addresses[0] ? `address:${recipients.addresses[0]}` : '';
   }
 
+  /** The chosen user, when the recipient is one. */
+  #user() {
+    return this._to.startsWith('user:')
+      ? this._recipients?.users.find((user) => user.key === this._to.slice('user:'.length))
+      : undefined;
+  }
+
+  /** Whether the sender may send sensitive values to the chosen recipient: a team address, or a user who may see them. */
+  #mayInclude(): boolean {
+    const user = this.#user();
+    return !!this.data?.maySendSensitive && (user === undefined || user.seesSensitive);
+  }
+
   #name(): string {
     const [kind, value] = [this._to.slice(0, this._to.indexOf(':')), this._to.slice(this._to.indexOf(':') + 1)];
     return kind === 'user' ? (this._recipients?.users.find((user) => user.key === value)?.name ?? value) : value;
@@ -117,7 +131,7 @@ export class EntryForwardModalElement extends UmbModalBaseElement<EntryForwardMo
     const sent = await forwardEntry(this, this.data.form, this.data.entry, {
       ...(this._to.startsWith('user:') ? { user: value } : { address: value }),
       message: this._message.trim() || null,
-      includeSensitive: this.data.maySendSensitive && this._sensitive,
+      includeSensitive: this.#mayInclude() && this._sensitive,
     });
     this._sending = false;
     if (!sent) {
@@ -174,16 +188,23 @@ export class EntryForwardModalElement extends UmbModalBaseElement<EntryForwardMo
           @input=${(event: Event) => (this._message = (event.target as HTMLTextAreaElement).value)}
         ></uui-textarea>
       </div>
-      ${
-        this.data?.maySendSensitive
-          ? html`<uui-checkbox
-              label=${this.#term('forward_sensitive')}
-              .checked=${this._sensitive}
-              @change=${(event: Event) => (this._sensitive = (event.target as HTMLInputElement).checked)}
-            ></uui-checkbox>`
-          : nothing
-      }
+      ${this.#sensitive()}
       ${this._failed ? html`<p class="failed" role="alert">${this.#term('forward_failed')}</p>` : nothing}`;
+  }
+
+  // The box for sensitive values where they may go; for a user who may not see them, one sentence instead.
+  #sensitive() {
+    if (!this.data?.maySendSensitive) return nothing;
+    const user = this.#user();
+    if (user && !user.seesSensitive) {
+      return html`<p class="help">${this.#term('forward_sensitiveHidden', user.name)}</p>`;
+    }
+
+    return html`<uui-checkbox
+      label=${this.#term('forward_sensitive')}
+      .checked=${this._sensitive}
+      @change=${(event: Event) => (this._sensitive = (event.target as HTMLInputElement).checked)}
+    ></uui-checkbox>`;
   }
 
   override render() {

@@ -65,6 +65,9 @@ questions during the run (CLAUDE.md rule 8), so each choice below is this record
    when it has one ("Ada Lovelace · Entry #3 of Job application"). The mail holds the optional message, the answers and
    the entry's link; sensitive values go along only when the sender may see them and chooses to. It is audited
    (`entry.forwarded`) and shows on the timeline as a `forwarded` event and as the mail it sent.
+   Amended by [ADR-0236](0236-what-the-security-review-changed.md): to a user who may not see them (`viewSensitive`),
+   sensitive values stay masked whatever the sender chose; the recipients say who may (`seesSensitive`), and the sidebar
+   offers the box only for them.
 10. **The panel's actions** are IA 6.3's table, filtered by what the user may do and whether the form approves by
     hand. Delete… asks with the files that go too (ADR-0207), and Re-run actions asks with the actions, as the bulk bar
     does, for the one entry. **Print** comes with 11.4's printable view of an entry, as Export comes with 11.4.

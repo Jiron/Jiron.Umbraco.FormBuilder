@@ -418,6 +418,9 @@ public sealed class EntryForwardUserResponseModel
 
     /// <summary>Their name.</summary>
     public required string Name { get; init; }
+
+    /// <summary>Whether they may see the form's sensitive answers, which go to them only then.</summary>
+    public required bool SeesSensitive { get; init; }
 }
 
 /// <summary>Forward an entry to a user or an address.</summary>

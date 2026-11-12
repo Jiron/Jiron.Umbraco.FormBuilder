@@ -21,6 +21,15 @@ it back. A trash and a restore now need `design` on every folder and form they t
 needs `design` and `deleteEntries` on everything it removes ([ADR-0047](0047-trash-delete-and-folders.md),
 [ADR-0166](0166-the-form-library.md)). The refusal names `design`, and nothing moves.
 
+### Forwarding: sensitive values go only to a user who may see them
+
+A sender who may see sensitive values could forward an entry with them to any user who may view the form's entries, so a
+user without `viewSensitive` read them in their mail ([ADR-0208](0208-the-entry-panel.md)). To a user, sensitive values now
+go only when that user holds `viewSensitive` on the form; otherwise they stay masked, and the timeline and the audit log say
+so. The recipients list says which users may see them, and the sidebar offers the box only for those, with one sentence
+for the others. A forward address of the site's settings, which only someone who manages settings names, gets what the
+sender chose, as before.
+
 ### A post without JavaScript: nothing is written down that its checks would refuse
 
 A post that names its form in its address is read before Umbraco's routing, and its files went to temporary files before

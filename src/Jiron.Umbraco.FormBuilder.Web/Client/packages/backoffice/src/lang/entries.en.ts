@@ -428,6 +428,7 @@ export default {
     forward_toHelp: 'A backoffice user, or one of the team addresses in Settings › Email.',
     forward_message: 'Message (optional)',
     forward_sensitive: 'Include sensitive values',
+    forward_sensitiveHidden: (name: string) => `${name} may not see sensitive values, so they stay hidden.`,
     forward_send: 'Forward',
     forward_sent: (to: string) => `Entry forwarded to ${to}.`,
     forward_failed: "The entry couldn't be forwarded. Try again.",

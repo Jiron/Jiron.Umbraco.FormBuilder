@@ -120,6 +120,34 @@ public sealed class EntryPanelApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AForward_SendsSensitiveValues_OnlyToAUserWhoMaySeeThem()
+    {
+        var (form, entry) = await EntryAsync();
+        var path = $"form/{form}/entry/{entry.Key}/forward";
+        await CallAsync("viewer", HttpMethod.Get, "me");
+        await CallAsync("privacyOfficer", HttpMethod.Get, "me");
+        var users = GetRequiredService<IUserService>();
+        var viewerKey = users.GetByEmail("api-viewer@jfb.test")!.Key;
+        var officerKey = users.GetByEmail("api-privacyOfficer@jfb.test")!.Key;
+
+        var recipients = await CallAsync(Admin, HttpMethod.Get, path);
+        var toViewer = await CallAsync(Admin, HttpMethod.Post, path, new { user = viewerKey, includeSensitive = true });
+        var toOfficer = await CallAsync(Admin, HttpMethod.Post, path, new { user = officerKey, includeSensitive = true });
+        var mail = await GetRequiredService<IEmailRepository>().ListForEntryAsync(entry.Id);
+        var forwarded = (await GetRequiredService<IEntryEventRepository>().ListForEntryAsync(entry.Id)).Where(entryEvent => entryEvent.Kind == EntryForwards.ForwardedEvent).Select(entryEvent => entryEvent.Details).ToList();
+        var listed = recipients.Body!["users"]!.AsArray().ToDictionary(user => user!["key"]!.GetValue<Guid>(), user => user!["seesSensitive"]!.GetValue<bool>());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((listed[viewerKey], listed[officerKey]), Is.EqualTo((false, true)), recipients.ToString());
+            Assert.That((toViewer.Outcome, toOfficer.Outcome), Is.EqualTo(("204", "204")));
+            Assert.That(mail.Single(item => item.To == "api-viewer@jfb.test").HtmlBody, Does.Contain("Ada").And.Not.Contain("90000"), "masked for a user who may not see it");
+            Assert.That(mail.Single(item => item.To == "api-privacyOfficer@jfb.test").HtmlBody, Does.Contain("90000"));
+            Assert.That(forwarded, Is.EquivalentTo(new[] { """{"to":"viewer","sensitive":false}""", """{"to":"privacyOfficer","sensitive":true}""" }), "the timeline says what went");
+        });
+    }
+
+    [Test]
     public async Task AForward_GoesOnlyToThoseTheSiteTrusts_OnTheTimelineAndTheAuditLog()
     {
         var (form, entry) = await EntryAsync();

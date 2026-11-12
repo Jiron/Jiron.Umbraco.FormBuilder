@@ -432,6 +432,8 @@ export default {
     forward_toHelp: 'Eine Person im Backoffice oder eine der Team-Adressen unter Einstellungen › E-Mail.',
     forward_message: 'Nachricht (optional)',
     forward_sensitive: 'Vertrauliche Werte mitsenden',
+    forward_sensitiveHidden: (name: string) =>
+      `${name} darf vertrauliche Werte nicht sehen, daher bleiben sie verborgen.`,
     forward_send: 'Weiterleiten',
     forward_sent: (to: string) => `Eintrag an ${to} weitergeleitet.`,
     forward_failed: 'Der Eintrag konnte nicht weitergeleitet werden. Versuchen Sie es erneut.',
