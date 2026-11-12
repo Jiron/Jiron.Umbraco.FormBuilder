@@ -161,6 +161,10 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
     /// <summary>The code of a call that would send a credential its settings hold themselves, as an unpublished draft can.</summary>
     public const string SecretLiteral = "secret_literal";
 
+    private const string LiteralSigningSecret = "A signing secret is a reference such as $JironFormBuilder:Secrets:Crm, never the secret itself.";
+    private const string LiteralChatAddress = "A Slack or Teams address holds its key: name it as a reference such as $JironFormBuilder:Secrets:Slack.";
+    private const string LiteralHeader = "A header that carries a credential is a reference such as $JironFormBuilder:Secrets:Crm, never the credential itself.";
+
     /// <summary>The code of a call whose header, from a secret, cannot be sent.</summary>
     public const string HeaderInvalid = "header_invalid";
 
@@ -192,7 +196,7 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         CheckAddress(settings, check);
         if (settings.Secret is { } secret && !FormBuilderSecrets.IsReference(secret))
         {
-            check.Invalid("secret", "A signing secret is a reference such as $JironFormBuilder:Secrets:Crm, never the secret itself.");
+            check.Invalid("secret", LiteralSigningSecret);
         }
 
         var context = settings.Format switch
@@ -226,7 +230,7 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         }
         else if (headers.Any(header => WebhookMaps.HoldsASecret(header.Key) && !FormBuilderSecrets.IsReference(header.Value)))
         {
-            check.Invalid("headers", "A header that carries a credential is a reference such as $JironFormBuilder:Secrets:Crm, never the credential itself.");
+            check.Invalid("headers", LiteralHeader);
         }
 
         var known = DefinitionKeys.Fields(check.Definition).Select(field => field.Key).ToHashSet();
@@ -277,11 +281,31 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
         _ => ActionResult.Failed(HttpCode(status)),
     };
 
-    // What publishing refuses, as a test run of a draft has not been through it.
-    private static bool HoldsALiteralSecret(WebhookActionSettings action) =>
-        (action.Secret is not null && !FormBuilderSecrets.IsReference(action.Secret))
-        || (action.Target != WebhookTarget.Url && action.Url is not null && !FormBuilderSecrets.IsReference(action.Url))
-        || (WebhookMaps.ReadHeaders(action.Headers)?.Any(header => WebhookMaps.HoldsASecret(header.Key) && !FormBuilderSecrets.IsReference(header.Value)) ?? false);
+    /// <summary>
+    /// The settings of the action that hold a secret as itself where only a reference may stand, each with why: what a save
+    /// of a new or changed action, publishing and a run refuse (16.1's review).
+    /// </summary>
+    /// <param name="action">The action's settings.</param>
+    internal static IEnumerable<(string Setting, string Message)> LiteralSecrets(WebhookActionSettings action)
+    {
+        if (action.Secret is not null && !FormBuilderSecrets.IsReference(action.Secret))
+        {
+            yield return ("secret", LiteralSigningSecret);
+        }
+
+        if (action.Target != WebhookTarget.Url && action.Url is not null && !FormBuilderSecrets.IsReference(action.Url))
+        {
+            yield return ("url", LiteralChatAddress);
+        }
+
+        if (WebhookMaps.ReadHeaders(action.Headers)?.Any(header => WebhookMaps.HoldsASecret(header.Key) && !FormBuilderSecrets.IsReference(header.Value)) ?? false)
+        {
+            yield return ("headers", LiteralHeader);
+        }
+    }
+
+    // What a run refuses, as a test run of a draft has not been through publishing's checks.
+    private static bool HoldsALiteralSecret(WebhookActionSettings action) => LiteralSecrets(action).Any();
 
     private static string HttpCode(int status) => string.Create(CultureInfo.InvariantCulture, $"http_{status}");
 
@@ -299,7 +323,7 @@ internal sealed class WebhookActionType(OutboundHttp outbound, IFormBuilderMerge
             // Such an address holds its own key, so like the integrations settings' it is a reference.
             if (settings.Url is not null && !FormBuilderSecrets.IsReference(settings.Url))
             {
-                check.Invalid("url", "A Slack or Teams address holds its key: name it as a reference such as $JironFormBuilder:Secrets:Slack.");
+                check.Invalid("url", LiteralChatAddress);
             }
 
             return;
@@ -468,7 +492,9 @@ internal static class WebhookMaps
         "allow", "connection", "expect", "expires", "host", "keep-alive", "last-modified", "proxy-connection", "te", "trailer", "transfer-encoding", "upgrade", "user-agent", "via",
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly FrozenSet<string> SecretWords = new[] { "auth", "cookie", "key", "password", "secret", "token" }.ToFrozenSet(StringComparer.Ordinal);
+    // A header whose name holds one of these carries a credential, which only a reference may give (16.1's review widened
+    // them past auth, cookie, key, password, secret and token).
+    private static readonly FrozenSet<string> SecretWords = new[] { "auth", "bearer", "cookie", "credential", "key", "passphrase", "passwd", "password", "secret", "session", "signature", "token" }.ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>Whether a text is a name of the mapping.</summary>
     public static bool IsFieldName(string name) =>

@@ -207,6 +207,11 @@ internal sealed class FormController(
             return refusal;
         }
 
+        if (grants.LiteralSecrets(draft.Definition, definition) is { Count: > 0 } literal)
+        {
+            throw new FormBuilderValidationException(literal);
+        }
+
         return await forms.SaveDraftAsync(key, request.ConcurrencyVersion, definition, request.Comment, RequestAccess.User.Key, cancellationToken) is { } saved
             ? Ok(await SavedAsync(saved, cancellationToken))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);

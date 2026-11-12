@@ -17,6 +17,10 @@ user with `manageActions` do more than their permissions allow:
   it (`includeSensitive`, ADR-0014). Naming it needed only `manageActions`, so a user without `viewSensitive` could add an
   email action addressed to themselves, or point an existing action that already copies a salary at a new recipient, and
   read every later entry's sensitive answers. ADR-0150 closed the same hole for lowering a field's sensitivity.
+- **Sending a secret.** A webhook's header may name one of the site's secrets (`$JironFormBuilder:Secrets:<Name>`), which
+  is sent to the action's address. Any secret could be named by any user with `manageActions`, so one could point a
+  header at the CRM's token and the address at a host of theirs among the allowed ones, and Test sent it at once, from a
+  draft not even saved.
 
 ## Options
 
@@ -50,6 +54,10 @@ Option 1, in one check (`ActionGrantChecks`) that the management API calls where
 - **An action that copies sensitive answers** needs `viewSensitive` on the form when it is new or changed: adding a field
   to copy, and changing where an action that copies one sends it, alike. Test entries are left out, as their answers
   are the user's own. A refusal is `403 forbidden` naming `viewSensitive`, as every missing permission is.
+- **An action that sends a secret** needs `manageSettings` when it is new or changed, and to be tested while it is not as it
+  was saved: whoever manages the site's settings decides where its secrets go. For the webhook (and its Slack and Teams
+  presets) only a header sends one: its address as a reference is where it goes, and its signing secret only signs. An
+  extension's type counts a reference wherever its settings hold one. A refusal names `manageSettings`.
 
 ## Consequences
 
@@ -58,6 +66,7 @@ Option 1, in one check (`ActionGrantChecks`) that the management API calls where
   update and publish on the whole tree for that reason (`TestUserGroup.ContentEditing`).
 - Re-running an entry's actions (Deliveries, the entries list) runs what a publish already held, so it needs only
   `manageActions`, as before.
-- Extension action types get the sensitive check for free: any setting of theirs that picks sensitive fields counts.
+- Extension action types get the sensitive and secret checks for free: any setting of theirs that picks sensitive fields,
+  and any reference to a secret in their settings, counts.
   An extension type that writes to Umbraco itself is the site's own code and decides its own rights.
 - Revisit if Umbraco adds a permission of its own for content created by a process rather than a user.

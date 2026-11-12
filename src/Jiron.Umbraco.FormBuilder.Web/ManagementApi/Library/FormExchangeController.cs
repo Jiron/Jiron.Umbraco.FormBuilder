@@ -286,10 +286,20 @@ internal sealed class FormExchangeController(
             : null;
     }
 
-    // A file with actions needs manageActions in its folder; a file that does not read is the import's to refuse, with
-    // its problems.
-    private Task<IActionResult?> ImportRefusalAsync(ImportFormRequestModel request, CancellationToken cancellationToken) =>
-        NewFormRefusalAsync(request.FolderKey, FormExportFormat.Read(request.Json, serializer).Envelope?.Definition.Actions.Count > 0, cancellationToken);
+    // A file with actions needs manageActions in its folder, and none of its actions may hold a secret as itself, as a draft
+    // save refuses; a file that does not read is the import's to refuse, with its problems.
+    private async Task<IActionResult?> ImportRefusalAsync(ImportFormRequestModel request, CancellationToken cancellationToken)
+    {
+        var envelope = FormExportFormat.Read(request.Json, serializer).Envelope;
+        if (await NewFormRefusalAsync(request.FolderKey, envelope?.Definition.Actions.Count > 0, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return envelope is not null && grants.LiteralSecrets(null, envelope.Definition) is { Count: > 0 } literal
+            ? throw new FormBuilderValidationException(literal)
+            : null;
+    }
 
     // A replace that changes the draft's actions needs manageActions on the form, as a draft save does; compared with the
     // draft it is based on, so a stale replace names no permission for someone else's change. A file that does not read is
@@ -317,7 +327,14 @@ internal sealed class FormExchangeController(
             return FormBuilderProblems.Missing(FormBuilderPermissions.ManageActions);
         }
 
-        return await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), draft.Definition, envelope.Definition, sensitive: true, cancellationToken);
+        if (await grants.RefusalAsync(RequestAccess.User, FormAccessTarget.Of(draft.Form), draft.Definition, envelope.Definition, sensitive: true, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return grants.LiteralSecrets(draft.Definition, envelope.Definition) is { Count: > 0 } literal
+            ? throw new FormBuilderValidationException(literal)
+            : null;
     }
 
     private async Task<IActionResult> CreatedAsync(FormInfo form, CancellationToken cancellationToken)

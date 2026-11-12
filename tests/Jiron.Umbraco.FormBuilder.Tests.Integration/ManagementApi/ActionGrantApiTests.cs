@@ -166,6 +166,116 @@ public sealed class ActionGrantApiTests : ManagementApiTestBase
         });
     }
 
+    [Test]
+    public async Task AnActionThatNamesASecret_IsSetUpChangedAndTestedUnsavedOnlyByWhoManagesSettings()
+    {
+        var form = await FormAsync("Leads");
+        await FillAsync(form);
+
+        // The designer manages actions but not the site's settings, where its secrets are.
+        var (version, definition) = await DraftAsync(Api, "designer", form);
+        definition["actions"] = new JsonArray(Json(Webhook("https://crm.example.com/hook")));
+        var bySomeoneWithout = await CallAsync("designer", HttpMethod.Put, $"form/{form}/draft", new { concurrencyVersion = version, definition });
+        var byAdmin = await CallAsync("admin", HttpMethod.Put, $"form/{form}/draft", new { concurrencyVersion = version, definition });
+
+        // Pointed elsewhere by the designer, saved or only tested; tested as it was saved, it is not refused for its secret.
+        (version, definition) = await DraftAsync(Api, "designer", form);
+        var actionKey = definition["actions"]![0]!["key"]!.GetValue<string>();
+        var asSaved = definition.DeepClone();
+        definition["actions"]![0]!["settings"]!["url"] = "https://elsewhere.example.com/hook";
+        var redirected = await CallAsync("designer", HttpMethod.Put, $"form/{form}/draft", new { concurrencyVersion = version, definition });
+        var testedUnsaved = await CallAsync("designer", HttpMethod.Post, $"form/{form}/action/{actionKey}/test", new { confirmed = false, definition });
+        var testedAsSaved = await CallAsync("designer", HttpMethod.Post, $"form/{form}/action/{actionKey}/test", new { confirmed = false, definition = asSaved });
+
+        // An address or a signing secret that is a reference sends no secret to where someone chose: the designer's to set up.
+        (version, definition) = await DraftAsync(Api, "designer", form);
+        definition["actions"]!.AsArray().Add(Json(new FormAction
+        {
+            Key = Guid.NewGuid(),
+            Type = "webhook",
+            Name = "Tell Slack",
+            Settings = SettingsObject.Parse("""{"target":"slack","url":"$JironFormBuilder:Secrets:SlackMessages","secret":"$JironFormBuilder:Secrets:CrmSigning"}"""),
+        }));
+        var addressOnly = await CallAsync("designer", HttpMethod.Put, $"form/{form}/draft", new { concurrencyVersion = version, definition });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((bySomeoneWithout.Outcome, bySomeoneWithout.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "manageSettings")), bySomeoneWithout.ToString());
+            Assert.That(byAdmin.Status, Is.EqualTo(System.Net.HttpStatusCode.OK), byAdmin.ToString());
+            Assert.That((redirected.Outcome, redirected.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "manageSettings")), "where the secret goes is decided anew");
+            Assert.That((testedUnsaved.Outcome, testedUnsaved.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "manageSettings")), "a test would send it there at once");
+            Assert.That(testedAsSaved.Outcome, Is.Not.EqualTo("403 forbidden"), testedAsSaved.ToString());
+            Assert.That(addressOnly.Status, Is.EqualTo(System.Net.HttpStatusCode.OK), addressOnly.ToString());
+        });
+    }
+
+    [Test]
+    public async Task ASecretAsItself_IsRefusedAtItsSetting_WhereAnActionIsSavedRestoredReplacedOrImported()
+    {
+        var form = await FormAsync("Leads");
+        await FillAsync(form);
+        var forms = GetRequiredService<IFormBuilderFormService>();
+
+        // The designer's editor refuses these; a call that skips it is refused as well, each at its setting.
+        var saved = await SaveWithAsync(Api, "admin", form, Json(LiteralWebhook()));
+
+        // An action that already holds one (stored before the review) leaves the draft's other changes alone.
+        var draft = (await forms.GetDraftAsync(form))!;
+        var stored = (await forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, draft.Definition! with { Actions = [LiteralWebhook()] }, null, null))!;
+        var file = (await GetRequiredService<IFormBuilderFormExchangeService>().ExportAsync(form))!.Json;
+        var (version, definition) = await DraftAsync(Api, "admin", form);
+        definition["pages"]![0]!["groups"]![0]!["fields"]![0]!["label"] = new JsonObject { [string.Empty] = "Your name" };
+        var other = await CallAsync("admin", HttpMethod.Put, $"form/{form}/draft", new { concurrencyVersion = version, definition });
+
+        // Without it again, a restore of that draft from the History, a replace from its file and an import of it bring it back.
+        draft = (await forms.GetDraftAsync(form))!;
+        var cleared = (await forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, draft.Definition! with { Actions = [] }, null, null))!;
+        var restored = await CallAsync("admin", HttpMethod.Post, $"form/{form}/versions/{stored.Version!.Value}/restore", new { concurrencyVersion = cleared.Form.ConcurrencyVersion });
+        var replaceCheck = await CallAsync("admin", HttpMethod.Post, $"form/{form}/replace/check", new { json = file });
+        var replaced = await CallAsync("admin", HttpMethod.Post, $"form/{form}/replace", new { json = file, concurrencyVersion = cleared.Form.ConcurrencyVersion });
+        var importCheck = await CallAsync("admin", HttpMethod.Post, "form/import/check", new { json = file });
+        var imported = await CallAsync("admin", HttpMethod.Post, "form/import", new { json = file });
+
+        // Settings that do not fit the webhook's schema are publishing's to refuse; a save is not broken by them.
+        var misfit = Json(LiteralWebhook());
+        misfit["settings"]!["secret"] = 5;
+        var unfitting = await SaveWithAsync(Api, "admin", form, misfit);
+
+        var expected = new[] { "$.actions[0].settings.secret", "$.actions[0].settings.headers" };
+        Assert.Multiple(() =>
+        {
+            Assert.That(saved.Status, Is.EqualTo(System.Net.HttpStatusCode.BadRequest), saved.ToString());
+            Assert.That(Problems(saved), Is.EqualTo(expected.Select(path => ("secretReference", path))), saved.ToString());
+            Assert.That(other.Status, Is.EqualTo(System.Net.HttpStatusCode.OK), other.ToString());
+            foreach (var refused in new[] { restored, replaceCheck, replaced, importCheck, imported })
+            {
+                Assert.That(Problems(refused), Is.EqualTo(expected.Select(path => ("secretReference", path))), refused.ToString());
+            }
+
+            Assert.That(unfitting.Status, Is.EqualTo(System.Net.HttpStatusCode.OK), unfitting.ToString());
+        });
+    }
+
+    // A webhook whose signing secret and credential header are themselves, not references.
+    private static FormAction LiteralWebhook() => new()
+    {
+        Key = Guid.NewGuid(),
+        Type = "webhook",
+        Name = "Tell the CRM",
+        Settings = SettingsObject.Parse("""{"url":"https://crm.example.com/hook","secret":"JFB_FAKE-signing","headers":{"X-Session-Id":"JFB_FAKE-session"}}"""),
+    };
+
+    private static IEnumerable<(string Code, string Path)> Problems(ApiAnswer answer) =>
+        answer.Body?["errors"]?.AsArray().Select(problem => (problem!["code"]!.GetValue<string>(), problem["path"]!.GetValue<string>())) ?? [];
+
+    private static FormAction Webhook(string url) => new()
+    {
+        Key = Guid.NewGuid(),
+        Type = "webhook",
+        Name = "Tell the CRM",
+        Settings = SettingsObject.Parse($$$"""{"url":"{{{url}}}","headers":{"Authorization":"$JironFormBuilder:Secrets:CrmToken"}}"""),
+    };
+
     private static FormField Salary { get; } = new()
     {
         Key = SalaryKey,

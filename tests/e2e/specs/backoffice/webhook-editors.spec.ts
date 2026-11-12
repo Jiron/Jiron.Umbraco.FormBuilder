@@ -85,14 +85,15 @@ test('a webhook is configured with its names and values, a header and its secret
   apiAs,
 }) => {
   test.setTimeout(240_000);
-  const api = await apiAs('designer');
+  // A header that sends one of the site's secrets is set up by whoever manages its settings (ADR-0235): the administrator.
+  const api = await apiAs('admin');
   const name = unique('Webhook editors');
   const key = await formWithFields(api, name, [
     { type: 'name', alias: 'name', label: { '': 'Your name' } },
     { type: 'email', alias: 'email', label: { '': 'Email' } },
   ]);
   const path = `/webhooks/crm-${crypto.randomUUID()}`;
-  await loginAs('designer');
+  await loginAs('admin');
   const view = await openActions(page, key);
   const sidebar = await addAction(page, view, 'Webhook');
 

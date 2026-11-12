@@ -17,6 +17,8 @@ An entry should be able to reach another system, signed, without the site becomi
 - The signing secret, a Slack or Teams address (which holds its own key) and a header whose name says it carries a credential accept only a reference, at publishing and in the integrations settings.
 - A plain webhook address may be literal, as most are not secret and the host list needs to be read. A site whose address holds a key names it as a reference, as `docs/webhooks.md` says.
 - A draft is not checked until it is published, so a test run refuses the same literals (`secret_literal`) rather than sending them.
+  Amended by [ADR-0236](0236-what-the-security-review-changed.md): a save, restore, replace or import refuses them too, in an
+  action it adds or changes, so no draft or History keeps a secret as itself.
 - An address from a reference is checked when the call is made, under the same rules.
 - `MissingConfiguration` names the key and never the value, so an import can say what a site lacks.
 

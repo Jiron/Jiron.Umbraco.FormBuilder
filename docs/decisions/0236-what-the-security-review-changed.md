@@ -47,6 +47,17 @@ the surface action checked the client's share of what may wait, the site's room,
 A body within its limit could name tens of thousands of fields the form does not have, and the refusal named each. It now
 names the first hundred at most, as the body's own reading does.
 
+### Webhooks: a secret as itself is refused where it is saved
+
+Publishing refused a signing secret, a chat address or a credential header typed as itself, and the designer's sidebar
+never let one reach the draft, but a call that skipped the sidebar saved it into the draft and its History, where anyone
+who reads the form's design could read it ([ADR-0161](0161-webhooks-slack-teams-and-entry-events.md)). A draft save, a
+restore, a replace and an import (and their checks) now refuse it with `secretReference` at the setting, in an action they add
+or change, so an action stored before keeps it until someone changes that action and other edits still save. Settings
+that do not fit the type are left to publishing, as before. The words that mark a credential header grew from auth, cookie,
+key, password, secret and token by bearer, credential, passphrase, passwd, session and signature, in the server and the
+sidebar alike; a bare "pass" or "private" would have held plain headers such as `X-Bypass-Cache` to a reference.
+
 ### The orphan cleanup moves past what it cannot remove
 
 The cleanup read the oldest two hundred uploads no entry took and stopped when none of them would go, so files a store

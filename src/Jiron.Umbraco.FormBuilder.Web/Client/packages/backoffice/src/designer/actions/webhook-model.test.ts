@@ -129,6 +129,20 @@ describe("the webhook's settings", () => {
     expect(
       ['Authorization', 'X-Api-Key', 'Cookie', 'X-Token', 'Password', 'X-Secret', 'X-Source'].map(holdsASecret),
     ).toEqual([true, true, true, true, true, true, false]);
+    // As the server's words (16.1's review): a session, a receiver's signature, a credential, a bearer and a passphrase,
+    // but not a header that only holds "pass" or "private".
+    expect(
+      [
+        'X-Session-Id',
+        'X-Hub-Signature',
+        'X-Client-Credential',
+        'X-Bearer',
+        'X-Passphrase',
+        'X-Passwd',
+        'X-Bypass-Cache',
+        'X-Private-Network',
+      ].map(holdsASecret),
+    ).toEqual([true, true, true, true, true, true, false, false]);
     expect(['content-length', 'X-JFB-Delivery', 'User-Agent', 'Accept'].map(isOwnHeader)).toEqual([
       true,
       true,

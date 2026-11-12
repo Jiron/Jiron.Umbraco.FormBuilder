@@ -167,6 +167,11 @@ internal sealed class VersionController(IFormBuilderFormVersionService versions,
             {
                 return refusal;
             }
+
+            if (grants.LiteralSecrets(draft.Definition, definition) is { Count: > 0 } literal)
+            {
+                throw new FormBuilderValidationException(literal);
+            }
         }
 
         if (await versions.RestoreVersionAsync(key, request.ConcurrencyVersion, number, RequestAccess.User.Key, cancellationToken) is not { } restored)

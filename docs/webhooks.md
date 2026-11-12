@@ -23,17 +23,17 @@ Jiron Form Builder only calls hosts the site's configuration names, over `https`
 
 An address that resolves to a private, loopback or link-local address is refused after the name is resolved, so a name cannot be pointed at the site's own network. A redirect is never followed, as it would carry the signed body to wherever the answer says.
 
-**Secrets stay in the configuration.** A setting names one as `$JironFormBuilder:Secrets:<Name>`, and the value is read when the call is made. Name letters, digits and `_`, up to 64 characters. Publishing refuses a value in these settings, and a test run of a draft does not send one:
+**Secrets stay in the configuration.** A setting names one as `$JironFormBuilder:Secrets:<Name>`, and the value is read when the call is made. A header that sends a secret is set up, changed and tested by someone who may manage settings, who decides where the site's secrets go; anyone who manages actions may use a reference as the address or the signing secret, which send no secret elsewhere. Name letters, digits and `_`, up to 64 characters. A value in these settings is refused wherever an action is saved new or changed (a draft, a restore from the History, a replace from a file, an import), and by publishing, and a test run of a draft does not send one:
 
 - the signing secret;
 - the address of a Slack or Teams action, which holds its own key;
-- a header whose name mentions `auth`, `cookie`, `key`, `password`, `secret` or `token`.
+- a header whose name mentions `auth`, `bearer`, `cookie`, `credential`, `key`, `passphrase`, `passwd`, `password`, `secret`, `session`, `signature` or `token`.
 
 A plain address is allowed as it is. If yours holds a key, in its path or query, name it as a reference too.
 
 A form whose secret is missing still publishes, and each run fails with `secret_missing`, its message naming the configuration key it lacks (never a value). An import names a missing secret the action names itself, but not the signing secret or address it takes from the integrations settings.
 
-The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft.
+The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft. A call that skips the sidebar is answered `400` with `secretReference` at the setting. An action saved with such a value before this check keeps it until it is changed, so other edits to its form still save; publishing refuses it as before.
 
 ## The webhook action
 

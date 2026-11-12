@@ -129,7 +129,7 @@ internal sealed record ContentPropertyResponseModel
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/action/{actionKey:guid}/test")]
 [ApiExplorerSettings(GroupName = "Action type")]
-internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionSerializer serializer, IUserService users) : FormBuilderManagementApiController
+internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionSerializer serializer, IUserService users, IFormBuilderFormService forms, Library.ActionGrantChecks grants) : FormBuilderManagementApiController
 {
     /// <summary>Runs an action of the form's draft against a sample entry.</summary>
     /// <param name="key">The form.</param>
@@ -150,6 +150,15 @@ internal sealed class ActionTestController(ActionTestRuns tests, FormDefinitionS
         {
             var read = serializer.Read(sent.GetRawText());
             held = read.Definition ?? throw new FormBuilderValidationException(read.Problems);
+
+            // A test of an action that is not as it was saved, and names a secret, is one only who manages settings runs: it
+            // would send the secret where the unsaved action says (16.1's review, ADR-0235).
+            var tested = held.Actions.FirstOrDefault(action => action.Key == actionKey);
+            var saved = (await forms.GetDraftAsync(key, cancellationToken))?.Definition?.Actions.FirstOrDefault(action => action.Key == actionKey);
+            if (tested is not null && tested != saved && await grants.SecretRefusalAsync(RequestAccess.User, tested, cancellationToken) is { } refusal)
+            {
+                return refusal;
+            }
         }
 
         var user = await users.GetAsync(RequestAccess.User.Key);

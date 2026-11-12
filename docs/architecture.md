@@ -337,7 +337,8 @@ flowchart LR
   queueing it (`EmailOutbox.ComposeAsync`, which `PrepareAsync` shares); the frame reads the layout's colours for the
   scheme chosen (`mailDocument`). From 10.2d (ADR-0191): the webhook's editors are `webhook-editors.ts`, on the
   values and rules of `webhook-model.ts` (the server's `WebhookMaps` and `FormBuilderSecrets` rules, written again so a
-  credential typed as itself never reaches the draft): `webhookAddress` and `webhookBody` draw the settings `within`
+  credential typed as itself never reaches the draft, as `ActionGrantChecks.LiteralSecrets` refuses it on the server's
+  save, restore, replace and import from 16.1): `webhookAddress` and `webhookBody` draw the settings `within`
   them, which `FieldSettingsReader.Boxes` allows them by the webhook's own names, `webhookUrl` the address (alone where
   a host locks the target), `headerMap` the headers' rows and `secretReference` the signing secret. The sidebar reads a
   locked setting's value as the inspector does (`valueOf`). The sidebar's `kept` holds another choice's values and rows being typed while it is open. A chat's message is
@@ -911,7 +912,7 @@ permission each needs:
 | Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too; one that makes a sensitive field no longer so: `viewSensitive` too, ADR-0150) |
 | Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md); the action types, [ADR-0158](decisions/0158-the-action-framework.md)) | any user of the section; they describe the site's code, the same for everyone |
 | Designer support: the form check, preview render, preview tickets | `design` (test entries that run their actions: `manageActions` too, and the Umbraco rights of every content action the draft holds, ADR-0235) |
-| Actions: edit, test against a sample entry | `manageActions`; an action that is new or changed in a save, restore, replace or publish also needs `viewSensitive` when it copies sensitive answers, and a content action the user's own Umbraco rights where it creates, updates or publishes (ADR-0235) |
+| Actions: edit, test against a sample entry | `manageActions`; an action that is new or changed in a save, restore, replace or publish also needs `viewSensitive` when it copies sensitive answers, `manageSettings` when it sends one of the site's secrets (a webhook's header; also to test it unsaved), and a content action the user's own Umbraco rights where it creates, updates or publishes (ADR-0235) |
 | Entries: list, get, mark seen, notes, timeline, files, action runs, counts, the inbox and Spam, and a member's entries (`GET members/{key}/entries`, the member editor's Form entries view, ADR-0231) | `viewEntries` |
 | Entries: change state, edit, forward | `editEntries` |
 | Entries: delete, empty Spam | `deleteEntries` |

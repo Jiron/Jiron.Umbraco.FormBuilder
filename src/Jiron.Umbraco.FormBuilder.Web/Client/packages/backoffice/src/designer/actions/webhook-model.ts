@@ -111,7 +111,8 @@ export function isOwnHeader(name: string): boolean {
 }
 
 /** Whether a header's name says it carries a credential, which only a reference may give. */
-export const holdsASecret = (name: string): boolean => /auth|cookie|key|password|secret|token/i.test(name);
+export const holdsASecret = (name: string): boolean =>
+  /auth|bearer|cookie|credential|key|passphrase|passwd|password|secret|session|signature|token/i.test(name);
 
 /** Whether HTTP carries a header's value as it is: printable ASCII. */
 export const isHeaderValue = (value: string): boolean => /^[\x20-\x7e]*$/.test(value);
