@@ -123,7 +123,7 @@ public sealed class LibraryThemeTests
     {
         var layer = LibraryThemes.LayerOf(
             Stored(
-                "{\"light\":{\"--jfb-color-accent\":\"#8a1538\",\"--jfb-made-up\":\"1px\",\"--jfb-radius\":\"6px; color: red\"},\"dark\":{\"--jfb-color-accent\":\"#f0a5b8\"}}",
+                "{\"light\":{\"--jfb-color-accent\":\"#8a1538\",\"--jfb-made-up\":\"1px\",\"--jfb-radius\":\"6px; color: red\",\"--jfb-shade\":\"image-set(\\\"https://evil.example/x.png\\\" 1x)\"},\"dark\":{\"--jfb-color-accent\":\"#f0a5b8\"}}",
                 ".jfb-label { letter-spacing: .02em; } @import url(https://example.com/x.css);"),
             Default);
 

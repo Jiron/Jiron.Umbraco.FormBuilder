@@ -28,6 +28,8 @@ per language, a preview in light and dark, and a test send.
    (`IFormBuilderTheme.Tokens`; dark only for a base theme whose `DarkScheme` is true, and only its colours), each value
    one declaration without an address, as the registry holds a theme's own tokens. `customCss` is the editor's text;
    what the website serves is the sanitised copy (5).
+   Amended by [ADR-0236](0236-what-the-security-review-changed.md): a value keeps to an allowlist grammar rather than a
+   blocklist, so an `image-set()` or an escaped `url(` is refused too.
 2. **The website renders a library theme** as its base theme with the layer on top: the form carries both classes
    (`jfb-theme-<base> jfb-theme-<alias>`), takes the base theme's class map and views, and its page loads the base
    theme's stylesheet and then the layer's, `/jfb/assets/themes/library/<alias>.css?v=<version>`, served by the
@@ -77,6 +79,9 @@ per language, a preview in light and dark, and a test send.
    host. Values stay exactly as written (the parser's own shorthand expansion is not used). At most 64 KB. What went is
    said in the editor, by kind (import, at-rule, nested, address, script, font); the stored text stays as typed, and the
    website serves the sanitised copy only.
+   Amended by [ADR-0236](0236-what-the-security-review-changed.md): a selector of what stands beside the form goes
+   (outside), and so does a declaration with an escape outside quotes (escape); an address with an escape is none of the
+   site's.
 6. **Export and import** are one JSON document of the theme's base, tokens and custom CSS (`jfb-theme`, version 1),
    with its name; an import makes a new theme with a free alias, refusing a base the site lacks and tokens it does not
    declare, each problem at its path.

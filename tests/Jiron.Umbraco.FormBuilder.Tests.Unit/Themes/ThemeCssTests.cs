@@ -46,6 +46,72 @@ public sealed class ThemeCssTests
         Assert.That(ThemeCss.Scoped("html > .jfb-form", Scope), Is.EqualTo(Scope));
     }
 
+    [TestCase(".jfb-form ~ *")]
+    [TestCase(".jfb-form + p")]
+    [TestCase(".jfb-form.wide~aside")]
+    [TestCase(":root ~ p")]
+    [TestCase("body + footer")]
+    [TestCase("html > .jfb-form ~ .ad")]
+    public void ASelectorOfWhatIsBesideTheForm_Goes_ItsListsOthersStay(string selector)
+    {
+        var result = Of($"{selector}, .jfb-label {{ display: none; }}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Css.Trim(), Is.EqualTo($"{Scope} .jfb-label {{ display: none; }}"));
+            Assert.That(result.Removed.Select(removal => removal.Code), Is.EqualTo(new[] { "outside" }));
+            Assert.That(ThemeCss.Scoped(selector, Scope), Is.Null);
+        });
+    }
+
+    [TestCase(".jfb-field ~ .jfb-field", ".jfb-field~.jfb-field")]
+    [TestCase(".jfb-form .jfb-label + .jfb-help", ".jfb-label+.jfb-help")]
+    [TestCase(".jfb-form > .jfb-page", ">.jfb-page")]
+    [TestCase(".jfb-form:has(input:checked) .jfb-label", ":has(input:checked) .jfb-label")]
+    [TestCase(".jfb-form li:nth-child(2n+1)", " li:nth-child(2n+1)")]
+    public void ASiblingInsideTheForm_StaysInsideIt(string selector, string after)
+    {
+        var result = Of($"{selector} {{ color: red; }}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Removed, Is.Empty);
+            Assert.That(result.Css, Does.Contain(Scope));
+            Assert.That(result.Css.Replace(" ", string.Empty, StringComparison.Ordinal), Does.Contain(after.Replace(" ", string.Empty, StringComparison.Ordinal)));
+        });
+    }
+
+    [TestCase(".a { background: u\\72l(https://evil.example/x.png); }", "escape")]
+    [TestCase(".a { background: U\\52L(https://evil.example/x.png); }", "escape")]
+    [TestCase(".a { background: image-s\\65t(\"https://evil.example/x.png\" 1x); }", "escape")]
+    [TestCase(".a { background: \\75rl(https://evil.example/x.png); }", "escape")]
+    [TestCase(".a { cursor: url(\\\\server\\share\\x.cur), auto; }", "escape")]
+    [TestCase(".a { background: url(\"https\\3a //evil.example/x.png\"); }", "address")]
+    [TestCase(".a { background: url(\"\\2f\\2f evil.example/x.png\"); }", "address")]
+    [TestCase(".a { background: image-set(\"https\\3a //evil.example/x.png\" 1x); }", "address")]
+    public void AnEscapeThatCouldSpellAnAddress_TakesItsDeclaration(string css, string code)
+    {
+        var result = Of(css);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Css, Is.Empty);
+            Assert.That(result.Removed.Select(removal => removal.Code), Is.EqualTo(new[] { code }));
+        });
+    }
+
+    [Test]
+    public void AStringsOwnEscape_Stays()
+    {
+        var result = Of(".jfb-label::before { content: \"\\201C\"; }");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Removed, Is.Empty);
+            Assert.That(result.Css, Does.Contain("content: \"\\201C\""));
+        });
+    }
+
     [Test]
     public void SelectorLists_AreSplitOnlyAtTheirOwnCommas()
     {
@@ -97,7 +163,6 @@ public sealed class ThemeCssTests
     [TestCase(".a { background-image: image-set(\"https://cdn.example.com/x.png\" 1x); }")]
     [TestCase(".a { background-image: url(data:text/html;base64,PHNjcmlwdD4=); }")]
     [TestCase(".a { list-style-image: url(ftp://example.com/x.png); }")]
-    [TestCase(".a { cursor: url(\\\\server\\share\\x.cur), auto; }")]
     public void AnAddressOnAnotherHost_TakesItsDeclaration(string css)
     {
         var result = Of(css);

@@ -119,6 +119,8 @@ export default {
     removed_address: 'Eine Adresse auf einer anderen Website',
     removed_script: 'Ein Skript',
     removed_fontFace: 'Eine Schrift von einer anderen Website',
+    removed_outside: 'Ein Selektor für das, was neben dem Formular steht',
+    removed_escape: 'Ein Escape-Zeichen außerhalb von Anführungszeichen',
     summaryMore: (lines: number) =>
       lines === 0 ? 'Kein eigenes CSS' : lines === 1 ? 'Eigenes CSS, 1 Zeile' : `Eigenes CSS, ${lines} Zeilen`,
     problem_alias:

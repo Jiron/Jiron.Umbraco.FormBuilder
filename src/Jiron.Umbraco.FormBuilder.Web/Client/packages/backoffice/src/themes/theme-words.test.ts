@@ -36,7 +36,7 @@ const FAMILIES: Record<string, readonly string[]> = {
   scale: ['compact', 'default', 'generous', 'custom'],
   spacing: ['compact', 'default', 'roomy', 'custom'],
   buttons: ['filled', 'outlined'],
-  removed: ['import', 'atRule', 'nested', 'address', 'script', 'fontFace'],
+  removed: ['import', 'atRule', 'nested', 'address', 'script', 'fontFace', 'outside', 'escape'],
   against: ['surface', 'accent', 'button', 'onButton'],
   problem: ['alias', 'aliasTaken', 'name', 'token', 'unknown', 'darkOnly', 'long', 'base', 'other'],
 };

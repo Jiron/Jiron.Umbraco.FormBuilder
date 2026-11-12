@@ -7,8 +7,11 @@ using AngleSharp.Css.Parser;
 namespace Jiron.Umbraco.FormBuilder.Core.Themes;
 
 /// <summary>What the sanitiser took out of a theme's custom CSS, by kind, with the text it took (ADR-0215).</summary>
-/// <param name="Code">The kind: <c>import</c>, <c>atRule</c>, <c>nested</c>, <c>address</c>, <c>script</c> or <c>fontFace</c>.</param>
-/// <param name="Text">What went, shortened: the rule's name, the declaration, or the font's family.</param>
+/// <param name="Code">
+/// The kind: <c>import</c>, <c>atRule</c>, <c>nested</c>, <c>address</c>, <c>script</c>, <c>fontFace</c>, <c>outside</c> (a
+/// selector of what stands beside the form) or <c>escape</c> (a declaration with an escape outside quotes).
+/// </param>
+/// <param name="Text">What went, shortened: the rule's name, the selector, the declaration, or the font's family.</param>
 internal sealed record ThemeCssRemoval(string Code, string Text);
 
 /// <summary>A theme's custom CSS as the website serves it, and what went.</summary>
@@ -22,8 +25,10 @@ internal sealed record SanitisedThemeCss(string Css, IReadOnlyList<ThemeCssRemov
 /// theme's form (<c>.jfb-form.jfb-theme-&lt;alias&gt;</c>), and a selector that starts with <c>.jfb-form</c> is that form;
 /// <c>@media</c>, <c>@supports</c>, <c>@container</c> and <c>@keyframes</c> keep their rules; every other at-rule goes;
 /// a declaration goes when it calls <c>expression()</c>, names <c>behavior</c> or <c>-moz-binding</c>, mentions
-/// <c>javascript:</c>, or holds an address that is neither a path on the site nor a <c>data:</c> image; an
-/// <c>@font-face</c> goes when a source is on another host. Nested rules go, as their selectors would escape the scope.
+/// <c>javascript:</c>, holds an address that is neither a path on the site nor a <c>data:</c> image, or an escape outside
+/// quotes (CSS reads <c>u\72l(</c> as <c>url(</c>); an address with an escape is none of the site's; an <c>@font-face</c>
+/// goes when a source is on another host. Nested rules go, as their selectors would escape the scope, and so does a
+/// selector that reaches beside the form (<c>.jfb-form ~ *</c>, <c>:root + p</c>).
 /// </summary>
 internal static class ThemeCss
 {
@@ -128,14 +133,26 @@ internal static class ThemeCss
             return;
         }
 
+        var selectors = new List<string>();
+        foreach (var selector in SplitSelectors(selectorText))
+        {
+            if (Scoped(selector, scope) is { } scoped)
+            {
+                selectors.Add(scoped);
+            }
+            else
+            {
+                removed.Add(new ThemeCssRemoval("outside", Short(selector)));
+            }
+        }
+
         var declarations = Declarations(style.Style, removed);
-        if (declarations.Length == 0)
+        if (declarations.Length == 0 || selectors.Count == 0)
         {
             return;
         }
 
-        var selectors = string.Join(", ", SplitSelectors(selectorText).Select(selector => Scoped(selector, scope)));
-        output.Append(Indent(depth)).Append(selectors).Append(" {").Append(declarations).Append(" }\n");
+        output.Append(Indent(depth)).Append(string.Join(", ", selectors)).Append(" {").Append(declarations).Append(" }\n");
     }
 
     private static void WriteKeyframes(ICssKeyframesRule keyframes, StringBuilder output, List<ThemeCssRemoval> removed, int depth)
@@ -176,6 +193,14 @@ internal static class ThemeCss
         {
             var name = property.Name;
             var value = property.Value ?? string.Empty;
+            // An escape spells any name: u\72l( is url(, image-s\65t( is image-set(. A string's own escapes stay, as in
+            // content: "\201C", unless the string is an address, which IsLocal refuses.
+            if (name.Contains('\\', StringComparison.Ordinal) || EscapesOutsideQuotes(value))
+            {
+                removed.Add(new ThemeCssRemoval("escape", Short($"{name}: {value}")));
+                continue;
+            }
+
             if (name.Equals("behavior", StringComparison.OrdinalIgnoreCase)
                 || name.Equals("-moz-binding", StringComparison.OrdinalIgnoreCase)
                 || IsScript(value))
@@ -205,6 +230,37 @@ internal static class ThemeCss
         }
 
         return written.ToString();
+    }
+
+    // Whether the value holds a backslash outside quotes.
+    private static bool EscapesOutsideQuotes(string value)
+    {
+        char? quote = null;
+        for (var at = 0; at < value.Length; at++)
+        {
+            var character = value[at];
+            if (quote is { } inQuote)
+            {
+                if (character == '\\')
+                {
+                    at++;
+                }
+                else if (character == inQuote)
+                {
+                    quote = null;
+                }
+            }
+            else if (character is '"' or '\'')
+            {
+                quote = character;
+            }
+            else if (character == '\\')
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsScript(string value) =>
@@ -305,6 +361,13 @@ internal static class ThemeCss
     private static bool IsLocal(string address, bool imageOnly)
     {
         var text = address.Trim();
+
+        // An escape in an address can spell its scheme and host ("https\3a //"), so no such address is the site's.
+        if (text.Contains('\\', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         if (text.Length == 0 || text.StartsWith('#'))
         {
             return true;
@@ -373,8 +436,15 @@ internal static class ThemeCss
     }
 
     // A selector under the theme's form: one that starts with .jfb-form is that form, any other is inside it. The page
-    // around the form (:root, html, body) is the form itself, so nothing reaches outside it.
-    internal static string Scoped(string selector, string scope)
+    // around the form (:root, html, body) is the form itself, so nothing reaches outside it; null for a selector that would
+    // still reach beside the form, through a + or ~ after the form's own compound selector.
+    internal static string? Scoped(string selector, string scope)
+    {
+        var scoped = Under(selector, scope);
+        return ReachesBeside(scoped[scope.Length..]) ? null : scoped;
+    }
+
+    private static string Under(string selector, string scope)
     {
         var trimmed = selector.Trim();
         foreach (var root in new[] { ":root", "html", "body" })
@@ -384,10 +454,12 @@ internal static class ThemeCss
                 return scope;
             }
 
-            if (trimmed.StartsWith(root + " ", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith(root + ">", StringComparison.OrdinalIgnoreCase))
+            // What stands beside the page stands beside the form, as the parser writes it (":root~p") or as typed: the
+            // combinator comes right after the scope, and Scoped refuses it.
+            if (trimmed.Length > root.Length && trimmed.StartsWith(root, StringComparison.OrdinalIgnoreCase) && trimmed[root.Length] is ' ' or '>' or '+' or '~')
             {
                 trimmed = trimmed[root.Length..].TrimStart(' ', '>').Trim();
-                return trimmed.Length == 0 ? scope : Scoped(trimmed, scope);
+                return trimmed.Length == 0 ? scope : Under(trimmed, scope);
             }
         }
 
@@ -398,6 +470,57 @@ internal static class ThemeCss
         }
 
         return $"{scope} {trimmed}";
+    }
+
+    // Whether what follows the scope, in the same compound selector or after it, is a + or ~: a sibling of the form, which
+    // is the page's, not the form's.
+    private static bool ReachesBeside(string rest)
+    {
+        var at = 0;
+        var depth = 0;
+        char? quote = null;
+        for (; at < rest.Length; at++)
+        {
+            var character = rest[at];
+            if (quote is { } inQuote)
+            {
+                if (character == '\\')
+                {
+                    at++;
+                }
+                else if (character == inQuote)
+                {
+                    quote = null;
+                }
+            }
+            else if (character == '\\')
+            {
+                at++;
+            }
+            else if (character is '"' or '\'')
+            {
+                quote = character;
+            }
+            else if (character is '(' or '[')
+            {
+                depth++;
+            }
+            else if (character is ')' or ']')
+            {
+                depth--;
+            }
+            else if (depth == 0 && (char.IsWhiteSpace(character) || character is '>' or '+' or '~'))
+            {
+                break;
+            }
+        }
+
+        while (at < rest.Length && char.IsWhiteSpace(rest[at]))
+        {
+            at++;
+        }
+
+        return at < rest.Length && rest[at] is '+' or '~';
     }
 
     private static bool IsNameCharacter(char character) => char.IsAsciiLetterOrDigit(character) || character is '-' or '_';

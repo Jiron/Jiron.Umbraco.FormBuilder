@@ -204,7 +204,7 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
         var preview = await CallAsync("designer", HttpMethod.Post, "theme/preview", new
         {
             baseTheme = "default",
-            tokens = new { light = new Dictionary<string, string> { ["--jfb-color-accent"] = "#8a1538", ["--jfb-made-up"] = "1px" }, dark = new { } },
+            tokens = new { light = new Dictionary<string, string> { ["--jfb-color-accent"] = "#8a1538", ["--jfb-made-up"] = "1px", ["--jfb-color-surface"] = "image-set(\"https://example.com/x.png\" 1x)" }, dark = new { } },
             customCss = "@import url(https://fonts.example.com/a.css); .jfb-label { color: red; background: url(https://example.com/x.png); }",
         });
 
@@ -217,7 +217,7 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
             Assert.That(css, Does.Not.Contain("--jfb-made-up").And.Not.Contain("@import").And.Not.Contain("example.com"));
             Assert.That(css, Does.Contain(".jfb-form.jfb-theme-jfb-preview .jfb-label { color: red; }"));
             Assert.That(preview.Body!["removed"]!.AsArray().Select(each => each!["code"]!.GetValue<string>()), Is.EqualTo(new[] { "import", "address" }));
-            Assert.That(preview.Body!["problems"]!.AsArray().Select(each => each!["path"]!.GetValue<string>()), Is.EqualTo(new[] { "$.tokens.light['--jfb-made-up']" }));
+            Assert.That(preview.Body!["problems"]!.AsArray().Select(each => each!["path"]!.GetValue<string>()), Is.EqualTo(new[] { "$.tokens.light['--jfb-color-surface']", "$.tokens.light['--jfb-made-up']" }), "an image set would load from another host");
         });
     }
 

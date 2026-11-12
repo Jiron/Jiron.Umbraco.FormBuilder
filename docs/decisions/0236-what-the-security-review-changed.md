@@ -58,6 +58,26 @@ that do not fit the type are left to publishing, as before. The words that mark 
 key, password, secret and token by bearer, credential, passphrase, passwd, session and signature, in the server and the
 sidebar alike; a bare "pass" or "private" would have held plain headers such as `X-Bypass-Cache` to a reference.
 
+### Themes: a token's value is read as an allowlist
+
+A token's value refused a declaration's end, markup and `url(`, and passed everything else, but tokens feed properties
+such as `background`, where `image-set("https://…")`, `-webkit-image-set()` or `u\72l(…)` (an escape that spells
+`url`) loaded an image from another host on a visitor's page ([ADR-0215](0215-library-themes-and-email-layouts.md)). A
+value now keeps to a grammar (`ThemeTokenValue`): ASCII letters, digits, spaces and `# % . , + - * / ( )` with balanced
+parentheses; quoted names of letters, digits, spaces, hyphens and underscores; and calls only to colour, arithmetic,
+`var()`, gradient and easing functions. No backslash, comment, colon or other function passes. Every built-in value
+keeps to it; a library theme's stored value that does not is left out of its layer, as before, and the theme editor names it.
+
+### Themes: custom CSS stays inside the form and spells no address
+
+Every selector went under the theme's form, but a combinator right after it reached the page beside the form:
+`.jfb-form ~ *`, `.jfb-form + p` and `:root ~ p` (the page around the form being the form itself) styled the site's own
+elements ([ADR-0215](0215-library-themes-and-email-layouts.md)). Such a selector now goes, said as `outside`, and the rest
+of its list stays; a `+` or `~` further in (`.jfb-field ~ .jfb-field`) stays inside the form. CSS reads an escape as the
+letter it stands for, so `u\72l(…)` is `url(…)` and `url("https\3a //…")` names another host: a declaration with a
+backslash outside quotes goes, said as `escape`, and an address with one is none of the site's. A string's own escapes,
+as in `content: "\201C"`, stay. The editor names both kinds in English and German.
+
 ### The orphan cleanup moves past what it cannot remove
 
 The cleanup read the oldest two hundred uploads no entry took and stopped when none of them would go, so files a store

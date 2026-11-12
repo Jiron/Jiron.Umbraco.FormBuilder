@@ -361,7 +361,7 @@ public sealed partial class FormBuilderThemesTests
     public void AnyOtherToken_IsRefused(string token, string value) =>
         Assert.That(FormBuilderThemes.Problems([.. BuiltIn, new Custom("acme") { Tokens = new Dictionary<string, string> { [token] = value } }]), Is.EqualTo(new[]
         {
-            $"The theme 'acme' has the token '{token}': a token is --jfb- and lower-case letters, digits and hyphens, with a value of one declaration and no address.",
+            $"The theme 'acme' has the token '{token}': a token is --jfb- and lower-case letters, digits and hyphens, with a value of colours, sizes, keywords and quoted names, calling only colour, arithmetic, var(), gradient and easing functions.",
         }));
 
     [TestCase("acme")]

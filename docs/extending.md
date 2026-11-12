@@ -138,7 +138,10 @@ URLs, and a reader never sees a file that is still being written.
 ### Themes and views
 
 `IFormBuilderTheme` names a stylesheet, a class map onto the slots of `FormBuilderThemeSlots`, tokens for the
-`--jfb-*` custom properties, a dark scheme and a view folder. Every theme shares one set of views; a site overrides a
+`--jfb-*` custom properties, a dark scheme and a view folder. A token's value is colours, sizes, keywords and quoted
+font names, calling only colour, arithmetic, `var()`, gradient and easing functions: no address, image set or escape, so
+nothing a token feeds (a `background`, say) loads from another host. The site does not start with a theme that breaks this.
+Every theme shares one set of views; a site overrides a
 view by placing its own at the same path below `Views/JironFormBuilder/<theme>/`, or below
 `Views/JironFormBuilder/<theme>/_forms/<alias>/` for one form. Each view starts with its contract header
 (`@* jfb-view: Field 1 *@`), which says the version of the markup contract it follows.

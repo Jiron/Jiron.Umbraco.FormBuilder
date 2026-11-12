@@ -115,6 +115,8 @@ export default {
     removed_address: 'An address on another site',
     removed_script: 'A script',
     removed_fontFace: 'A font from another site',
+    removed_outside: 'A selector of what is beside the form',
+    removed_escape: 'An escape outside quotes',
     summaryMore: (lines: number) =>
       lines === 0 ? 'No custom CSS' : lines === 1 ? 'Custom CSS, 1 line' : `Custom CSS, ${lines} lines`,
     problem_alias: 'An alias starts with a lowercase letter, then lowercase letters, digits and hyphens, up to 64.',

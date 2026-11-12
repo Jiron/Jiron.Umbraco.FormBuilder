@@ -97,7 +97,7 @@ internal sealed record ThemeTokens
                 }
                 else if (value.Length > MaxValueLength || !FormBuilderThemes.IsTokenValue(value))
                 {
-                    problems.Add(DefinitionErrors.InvalidValue, at, $"A token's value is one declaration of at most {MaxValueLength} characters, without an address.");
+                    problems.Add(DefinitionErrors.InvalidValue, at, $"A token's value is at most {MaxValueLength} characters of colours, sizes, keywords and quoted names, calling only colour, arithmetic, var(), gradient and easing functions.");
                 }
             }
         }

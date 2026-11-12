@@ -161,7 +161,7 @@ internal sealed partial class FormBuilderThemes
             {
                 if (!Token().IsMatch(token) || !IsTokenValue(value))
                 {
-                    problems.Add($"The theme '{theme.Name}' has the token '{token}': a token is --jfb- and lower-case letters, digits and hyphens, with a value of one declaration and no address.");
+                    problems.Add($"The theme '{theme.Name}' has the token '{token}': a token is --jfb- and lower-case letters, digits and hyphens, with a value of colours, sizes, keywords and quoted names, calling only colour, arithmetic, var(), gradient and easing functions.");
                 }
             }
 
@@ -175,7 +175,7 @@ internal sealed partial class FormBuilderThemes
             {
                 if (!token.StartsWith("--jfb-color-", StringComparison.Ordinal) || theme.Tokens?.ContainsKey(token) != true || !IsTokenValue(value))
                 {
-                    problems.Add($"The theme '{theme.Name}' has the dark colour '{token}': a dark colour is one of its Tokens whose name starts with --jfb-color-, with a value of one declaration and no address.");
+                    problems.Add($"The theme '{theme.Name}' has the dark colour '{token}': a dark colour is one of its Tokens whose name starts with --jfb-color-, with a value of colours, sizes, keywords and quoted names, calling only colour, arithmetic, var(), gradient and easing functions.");
                 }
             }
 
@@ -207,12 +207,9 @@ internal sealed partial class FormBuilderThemes
         !string.IsNullOrEmpty(classes)
         && classes.Split(' ').All(name => name.Length > 0 && name.All(character => character is > ' ' and < (char)127 and not ('"' or '\'' or '<' or '>' or '&')));
 
-    /// <summary>Whether a text is one declaration's value: no end of a declaration or a block, no markup, no control characters, no address.</summary>
+    /// <summary>Whether a text is a token's value, in the grammar of <see cref="ThemeTokenValue"/>: nothing in it loads anything.</summary>
     /// <param name="value">The value.</param>
-    internal static bool IsTokenValue(string? value) =>
-        !string.IsNullOrWhiteSpace(value)
-        && !value.Any(character => character is ';' or '{' or '}' or '<' or '>' || char.IsControl(character))
-        && !value.Contains("url(", StringComparison.OrdinalIgnoreCase);
+    internal static bool IsTokenValue(string? value) => ThemeTokenValue.IsValid(value);
 
     [GeneratedRegex(@"^[a-z][a-z0-9-]{0,63}\z", RegexOptions.CultureInvariant)]
     private static partial Regex Alias();
