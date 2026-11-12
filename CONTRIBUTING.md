@@ -92,7 +92,8 @@ node tests/vectors/build.mjs
 finds every relative link and heading anchor in the pages and the backoffice's "Learn more" map, offline, and the
 scripts' tests run it. `node scripts/render-markdown.mjs` shows `README.md` and `docs/README.nuget.md` (or the files you
 name) as GitHub renders them, in Edge, and saves a shot of each in `.local/markdown/`; look at them after changing a
-README.
+README. `docs/configuration.md` is generated: after changing a setting of the host configuration, run
+`node scripts/configuration-docs.mjs`, or the scripts' tests fail.
 
 ```
 cd scripts
