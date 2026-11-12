@@ -26,7 +26,7 @@ const GROUPS = [
     name: (id: string) => /[\\/]backoffice[\\/]src[\\/]([^\\/]+)[\\/]/.exec(id)?.[1] ?? null,
     test: (id: string) => OWN.test(id),
     priority: 1,
-    maxSize: 160_000,
+    maxSize: 240_000,
   },
 ];
 

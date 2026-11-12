@@ -54,3 +54,15 @@ about 165 bytes gzip, 38 KB in all, besides compressing worse alone than with it
   sources still keep text that such a box shows on one line, as the tests read the sources.
 - **Revisit** if a template needs its whitespace in a way the three exceptions miss: the exception goes in the plugin,
   with a test; and if a folder grows so large that loading it whole costs a screen more than its requests saved.
+
+## Amendment (2026-11-12, step 16.1)
+
+The fixes of the security review put the bundle at 512.52 KB, past its 512 KB, after Phase 15 had left it at 511.69 KB.
+A folder's chunks are now split where one would pass 240 KB before compression instead of 160 KB: the designer's 16
+chunks became 12, each with one licence banner and one list of what it takes from the others less. The bundle is
+504.04 KB in 55 files, the start unchanged at 44.48 KB and the largest file 32.40 KB. At 320 KB it would be 500.17 KB with
+a largest file of 49.12 KB, and the screens outside the designer would load about 20 KB more each, so 240 KB it is.
+
+Measuring this showed what the revisit above asks about: every screen of the section but the access, activity and tree
+screens loads nearly the whole designer (about 215 to 240 KB), as helpers they use live in its folder and chunks made by
+folder import each other both ways. Moving those helpers to a folder of their own is the next room the bundle has.
