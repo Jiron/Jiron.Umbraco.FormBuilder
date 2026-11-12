@@ -171,6 +171,31 @@ public sealed class FormBuilderRateLimiterTests
     }
 
     [Test]
+    public void TheSharesOfUploads_OfAnIPv6Network_HoldTogether_ByTheirSlash48()
+    {
+        var limiter = Limiter(share: 3 * 1_048_576);
+
+        // Four /64 networks of one /48 each spend their own share; the fifth finds the /48's four shares spent.
+        var spent = Enumerable.Range(1, 4).Select(subnet => Address($"2001:db8:7:{subnet}::1")).ToList();
+        spent.ForEach(address => limiter.CountUploadShare(address, 3 * 1_048_576));
+        var fifth = limiter.CheckUploadShare(Address("2001:db8:7:5::1"));
+        var otherNetwork = limiter.CheckUploadShare(Address("2001:db8:8:1::1")).Allowed;
+        var signed = Address("2001:db8:7:6::1");
+        signed.Features.Set(new ServerKeyRequest("shop"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(fifth.Allowed, Is.False, "the /48 holds four shares");
+            Assert.That(fifth.Renders, Is.True);
+            Assert.That(otherNetwork, Is.True, "another /48 counts by itself");
+            Assert.That(limiter.CheckUploadShare(signed).Allowed, Is.True, "a server key is no network's");
+            Assert.That(RateLimitClients.NetworkOf(IPAddress.Parse("2001:db8:7:5::1")), Is.EqualTo("2001:db8:7::/48"));
+            Assert.That(RateLimitClients.NetworkOf(IPAddress.Parse("203.0.113.7")), Is.Null);
+            Assert.That(RateLimitClients.NetworkOf(IPAddress.Parse("::ffff:203.0.113.7")), Is.Null);
+        });
+    }
+
+    [Test]
     public void NoShareOfUploads_LeavesItOut_AndMakesNoWindow()
     {
         var limiter = Limiter(share: 0);
@@ -376,10 +401,101 @@ public sealed class FormBuilderRateLimiterTests
         Assert.Multiple(() =>
         {
             Assert.That(limiter.TrackedWindows, Is.LessThanOrEqualTo(Bound));
-            Assert.That(passed, Is.EqualTo(Bound + 5), "each kept address once, then the shared overflow's limit");
+            Assert.That(passed, Is.EqualTo(Bound + (FormBuilderRateLimiter.OverflowBuckets * 5)), "each kept address once, then each overflow bucket's limit");
             Assert.That(next.Allowed, Is.False, "fails closed");
             Assert.That(next.Renders, Is.False, "an overflow's refusal costs no render");
         });
+    }
+
+    [Test]
+    public void PastTheBound_ANewClientSharesOnlyItsOverflowBucket()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.MaxTrackedClients = 1_000;
+            limits.Read.PerAddressPerMinute = 5;
+            limits.Read.SitePerSecond = 0;
+        });
+        _ = Enumerable.Range(0, 1_000).Count(i => limiter.Take(Address(Ip(i)), FormBuilderRateLimitPolicies.Read, null).Allowed);
+        var late = Enumerable.Range(0, 500).Select(i => $"198.51.{i / 200}.{i % 200}").ToList();
+        var first = late[0];
+        var elsewhere = late.First(address => FormBuilderRateLimiter.OverflowOf("address:" + address) != FormBuilderRateLimiter.OverflowOf("address:" + first));
+
+        var spent = Count(limiter, Address(first), FormBuilderRateLimitPolicies.Read, null, 6);
+        var other = limiter.Take(Address(elsewhere), FormBuilderRateLimitPolicies.Read, null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(spent, Is.EqualTo(5), "its bucket's limit");
+            Assert.That(other.Allowed, Is.True, "a client in another bucket is not held by it");
+            Assert.That(limiter.TrackedWindows, Is.LessThanOrEqualTo(1_000));
+        });
+    }
+
+    [Test]
+    public void NearTheBound_ASweepForgetsWindowsThatCountedOneRequest_AndKeepsTheOthers()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.MaxTrackedClients = 1_000;
+            limits.Read.PerAddressPerMinute = 0;
+            limits.Read.PerAddressPerHour = 3;
+            limits.Read.SitePerSecond = 0;
+        });
+        var known = Address("198.51.100.9");
+        Assert.That(Count(limiter, known, FormBuilderRateLimitPolicies.Read, null, 2), Is.EqualTo(2));
+        _ = Enumerable.Range(0, 999).Count(i => limiter.Take(Address(Ip(i)), FormBuilderRateLimitPolicies.Read, null).Allowed);
+        var full = limiter.TrackedWindows;
+
+        // A minute later the sweep runs with the next request: every window of one request goes, the known client's stays.
+        _clock.Advance(TimeSpan.FromSeconds(61));
+        var newcomer = limiter.Take(Address("198.51.100.10"), FormBuilderRateLimitPolicies.Read, null);
+        var after = limiter.TrackedWindows;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(full, Is.EqualTo(1_000));
+            Assert.That(newcomer.Allowed, Is.True);
+            Assert.That(after, Is.EqualTo(2), "the known client's and the newcomer's");
+            Assert.That(Count(limiter, known, FormBuilderRateLimitPolicies.Read, null, 3), Is.EqualTo(1), "its hour still holds its two");
+        });
+    }
+
+    [Test]
+    public void NearTheBound_ASweepKeepsAShareOfUploads_ThatCountedOneMebibyte()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.MaxTrackedClients = 1_000;
+            limits.Read.PerAddressPerMinute = 0;
+            limits.Read.PerAddressPerHour = 3;
+            limits.Read.SitePerSecond = 0;
+        }, share: 1_048_576);
+        var uploader = Address("198.51.100.9");
+        limiter.CountUploadShare(uploader, 1_048_576);
+        _ = Enumerable.Range(0, 999).Count(i => limiter.Take(Address(Ip(i)), FormBuilderRateLimitPolicies.Read, null).Allowed);
+
+        _clock.Advance(TimeSpan.FromSeconds(61));
+        _ = limiter.Take(Address("198.51.100.10"), FormBuilderRateLimitPolicies.Read, null);
+
+        Assert.That(limiter.CheckUploadShare(uploader).Allowed, Is.False, "a share counts mebibytes: forgetting one would hand back a file");
+    }
+
+    [Test]
+    public void BelowTheBound_ASweepKeepsWindowsThatCountedOneRequest()
+    {
+        var limiter = Limiter(limits =>
+        {
+            limits.MaxTrackedClients = 1_000;
+            limits.Read.PerAddressPerMinute = 0;
+            limits.Read.PerAddressPerHour = 1;
+            limits.Read.SitePerSecond = 0;
+        });
+        _ = Enumerable.Range(0, 100).Count(i => limiter.Take(Address(Ip(i)), FormBuilderRateLimitPolicies.Read, null).Allowed);
+
+        _clock.Advance(TimeSpan.FromSeconds(61));
+
+        Assert.That(limiter.Take(Address(Ip(0)), FormBuilderRateLimitPolicies.Read, null).Allowed, Is.False, "its hour holds its one request");
     }
 
     [Test]

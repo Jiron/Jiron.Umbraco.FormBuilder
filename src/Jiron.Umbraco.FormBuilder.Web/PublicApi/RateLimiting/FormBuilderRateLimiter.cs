@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -52,15 +53,26 @@ internal sealed class RateLimitCount(FormBuilderRatePolicyOptions limits, string
 /// The rate limits of the public API and of posts without JavaScript, in memory on each server (ADR-0012, ADR-0137): each
 /// policy's partitions, cheapest first, on the site's <see cref="TimeProvider"/>. A request a partition refuses is not
 /// counted by the ones it would have met next, and those before it give it back, so one flooding client uses up no one
-/// else's limit. It keeps at most <c>Limits:MaxTrackedClients</c> windows: past that a new client shares one overflow
-/// window per partition, so a flood of distinct addresses is limited, never let through, and memory stays bounded.
-/// Emptied windows are swept every minute. A request that names a form counts its address first and the rest once the form is
+/// else's limit. It keeps at most <c>Limits:MaxTrackedClients</c> windows: past that a new client shares one of
+/// <see cref="OverflowBuckets"/> overflow windows per partition, by a hash of its key, so a flood of distinct addresses is
+/// limited, never let through, memory stays bounded, and a new visitor shares a window with a part of the flood only.
+/// Emptied windows are swept every minute; while the bound is nearly full, so are windows that counted one request and have
+/// had none for a minute, so a flood of addresses that each asked once does not hold the bound for an hour (16.1's review). A request that names a form counts its address first and the rest once the form is
 /// known, so a key that names no form spends none of a form's or the site's limits (<see cref="FormRateLimits"/>, ADR-0149).
 /// </summary>
 internal sealed class FormBuilderRateLimiter
 {
     /// <summary>How many times its limit a client may try before a refusal stops rendering a page.</summary>
     public const int RenderedTimesLimit = 10;
+
+    /// <summary>How many overflow windows each partition has, which new clients share by a hash of their key past the bound.</summary>
+    public const int OverflowBuckets = 64;
+
+    /// <summary>
+    /// How many times an address's share of uploads the /48 network of IPv6 addresses holds together: a site is usually
+    /// given a whole /48, 65,536 /64 networks, so the /64 alone would let one site take every share (16.1's review).
+    /// </summary>
+    public const int NetworkShareFactor = 4;
 
     private const long Mebibyte = 1_048_576;
 
@@ -71,6 +83,7 @@ internal sealed class FormBuilderRateLimiter
     private static readonly TimeSpan Second = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan Minute = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+    private static readonly ImmutableArray<string> OverflowClients = [.. Enumerable.Range(0, OverflowBuckets).Select(bucket => string.Create(CultureInfo.InvariantCulture, $"{WindowKey.Overflow}{bucket}"))];
 
     private readonly ConcurrentDictionary<WindowKey, RateWindow> _windows = new();
     private readonly Dictionary<string, FormBuilderRatePolicyOptions> _policies;
@@ -165,9 +178,20 @@ internal sealed class FormBuilderRateLimiter
     public RateLimitDecision CheckUploadShare(HttpContext http)
     {
         ArgumentNullException.ThrowIfNull(http);
-        return _uploadMebibytes > 0 && _windows.TryGetValue(UploadShareKey(http), out var window) && window.IsFull(out var retryAfter)
-            ? new RateLimitDecision(false, retryAfter, true)
-            : RateLimitDecision.Go;
+        if (_uploadMebibytes == 0)
+        {
+            return RateLimitDecision.Go;
+        }
+
+        foreach (var (key, _) in UploadShares(http))
+        {
+            if (_windows.TryGetValue(key, out var window) && window.IsFull(out var retryAfter))
+            {
+                return new RateLimitDecision(false, retryAfter, true);
+            }
+        }
+
+        return RateLimitDecision.Go;
     }
 
     /// <summary>Counts what a client has just stored towards its share, in whole mebibytes.</summary>
@@ -181,21 +205,32 @@ internal sealed class FormBuilderRateLimiter
             return;
         }
 
-        var key = UploadShareKey(http);
-        var factor = ServerKeyRequest.NameOf(http) is null ? 1 : _serverKeyFactor;
-        var part = new Partition(PartitionKind.ClientUploads, (int)Math.Min(_uploadMebibytes * (long)factor, int.MaxValue), UploadShare, UsesClient: true, UsesForm: false);
         var count = (int)Math.Min((bytes + Mebibyte - 1) / Mebibyte, int.MaxValue);
-        var (window, _) = WindowFor(key, part);
-        while (!window.TryCount(Math.Max(1, count)))
+        foreach (var (key, limit) in UploadShares(http))
         {
-            // The sweep ended it just after this request found it: it counts on a new one.
-            Forget(key, window);
-            (window, _) = WindowFor(key, part);
+            var part = new Partition(PartitionKind.ClientUploads, limit, UploadShare, UsesClient: true, UsesForm: false);
+            var (window, _) = WindowFor(key, part);
+            while (!window.TryCount(Math.Max(1, count)))
+            {
+                // The sweep ended it just after this request found it: it counts on a new one.
+                Forget(key, window);
+                (window, _) = WindowFor(key, part);
+            }
         }
     }
 
-    private static WindowKey UploadShareKey(HttpContext http) =>
-        new(FormBuilderRateLimitPolicies.Upload, PartitionKind.ClientUploads, FormBuilderRateLimitPolicies.ClientOf(http), null);
+    // The shares a client's uploads count towards, with their limits in mebibytes: its own, and for an IPv6 address
+    // without a server key its /48 network's too.
+    private IEnumerable<(WindowKey Key, int Limit)> UploadShares(HttpContext http)
+    {
+        var signed = ServerKeyRequest.NameOf(http) is not null;
+        var factor = signed ? _serverKeyFactor : 1;
+        yield return (new WindowKey(FormBuilderRateLimitPolicies.Upload, PartitionKind.ClientUploads, FormBuilderRateLimitPolicies.ClientOf(http), null), (int)Math.Min(_uploadMebibytes * (long)factor, int.MaxValue));
+        if (!signed && RateLimitClients.NetworkOf(http.Connection.RemoteIpAddress) is { } network)
+        {
+            yield return (new WindowKey(FormBuilderRateLimitPolicies.Upload, PartitionKind.ClientUploads, "network:" + network, null), (int)Math.Min(_uploadMebibytes * (long)NetworkShareFactor, int.MaxValue));
+        }
+    }
 
     // Counts a request in each of these partitions; the first that refuses it answers, and those before it give it back.
     private RateLimitDecision? TakeAll(RateLimitCount count, IEnumerable<Partition> partitions, Guid? form)
@@ -277,7 +312,7 @@ internal sealed class FormBuilderRateLimiter
 
         if (Volatile.Read(ref _tracked) >= _maxTracked)
         {
-            var overflow = key with { Client = key.Client is null ? null : WindowKey.Overflow, Form = key.Form is null ? null : Guid.Empty };
+            var overflow = key with { Client = key.Client is null ? null : OverflowOf(key.Client), Form = key.Form is null ? null : Guid.Empty };
             return (_windows.GetOrAdd(overflow, _ => new RateWindow(part.Limit, part.Length, _time)), true);
         }
 
@@ -291,6 +326,10 @@ internal sealed class FormBuilderRateLimiter
         return (_windows[key], false);
     }
 
+    /// <summary>The overflow window's client a client shares past the bound: one of <see cref="OverflowBuckets"/>, by a hash of its key.</summary>
+    /// <param name="client">The client's key.</param>
+    internal static string OverflowOf(string client) => OverflowClients[(int)((uint)client.GetHashCode(StringComparison.Ordinal) % OverflowBuckets)];
+
     private void SweepWhenDue()
     {
         var now = _time.GetUtcNow().UtcTicks;
@@ -300,9 +339,12 @@ internal sealed class FormBuilderRateLimiter
             return;
         }
 
+        // Near the bound, a client's window that counted one request and has had none for a minute goes too. A share of
+        // uploads stays: it counts mebibytes, so forgetting it would hand back a whole file's worth.
+        var pressed = Volatile.Read(ref _tracked) >= _maxTracked - (_maxTracked / 10);
         foreach (var (key, window) in _windows)
         {
-            if (window.TryRetire())
+            if (window.TryRetire() || (pressed && key.Counts && key.Kind != PartitionKind.ClientUploads && window.TryRetireLight(SweepEvery)))
             {
                 Forget(key, window);
             }
@@ -332,9 +374,10 @@ internal sealed class FormBuilderRateLimiter
 
     private readonly record struct WindowKey(string Policy, PartitionKind Kind, string? Client, Guid? Form)
     {
-        public const string Overflow = "overflow";
+        // A client's key starts with "key:" or "address:", so no client is an overflow window.
+        public const string Overflow = "overflow:";
 
-        public bool IsOverflow => Client == Overflow || Form == Guid.Empty;
+        public bool IsOverflow => (Client?.StartsWith(Overflow, StringComparison.Ordinal) ?? false) || Form == Guid.Empty;
 
         // Whether the key counts toward the bound: the site-wide and overflow windows are few, whatever a flood does.
         public bool Counts => Kind is not (PartitionKind.Site or PartitionKind.Lookup) && !IsOverflow;
@@ -369,5 +412,19 @@ internal static class RateLimitClients
         var bytes = address.GetAddressBytes();
         Array.Clear(bytes, 8, 8);
         return string.Create(CultureInfo.InvariantCulture, $"{new IPAddress(bytes)}/64");
+    }
+
+    /// <summary>The /48 network of an IPv6 address, which a site is usually given whole; null for IPv4, a mapped address or none.</summary>
+    /// <param name="address">The connection's address.</param>
+    public static string? NetworkOf(IPAddress? address)
+    {
+        if (address is null || address.IsIPv4MappedToIPv6 || address.AddressFamily != AddressFamily.InterNetworkV6)
+        {
+            return null;
+        }
+
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 6, 10);
+        return string.Create(CultureInfo.InvariantCulture, $"{new IPAddress(bytes)}/48");
     }
 }

@@ -72,6 +72,23 @@ internal sealed class RateWindow
         }
     }
 
+    /// <summary>
+    /// Ends a window that holds one request at most and has had none for <paramref name="idle"/>: what the sweep forgets
+    /// while the bound is nearly full, so addresses that each asked once do not hold it for the window's whole length.
+    /// Forgetting such a window gives its client back that one request at most.
+    /// </summary>
+    /// <param name="idle">How long the window has had no request.</param>
+    public bool TryRetireLight(TimeSpan idle)
+    {
+        lock (_gate)
+        {
+            var now = _time.GetUtcNow().UtcTicks;
+            Advance(now);
+            _retired |= _takenTotal + _refusedTotal <= 1 && now - _lastActivity >= idle.Ticks;
+            return _retired;
+        }
+    }
+
     /// <summary>Counts one request when it fits; otherwise <paramref name="retryAfter"/> says when the next will.</summary>
     /// <param name="retryAfter">How long until a request fits; zero when this one did.</param>
     /// <param name="retired">Whether the window has ended and counted nothing, so the request belongs to a new one.</param>

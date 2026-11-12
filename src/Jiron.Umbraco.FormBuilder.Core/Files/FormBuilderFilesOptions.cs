@@ -68,7 +68,8 @@ public sealed class FormBuilderFilesOptions
     /// <summary>
     /// The most bytes one address may upload in the day an upload waits for an entry, 0 to 999,999,999,999,999: 1 GiB unless the site
     /// sets another, and 0 leaves it out, so that a few addresses cannot use up <see cref="MaxWaitingBytes"/> for everybody (ADR-0148).
-    /// Counted on each server, in whole mebibytes. Raise it for a form that takes large files from visitors behind one address.
+    /// An IPv6 address counts as its /64 network, and the /48 around it holds four shares together. Counted on each server, in
+    /// whole mebibytes. Raise it for a form that takes large files from visitors behind one address.
     /// </summary>
     public long MaxWaitingBytesPerAddress { get; set; } = DefaultMaxWaitingBytesPerAddress;
 

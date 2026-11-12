@@ -40,6 +40,8 @@ headless site.
   every policy and partition, so that one number bounds its memory. Past it, a new client or form shares one overflow
   window per partition. A window that still counts is never dropped, so nobody gets a fresh limit by flooding. A form
   key is counted toward the bound too, because a route can name any key.
+  Amended by [ADR-0236](0236-what-the-security-review-changed.md): a new client shares one of 64 overflow windows per partition, by a hash of
+  its key, and near the bound the sweep also forgets windows that counted one request and have had none for a minute.
 - **Partitions count cheapest first.** A request one refuses is not counted by those after it, and those before it give
   it back, so one flooding client uses up no one's site-wide limit.
 - **A post counts as `submit` when it runs the pipeline or holds files:** Send, Next, or any post of a form that takes

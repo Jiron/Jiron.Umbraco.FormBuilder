@@ -42,6 +42,24 @@ the surface action checked the client's share of what may wait, the site's room,
   ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)), but a file or a typed signature in a
   row past the group's `maxRows` names no field: nothing of it is written down or drawn first.
 
+### The rate limits: a flood leaves new visitors room
+
+Past `Limits:MaxTrackedClients` windows a new client shared one overflow window per partition, and a window lived as long as
+its partition (an hour for the hourly limits), so addresses that each asked once (an IPv6 /48 holds 65,536 /64 networks)
+filled the bound and held every new visitor to one address's limit for an hour ([ADR-0137](0137-the-rate-limiter.md)). Now a
+new client shares one of 64 overflow windows, by a hash of its key, so it shares with a part of the flood only, and while the
+bound is nine tenths full the minute's sweep also forgets a client's window that counted one request and has had none for a
+minute. Such a client gets that one request back at most; a window that counted more, and a share of uploads, which counts
+mebibytes, stay. The site-wide partitions hold a flood as before, and the overflow lets 64 times a client's limit through
+before they do.
+
+### Uploads: an IPv6 network's shares hold together
+
+A share of what may wait (`Files:MaxWaitingBytesPerAddress`) was an address's, an IPv6 address's by its /64, so a single /48
+held 65,536 shares and filled `Files:MaxWaitingBytes` for a day ([ADR-0148](0148-what-uploads-may-hold.md)). The /48 around
+an IPv6 address now holds four shares together, beside each /64's own; a server key keeps its own share alone. IPv4 addresses
+are not grouped, as one address is often a whole office.
+
 ### The public API: a refusal of unknown names stays short
 
 A body within its limit could name tens of thousands of fields the form does not have, and the refusal named each. It now

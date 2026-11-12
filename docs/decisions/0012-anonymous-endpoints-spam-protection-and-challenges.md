@@ -152,7 +152,8 @@ refusals, and an address further over its limit, get a bare `429`, so a flood st
 - **Bounded and failing closed:** each server tracks at most `MaxTrackedClients` addresses (default 100,000). Past that,
   new addresses share one overflow partition with the per-address limit, so a flood of distinct addresses is limited,
   never let through, and memory stays bounded. Emptied windows are swept every minute. The site-wide partitions hold
-  whatever the per-address ones do.
+  whatever the per-address ones do. Amended by [ADR-0236](0236-what-the-security-review-changed.md): 64 overflow windows by a hash of the
+  key, and windows of one request forgotten near the bound.
 - **Server keys** (below) are limited per key instead of per address.
 - **Per server:** on N servers a client can reach up to N times a per-address limit. That is accepted, because it keeps
   the limits free of shared state; the limits that must hold across the cluster are in the database (below).

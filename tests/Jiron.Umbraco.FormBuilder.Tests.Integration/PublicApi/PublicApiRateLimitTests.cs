@@ -195,7 +195,7 @@ public sealed class PublicApiRateLimitTests : PublicApiTestBase
         Assert.Multiple(() =>
         {
             Assert.That(kept, Is.LessThanOrEqualTo(1000), "memory stays bounded");
-            Assert.That(passed, Is.EqualTo(1005), "each kept address, then the overflow's one limit");
+            Assert.That(passed, Is.EqualTo(1000 + (FormBuilderRateLimiter.OverflowBuckets * 5)), "each kept address, then each overflow bucket's limit");
             Assert.That(during.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), "fails closed for a new address");
             Assert.That(after.StatusCode, Is.Not.EqualTo(HttpStatusCode.TooManyRequests));
             Assert.That(Limiter.TrackedWindows, Is.EqualTo(1), "the flood's windows are swept");

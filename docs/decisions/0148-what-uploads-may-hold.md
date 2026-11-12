@@ -59,6 +59,8 @@ flood. Once in ten seconds per server, with what the server stores itself added 
   the day an upload waits, counted on each server. Past it, the upload endpoint answers `429 rate_limited` with `Retry-After`, and a
   post without JavaScript comes back with its answers and when to send again. The review of 7.4 found that without it two addresses
   could fill the cap in about ten minutes and shut every form's uploads for a day; now it takes eleven, for the whole day.
+  Amended by [ADR-0236](0236-what-the-security-review-changed.md): an IPv6 address's share is its /64's, and the /48 around it holds four shares
+  together, as a whole /48 (65,536 /64 networks) is what a site is usually given, and is free from tunnel brokers.
 - **The cleanup** is `OrphanFileJob`, on the server that schedules, every minute, for at most 30 seconds. It is no longer a
   part of the retention job.
 - **A scan:** what an entry holds goes first. Uploads are looked at in batches of ten, so a new entry's file waits for at most
