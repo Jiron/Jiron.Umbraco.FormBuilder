@@ -62,8 +62,9 @@ internal static class EmailAddresses
     /// <summary>
     /// The key the limits count a mailbox by (section 4.5): trimmed, normalised with compatibility forms, folded here because
     /// SQLite's <c>LOWER</c> folds ASCII only, without a <c>+tag</c> in its local part, and with its domain as the mail server will
-    /// look it up, so every spelling of one mailbox counts as one. Null for a text that is not an address, or whose key is too
-    /// long to store.
+    /// look it up, so every spelling of one mailbox counts as one; for Gmail, which reads a local part without its dots and
+    /// takes googlemail.com for gmail.com, without them too (16.1's review). Null for a text that is not an address, or whose
+    /// key is too long to store.
     /// </summary>
     public static string? KeyOf(string? address)
     {
@@ -76,9 +77,19 @@ internal static class EmailAddresses
         var at = trimmed!.LastIndexOf('@');
         var local = trimmed[..at].Normalize(NormalizationForm.FormKC).ToLowerInvariant();
         var plus = local.IndexOf('+', StringComparison.Ordinal);
-        var key = $"{(plus > 0 ? local[..plus] : local)}@{DomainOf(trimmed[(at + 1)..])}";
+        var mailbox = plus > 0 ? local[..plus] : local;
+        var domain = DomainOf(trimmed[(at + 1)..]);
+        if (domain is Gmail or "googlemail.com" && mailbox.Replace(".", string.Empty, StringComparison.Ordinal) is { Length: > 0 } undotted)
+        {
+            (mailbox, domain) = (undotted, Gmail);
+        }
+
+        var key = $"{mailbox}@{domain}";
         return key.Length <= EmailRepository.MaxRecipientKeyLength ? key : null;
     }
+
+    // The mail service whose mailboxes ignore the dots in their local part.
+    private const string Gmail = "gmail.com";
 
     // The domain in the one form every spelling of it comes to: full-width letters, other dots and the punycode of a name alike.
     private static string DomainOf(string domain)

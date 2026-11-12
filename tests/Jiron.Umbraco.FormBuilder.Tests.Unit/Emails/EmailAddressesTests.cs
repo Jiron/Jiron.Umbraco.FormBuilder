@@ -45,6 +45,10 @@ public sealed class EmailAddressesTests
     [TestCase("\u00c4NNE@jfb.test", "\u00e4nne@jfb.test")]
     [TestCase("A\u0308nne@jfb.test", "\u00e4nne@jfb.test")]
     [TestCase("\u00d6ZG\u00dcR+x@JFB.test", "\u00f6zg\u00fcr@jfb.test")]
+    [TestCase("A.Da.Love@gmail.com", "adalove@gmail.com")]
+    [TestCase("a.d.a+news@GoogleMail.com", "ada@gmail.com")]
+    [TestCase("ada@googlemail.com", "ada@gmail.com")]
+    [TestCase("a.da@example.com", "a.da@example.com")]
     public void TheKey_OfEachSpellingOfAMailbox_IsTheSame(string spelling, string key) =>
         Assert.That(EmailAddresses.KeyOf(spelling), Is.EqualTo(key));
 

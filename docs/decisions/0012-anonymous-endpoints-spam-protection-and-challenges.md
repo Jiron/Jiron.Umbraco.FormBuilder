@@ -166,7 +166,9 @@ statement each, ADR-0003, ADR-0007):
 - places on options (§4.4);
 - **mail to an address a visitor typed** (confirmations, verification, resume links, forwards to visitors): at most 3
   a day per recipient across all forms, and at most 200 an hour per site, both host-configurable. The count and the
-  queue insert are one `INSERT … SELECT … WHERE` statement on the recipient key (case-folded, `+tag` removed), with a
+  queue insert are one `INSERT … SELECT … WHERE` statement on the recipient key (case-folded, `+tag` removed, and for Gmail
+  without the dots of its local part and with googlemail.com as gmail.com, amended by
+  [ADR-0236](0236-what-the-security-review-changed.md)), with a
   range lock on SQL Server, so parallel requests cannot pass them together. A mail over a limit is stored as
   `Limited` (ADR-0007), shown in the deliveries log, and never sent (§4.10).
 

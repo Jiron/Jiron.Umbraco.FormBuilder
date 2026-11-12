@@ -89,6 +89,15 @@ their own, and a ticket reads only for the form its link names. The file answers
 `nosniff` and its sandbox. A ticket still counts more than once in its minute, as a ticket used once would need a store that
 every server shares.
 
+### Mail limits: a Gmail mailbox is one however it is spelled
+
+The limit of mails to one visitor's address counted a mailbox by its key: case-folded, normalised, without a `+tag`, its
+domain as the mail server looks it up ([ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md)). Gmail also
+reads a local part without its dots and takes googlemail.com for gmail.com, so `a.d.a@gmail.com`, `ada@googlemail.com` and
+sixty other spellings each counted as a mailbox of their own and reached one inbox past the limit. For those two domains the
+key now drops the dots and names gmail.com; every other domain keeps its dots, as its mail server may not ignore them. The
+privacy tools find a person's mail by the same key.
+
 ### Captcha: a stub's address may be plain http only on this machine
 
 `Captcha:<provider>:VerifyAddress` points a provider at a test host's stub, and took any http address, so a host could send
