@@ -23,7 +23,7 @@ register its own store).
 | Consent | that it was given, the exact wording shown (by its hash) and the language | kept with the entry; the wordings themselves name no one and are kept | the consent field |
 | IP address | nothing | not stored; rate limits and blocked ranges read it in memory only | the site or a form: the address with its end removed (IPv4 /24, IPv6 /48), or the full address where the host sets `JironFormBuilder:Privacy:AllowFullIp` |
 | Page | the path of the page the form was on, never its query or the referrer | stored | no |
-| Member | the key of the member signed in, if any | stored | a form: Anonymous in its Privacy group keeps no member, whoever is signed in (a form for members and one entry per member need it, so they cannot be anonymous); a member deleted in Umbraco has their entries anonymised, or deleted where Settings › Privacy › Members says so, drafts always deleted and entries on legal hold kept |
+| Member | the key of the member signed in, if any | stored | a form: Anonymous in its Privacy group keeps no member, whoever is signed in (a form for members and one entry per member need it, so they cannot be anonymous); a member deleted in Umbraco has their entries anonymised, or deleted where Privacy › Data collection › Members says so, drafts always deleted and entries on legal hold kept |
 | Context values | only the names the form lists, and the name of the server key a server-to-server post used | none listed | the form's developer settings |
 | Time to complete | seconds from the first touch to the send | stored | no |
 | Spam check | a score and its reasons | stored | the site's and the form's spam protection |

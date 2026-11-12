@@ -101,27 +101,8 @@ The signature covers the body and the time, not these headers. Where you rely on
 
 ## Checking the signature
 
-Each signed request carries:
-
-```text
-X-Jfb-Signature: t=1793620800, v1=0c4dd8ef53dd6e64...
-```
-
-`t` is the time of the attempt in seconds since 1970, and `v1` is the lowercase hexadecimal HMAC-SHA256 of the time, a dot and the body, with the signing secret as its key.
-
-To check it:
-
-1. Read the body as bytes, before any parsing.
-2. Work out the HMAC of `t`, `.` and those bytes.
-3. Compare it with `v1` in constant time.
-4. Refuse a `t` more than five minutes from now, so a recorded request cannot be sent again later.
-5. Refuse a header that gives `t` or `v1` twice.
-
-Working samples, each with the same tests behind it:
-
-- [C#](samples/webhook-signature/Verify.cs)
-- [Node](samples/webhook-signature/verify.mjs)
-- [PHP](samples/webhook-signature/verify.php)
+Each signed request carries an `X-Jfb-Signature` header with the time and an HMAC-SHA256 of the time and the body.
+[actions.md](actions.md#checking-a-webhooks-signature) says how to check it, with working samples in C#, Node and PHP.
 
 ## Slack and Microsoft Teams
 

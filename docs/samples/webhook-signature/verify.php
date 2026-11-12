@@ -1,6 +1,6 @@
 <?php
 
-// Checks the X-Jfb-Signature header of a webhook from Jiron Form Builder (docs/webhooks.md).
+// Checks the X-Jfb-Signature header of a webhook from Jiron Form Builder (docs/actions.md).
 
 // How far the header's time may be from now, in seconds, so a recorded request cannot be sent again later.
 const JFB_TOLERANCE_SECONDS = 300;

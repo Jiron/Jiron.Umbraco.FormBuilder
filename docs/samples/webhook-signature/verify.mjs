@@ -1,4 +1,4 @@
-// Checks the X-Jfb-Signature header of a webhook from Jiron Form Builder (docs/webhooks.md).
+// Checks the X-Jfb-Signature header of a webhook from Jiron Form Builder (docs/actions.md).
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

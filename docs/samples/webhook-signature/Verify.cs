@@ -4,7 +4,7 @@ using System.Text;
 
 namespace WebhookSignatureSample;
 
-/// <summary>Checks the <c>X-Jfb-Signature</c> header of a webhook from Jiron Form Builder (docs/webhooks.md).</summary>
+/// <summary>Checks the <c>X-Jfb-Signature</c> header of a webhook from Jiron Form Builder (docs/actions.md).</summary>
 public static class SignatureCheck
 {
     /// <summary>How far the header's time may be from now, in seconds, so a recorded request cannot be sent again later.</summary>

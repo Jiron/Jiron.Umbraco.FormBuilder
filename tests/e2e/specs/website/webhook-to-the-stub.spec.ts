@@ -7,7 +7,7 @@ import { expect, test } from '../../fixtures.ts';
 import { E2E_WEBHOOK_SECRET, repoRoot, STUB_URL } from '../../support/paths.ts';
 
 // The webhook action on the test host, against the stub on 5560 (ROADMAP 8.4, ADR-0161): a submission reaches the stub through the
-// background worker, signed with the secret its reference names, and the Node sample of docs/webhooks.md finds the signature genuine.
+// background worker, signed with the secret its reference names, and the Node sample of docs/actions.md finds the signature genuine.
 
 interface Call {
   path: string;
