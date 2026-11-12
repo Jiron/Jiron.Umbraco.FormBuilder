@@ -6,6 +6,11 @@ sorted and exported in SQL ([ADR-0002](decisions/0002-form-definition-model-vers
 [ADR-0003](decisions/0003-entry-storage.md)). This page describes schema v1 table by table. The diagram is generated
 from the migration's snapshot classes, and a test (`DatabaseDocsTests`) fails when the two differ.
 
+SQLite has one writer, which Umbraco shares, so submissions that arrive together wait for each other there. On the
+measured machine it kept every send within its budget up to 20 submissions arriving at the same moment, not at 40
+([performance.md](performance.md#where-sqlite-stops-keeping-up)). A busy site, or one that runs on more than one
+server, belongs on SQL Server.
+
 ## Conventions
 
 - **Names.** Tables are `jfb` plus a PascalCase noun, columns are camelCase, as Umbraco's own are. A single-column

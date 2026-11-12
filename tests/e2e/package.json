@@ -13,7 +13,8 @@
     "support": "node --test \"support/*.test.ts\"",
     "check": "tsc --noEmit && prettier --check . && node --test \"support/*.test.ts\"",
     "fix": "prettier --write .",
-    "report": "playwright show-report ../../.local/e2e/report --host 127.0.0.1 --port 5551"
+    "report": "playwright show-report ../../.local/e2e/report --host 127.0.0.1 --port 5551",
+    "load": "node load/load.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

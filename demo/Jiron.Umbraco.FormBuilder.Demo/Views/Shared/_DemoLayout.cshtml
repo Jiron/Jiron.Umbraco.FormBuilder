@@ -61,12 +61,16 @@
 
     <footer class="site-foot">
         <div class="site-foot-wrap">
-            @* The newsletter slot: its heading, its text and the newsletter form, on every page (ROADMAP 3.3, 6.2h). *@
-            <section class="site-slot" data-demo-slot="newsletter" aria-labelledby="newsletter-heading">
-                <h2 id="newsletter-heading">@(home.Value<string>("newsletterHeading"))</h2>
-                <p>@(home.Value<string>("newsletterText"))</p>
-                <jfb-render form="newsletter" theme="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Of(Context)" />
-            </section>
+            @* The newsletter slot: its heading, its text and the newsletter form, on every page (ROADMAP 3.3, 6.2h), unless
+               ?newsletter=off asks for the page without any form, as the load test compares one with another (ADR-0238). *@
+            @if (!string.Equals(Context.Request.Query["newsletter"], "off", StringComparison.Ordinal))
+            {
+                <section class="site-slot" data-demo-slot="newsletter" aria-labelledby="newsletter-heading">
+                    <h2 id="newsletter-heading">@(home.Value<string>("newsletterHeading"))</h2>
+                    <p>@(home.Value<string>("newsletterText"))</p>
+                    <jfb-render form="newsletter" theme="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Of(Context)" />
+                </section>
+            }
             <div class="site-foot-meta">
                 <p>@Umbraco.GetDictionaryValue("Demo.Address")</p>
                 <nav aria-label="@Umbraco.GetDictionaryValue("Demo.Legal")">

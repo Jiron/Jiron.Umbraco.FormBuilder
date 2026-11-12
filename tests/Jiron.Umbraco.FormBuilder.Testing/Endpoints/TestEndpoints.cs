@@ -117,6 +117,8 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// the first twelve before an option of its first field is taken away (ADR-0212).</description></item>
 /// <item><description><c>GET /jfb-testing/audit?entity=&lt;key&gt;</c>: the audit log's entries about one item, oldest first, each with
 /// its action, user and details (ADR-0041), which no screen lists yet.</description></item>
+/// <item><description><c>POST /jfb-testing/load-forms</c>, <c>/load-entries</c> and <c>/load-tree</c>: the load host's seeding
+/// (<see cref="LoadEndpoints"/>, ROADMAP 16.2).</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -787,6 +789,15 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "audit" when HttpMethods.IsGet(context.Request.Method):
                 await AuditAsync(context);
+                return;
+            case "load-forms" when HttpMethods.IsPost(context.Request.Method):
+                await LoadEndpoints.FormsAsync(context);
+                return;
+            case "load-entries" when HttpMethods.IsPost(context.Request.Method):
+                await LoadEndpoints.EntriesAsync(context);
+                return;
+            case "load-tree" when HttpMethods.IsPost(context.Request.Method):
+                await LoadEndpoints.TreeAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;

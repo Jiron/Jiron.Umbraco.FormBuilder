@@ -25,9 +25,16 @@ builder.CreateUmbracoBuilder()
     .AddComposers()
     .Build();
 
+// The demo's pages and its own stylesheet go out compressed, as a site's host (IIS, a CDN) sends them; the package's
+// assets already come compressed from its own middleware. Over HTTPS ASP.NET Core compresses nothing unless told to
+// (the BREACH attack on pages that hold a secret), which the demo leaves as it is.
+builder.Services.AddResponseCompression();
+
 WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
+
+app.UseResponseCompression();
 
 // ?theme= shows the demo's forms in another theme, kept in a cookie (ROADMAP 6.3a).
 app.UseDemoThemes();

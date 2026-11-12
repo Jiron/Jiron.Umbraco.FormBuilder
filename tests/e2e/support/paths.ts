@@ -64,6 +64,10 @@ export const REFUSAL_PORTS = { configuration: 5526, globalization: 5527 } as con
 export const CACHED_PORT = 5525;
 export const CACHED_BASE_URL = `http://127.0.0.1:${CACHED_PORT}`;
 
+/** The load test's host (ROADMAP 16.2, ADR-0011, ADR-0238), with a database of its own and the load's forms and entries. */
+export const LOAD_PORT = 5523;
+export const LOAD_BASE_URL = `http://127.0.0.1:${LOAD_PORT}`;
+
 /** The host of places-and-members (ROADMAP 7.1e), from Umbraco's output cache, beside the other specs' hosts. */
 export const PLACES_PORT = 5531;
 export const PLACES_BASE_URL = `http://127.0.0.1:${PLACES_PORT}`;
