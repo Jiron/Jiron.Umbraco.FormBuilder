@@ -208,6 +208,7 @@ export class MergeTagPickerElement extends UmbLitElement {
         gap: var(--uui-size-space-2);
         box-sizing: border-box;
         max-block-size: min(320px, 50vh);
+        position: relative;
         overflow: auto;
         margin-block-start: var(--uui-size-space-2);
         padding: var(--uui-size-space-3);

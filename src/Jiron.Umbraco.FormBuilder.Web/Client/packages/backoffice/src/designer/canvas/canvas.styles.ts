@@ -329,6 +329,7 @@ export const canvasChrome = css`
   .bo-viewport {
     flex: 1 1 auto;
     min-height: 0;
+    position: relative;
     overflow: auto;
     padding: 0 var(--uui-size-layout-1) var(--uui-size-layout-1);
     will-change: scroll-position;

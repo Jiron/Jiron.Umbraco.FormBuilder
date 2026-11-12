@@ -204,6 +204,7 @@ export class EntriesViewElement extends UmbLitElement {
       .list {
         min-inline-size: 0;
         min-block-size: 0;
+        position: relative;
         overflow: auto;
         padding: var(--uui-size-layout-1);
         container: entries / inline-size;
@@ -297,6 +298,7 @@ export class EntriesViewElement extends UmbLitElement {
       }
 
       .scroller {
+        position: relative;
         overflow-x: auto;
       }
 
@@ -527,6 +529,7 @@ export class EntriesViewElement extends UmbLitElement {
         display: grid;
         min-inline-size: 220px;
         max-block-size: min(28rem, 70vh);
+        position: relative;
         overflow: auto;
         padding: var(--uui-size-space-1);
         border: 1px solid var(--uui-color-border);

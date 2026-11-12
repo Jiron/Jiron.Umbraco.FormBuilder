@@ -45,6 +45,7 @@ export const matrixStyles = css`
    * scroll with the table and hide the shades at its ends.
    */
   .matrix {
+    position: relative;
     overflow-x: auto;
     max-inline-size: 100%;
     border: 1px solid var(--uui-color-border);

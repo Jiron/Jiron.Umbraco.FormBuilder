@@ -184,6 +184,7 @@ export class EntryPanelElement extends UmbLitElement {
       .body {
         flex: 1;
         min-block-size: 0;
+        position: relative;
         overflow: auto;
         padding: var(--uui-size-space-5);
       }

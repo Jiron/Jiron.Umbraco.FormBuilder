@@ -42,6 +42,7 @@ export class EntryFormsModalElement extends UmbModalBaseElement<EntryFormsModalD
         display: grid;
         gap: var(--uui-size-space-3);
         max-block-size: 18rem;
+        position: relative;
         overflow: auto;
         margin: 0;
         padding: 0;

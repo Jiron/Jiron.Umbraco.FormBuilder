@@ -145,6 +145,7 @@ export const inspectorStyles = css`
   .body {
     flex: 1 1 auto;
     min-height: 0;
+    position: relative;
     overflow: auto;
     overscroll-behavior: contain;
   }

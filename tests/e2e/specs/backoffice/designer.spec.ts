@@ -119,6 +119,39 @@ test('a blank form opens on Design with its empty group, though its draft leaves
   await axeInside(page, 'jfb-form-design-view');
 });
 
+test('the Design view keeps to its workspace: only its own columns scroll, never the areas around it', async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  // ROADMAP 16.6, carried from 15.3: the palette's hidden reasons once escaped its list and made the workspace scroll by
+  // a thousand pixels at 1440 px. Each box around the view, up to the page, now holds no more than it shows.
+  const key = await blankForm(await apiAs('designer'), unique('Height'));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs('designer');
+  await page.goto(workspaceOf(key));
+  const design = page.locator('jfb-form-design-view');
+  await expect(design.locator('jfb-designer-palette button.item').first()).toBeVisible();
+
+  const measured = await design.evaluate((view) => {
+    const up = (node: Element): Element | null =>
+      (node.assignedSlot as Element | null) ?? node.parentElement ?? (node.getRootNode() as ShadowRoot).host ?? null;
+    const around: { name: string; over: number }[] = [];
+    for (let node: Element | null = view; node; node = up(node)) {
+      around.push({
+        name: node.tagName.toLowerCase() + (node.id ? `#${node.id}` : ''),
+        over: node.scrollHeight - node.clientHeight,
+      });
+    }
+    const list = view.shadowRoot!.querySelector('jfb-designer-palette')!.shadowRoot!.querySelector('.scroll')!;
+    return { around, list: list.scrollHeight - list.clientHeight };
+  });
+
+  expect(measured.list, "the palette's own list is longer than its column and scrolls").toBeGreaterThan(0);
+  expect(measured.around.filter((box) => box.over > 1)).toEqual([]);
+  expect(measured.around.map((box) => box.name)).toContain('uui-scroll-container#main');
+});
+
 test('a form of three pages is built with the mouse, from the palette and an insert point', async ({
   page,
   loginAs,

@@ -88,6 +88,7 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
         display: grid;
         gap: var(--uui-size-space-3);
         max-block-size: 18rem;
+        position: relative;
         overflow: auto;
       }
 

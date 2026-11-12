@@ -35,6 +35,7 @@ export const jfbInsightTable = css`
 
   .scroll {
     max-block-size: 22rem;
+    position: relative;
     overflow: auto;
   }
 `;

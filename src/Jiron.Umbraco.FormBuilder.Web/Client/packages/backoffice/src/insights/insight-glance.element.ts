@@ -49,6 +49,7 @@ export class InsightGlanceElement extends UmbLitElement {
       }
 
       .scroll {
+        position: relative;
         overflow-x: auto;
       }
 
