@@ -870,8 +870,11 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'addPage': {
         const page = newPage(model.newKey);
+        const inserted = insert(state, 'page', page, { container: null, index: state.definition.pages.length }, model);
+        // The new page is shown with the focus on its Add field, not selected: over a narrow canvas a selection's
+        // inspector would cover the very button the page is added for (16.6, ADR-0241).
         const added = await this.#apply(
-          insert(state, 'page', page, { container: null, index: state.definition.pages.length }, model),
+          inserted.ok ? { ...inserted, state: { ...inserted.state, selection: null } } : inserted,
           this.localize.term('jfbDesigner_saidPageAdded'),
         );
         if (added) {
@@ -1840,11 +1843,18 @@ export class FormDesignViewElement extends UmbLitElement {
       const type = Object.hasOwn(this._types, question.type) ? this._types[question.type] : undefined;
       return type ? [newField(type, question.label, model.newKey, this.#newWords())] : [];
     });
+    const added = addFields(state, fields, target.place, target.page, model);
+    // One question is selected to be edited, as a field from the palette is; several are left to be looked over, so no
+    // inspector over a narrow canvas hides them, and the focus goes to the first of them (16.6, ADR-0241).
+    const several = fields.length > 1;
     const done = await this.#apply(
-      addFields(state, fields, target.place, target.page, model),
+      several && added.ok ? { ...added, state: { ...added.state, selection: null } } : added,
       this.localize.term('jfbDesigner_saidAddedMany', fields.length),
     );
-    if (done) this.#closePalette();
+    if (!done) return;
+    this.#closePalette();
+    const first = fields[0];
+    if (several && first) await this.#focus(first.key);
   }
 
   /**

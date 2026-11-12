@@ -220,6 +220,9 @@ test('five fields come from a pasted list, each with the type its words suggest'
   await dialog.getByRole('button', { name: 'Add 5 fields' }).click();
 
   await expect(design.locator('jfb-canvas-field')).toHaveCount(5);
+  // Several are left to be looked over: nothing selected, the focus on the first of them (16.6, ADR-0241).
+  await expect(design.locator('jfb-designer-inspector')).toContainText('Nothing selected');
+  await expect(design.locator('jfb-canvas-field').first().locator('[data-control="select"]').first()).toBeFocused();
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect.poll(() => draftTypes(api, key)).toEqual([['text', 'email', 'number', 'yesno', 'textarea']]);
   expect(await draftLabels(api, key)).toEqual([

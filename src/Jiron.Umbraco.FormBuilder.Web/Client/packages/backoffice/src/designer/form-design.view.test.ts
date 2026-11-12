@@ -538,6 +538,8 @@ describe('the canvas requests', () => {
     await ask({ kind: 'addPage' });
     expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', 'p2', 'new1']);
     expect(canvas.shown).toBe(2);
+    // Shown, not selected: over a narrow canvas a selection's inspector would cover the page's Add field.
+    expect(state().selection).toBeNull();
   });
 
   it('add the questions a paste gives, as fields at the end of the page', async () => {
@@ -556,6 +558,16 @@ describe('the canvas requests', () => {
       label: { '': 'Do you need step-free access?' },
     });
     expect(workspace.said).toEqual(['Added 2 fields']);
+    // Several are left to be looked over: nothing is selected, so no inspector over a narrow canvas hides them.
+    expect(state().selection).toBeNull();
+  });
+
+  it('select the one question a paste gives, to be edited as a field from the palette is', async () => {
+    const { ask, keys, state } = await viewOf();
+    opened.value = { questions: [{ label: 'Your name', type: 'text' }] };
+    await ask({ kind: 'paste' });
+    expect(keys('g1')).toEqual(['name', 'email', 'new1']);
+    expect(state().selection).toBe('new1');
   });
 
   it('offer Undo after a delete, which takes back that delete only while it is the last change', async () => {
