@@ -82,6 +82,32 @@ public sealed class FormMirrorTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AFormWhoseAliasWindowsKeepsForADevice_IsWrittenWithAnUnderscore_AndReadBackAsItsOwn()
+    {
+        // "con", "nul" or "com1" with .json is a device on some Windows versions, so the mirror never writes such a name (16.1).
+        var created = await Service.CreateAsync(new NewFormRequest("Con", Alias: "con", UserKey: Editor));
+        var blank = (await Service.GetDraftAsync(created.Key))!.Definition!;
+        var saved = (await Service.SaveDraftAsync(created.Key, created.ConcurrencyVersion, WithFields(blank, Email, Name), null, Editor))!;
+        var form = (await Service.PublishAsync(created.Key, saved.Form.ConcurrencyVersion, null, Editor))!.Form;
+        var path = Path.Combine(_folder, "_con.json");
+        var written = File.Exists(path) ? FormExportFormat.Read(await File.ReadAllTextAsync(path), Serializer).Envelope : null;
+        var before = await PublishedVersionAsync(form);
+
+        await Mirror.SyncAsync();
+        var after = await PublishedVersionAsync(form);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(form.Alias, Is.EqualTo("con"));
+            Assert.That(written?.FormKey, Is.EqualTo(form.Key));
+            Assert.That(File.Exists(Path.Combine(_folder, "con.json")), Is.False);
+            Assert.That(after, Is.EqualTo(before), "the pass reads it as the form's own file, unchanged");
+            Assert.That(FormMirror.OnDiskName("contact.json"), Is.EqualTo("contact.json"));
+            Assert.That(FormMirror.OnDiskName("LPT9.json"), Is.EqualTo("_LPT9.json"));
+        });
+    }
+
+    [Test]
     public async Task APublish_WritesItsFile_AndAFileChangedInSourceControl_IsPublishedAsANewVersion_WithItsKeys()
     {
         var form = await PublishedAsync();

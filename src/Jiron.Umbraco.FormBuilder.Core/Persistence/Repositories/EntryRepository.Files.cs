@@ -92,7 +92,7 @@ internal sealed partial class EntryRepository
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<StoredEntryFile>> ListOrphanFilesAsync(DateTimeOffset createdBefore, int take, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<StoredEntryFile>> ListOrphanFilesAsync(DateTimeOffset createdBefore, int take, StoredEntryFile? after = null, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxOrphansPerList);
@@ -100,9 +100,12 @@ internal sealed partial class EntryRepository
             async db =>
             {
                 var n = new SqlNames(db);
+                var past = after is null ? string.Empty : $" AND ({n.C("createdUtc")} > @1 OR ({n.C("createdUtc")} = @1 AND {n.C("id")} > @2))";
                 var rows = await db.FetchListAsync<EntryFileDto>(
-                    $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("entryId")} IS NULL AND {n.C("createdUtc")} < @0 ORDER BY {n.C("createdUtc")}, {n.C("id")} {n.Page(0, take)}",
-                    FormBuilderDbTime.Write(createdBefore));
+                    $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("entryId")} IS NULL AND {n.C("createdUtc")} < @0{past} ORDER BY {n.C("createdUtc")}, {n.C("id")} {n.Page(0, take)}",
+                    FormBuilderDbTime.Write(createdBefore),
+                    after is null ? null : FormBuilderDbTime.Write(after.CreatedUtc),
+                    after?.Id ?? 0);
                 return rows.Select(FileFromDto).ToList();
             },
             cancellationToken);

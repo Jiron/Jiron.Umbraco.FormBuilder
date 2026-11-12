@@ -739,9 +739,10 @@ internal interface IEntryRepository
 
     /// <summary>
     /// Files that no entry took and that were uploaded before <paramref name="createdBefore"/>, oldest first: what the
-    /// cleanup removes (ADR-0006).
+    /// cleanup removes (ADR-0006); after <paramref name="after"/> in that order when one is given, so a cleanup moves past
+    /// files it could not remove.
     /// </summary>
-    Task<IReadOnlyList<StoredEntryFile>> ListOrphanFilesAsync(DateTimeOffset createdBefore, int take, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StoredEntryFile>> ListOrphanFilesAsync(DateTimeOffset createdBefore, int take, StoredEntryFile? after = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a file's row while it still belongs to <paramref name="entryId"/>, or to no entry when that is null (the

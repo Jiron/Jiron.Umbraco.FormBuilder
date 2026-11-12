@@ -25,13 +25,19 @@ export { NO_PREVIEW };
 export class OutcomePreviewer extends DraftPreviewer<OutcomePreview> {}
 
 // What a site's own view could write that has no place in a preview: nothing in it runs or is sent, and no frame,
-// object or stylesheet loads. An image of the site's, which a site's own view may show, stays.
-const ACTIVE = 'script, style, link, meta, base, iframe, frame, object, embed, form, template, noscript';
+// object or stylesheet loads. An image of the site's, which a site's own view may show, stays. SVG's animations go too,
+// as one can set a link's address after any check of the attributes as they were written (16.1's review).
+const ACTIVE =
+  'script, style, link, meta, base, iframe, frame, object, embed, form, template, noscript, ' +
+  'animate, set, animateMotion, animateTransform, discard';
 
-/** Whether an attribute's value is a script address, as a browser reads it: spaces and control characters dropped. */
+/** Whether an attribute's value is a script or document address, as a browser reads it: spaces and control characters dropped. */
 function isScriptAddress(value: string): boolean {
-  const read = [...value].filter((character) => character.charCodeAt(0) > 32).join('');
-  return read.toLowerCase().startsWith('javascript:');
+  const read = [...value]
+    .filter((character) => character.charCodeAt(0) > 32)
+    .join('')
+    .toLowerCase();
+  return read.startsWith('javascript:') || read.startsWith('vbscript:') || read.startsWith('data:text/html');
 }
 
 /**

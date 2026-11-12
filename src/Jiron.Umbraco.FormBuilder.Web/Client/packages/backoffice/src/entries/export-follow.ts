@@ -11,7 +11,7 @@ import {
 } from '@umbraco-cms/backoffice/notification';
 import type { EntryExportStatusResponseModel } from '../api';
 import { ACTION_NOTIFICATION, type ActionNotificationData, type Said } from '../ui/action-notification.element';
-import { idleGate } from '../ui/idle-gate';
+import { idleGate, startIdleGate } from '../ui/idle-gate';
 import { downloadExport, readExportStatus } from './export-api';
 import { isFinished } from './export-model';
 import type { PollGate } from './unseen-poll';
@@ -150,6 +150,7 @@ export async function followExport(
   status: EntryExportStatusResponseModel,
   follower: ExportFollower = exportFollower,
 ): Promise<void> {
+  await startIdleGate(host);
   const notices = await host.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
   if (notices) showFollowed(notices, form, status, follower);
 }

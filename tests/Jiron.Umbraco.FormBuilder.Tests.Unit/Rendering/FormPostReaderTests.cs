@@ -128,6 +128,34 @@ public sealed class FormPostReaderTests
     }
 
     [Test]
+    public void ARowPastWhatItsGroupTakes_IsRead_ButNamesNoFieldForAFile_AndDrawsNoTypedSignature()
+    {
+        // Crew takes two rows. Its rows are read as posted, so the pipeline refuses too many, but nothing of a row past two
+        // is written down or drawn before that (16.1's review).
+        var witness = Field(K(32), "witness", "signature");
+        var crew = Field(K(33), "crew", "repeater", """{"maxRows":2}""") with { Fields = [witness, Guest] };
+        var form = new FormDefinition { Key = K(0), Pages = [new FormPage { Key = K(20), Groups = [new FormGroup { Key = K(21), Fields = [crew] }] }] };
+        var reader = FormPostReader.Read(
+            new FormCollection(new Dictionary<string, StringValues>(StringComparer.Ordinal)
+            {
+                ["jfb-rows-crew"] = new("4"),
+                ["crew[1].witness.typed"] = new("Grace Hopper"),
+                ["crew[2].witness.typed"] = new("Mary Somerville"),
+            }),
+            form,
+            TestFieldTypes.Registry);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reader.Posted().Rows["crew"], Has.Count.EqualTo(4), "read as posted, for the pipeline's check");
+            Assert.That(reader.FieldOf("crew[1].guest")?.Field.Key, Is.EqualTo(Guest.Key));
+            Assert.That(reader.FieldOf("crew[2].guest"), Is.Null, "a row past the group's most names no field");
+            Assert.That(reader.FieldOf("crew[2].guest", anyRow: true), Is.Null, "not even before the count is read");
+            Assert.That(reader.Typed().Select(typed => typed.Typed), Is.EqualTo(new[] { "Grace Hopper" }), "no signature of a row past it is drawn");
+        });
+    }
+
+    [Test]
     public void ASwitchLeftOff_IsNo_AButtonsYesOrNoLeftOutIsNoAnswer_AndASwitchOnStaysYes()
     {
         var off = Read();

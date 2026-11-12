@@ -548,7 +548,7 @@ internal sealed class FormBuilderFolderService(
 
     // The folders below a folder, nearest first, reached only through folders that pass: a breadth-first walk of the tree
     // read whole, bounded by its depth.
-    private static List<StoredFolder> Below(IReadOnlyList<StoredFolder> all, int id, Func<StoredFolder, bool> passes)
+    internal static List<StoredFolder> Below(IReadOnlyList<StoredFolder> all, int id, Func<StoredFolder, bool> passes)
     {
         var children = all.Where(folder => folder.ParentId is not null).ToLookup(folder => folder.ParentId!.Value);
         var found = new List<StoredFolder>();
@@ -563,7 +563,7 @@ internal sealed class FormBuilderFolderService(
         return found;
     }
 
-    private static List<int> Ids(StoredFolder folder, IEnumerable<StoredFolder> below) => [folder.Id, .. below.Select(row => row.Id)];
+    internal static List<int> Ids(StoredFolder folder, IEnumerable<StoredFolder> below) => [folder.Id, .. below.Select(row => row.Id)];
 
     private static List<FolderSummary> Summaries(IEnumerable<StoredFolder> list) => list.Select(folder => new FolderSummary(folder.Key, folder.Name)).ToList();
 
@@ -571,7 +571,7 @@ internal sealed class FormBuilderFolderService(
 
     private static FormSummary Summary(StoredForm form) => new(form.Key, form.Alias, form.Name);
 
-    private static FormAccessTarget Target(StoredForm form, Dictionary<int, Guid> folderKeys) =>
+    internal static FormAccessTarget Target(StoredForm form, Dictionary<int, Guid> folderKeys) =>
         new(form.Key, form.FolderId is { } folderId && folderKeys.TryGetValue(folderId, out var folderKey) ? folderKey : null, form.IsRestricted);
 
     private static FolderInfo Info(StoredFolder folder, Guid? parentKey) => new(

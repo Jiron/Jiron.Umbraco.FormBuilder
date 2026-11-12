@@ -68,6 +68,9 @@ export default defineConfig(
         { property: 'innerHTML', message: noHtmlStrings },
         { property: 'outerHTML', message: noHtmlStrings },
         { property: 'insertAdjacentHTML', message: noHtmlStrings },
+        { property: 'createContextualFragment', message: noHtmlStrings },
+        { property: 'setHTMLUnsafe', message: noHtmlStrings },
+        { property: 'parseHTMLUnsafe', message: noHtmlStrings },
       ],
       'no-restricted-syntax': [
         'error',
@@ -75,11 +78,13 @@ export default defineConfig(
           selector: "CallExpression[callee.object.name='document'][callee.property.name=/^write(ln)?$/]",
           message: noHtmlStrings,
         },
+        { selector: "NewExpression[callee.name='DOMParser']", message: noHtmlStrings },
       ],
     },
   },
   {
-    files: ['packages/backoffice/src/**/*.ts'],
+    // The AI add-on's backoffice too (16.1's review): its words come from a model, which Lit's templates escape as any text.
+    files: ['packages/backoffice/src/**/*.ts', 'packages/ai/src/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -104,8 +109,13 @@ export default defineConfig(
   },
   {
     // Every word the backoffice shows comes from its dictionaries in English and German (ROADMAP 14.1, ADR-0057).
-    files: ['packages/backoffice/src/**/*.ts'],
-    ignores: ['**/*.test.ts', 'packages/backoffice/src/lang/**', 'packages/backoffice/src/testing.ts'],
+    files: ['packages/backoffice/src/**/*.ts', 'packages/ai/src/**/*.ts'],
+    ignores: [
+      '**/*.test.ts',
+      'packages/backoffice/src/lang/**',
+      'packages/backoffice/src/testing.ts',
+      'packages/ai/src/lang/**',
+    ],
     plugins: { jfb },
     rules: { 'jfb/no-hard-coded-text': 'error' },
   },

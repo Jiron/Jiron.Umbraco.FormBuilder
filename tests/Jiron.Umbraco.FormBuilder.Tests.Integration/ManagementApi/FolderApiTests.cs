@@ -215,6 +215,36 @@ public sealed class FolderApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TrashAndRestore_NeedDesignOnEverythingTheyTake_ARestrictedFormBelowIncluded()
+    {
+        // Archive holds Salaries, a published form only the HR team may see: putting Archive in the trash takes it offline.
+        var archive = await FolderAsync("Archive");
+        var salaries = await FormAsync("Salaries", archive);
+        await FillAsync(salaries);
+        var forms = GetRequiredService<IFormBuilderFormService>();
+        var draft = (await forms.GetAsync(salaries))!;
+        _ = await forms.PublishAsync(salaries, draft.ConcurrencyVersion, null, null);
+        draft = (await forms.GetAsync(salaries))!;
+        await GetRequiredService<IFormBuilderAccessService>().RestrictFormAsync(salaries, draft.ConcurrencyVersion, true, null);
+        await GrantAsync(People.GroupKeys["hr"], PermissionTarget.Form, salaries, FormBuilderPermissions.ViewEntries);
+
+        var designerTrash = await _api.CallAsync("designer", HttpMethod.Post, $"folder/{archive}/trash");
+        var stillLive = await forms.GetPublishedAsync(salaries);
+        var adminTrash = await _api.CallAsync("admin", HttpMethod.Post, $"folder/{archive}/trash");
+        var designerRestore = await _api.CallAsync("designer", HttpMethod.Post, $"folder/{archive}/restore");
+        var stillTrashed = (await GetRequiredService<IFormBuilderFolderService>().GetAsync(archive))!.TrashedUtc;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((designerTrash.Outcome, designerTrash.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "design")), designerTrash.ToString());
+            Assert.That(stillLive, Is.Not.Null, "a refused trash takes nothing offline");
+            Assert.That(adminTrash.Status, Is.EqualTo(HttpStatusCode.OK), adminTrash.ToString());
+            Assert.That((designerRestore.Outcome, designerRestore.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "design")), "what comes back is not the designer's either");
+            Assert.That(stillTrashed, Is.Not.Null);
+        });
+    }
+
+    [Test]
     public async Task ADeleteForGood_NeedsTheTrash_AndDesignAndDeleteEntriesOnEverythingItRemoves()
     {
         // Archive holds the restricted Personnel, which only the HR team sees, and a form.

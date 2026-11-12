@@ -19,6 +19,8 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
 }));
 
 const root = join(import.meta.dirname, '..');
+// The AI add-on's backoffice is held to the same (16.1's review).
+const aiRoot = join(import.meta.dirname, '..', '..', '..', 'ai', 'src');
 
 // A folder whose name starts with a dot is another test's scratch (the API check's), which may go while this one reads.
 function sources(dir: string): string[] {
@@ -36,11 +38,14 @@ describe('confirm dialogs', () => {
       .filter((path) => /\bumbConfirmModal\b|\bUMB_CONFIRM_MODAL\b/.test(readFileSync(path, 'utf8')))
       .map((path) => relative(root, path).split(sep).join('/'));
     expect(direct).toEqual(['ui/confirm.ts']);
+    expect(
+      sources(aiRoot).filter((path) => /\bumbConfirmModal\b|\bUMB_CONFIRM_MODAL\b/.test(readFileSync(path, 'utf8'))),
+    ).toEqual([]);
     expect(readFileSync(join(root, 'ui', 'confirm.ts'), 'utf8')).toContain('content: html`${data.content}`');
   });
 
   it('are the only way anything reaches the page as markup: nothing uses unsafeHTML', () => {
-    const unsafe = sources(root)
+    const unsafe = [...sources(root), ...sources(aiRoot)]
       .filter((path) => /\bunsafeHTML\b/.test(readFileSync(path, 'utf8')))
       .map((path) => relative(root, path).split(sep).join('/'));
     expect(unsafe).toEqual([]);

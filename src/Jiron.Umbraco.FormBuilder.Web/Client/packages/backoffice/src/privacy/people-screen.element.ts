@@ -31,6 +31,7 @@ import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { ACTION_NOTIFICATION, type ActionNotificationData } from '../ui/action-notification.element';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { bodyOf, downloadPersonExport, personExportFollower, type Person } from './people-api';
+import { startIdleGate } from '../ui/idle-gate';
 import { PEOPLE_ERASE_MODAL } from './people-erase.modal.token';
 import { PEOPLE_HOLD_MODAL } from './people-hold.modal.token';
 
@@ -383,6 +384,8 @@ export class PeopleScreenElement extends UmbLitElement {
       return;
     }
     this._export = data;
+    // Its status is polled, which must not keep an idle person signed in (ADR-0209, 16.1's review).
+    await startIdleGate(this);
     personExportFollower.follow('', data, {
       progress: (now) => (this._export = now),
       finished: (done) => {

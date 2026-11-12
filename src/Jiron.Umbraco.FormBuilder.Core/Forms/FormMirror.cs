@@ -332,9 +332,10 @@ internal sealed partial class FormMirror(
             return;
         }
 
+        var fileName = OnDiskName(export.FileName);
         var record = state.Record(formKey);
         var hash = HashOf(envelope.Definition, formKey);
-        if (keepChangedFile && await OnDiskAsync(formKey, record, export.FileName, cancellationToken) is { } onDisk)
+        if (keepChangedFile && await OnDiskAsync(formKey, record, fileName, cancellationToken) is { } onDisk)
         {
             if (onDisk.Hash == hash)
             {
@@ -356,12 +357,12 @@ internal sealed partial class FormMirror(
         {
             var folder = Folder;
             Directory.CreateDirectory(folder);
-            var temporary = Path.Combine(folder, $".{export.FileName}.{Guid.NewGuid():N}.tmp");
+            var temporary = Path.Combine(folder, $".{fileName}.{Guid.NewGuid():N}.tmp");
             await File.WriteAllTextAsync(temporary, export.Json, new UTF8Encoding(false), cancellationToken);
-            File.Move(temporary, Path.Combine(folder, export.FileName), overwrite: true);
+            File.Move(temporary, Path.Combine(folder, fileName), overwrite: true);
 
             // A renamed form leaves the file of its old alias: gone with the rename, while it still holds this form.
-            if (record is not null && !string.Equals(record.File, export.FileName, StringComparison.OrdinalIgnoreCase) && IsOwnFile(record.File)
+            if (record is not null && !string.Equals(record.File, fileName, StringComparison.OrdinalIgnoreCase) && IsOwnFile(record.File)
                 && await ReadAsync(Path.Combine(folder, record.File), cancellationToken) is { } old && old.Envelope.FormKey == formKey)
             {
                 File.Delete(Path.Combine(folder, record.File));
@@ -369,12 +370,12 @@ internal sealed partial class FormMirror(
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            LogUnwritable(logger, export.FileName, exception.Message);
-            await SetProblemAsync(MirrorProblemKind.Unwritable, formKey.ToString("N"), export.FileName, state, cancellationToken);
+            LogUnwritable(logger, fileName, exception.Message);
+            await SetProblemAsync(MirrorProblemKind.Unwritable, formKey.ToString("N"), fileName, state, cancellationToken);
             return;
         }
 
-        await SetRecordAsync(formKey, new MirrorRecord(hash, version, export.FileName), state, cancellationToken);
+        await SetRecordAsync(formKey, new MirrorRecord(hash, version, fileName), state, cancellationToken);
         await ClearProblemAsync(MirrorProblemKind.Unwritable, formKey.ToString("N"), state, cancellationToken);
         await ClearProblemAsync(MirrorProblemKind.Conflict, formKey.ToString("N"), state, cancellationToken);
     }
@@ -462,6 +463,14 @@ internal sealed partial class FormMirror(
             }
         }
     }
+
+    /// <summary>
+    /// A form's file name in the folder: its alias with .json, and an underscore before an alias Windows keeps for a device
+    /// (<c>con</c>, <c>nul</c>, <c>com1</c> and the like), which no alias can start with, so the file is never the device (16.1's review).
+    /// </summary>
+    /// <param name="fileName">The export's file name, the alias with .json.</param>
+    internal static string OnDiskName(string fileName) =>
+        Files.FileArchiveNames.IsDeviceName(Path.GetFileNameWithoutExtension(fileName)) ? "_" + fileName : fileName;
 
     // A file name the mirror writes: an alias with .json, nothing that leaves the folder.
     private static bool IsOwnFile(string file) =>

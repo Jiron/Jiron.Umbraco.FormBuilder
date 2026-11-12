@@ -4,7 +4,8 @@
 // mouse or a tab coming back on screen, in any tab of this browser (the tabs share their input on a BroadcastChannel).
 // Sites that keep users signed in are not held. Once the session has ended, nobody is signed in to poll for: a poll
 // waits for the next sign-in.
-import type { UmbAuthSession } from '@umbraco-cms/backoffice/auth';
+import { UMB_AUTH_CONTEXT, type UmbAuthSession } from '@umbraco-cms/backoffice/auth';
+import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 
 /** What the gate reads of Umbraco's auth context. */
 export interface IdleAuth {
@@ -137,3 +138,13 @@ export class IdleGate {
 
 /** The gate of this browser tab. */
 export const idleGate = new IdleGate();
+
+/**
+ * Starts this tab's gate from a backoffice element's auth context, once. Every element that polls calls it before its
+ * first poll (16.1's review): a gate nobody started holds nothing, so a poll on a screen that is not the Inbox could
+ * otherwise renew an expired session.
+ */
+export async function startIdleGate(host: UmbClassInterface, gate: IdleGate = idleGate): Promise<void> {
+  const auth = await host.getContext(UMB_AUTH_CONTEXT).catch(() => undefined);
+  if (auth) gate.start(auth);
+}

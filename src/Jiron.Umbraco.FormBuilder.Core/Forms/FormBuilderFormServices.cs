@@ -51,6 +51,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<IFormBuilderFormExchangeService, FormBuilderFormExchangeService>();
         builder.Services.TryAddSingleton<IFormBuilderFolderService, FormBuilderFolderService>();
         builder.Services.TryAddSingleton<IFormBuilderLibraryService, FormBuilderLibraryService>();
+        builder.Services.TryAddSingleton<FolderTakes>();
         builder.Services.TryAddSingleton<LibraryLists>();
         builder.Services.TryAddSingleton<FormTemplateGallery>();
         builder.Services.TryAddSingleton<FormTemplateLibrary>();

@@ -2,14 +2,13 @@
 // unseen count as UUI's badge in its badge slot: up to 99, then "99+", and nothing at none. Screen readers hear the item
 // as "Inbox, 12 unseen", while the item shows its name and the badge its number. The count comes from the unseen poll,
 // which waits at the idle gate, so the badge never keeps an idle person signed in.
-import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { ManifestMenuItem } from '@umbraco-cms/backoffice/menu';
 import { UMB_SECTION_CONTEXT } from '@umbraco-cms/backoffice/section';
 import { readUnseen } from '../entries/entries-api';
 import { UnseenPoll, type UnseenCount } from '../entries/unseen-poll';
-import { idleGate } from '../ui/idle-gate';
+import { idleGate, startIdleGate } from '../ui/idle-gate';
 
 /** A path with a slash at its end, so "/inbox/" never matches "/inbox-2/". */
 const slashed = (path: string): string => (path.endsWith('/') ? path : `${path}/`);
@@ -51,9 +50,7 @@ export class InboxMenuItemElement extends UmbLitElement {
       );
     });
     // The gate follows the session from the first poll on; the backoffice's other calls are the user's own.
-    this.consumeContext(UMB_AUTH_CONTEXT, (auth) => {
-      if (auth) idleGate.start(auth);
-    });
+    void startIdleGate(this);
   }
 
   override connectedCallback() {

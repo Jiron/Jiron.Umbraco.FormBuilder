@@ -191,6 +191,31 @@ public sealed partial class FormPostTests
     }
 
     [Test]
+    public async Task ARowPastWhatItsGroupTakes_IsNotRead_SoItsFileIsNeverStored()
+    {
+        // Crew takes two rows: a post that says five, with a file in the fourth, is read two rows far (16.1).
+        var key = await PublishFormAsync("postFiles", FilesForm);
+        _ = await PagesAsync("post-files");
+        var form = FormOf(await DocumentAsync(FilesPage), "jfb-1");
+        Fill(form, "subject", "Room plan");
+        var pairs = Posted(form, FormPostFields.Submit).Where(pair => pair.Key != FormPostFields.RowsPrefix + "crew").Append(new(FormPostFields.RowsPrefix + "crew", "5"));
+        using var sent = await RawAsync(
+            form.GetAttribute("action")!.Split('#')[0],
+            Multipart("jfb-test", pairs, [Part("form-data; name=\"crew[3].cv\"; filename=\"far.pdf\"", Bytes(Pdf, 300))]));
+        var stored = await Entries.ListIdsAsync((await FormRows.GetAsync(key))!.Id, 10);
+        var orphans = await Entries.ListOrphanFilesAsync(DateTimeOffset.UtcNow.AddDays(1), 100);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(orphans, Is.Empty, "no file of a row past the group's is written down");
+            foreach (var entry in stored)
+            {
+                Assert.That(await Entries.ListFilesAsync(entry), Is.Empty);
+            }
+        });
+    }
+
+    [Test]
     public async Task APostPastTheDrainAllowance_ShowsTheFormWithTheNotice_AndAPostWithoutTheMarker_HoldsItsFilesToTheSameRules()
     {
         var key = await PublishFormAsync("postFiles", FilesForm);

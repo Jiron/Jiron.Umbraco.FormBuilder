@@ -149,8 +149,44 @@ public sealed class FormPostNoRoomTests : RenderingTestBase
         {
             Assert.That(answered.QuerySelector("[data-jfb-notice], .jfb-notice")?.TextContent, Does.Contain("can't take files right now"));
             Assert.That(answered.QuerySelector("#jfb-1-attachment-error"), Is.Null, "the file is not at fault");
-            Assert.That(await WaitingAsync(), Has.Count.EqualTo(1), "only the first was stored");
+            Assert.That(await WaitingAsync(), Is.Empty, "the second could not be held while it was read, so nothing of the post is kept (16.1)");
             Assert.That(await CountEntriesAsync(key), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task AFileTheServerCannotHoldWhileItIsRead_IsLetGo_AndThePostStoresNothing()
+    {
+        // The share of one client, 1,000 bytes here, bounds what its posts hold in temporary files while they are read (16.1).
+        var key = await PublishFormAsync("limitedPost", null, Topic, Attachment);
+        _ = await PagesAsync("limited");
+        var form = await FormAsync();
+        Fill(form, "topic", "Ideas");
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in Posted(form, FormPostFields.Submit))
+        {
+            content.Add(new StringContent(value), name);
+        }
+
+        var bytes = new byte[200_000];
+        Encoding.ASCII.GetBytes("%PDF-1.7 a long one").CopyTo(bytes, 0);
+        content.Add(new ByteArrayContent(bytes), "attachment", "long.pdf");
+        using var post = await SendAsync(HttpMethod.Post, form.GetAttribute("action")!.Split('#')[0], request =>
+        {
+            request.Content = content;
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+            request.Headers.Referrer = new Uri(Client.BaseAddress!, "/limited/");
+        });
+        var answered = await new HtmlParser().ParseDocumentAsync(await post.Content.ReadAsStringAsync());
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(post.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(answered.QuerySelector("[data-jfb-notice], .jfb-notice")?.TextContent, Does.Contain("can't take files right now").And.Contain("Choose your files again"));
+            Assert.That(answered.QuerySelector("input[name='topic']")?.GetAttribute("value"), Is.EqualTo("Ideas"), "every answer comes back");
+            Assert.That(await WaitingAsync(), Is.Empty);
+            Assert.That(await CountEntriesAsync(key), Is.Zero);
+            Assert.That(GetRequiredService<FormPostBuffers>().Held, Is.Zero, "what the post held is given back with it");
         });
     }
 
@@ -185,8 +221,9 @@ public sealed class FormPostNoRoomTests : RenderingTestBase
         base.ConfigureHost(configuration);
         // The host's configuration stays from test to test, so each says both.
         var oneShare = TestContext.CurrentContext.Test.MethodName == nameof(PastItsShare_APostWithAFile_IsToldToWait_AndKeepsItsAnswers);
-        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytesPerAddress"] = oneShare ? "1048576" : "0";
-        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = oneShare ? "0" : "10";
+        var held = TestContext.CurrentContext.Test.MethodName == nameof(AFileTheServerCannotHoldWhileItIsRead_IsLetGo_AndThePostStoresNothing);
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytesPerAddress"] = oneShare ? "1048576" : held ? "1000" : "0";
+        configuration[FormBuilderOptions.SectionName + ":Files:MaxWaitingBytes"] = oneShare || held ? "0" : "10";
         configuration[FormBuilderOptions.SectionName + ":Limits:Submit:PerAddressAndFormPerMinute"] = "0";
     }
 

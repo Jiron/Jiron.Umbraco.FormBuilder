@@ -174,6 +174,34 @@ public sealed class OrphanFileCleanupTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AWholeReadOfFilesThatCannotGo_DoesNotHoldBackThoseBehindIt()
+    {
+        // The oldest read's worth all fail, as a store that keeps them locked would; the files behind them still go (16.1).
+        var form = await CreateTestFormAsync("upload");
+        var stuck = new List<StoredEntryFile>();
+        for (var number = 0; number < OrphanFileCleanup.Nominations; number++)
+        {
+            var file = await UploadAsync(form.Id);
+            stuck.Add(file);
+            _store.Refused.Add(file.StoredName);
+        }
+
+        Clock.Advance(TimeSpan.FromSeconds(1));
+        var behind = await UploadAsync(form.Id);
+        Clock.Advance(TimeSpan.FromDays(2));
+
+        // Each refusal takes a moment, so a cleanup that read the same files again and again would meet its deadline.
+        _store.OnRefuse = () => Clock.Advance(TimeSpan.FromMilliseconds(1));
+        await Cleanup.RunAsync(Clock.GetUtcNow().AddSeconds(2), CancellationToken.None);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Entries.GetFileAsync(behind.Key), Is.Null, "the run moved past what would not go");
+            Assert.That((await Entries.ListOrphanFilesAsync(Clock.GetUtcNow(), 200)).Select(file => file.Id), Is.EquivalentTo(stuck.Select(file => file.Id)), "they keep their rows for the next run");
+        });
+    }
+
+    [Test]
     public async Task MoreThanOneReadHolds_AllGo_WithinTheDeadline()
     {
         var form = await CreateTestFormAsync("upload");
@@ -244,6 +272,8 @@ public sealed class OrphanFileCleanupTests : RepositoryTestBase
 
         public Action? OnDelete { get; set; }
 
+        public Action? OnRefuse { get; set; }
+
         public Task SaveAsync(string id, Stream content, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -252,6 +282,7 @@ public sealed class OrphanFileCleanupTests : RepositoryTestBase
         {
             if (Refused.Contains(id))
             {
+                OnRefuse?.Invoke();
                 throw new IOException("The store is locked.");
             }
 

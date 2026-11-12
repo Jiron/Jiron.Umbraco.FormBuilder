@@ -26,7 +26,8 @@ internal sealed class FolderController(
     IFormBuilderFolderService folders,
     IFormBuilderLibraryService library,
     IFormBuilderAccessService access,
-    IAuthorizationService authorization)
+    IAuthorizationService authorization,
+    FolderTakes takes)
     : FormBuilderManagementApiController
 {
     /// <summary>A folder that the user sees, with their permissions on it.</summary>
@@ -115,7 +116,10 @@ internal sealed class FolderController(
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
     }
 
-    /// <summary>Puts a folder with everything below it in the trash.</summary>
+    /// <summary>
+    /// Puts a folder with everything below it in the trash. It needs <c>design</c> on all of it, as everything it takes
+    /// goes offline; otherwise nothing goes.
+    /// </summary>
     /// <param name="key">The folder.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpPost("{key:guid}/trash")]
@@ -124,15 +128,23 @@ internal sealed class FolderController(
     [ProducesResponseType(typeof(LibraryChangeResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Trash(Guid key, CancellationToken cancellationToken = default) =>
-        await folders.TrashAsync(key, RequestAccess.User.Key, cancellationToken) is { } change
+    public async Task<IActionResult> Trash(Guid key, CancellationToken cancellationToken = default)
+    {
+        if (await takes.MissingAsync(RequestAccess.User, key, restore: false, FormBuilderPermissions.Design, cancellationToken) != FormBuilderPermissions.None)
+        {
+            return FormBuilderProblems.Missing(FormBuilderPermissions.Design);
+        }
+
+        return await folders.TrashAsync(key, RequestAccess.User.Key, cancellationToken) is { } change
             ? Ok(LibraryChangeResponseModel.Of(change))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
+    }
 
     /// <summary>
     /// Takes a folder out of the trash with what went there with it, into its parent, or to the root when the parent is
     /// in the trash. A restore to the root needs what a move there needs; when the parent goes to the trash or comes back
-    /// meanwhile, the restore is refused with <c>landing_changed</c>.
+    /// meanwhile, the restore is refused with <c>landing_changed</c>. It needs <c>design</c> on everything that comes back
+    /// with it, as on what a trash takes.
     /// </summary>
     /// <param name="key">The folder.</param>
     /// <param name="request">The confirmation of a restore that gives user groups more access; none for a restore without it.</param>
@@ -149,6 +161,11 @@ internal sealed class FolderController(
         if (await folders.GetRestoreLandingAsync(key, cancellationToken) is not { } landing)
         {
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
+        }
+
+        if (await takes.MissingAsync(RequestAccess.User, key, restore: true, FormBuilderPermissions.Design, cancellationToken) != FormBuilderPermissions.None)
+        {
+            return FormBuilderProblems.Missing(FormBuilderPermissions.Design);
         }
 
         var move = new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, landing.FolderKey);

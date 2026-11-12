@@ -124,6 +124,25 @@ public sealed class PublicFormEntryBodyTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task ABodyOfManyUnknownNames_IsRefused_NamingAHundredOfThemAtMost()
+    {
+        // A body within its limit could name a hundred thousand fields the form does not have; the answer stays short (16.1).
+        var key = await PublishAsync(fields: [NameField]);
+        var unknown = string.Join(",", Enumerable.Range(0, 300).Select(at => $"\"x{at}\":\"a\""));
+        using var response = await PostAsync(key, new ByteArrayContent(Utf8($$$"""{"revision":1,"values":{"name":"Ada",{{{unknown}}}}}""")) { Headers = { ContentType = new("application/json") } });
+        var problem = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+            Assert.That(problem["code"]!.GetValue<string>(), Is.EqualTo("invalid_request"));
+            Assert.That(problem["errors"]!.AsArray(), Has.Count.EqualTo(100));
+            Assert.That(problem["errors"]![0]!["path"]!.GetValue<string>(), Is.EqualTo("values.x0"), "the first ones, in the body's order");
+            Assert.That(await StoredAsync(key), Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task AnotherMediaType_IsRefused_AndABodyPastTheLimit_IsCutOff_DeclaredOrNot()
     {
         var key = await PublishAsync();

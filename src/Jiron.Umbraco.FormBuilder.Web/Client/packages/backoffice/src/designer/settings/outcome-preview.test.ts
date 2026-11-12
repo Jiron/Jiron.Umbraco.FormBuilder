@@ -150,4 +150,16 @@ describe("an outcome's preview markup", () => {
     );
     expect(holder.innerHTML).toBe('<p>Hi</p><a>Go</a><img src="x"><a>Tab</a><a>Case</a>');
   });
+
+  it("leaves out SVG's animations, which could set an address later, and addresses of scripts or documents", () => {
+    const holder = drawn(
+      '<svg><a href="#"><animate attributeName="href" values="#;javascript:alert(1)"></animate><text>A</text></a>' +
+        '<set attributeName="href" to="javascript:alert(2)"></set></svg>' +
+        '<a href="vbscript:msgbox(3)">V</a><a href="data:text/html,&lt;script&gt;alert(4)&lt;/script&gt;">D</a>' +
+        '<img src="data:image/png;base64,iVBORw0KGgo=">',
+    );
+    expect(holder.querySelectorAll('animate, set')).toHaveLength(0);
+    expect([...holder.querySelectorAll('a')].map((link) => link.getAttribute('href'))).toEqual(['#', null, null]);
+    expect(holder.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,iVBORw0KGgo=');
+  });
 });

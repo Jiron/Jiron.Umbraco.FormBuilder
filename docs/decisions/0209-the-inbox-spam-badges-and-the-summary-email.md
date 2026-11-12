@@ -1,6 +1,7 @@
 # 0209. The Inbox, Spam, the unseen badge and the summary email
 
-- Status: accepted
+- Status: accepted; every element that polls starts the idle gate since 16.1
+  ([ADR-0236](0236-what-the-security-review-changed.md))
 - Date: 2026-11-07
 - Roadmap step: 11.1, its part 11.3 (the all-entries inbox and spam; ADR-0197); builds on
   [ADR-0207](0207-the-entries-list.md) (the list), [ADR-0208](0208-the-entry-panel.md) (the panel and the move back

@@ -60,6 +60,16 @@ internal sealed partial class FileUploads(
     /// <param name="field">The field.</param>
     public long LimitOf(IFormBuilderFieldType type, FormField field) => FieldUploads.Limit(type, field, host.MaxFileBytes);
 
+    /// <summary>The most bytes one file of the field is stored with: its limit, within the site's (Settings, Files).</summary>
+    /// <param name="type">The field's type.</param>
+    /// <param name="field">The field.</param>
+    /// <param name="cancellationToken">Cancels the read of the site's settings.</param>
+    public async Task<long> StoredLimitOfAsync(IFormBuilderFieldType type, FormField field, CancellationToken cancellationToken)
+    {
+        var site = (await settings.GetAsync<FilesSettings>(cancellationToken: cancellationToken)).Value;
+        return Math.Min(LimitOf(type, field), site.LimitWithin(host));
+    }
+
     /// <summary>The kind of error of a file past its field's limit: <c>fileSize</c> when the type declares it, otherwise <c>invalid</c>.</summary>
     /// <param name="type">The field's type.</param>
     public static FieldMessageKinds SizeError(IFormBuilderFieldType type) => FieldUploads.Declared(type, FieldMessageKinds.FileSize);

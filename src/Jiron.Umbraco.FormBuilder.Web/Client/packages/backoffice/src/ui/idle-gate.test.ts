@@ -3,7 +3,8 @@
 // keeps users signed in never waits. Once the session has ended, a poll waits for the next sign-in.
 import type { UmbAuthSession } from '@umbraco-cms/backoffice/auth';
 import { describe, expect, it } from 'vitest';
-import { IdleGate, pollWaitsForInput } from './idle-gate';
+import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
+import { IdleGate, pollWaitsForInput, startIdleGate } from './idle-gate';
 
 function setup(keepUserLoggedIn = false) {
   let now = 1_000;
@@ -122,5 +123,25 @@ describe('the idle gate', () => {
     const waiting = t.gate.untilActive(abort.signal);
     abort.abort();
     expect(await settled(waiting)).toBe(true);
+  });
+
+  it('is started by any element that polls, from its auth context, and an element without one starts nothing', async () => {
+    // A screen that polls, the people screen's export among them, starts the gate itself (16.1's review).
+    const host = (auth: unknown) =>
+      ({
+        getContext: () => (auth ? Promise.resolve(auth) : Promise.reject(new Error('none'))),
+      }) as unknown as UmbClassInterface;
+    const signedOut = {
+      keepUserLoggedIn: false,
+      session$: { subscribe: (next: (session: undefined) => void) => next(undefined) },
+    };
+    const started = new IdleGate(() => 1_000);
+    const unstarted = new IdleGate(() => 1_000);
+
+    await startIdleGate(host(signedOut), started);
+    await startIdleGate(host(undefined), unstarted);
+
+    expect(started.idle).toBe(true);
+    expect(unstarted.idle).toBe(false);
   });
 });

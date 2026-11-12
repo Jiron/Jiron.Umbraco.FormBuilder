@@ -29,6 +29,7 @@ internal sealed class FormPostReader
     private readonly Dictionary<Guid, Answer> _fields = [];
     private readonly Dictionary<Guid, SortedDictionary<int, Dictionary<Guid, Answer>>> _rows = [];
     private readonly Dictionary<Guid, int> _counts = [];
+    private readonly Dictionary<Guid, int> _mostRows = [];
     private readonly Dictionary<Guid, HashSet<int>> _added = [];
     private readonly Dictionary<string, string> _context = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<string>> _query = new(StringComparer.Ordinal);
@@ -43,6 +44,12 @@ internal sealed class FormPostReader
         foreach (var group in _order.Where(IsGroup))
         {
             Names(_children[group.Key] = new Dictionary<string, FormField>(StringComparer.Ordinal), group.Fields.Where(child => child.Alias is not null));
+
+            // A group takes as many rows as its settings let it (16.1's review): its rows are read as posted, so the pipeline's
+            // check refuses too many, but no file or typed signature of a row past them is written down or drawn first.
+            _mostRows[group.Key] = types.FindType(group.Type) is RepeaterFieldType repeater
+                ? Math.Clamp(repeater.ReadSettings(group.Settings).MaxRows, 1, RepeaterFieldType.MostRows)
+                : RepeaterFieldType.MostRows;
         }
     }
 
@@ -121,7 +128,7 @@ internal sealed class FormPostReader
             }
 
             var rows = RowsOf(field.Key);
-            for (var row = 0; row < rows.Count; row++)
+            for (var row = 0; row < Math.Min(rows.Count, _mostRows[field.Key]); row++)
             {
                 foreach (var child in field.Fields.Where(IsSignature))
                 {
@@ -264,7 +271,7 @@ internal sealed class FormPostReader
             return _top.TryGetValue(path.Alias, out var field) && !IsGroup(field) ? (field, null, null) : null;
         }
 
-        return GroupOf(path.Group) is { } group && _children[group.Key].TryGetValue(path.Alias, out var child) && (anyRow || path.Row < RowsOf(group.Key).Count)
+        return GroupOf(path.Group) is { } group && _children[group.Key].TryGetValue(path.Alias, out var child) && path.Row < Math.Min(_mostRows[group.Key], anyRow ? RepeaterFieldType.MostRows : RowsOf(group.Key).Count)
             ? (child, group, path.Row)
             : null;
     }

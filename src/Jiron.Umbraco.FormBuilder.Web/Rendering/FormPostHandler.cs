@@ -211,7 +211,8 @@ internal sealed class FormPostHandler(
 
         // A post with files when the site can take no more stores nothing more, also when its own files bring it there; its answers
         // come back, as they do over a limit (ADR-0148).
-        var noRoom = storesFiles && !await uploads.HasRoomAsync(cancellationToken);
+        var leftForRoom = FormPostFileNotes.Get(http, formKey, instance) is { NoRoom: true };
+        var noRoom = leftForRoom || (storesFiles && !await uploads.HasRoomAsync(cancellationToken));
         List<SubmissionProblem> noted = [];
         if (!noRoom)
         {
@@ -232,7 +233,7 @@ internal sealed class FormPostHandler(
             var words = await WordsAsync(cached, culture, content, cancellationToken);
             var full = new Step(reader, definition, Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var fullPage) ? fullPage : null, query)
             {
-                Notice = new FormPostNotice(words.NotSentHeading, hasFiles ? words.NoRoomText + " " + words.ChooseFilesAgain : words.NoRoomText, NoRoomCode),
+                Notice = new FormPostNotice(words.NotSentHeading, hasFiles || leftForRoom ? words.NoRoomText + " " + words.ChooseFilesAgain : words.NoRoomText, NoRoomCode),
             };
             FormPosts.Set(http, formKey, instance, full.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
             return FormPostAnswer.Page;

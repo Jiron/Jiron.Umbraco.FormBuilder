@@ -605,8 +605,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   unit of work ([ADR-0078](decisions/0078-lists-from-an-import.md)), and says what it could not.
 - **Forms as files** ([ADR-0220](decisions/0220-forms-as-files.md)): a replace makes an export file's definition a
   form's draft with the file's keys, as a draft save; the form keeps its name, alias, folder, access, entries and
-  History. With `Definitions:Mirror` on, each publish writes the published version to `<alias>.json` in
-  `Definitions:Folder` (a temporary file, then a move), unless the file changed since the mirror last saw it, which is
+  History. With `Definitions:Mirror` on, each publish writes the published version to `<alias>.json` (with an
+  underscore first for an alias Windows keeps for a device, `_nul.json`, ADR-0236) in `Definitions:Folder` (a temporary file, then a move), unless the file changed since the mirror last saw it, which is
   a conflict that keeps the file. `FormMirrorJob` reads the folder on the server that schedules: a file whose
   definition changed while the form's published version did not is replaced into the draft and published; a change on
   both sides keeps the form and the file and is a conflict; a file of a form the site never had creates it with its
@@ -1153,7 +1153,9 @@ others in a cluster.
 | Information disclosure | SSRF through webhooks or URL option lists | host allowlist from configuration, private addresses blocked after DNS, no redirects, test transport only in tests | §4.10 | 5.5, 8.4 |
 | Information disclosure | A third-party captcha sees visitors without consent | consent modes, nothing loaded before consent, no visitor address in verification | §4.10, ADR-0012 | 7.2 |
 | Denial of service | Request floods and floods of addresses | limiters per address, form and site, bounded partitions failing closed; a key that names no form spends only its address's limits and a lookup's | ADR-0012, ADR-0149 | 7.1, 7.4e |
-| Denial of service | Uploads no entry takes fill the disk, or use up what may wait for everybody | a cap on the bytes that wait, each address's share of them, and a cleanup on a timer of its own | ADR-0148 | 7.4d, 7.4h |
+| Denial of service | Uploads no entry takes fill the disk, or use up what may wait for everybody | a cap on the bytes that wait, each address's share of them, and a cleanup on a timer of its own that moves past what it cannot remove | ADR-0148, ADR-0236 | 7.4d, 7.4h, 16.1 |
+| Denial of service | Posts without JavaScript fill the temporary files before any check | only a page's post is read; the share and the room first; each byte counted against what this server's posts hold at once; no file or typed signature of a row past the group's most | ADR-0236 | 16.1 |
+| Denial of service | A trash takes a restricted form offline | a folder's trash and restore need `design` on everything they take | ADR-0236 | 16.1 |
 | Denial of service | Large bodies and uploads | limits checked before reading, streamed uploads, no buffering in routing | ADR-0006, ADR-0102 | 1.4b, 6.2, 7.3 |
 | Denial of service | Names a request makes up fill memory or the log | only the context names a form lists reach the rendering, so no set keeps or logs a name a request chose | ADR-0124, ADR-0128 | 6.8a |
 | Denial of service | Patterns, templates or formulas that never finish | the linear-time matcher, grammar and output limits, the fuzz test | ADR-0005, ADR-0014 | 5.2, 5.3 |

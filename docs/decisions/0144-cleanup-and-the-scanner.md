@@ -2,7 +2,8 @@
 
 - Status: accepted; builds on [ADR-0006](0006-file-storage-and-uploads.md), [ADR-0007](0007-background-work-outbox-and-email.md)
   and [ADR-0087](0087-the-upload-endpoint.md); schema step 5 follows the freeze of [ADR-0054](0054-schema-freeze.md); the
-  cleanup's timer, the order of the scans and their index changed in 7.4d by [ADR-0148](0148-what-uploads-may-hold.md)
+  cleanup's timer, the order of the scans and their index changed in 7.4d by [ADR-0148](0148-what-uploads-may-hold.md); the
+  cleanup moves past what it cannot remove since 16.1 ([ADR-0236](0236-what-the-security-review-changed.md))
 - Date: 2026-11-01
 - Roadmap step: 7.3b
 

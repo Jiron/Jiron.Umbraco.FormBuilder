@@ -503,7 +503,8 @@ internal sealed class FormSubmissions(
 
         if (unreadable.Count > 0)
         {
-            return Reading.Refused(SubmissionResult.Unreadable(unreadable));
+            // As many paths as the body's own reading names at most (16.1's review): a body of unknown names answers no longer than that.
+            return Reading.Refused(SubmissionResult.Unreadable([.. unreadable.Distinct(StringComparer.Ordinal).Take(MostUnreadable)]));
         }
 
         var culture = await pages.CultureAsync(request.Culture);
@@ -705,6 +706,9 @@ internal sealed class FormSubmissions(
 
         return new PostedAnswers(fields, rows);
     }
+
+    /// <summary>The most paths a refusal of values the page should not have posted names, as the body's own reading names at most.</summary>
+    internal const int MostUnreadable = 100;
 
     // An alias the page should not have posted: unreadable for the current revision, a change for an older one, whose
     // fields may have been taken out since. A known field posted in the wrong shape is unreadable either way.

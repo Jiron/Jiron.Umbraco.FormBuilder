@@ -40,6 +40,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<IFormBuilderRenderer, FormBuilderRenderer>();
         builder.Services.TryAddSingleton<FormPostHandler>();
         builder.Services.TryAddSingleton<FormPostFilesMiddleware>();
+        builder.Services.TryAddSingleton<FormPostBuffers>();
         builder.Services.TryAddSingleton<SentTokens>();
         builder.Services.TryAddSingleton<SentCopies>();
         builder.Services.TryAddSingleton<BackOfficeVisitors>();

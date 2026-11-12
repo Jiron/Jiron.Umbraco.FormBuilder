@@ -12,8 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Retention;
 
 /// <summary>
 /// The orphan cleanup (ADR-0009, ADR-0144, ADR-0148): an upload no entry took within a day, when its token has run out, goes
-/// with its bytes. The bytes go first, so one that cannot be deleted keeps its row and comes round again.
-/// A file's name is never logged.
+/// with its bytes. The bytes go first, so one that cannot be deleted keeps its row and comes round again in the next run; a
+/// run moves past it, so files it cannot delete never keep it from those behind them (16.1's review). A file's name is never
+/// logged.
 /// </summary>
 internal sealed partial class OrphanFileCleanup(
     IEntryRepository entries,
@@ -34,25 +35,26 @@ internal sealed partial class OrphanFileCleanup(
     {
         var cutoff = time.GetUtcNow() - KeptFor;
         var removed = 0;
+        StoredEntryFile? after = null;
         while (time.GetUtcNow() < deadline)
         {
-            var progress = false;
-            foreach (var file in await entries.ListOrphanFilesAsync(cutoff, Nominations, cancellationToken))
+            var nominated = await entries.ListOrphanFilesAsync(cutoff, Nominations, after, cancellationToken);
+            foreach (var file in nominated)
             {
                 if (await RemoveAsync(file, cancellationToken))
                 {
                     removed++;
-                    progress = true;
                 }
 
+                after = file;
                 if (time.GetUtcNow() >= deadline)
                 {
                     break;
                 }
             }
 
-            // Nothing left, or nothing that would go: the next run tries again.
-            if (!progress)
+            // Nothing left behind the last one: what would not go comes round in the next run.
+            if (nominated.Count < Nominations)
             {
                 break;
             }

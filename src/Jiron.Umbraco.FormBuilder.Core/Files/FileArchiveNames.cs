@@ -21,6 +21,10 @@ internal sealed class FileArchiveNames
 
     private readonly HashSet<string> _taken = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Whether Windows keeps a name for a device (<c>con</c>, <c>nul</c>, <c>com1</c> and the like), in any letter case.</summary>
+    /// <param name="name">A file name without its extension.</param>
+    public static bool IsDeviceName(string name) => DeviceNames.Contains(name);
+
     /// <summary>The next file's path in the archive, as a ZIP writes one: <c>entry-12/report.pdf</c>, with a number on a name its folder holds already.</summary>
     /// <param name="entryId">The entry that holds the file.</param>
     /// <param name="name">The file's stored name.</param>

@@ -3,7 +3,8 @@
 - Status: accepted; builds on [ADR-0046](0046-copies-templates-and-import.md) (copies, templates and import),
   [ADR-0078](0078-lists-from-an-import.md) (lists from an import), [ADR-0144](0144-cleanup-and-the-scanner.md) (jobs on
   timers of their own), [ADR-0165](0165-the-section-shell.md) (the health checks) and D25 (forms as files); changes D8,
-  which counted the file mirror among the distributed jobs
+  which counted the file mirror among the distributed jobs; the file of an alias Windows keeps for a device has an
+  underscore first since 16.1 ([ADR-0236](0236-what-the-security-review-changed.md))
 - Date: 2026-11-08
 - Roadmap step: 12.4, its part 12.5 (ADR-0197)
 

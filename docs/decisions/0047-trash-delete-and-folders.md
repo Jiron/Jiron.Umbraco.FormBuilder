@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0033](0033-schema-v1.md) (the trash key of folders and forms),
   [ADR-0036](0036-database-gate-units-of-work-and-repositories.md) (folders are created and moved only below folders
   outside the trash, and a folder in the trash does not move) and [ADR-0044](0044-form-service.md) (the folder service
-  and the trash's notifications)
+  and the trash's notifications); a folder's trash and restore need `design` on everything they take since 16.1
+  ([ADR-0236](0236-what-the-security-review-changed.md))
 - Date: 2026-10-24
 - Roadmap step: 4.5d (decided and built); 4.7 maps it to the API, 6.1 answers a form in the trash as missing, 6.7
   writes the references, 9.2 shows the trash, 13.1 sweeps what a failed file delete leaves

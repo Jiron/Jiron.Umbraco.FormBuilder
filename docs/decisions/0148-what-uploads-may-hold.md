@@ -1,7 +1,9 @@
 # 0148. What uploads may hold, and who clears them
 
 - Status: accepted; amends [ADR-0144](0144-cleanup-and-the-scanner.md) (the cleanup's timer, the order of the scans, their
-  index) and [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md) (the upload policy's defaults)
+  index) and [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md) (the upload policy's defaults); a post
+  without JavaScript checks the share and the room before its first file, and counts what it holds while it is read, since
+  16.1 ([ADR-0236](0236-what-the-security-review-changed.md))
 - Date: 2026-11-01
 - Roadmap step: 7.4d
 
