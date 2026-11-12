@@ -4,6 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { API, contactForm, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
+import { shownRow } from '../../support/tree.ts';
 
 // The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer, the
 // entry handler, the viewer and the privacy officer, and the three of a user without grants, each done with the mouse
@@ -27,10 +28,6 @@ const sidebarItem = (page: Page, label: string) =>
   label === 'Inbox'
     ? page.locator('jfb-inbox-menu-item uui-menu-item')
     : page.locator(`umb-section-sidebar uui-menu-item[label="${label}"]`).first();
-
-/** A form's row in the forms tree, by its name. */
-const treeRow = (page: Page, name: string) =>
-  page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`).filter({ visible: true });
 
 /** A form of applications whose entries wait for approval, at the root, as the entry tasks' usual setup has it. */
 async function waitingEntries(api: APIRequestContext, name: string, count = 6): Promise<void> {
@@ -95,7 +92,9 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   await contactForm(api, name);
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(treeRow(page, name));
+  // The tree is read as far as the form before the clicks are counted: on a site the form is on the tree's first page,
+  // and the shared host's root holds every test's forms (shownRow).
+  await clicks.click(await shownRow(page, name));
   const fields = design.locator('jfb-canvas-field');
   await expect(fields).toHaveCount(3, { timeout: 60_000 });
   const palette = design.locator('jfb-designer-palette');
@@ -107,7 +106,7 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   // 4. A question reworded: selected on the canvas, its label typed in the inspector.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(treeRow(page, name));
+  await clicks.click(await shownRow(page, name));
   await clicks.click(fields.first().locator('[data-control="select"]').first());
   const inspector = design.locator('jfb-designer-inspector');
   const label = inspector.getByLabel('Label', { exact: true });
@@ -118,7 +117,7 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   // 5. A question made compulsory: selected, its Required switched on.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(treeRow(page, name));
+  await clicks.click(await shownRow(page, name));
   await clicks.click(fields.nth(2).locator('[data-control="select"]').first());
   const required = inspector.getByRole('switch', { name: 'Required', exact: true });
   await required.check();

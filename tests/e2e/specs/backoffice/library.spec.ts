@@ -12,6 +12,7 @@ import {
   publishWithLabel,
   unique,
 } from '../../support/forms-api.ts';
+import { openSearch } from '../../support/search.ts';
 import { openRowActions, treeRow } from '../../support/tree.ts';
 
 // The form library (ROADMAP 9.2, ADR-0166): new forms blank, from the gallery (also from the Overview's checklist) and by import
@@ -497,9 +498,7 @@ test('the header search finds a form by one of its field labels and opens it wit
   await loginAs('designer');
   await openSection(page);
 
-  await page.locator('umb-backoffice-header-apps [label="Search"], umb-search-header-app uui-button').first().click();
-  const search = page.locator('umb-search-modal');
-  await search.getByRole('button', { name: 'Forms' }).click();
+  const search = await openSearch(page);
   await search.locator('input').fill(label);
   const result = search.locator('a', { hasText: `${label}, in ${name}` });
   await expect(result).toHaveAttribute('href', new RegExp(`jfb-form/edit/${key}\\?field=${field}$`));

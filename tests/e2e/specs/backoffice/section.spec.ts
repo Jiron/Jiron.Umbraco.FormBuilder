@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
+import { openSearch } from '../../support/search.ts';
 import type { Role } from '../../support/users.ts';
 
 // The Forms section's shell (ROADMAP 9.1, ADR-0021, ADR-0165): each role sees exactly its menus, the checklist's form block step
@@ -137,8 +138,7 @@ test('the header search finds a form and links to it', async ({ page, loginAs, a
 
   await loginAs('designer');
   await page.goto(OVERVIEW);
-  await page.locator('umb-backoffice-header-apps [label="Search"], umb-search-header-app uui-button').first().click();
-  await page.locator('umb-search-modal').getByRole('button', { name: 'Forms' }).click();
+  await openSearch(page);
   await page.locator('umb-search-modal input').fill(name);
   const result = page.locator('umb-search-modal a', { hasText: name });
   await expect(result).toHaveAttribute('href', new RegExp(`section/jfb-forms/workspace/jfb-form/edit/${key}$`));

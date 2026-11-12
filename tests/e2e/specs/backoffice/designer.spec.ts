@@ -2,6 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
+import { openSearch } from '../../support/search.ts';
 
 // The form workspace (ROADMAP 9.3a, ADR-0166, docs/ux/information-architecture.md section 5): it loads a form's draft, renames
 // the form in its header and saves through the API, publishes after asking, asks before leaving unsaved changes, opens a
@@ -351,9 +352,7 @@ test("a field's result of the header search opens the form with that field selec
   await loginAs('designer');
   await page.goto(SECTION);
 
-  await page.locator('umb-backoffice-header-apps [label="Search"], umb-search-header-app uui-button').first().click();
-  const search = page.locator('umb-search-modal');
-  await search.getByRole('button', { name: 'Forms' }).click();
+  const search = await openSearch(page);
   await search.locator('input').fill(label);
   await search.locator('a', { hasText: `${label}, in ${name}` }).click();
 

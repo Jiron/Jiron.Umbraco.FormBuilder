@@ -4,6 +4,8 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { API, blankForm, contactForm, created, formOf, KEY, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { openSearch } from '../../support/search.ts';
+import { loadedIn } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
 import { COMBOS, comboName, walkDir, wantedCombo } from '../../support/ux-walk.ts';
 
@@ -383,29 +385,7 @@ async function pageThatPicks(api: APIRequestContext, formKey: string, name: stri
 const treeRow = (page: Page, name: string): Locator =>
   page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`).filter({ visible: true }).first();
 
-/**
- * Presses a tree's "Load more" until it shows the row: the twelve looks' forms share the root, and a look's last names
- * fall past the tree's first page.
- */
-async function loadedIn(tree: Locator, row: Locator): Promise<Locator> {
-  const more = tree.locator('umb-tree-load-more-button').filter({ visible: true }).first();
-  const items = tree.locator('uui-menu-item');
-  // The tree's first page before anything else: with no row yet there is no Load more either, and the row never came.
-  await expect(items.first()).toBeVisible();
-  // Load more can show a moment after the first page, so a round without the row and without the button is tried again
-  // rather than taken as the end of the tree.
-  await expect(async () => {
-    if ((await row.count()) > 0) return;
-    if ((await more.count()) > 0) {
-      const before = await items.count();
-      await more.click();
-      await expect.poll(() => items.count()).toBeGreaterThan(before);
-    }
-    expect(await row.count()).toBeGreaterThan(0);
-  }).toPass({ timeout: 90_000 });
-  return row;
-}
-
+// The twelve looks' forms share the root, and a look's last names fall past the tree's first page (loadedIn).
 const shownRow = (page: Page, name: string): Promise<Locator> =>
   loadedIn(page.locator('umb-section-sidebar'), treeRow(page, name));
 
@@ -517,10 +497,8 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     await walk.shot('search', async () => {
       await openSection(page);
-      await page.locator('umb-search-header-app uui-button').first().click();
-      const search = page.locator('umb-search-modal');
       // Our provider's tab, the one place the walk names a word, in both languages.
-      await search.getByRole('button', { name: /^(Forms|Formulare)$/ }).click();
+      const search = await openSearch(page, /^(Forms|Formulare)$/);
       await search.locator('input').fill(made.restrictedName);
       await expect(search.locator('a', { hasText: made.restrictedName }).first()).toBeVisible();
     });
