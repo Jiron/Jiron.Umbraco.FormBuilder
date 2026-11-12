@@ -277,7 +277,7 @@ internal sealed partial class EntryVerification(
                         Kind = EmailKind.Verification,
                         To = [address],
                         Subject = words.Subject,
-                        Body = $"<p>{WebUtility.HtmlEncode(string.Format(System.Globalization.CultureInfo.InvariantCulture, words.Intro, form.Name))}</p><p><a href=\"{link}\">{WebUtility.HtmlEncode(words.Button)}</a></p><p>{WebUtility.HtmlEncode(words.NotYou)}</p>",
+                        Body = $"<p>{WebUtility.HtmlEncode(string.Format(System.Globalization.CultureInfo.InvariantCulture, words.Intro, form.Name))}</p><p><a href=\"{WebUtility.HtmlEncode(link)}\">{WebUtility.HtmlEncode(words.Button)}</a></p><p>{WebUtility.HtmlEncode(words.NotYou)}</p>",
                         Culture = entry.Culture,
                         ToVisitor = true,
                         Site = scope.Site,
