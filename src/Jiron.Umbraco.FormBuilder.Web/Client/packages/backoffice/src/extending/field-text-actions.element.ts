@@ -13,6 +13,7 @@ import type {
 import { FORM_WORKSPACE_CONTEXT } from '../designer/constants';
 import { designerHost } from '../designer/designer-host';
 import { EXTENSIONS_CHANGED, fieldTextActionsFor } from './extension-registry';
+import { jfbBackofficeTokens } from '../styles/tokens';
 
 export class FieldTextActionsElement extends UmbLitElement {
   static override properties = {
@@ -96,11 +97,14 @@ export class FieldTextActionsElement extends UmbLitElement {
     }
   }
 
-  static override styles = css`
-    :host {
-      display: contents;
-    }
-  `;
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      :host {
+        display: contents;
+      }
+    `,
+  ];
 }
 
 if (!customElements.get('jfb-field-text-actions'))

@@ -14,6 +14,9 @@ export const FORM_ENTITY_TYPE = 'jfb-form';
 export const FOLDER_ENTITY_TYPE = 'jfb-folder';
 export const ENTRY_ENTITY_TYPE = 'jfb-entry';
 
+/** The Inbox, every form's entries the user may view, in one list (IA 6.1). */
+export const INBOX_ENTITY_TYPE = 'jfb-inbox';
+
 /** The Recycle Bin's own tree (ADR-0166): its root, and the forms and folders it holds, whose menus are not the library's. */
 export const RECYCLE_BIN_ENTITY_TYPE = 'jfb-recycle-bin';
 export const TRASHED_FORM_ENTITY_TYPE = 'jfb-trashed-form';

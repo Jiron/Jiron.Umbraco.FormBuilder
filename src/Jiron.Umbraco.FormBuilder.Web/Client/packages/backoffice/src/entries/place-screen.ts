@@ -4,17 +4,21 @@
 import { css, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { ListPlace } from './entry-list-model';
+import { jfbBackofficeTokens } from '../styles/tokens';
 import '../designer/entries/entries.view';
 
 /** Defines the screen of a place under its tag, once, and gives its class. */
 export function placeScreen(tag: string, place: Exclude<ListPlace, 'form'>): typeof UmbLitElement {
   class PlaceScreenElement extends UmbLitElement {
-    static override styles = css`
-      :host {
-        display: block;
-        block-size: 100%;
-      }
-    `;
+    static override styles = [
+      jfbBackofficeTokens,
+      css`
+        :host {
+          display: block;
+          block-size: 100%;
+        }
+      `,
+    ];
 
     override render() {
       return html`<jfb-entries-view place=${place}></jfb-entries-view>`;

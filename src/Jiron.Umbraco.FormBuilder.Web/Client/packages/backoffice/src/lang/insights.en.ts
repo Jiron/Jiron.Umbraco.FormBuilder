@@ -11,6 +11,8 @@ export default {
     offSite: 'Insights are off for this site. An administrator can turn them on in Privacy › Data collection.',
     offForm: 'Insights are off for this form. Turn them on in its Settings view, under Privacy.',
     empty: 'No data yet. Numbers appear after the first visit to a page with this form.',
+    // An empty value in a table or a list (docs/ux/copy.md: never a dash).
+    noData: 'no data',
 
     range: 'Date range',
     rangeButton: (range: string) => `Date range: ${range}`,

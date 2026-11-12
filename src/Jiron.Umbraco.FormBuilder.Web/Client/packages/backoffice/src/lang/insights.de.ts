@@ -13,6 +13,8 @@ export default {
     offForm:
       'Die Einblicke sind für dieses Formular ausgeschaltet. Schalten Sie sie in seiner Ansicht Einstellungen unter Datenschutz ein.',
     empty: 'Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular.',
+    // Ein leerer Wert in einer Tabelle oder Liste (docs/ux/copy.md: nie ein Strich).
+    noData: 'keine Daten',
 
     range: 'Zeitraum',
     rangeButton: (range: string) => `Zeitraum: ${range}`,

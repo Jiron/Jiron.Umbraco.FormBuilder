@@ -8,6 +8,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { visitorTextsGet, type VisitorTextsResponseModel } from '../../api';
 import { controlStyles } from '../inspector/control.styles';
+import { jfbBackofficeTokens } from '../../styles/tokens';
 import {
   rowsOf,
   withoutWording,
@@ -31,6 +32,7 @@ export class VisitorTextsElement extends UmbLitElement {
   };
 
   static override styles = [
+    jfbBackofficeTokens,
     controlStyles,
     css`
       :host {

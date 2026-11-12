@@ -27,6 +27,7 @@ import { loadSettingsWords } from '../settings/settings-words';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { jfbPhoneColumn } from '../styles/phone';
+import { configKey } from '../ui/config-key';
 
 /** The states retention keeps entries in, in the order the screen names them. */
 export const STATES = ['submitted', 'approved', 'rejected', 'spam'] as const;
@@ -656,7 +657,7 @@ export class RetentionScreenElement extends UmbLitElement {
       <p class="help">${this.#words('privacy_retentionHelp')}</p>
       ${
         this.#editable() && !model.keepForGood
-          ? this.#note(html`${this.#words('retentionForGoodLocked')} <code>${model.keepForGoodKey}</code>`)
+          ? this.#note(html`${this.#words('retentionForGoodLocked')} ${configKey(model.keepForGoodKey)}`)
           : nothing
       }
     </uui-box>`;

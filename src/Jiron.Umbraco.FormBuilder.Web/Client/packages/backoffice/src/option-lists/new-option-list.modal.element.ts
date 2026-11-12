@@ -5,6 +5,7 @@ import { css, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { KINDS, type ListKind } from './option-list-model';
 import type { NewOptionListModalData, NewOptionListModalValue } from './new-option-list.modal.token';
+import { jfbBackofficeTokens } from '../styles/tokens';
 
 /** Each kind's icon, as the list screen and the workspace show none of them twice. */
 export const KIND_ICONS: Readonly<Record<ListKind, string>> = {
@@ -18,11 +19,14 @@ export const KIND_ICONS: Readonly<Record<ListKind, string>> = {
 };
 
 export class NewOptionListModalElement extends UmbModalBaseElement<NewOptionListModalData, NewOptionListModalValue> {
-  static override styles = css`
-    p {
-      margin: 0 0 var(--uui-size-space-4);
-    }
-  `;
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      p {
+        margin: 0 0 var(--uui-size-space-4);
+      }
+    `,
+  ];
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbOptionLists_${key}`, ...args);
 

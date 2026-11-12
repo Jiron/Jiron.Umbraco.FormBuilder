@@ -258,7 +258,9 @@ export class PermissionsModalElement extends UmbModalBaseElement<PermissionsModa
           ${this.#words(target.type === 'form' ? 'restrictHelpForm' : 'restrictHelpFolder')}
         </p>
       </div>
-      <h3>${this.#words('groupsHere')}</h3>
+      <!-- Heard as the area's heading; seen, the switch's help above already says the groups below are those with access,
+           and the label of Add user group would stand right under it (16.6's review: say it once). -->
+      <h3 class="visually-hidden">${this.#words('groupsHere')}</h3>
       ${
         readOnly || others.length === 0
           ? nothing

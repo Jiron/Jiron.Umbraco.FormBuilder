@@ -15,6 +15,7 @@ import { readDeliveries, type DeliveryFilters } from './activity-api';
 import { loadDeliveryWords } from './activity-words';
 import { DELIVERY_MODAL } from './delivery.modal.token';
 import { isProblem, toneOf, toOf, whatOf, whenOfDelivery } from './delivery-words';
+import { configKey } from '../ui/config-key';
 
 /** How many deliveries a page holds. */
 const PAGE = 50;
@@ -467,7 +468,7 @@ export class DeliveriesScreenElement extends UmbLitElement {
   #pausedLine(): TemplateResult {
     const marker = '[[key]]';
     const [before, after] = this.#term('paused', marker).split(marker);
-    return html`${before}<code>${PAUSED_KEY}</code>${after}`;
+    return html`${before}${configKey(PAUSED_KEY)}${after}`;
   }
 }
 

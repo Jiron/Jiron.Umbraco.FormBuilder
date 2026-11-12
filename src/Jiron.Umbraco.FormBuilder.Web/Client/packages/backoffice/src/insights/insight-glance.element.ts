@@ -51,6 +51,7 @@ export class InsightGlanceElement extends UmbLitElement {
       .scroll {
         position: relative;
         overflow-x: auto;
+        container-type: inline-size;
       }
 
       table {
@@ -71,6 +72,19 @@ export class InsightGlanceElement extends UmbLitElement {
       thead th {
         border-block-start: 0;
         font-weight: 700;
+      }
+
+      /* In a narrow box the numbers sit closer, so the German table fits a 768 px window without scrolling (16.6). */
+      @container (width < 40rem) {
+        th,
+        td {
+          padding-inline: var(--uui-size-space-3);
+        }
+
+        th:first-child,
+        td:first-child {
+          padding-inline-start: var(--uui-size-space-5);
+        }
       }
 
       th:first-child,
@@ -194,7 +208,7 @@ export class InsightGlanceElement extends UmbLitElement {
 
   #conversion(totals: InsightTotalsResponseModel, before: InsightTotalsResponseModel): TemplateResult {
     const now = totals.conversion;
-    if (now === null || now === undefined) return html`<td>${'\u2013'}</td>`;
+    if (now === null || now === undefined) return html`<td>${this.#term('noData')}</td>`;
     const earlier = before.conversion;
     const said =
       earlier === null || earlier === undefined

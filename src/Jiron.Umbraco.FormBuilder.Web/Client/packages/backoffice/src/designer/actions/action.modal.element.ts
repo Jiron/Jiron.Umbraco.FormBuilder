@@ -608,7 +608,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   /**
    * The check's problems in this action, by the box they show under; one of a setting without its editor yet under what
    * happens, by the setting's name. An answer about the action as it was before the last change shows none of a setting
-   * the type lacks: it is another type's, which the last choice replaced.
+   * the type lacks: it is another type's, which the last choice replaced; nor of a setting changed since, which is being
+   * checked again.
    */
   #found(): Map<string, Shown[]> {
     const found = new Map<string, Shown[]>();
@@ -618,7 +619,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const actions = actionsOf(checked);
     const index = actions.findIndex((action) => action.key === this._edit.key);
     if (index < 0) return found;
-    const current = same(actions[index], actionOf(this._edit));
+    const editing = actionOf(this._edit);
+    const current = same(actions[index], editing);
     const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
     const words: CheckWordsContext = {
       term,
@@ -633,6 +635,12 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       const at = settingAtPath(steps.slice(2));
       const own = at.kind === 'setting' ? settings.find((one) => one.name === at.path.split('.')[0]) : undefined;
       if (!current && at.kind === 'setting' && !own) continue;
+      // A setting changed since the answer came is being checked again: its old problems go with the change, rather than
+      // say "A mail needs someone to go to" beside the recipient just added (16.6's review).
+      if (!current && at.kind === 'setting') {
+        const name = at.path.split('.')[0] ?? at.path;
+        if (!same(actions[index]?.settings?.[name], editing.settings?.[name])) continue;
+      }
       const box = this.#boxOf(at);
       const said = issueWords(issue, checked, words).said;
       const text =

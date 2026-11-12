@@ -174,9 +174,15 @@ export class PeopleEraseModalElement extends UmbModalBaseElement<PeopleEraseModa
     const { preview } = data;
     const taken = preview.entries + preview.drafts;
     const forms = preview.forms.filter((form) => form.entries + form.drafts > 0).length;
+    // One form is named in the sentence, and its row would say the counts again (16.6's review: say it once).
+    const alone = preview.forms.length === 1 ? preview.forms[0] : undefined;
     // The entries and their forms, then the files and the mail where there are any.
     const what = [
-      this.#term('people_found', this.#count('people_entries', taken), this.#count('people_forms', forms)),
+      this.#term(
+        'people_found',
+        this.#count('people_entries', taken),
+        alone ? alone.name : this.#count('people_forms', forms),
+      ),
       ...(preview.files > 0 ? [this.#count('people_files', preview.files)] : []),
       ...(preview.emails > 0 ? [this.#count('people_emails', preview.emails)] : []),
     ];
@@ -194,7 +200,7 @@ export class PeopleEraseModalElement extends UmbModalBaseElement<PeopleEraseModa
           : nothing
       }
       ${preview.more ? html`<p>${this.#term('people_eraseMore')}</p>` : nothing}
-      <dl class="forms">${preview.forms.map((form) => this.#form(form))}</dl>
+      ${alone ? nothing : html`<dl class="forms">${preview.forms.map((form) => this.#form(form))}</dl>`}
       ${
         preview.entries > 0
           ? html`<fieldset>

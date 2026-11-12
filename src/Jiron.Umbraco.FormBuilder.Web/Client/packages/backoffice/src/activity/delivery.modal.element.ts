@@ -14,6 +14,7 @@ import { readDelivery, retryDelivery } from './activity-api';
 import { dateOf, fullTimeOf, loadDeliveryWords } from './activity-words';
 import type { DeliveryModalData, DeliveryModalValue } from './delivery.modal.token';
 import { headlineOf, isProblem, storyOf, toneOf, whatOf } from './delivery-words';
+import { configKey } from '../ui/config-key';
 
 /** What the sidebar says once, at its top. */
 type Alert = '' | 'failed' | 'gone' | 'changed' | 'forbidden';
@@ -188,7 +189,7 @@ export class DeliveryModalElement extends UmbModalBaseElement<DeliveryModalData,
   // A sentence with a configuration key in it, the key as code.
   #withKey(line: string, key: string): TemplateResult {
     const at = line.lastIndexOf(key);
-    return at < 0 ? html`${line}` : html`${line.slice(0, at)}<code>${key}</code>${line.slice(at + key.length)}`;
+    return at < 0 ? html`${line}` : html`${line.slice(0, at)}${configKey(key)}${line.slice(at + key.length)}`;
   }
 
   #body(detail: DeliveryDetailResponseModel): TemplateResult {

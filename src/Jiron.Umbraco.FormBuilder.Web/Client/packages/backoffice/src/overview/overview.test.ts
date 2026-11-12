@@ -246,6 +246,12 @@ describe('the Overview', () => {
     expect(rows[0]?.querySelector('.dot')).not.toBeNull();
     expect(rows[1]?.querySelector('a')?.textContent).toBe('Entry #6');
     expect(rows[1]?.querySelector('.dot')).toBeNull();
+    // The Inbox from here, as its item may lie below a long forms tree (16.6's review).
+    const inbox = must(root.querySelector('uui-button[slot="header-actions"]'), 'Open the Inbox');
+    expect([inbox.getAttribute('label'), inbox.getAttribute('href')]).toEqual([
+      'Open the Inbox',
+      'section/jfb-forms/workspace/jfb-inbox',
+    ]);
   });
 
   it('says so when there are no entries yet', async () => {

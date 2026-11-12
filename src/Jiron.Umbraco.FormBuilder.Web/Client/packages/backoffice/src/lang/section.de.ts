@@ -85,6 +85,7 @@ export default {
     recentLoading: 'Die neuesten Einträge werden geladen',
     recentFailed: 'Die neuesten Einträge konnten nicht geladen werden.',
     recentEmpty: 'Noch keine Einträge. Hier kommen die Einträge aller Formulare an, die Sie sehen dürfen.',
+    openInbox: 'Posteingang öffnen',
     glanceFailed: 'Die Formulare im Überblick konnten nicht geladen werden.',
     columnEntry: 'Eintrag',
     columnForm: 'Formular',

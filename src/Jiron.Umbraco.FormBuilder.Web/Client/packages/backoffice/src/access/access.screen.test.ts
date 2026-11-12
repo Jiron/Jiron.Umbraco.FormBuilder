@@ -242,6 +242,9 @@ describe("a folder's Permissions sidebar", () => {
   it('shows the groups with access here, and adds and takes off a group', async () => {
     const { root, box } = await open(sidebar(), folder());
     expect(all(root, 'thead th').map((cell) => said(cell))).toEqual(['Permission', 'Editors']);
+    // The area's heading is heard, not seen: the switch's help says it, and Add user group's label follows (16.6's review).
+    const heading = must(root.querySelector('h3'), 'the heading');
+    expect([said(heading), heading.classList.contains('visually-hidden')]).toEqual(['Groups with access here', true]);
     const add = must(root.querySelector<HTMLSelectElement>('#add-group'), 'add');
     add.value = 'translators';
     add.dispatchEvent(new Event('change'));

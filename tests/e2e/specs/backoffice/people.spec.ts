@@ -37,7 +37,8 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   const stamp = Date.now().toString(36);
   const who = `ada-${stamp}@example.com`;
   const other = `grace-${stamp}@example.com`;
-  const key = await seed(admin, unique('People'));
+  const formName = unique('People');
+  const key = await seed(admin, formName);
   await send(request, key, 'Ada Lovelace', who);
   await send(request, key, 'Ada Lovelace', who);
   await send(request, key, 'Grace Hopper', other);
@@ -104,9 +105,11 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   // Erase: the dialog says what goes and what the hold keeps, with Cancel focused.
   await screen.getByRole('button', { name: 'Erase\u2026', exact: true }).click();
   const dialog = page.locator('jfb-people-erase-modal');
+  // A lone form is named in the sentence, and no row says its count again (16.6's review).
   await expect(dialog.locator('#what')).toHaveText(
-    "1 entry in 1 form is erased. Statistics stay. You can't undo this.",
+    `1 entry in ${formName} is erased. Statistics stay. You can't undo this.`,
   );
+  await expect(dialog.locator('.forms')).toHaveCount(0);
   await expect(dialog.getByText('1 entry on legal hold stays until its hold ends.')).toBeVisible();
   await expect(dialog.locator('#cancel')).toBeFocused();
   await axeInside(page, 'jfb-people-erase-modal');

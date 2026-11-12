@@ -106,6 +106,7 @@ const answers = (more: Partial<InsightAnswersResponseModel> = {}): InsightAnswer
         option('Price', 50, { position: 1.4 }),
         option('Speed', 50, { position: 2.1 }),
         option('Support', 50, { position: 2.5 }),
+        option('Delivery', 0, { position: null }),
       ],
     }),
     field('grid', 'Rate each', 'grid', 40, {
@@ -242,12 +243,13 @@ describe('the Answers', () => {
     expect(ranking.ordered).toBe(true);
     expect(ranking.whole).toBe(3);
     expect(ranking.values.map((value) => value.value)).toEqual(
-      [2.6, 1.9, 1.5].map((value) => expect.closeTo(value, 5)),
+      [2.6, 1.9, 1.5, 0].map((value) => expect.closeTo(value, 5)),
     );
     expect(said(ranking)).toEqual([
       'Price: average position 1.4',
       'Speed: average position 2.1',
       'Support: average position 2.5',
+      'Delivery: average position no data',
     ]);
     expect(text(box('What matters most').querySelector('.note'))).toBe(
       'The higher an option ranks on average, the longer its bar.',
@@ -376,6 +378,8 @@ describe('the Answers', () => {
       'Price 1.4 50',
       'Speed 2.1 50',
       'Support 2.5 50',
+      // An option nobody placed has no position: it says so, never with a dash (docs/ux/copy.md).
+      'Delivery no data 0',
     ]);
     expect(rows('Rate each')).toEqual([
       'Row Good Bad',

@@ -12,6 +12,7 @@ import type { JfbSetting } from '../../../public/types/jiron-form-builder';
 import { editorFor } from '../../extending/extension-registry';
 import '../../extending/setting-extension.element';
 import { boxValue } from './box-value';
+import { configKey } from '../../ui/config-key';
 import './dictionary-pick.element';
 import './rich-text.element';
 import {
@@ -574,7 +575,7 @@ function lockedSetting(
   return html`<div class="item item-locked" data-locked=${setting.name}>
     <span class="label" id=${`${id}-label`}>${context.say(setting.label)}</span>
     <p class="locked" id=${id}><uui-icon name="icon-lock" aria-hidden="true"></uui-icon><span>${shown}</span></p>
-    <p class="help">${context.term('lockedBy')} <code>${setting.lock?.configurationKey ?? ''}</code></p>
+    <p class="help">${context.term('lockedBy')} ${configKey(setting.lock?.configurationKey ?? '')}</p>
   </div>`;
 }
 

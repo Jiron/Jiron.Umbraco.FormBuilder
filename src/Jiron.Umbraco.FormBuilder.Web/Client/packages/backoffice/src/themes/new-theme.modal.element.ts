@@ -5,13 +5,17 @@ import { css, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import type { NewThemeModalData, NewThemeModalValue } from './new-theme.modal.token';
 import { withThemeLabel } from './theme-label';
+import { jfbBackofficeTokens } from '../styles/tokens';
 
 export class NewThemeModalElement extends UmbModalBaseElement<NewThemeModalData, NewThemeModalValue> {
-  static override styles = css`
-    p {
-      margin: 0 0 var(--uui-size-space-4);
-    }
-  `;
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      p {
+        margin: 0 0 var(--uui-size-space-4);
+      }
+    `,
+  ];
 
   #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbThemes_${key}`, ...args);
 

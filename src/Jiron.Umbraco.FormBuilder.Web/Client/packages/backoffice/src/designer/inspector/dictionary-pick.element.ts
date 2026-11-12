@@ -8,6 +8,7 @@ import { UMB_DICTIONARY_PICKER_MODAL, UmbDictionaryItemRepository } from '@umbra
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { dictionaryKeyOf } from '../dictionary-texts';
+import { jfbBackofficeTokens } from '../../styles/tokens';
 
 /** The section whose users Umbraco lets read the dictionary. */
 const TRANSLATION_SECTION = 'Umb.Section.Translation';
@@ -19,48 +20,51 @@ export class DictionaryPickElement extends UmbLitElement {
     _allowed: { state: true },
   };
 
-  static override styles = css`
-    /*
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      /*
      * At the end of its row, seen while the row is hovered or holds the focus: the row's own styles hide it otherwise
      * (.item:not(:hover, :focus-within) jfb-dictionary-pick), and Tab still reaches it, which shows it.
      */
-    :host {
-      display: inline-flex;
-      margin-inline-start: auto;
-      transition: opacity var(--jfb-bo-motion-fast, 120ms) var(--jfb-bo-motion-ease, ease-out);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
       :host {
-        transition: none;
+        display: inline-flex;
+        margin-inline-start: auto;
+        transition: opacity var(--jfb-bo-motion-fast, 120ms) var(--jfb-bo-motion-ease, ease-out);
       }
-    }
 
-    button {
-      display: inline-grid;
-      place-items: center;
-      inline-size: 28px;
-      block-size: 28px;
-      margin: 0;
-      padding: 0;
-      border: 0;
-      border-radius: var(--uui-border-radius);
-      background: none;
-      color: var(--uui-color-interactive);
-      font: inherit;
-      cursor: pointer;
-    }
+      @media (prefers-reduced-motion: reduce) {
+        :host {
+          transition: none;
+        }
+      }
 
-    button:hover {
-      background: var(--uui-color-surface-emphasis);
-      color: var(--uui-color-interactive-emphasis);
-    }
+      button {
+        display: inline-grid;
+        place-items: center;
+        inline-size: 28px;
+        block-size: 28px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: var(--uui-color-interactive);
+        font: inherit;
+        cursor: pointer;
+      }
 
-    button:focus-visible {
-      outline: 2px solid var(--uui-color-focus);
-      outline-offset: 1px;
-    }
-  `;
+      button:hover {
+        background: var(--uui-color-surface-emphasis);
+        color: var(--uui-color-interactive-emphasis);
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--uui-color-focus);
+        outline-offset: 1px;
+      }
+    `,
+  ];
 
   /** The box's own label, which the button's name says. */
   declare label: string;

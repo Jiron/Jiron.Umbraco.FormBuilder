@@ -14,7 +14,7 @@ import {
   type HealthFindingResponseModel,
   type RecentEntryResponseModel,
 } from '../api';
-import { ENTRY_ENTITY_TYPE, FORM_ENTITY_TYPE, screenPath } from '../section/entity-types';
+import { ENTRY_ENTITY_TYPE, FORM_ENTITY_TYPE, INBOX_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { myPermissions } from '../section/my-permissions';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { doneCount, findingsToShow, receivedText, stepViews, type StepView } from './checklist';
@@ -515,8 +515,16 @@ export class OverviewElement extends UmbLitElement {
         <span slot="headline" class="title">${headline}</span>
         <p class="muted">${this.localize.term('jfbOverview_recentEmpty')}</p></uui-box
       >`;
+    // The Inbox from here, as its item may lie below a long forms tree (16.6's review).
     return html`<uui-box headline-variant="h2" class="box--flush">
       <span slot="headline" class="title">${headline}</span>
+      <uui-button
+        slot="header-actions"
+        look="outline"
+        compact
+        href=${screenPath(INBOX_ENTITY_TYPE)}
+        label=${this.localize.term('jfbOverview_openInbox')}
+      ></uui-button>
       <table>
         <thead class="visually-hidden">
           <tr>

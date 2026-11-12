@@ -56,7 +56,7 @@ describe('Forms at a glance', () => {
     const rows = [...root.querySelectorAll('tbody tr')];
     expect(rows.map(cells)).toEqual([
       'Contact us 120 up 20% 10 no change 4 up from none 3.3% up 3.3 points',
-      'Newsletter 0 no change 10 no change 4 up from none \u2013',
+      'Newsletter 0 no change 10 no change 4 up from none no data',
     ]);
     expect(root.querySelector('tbody a')?.getAttribute('href')).toBe(
       'section/jfb-forms/workspace/jfb-form/edit/key-Contact us/view/insights',

@@ -1192,6 +1192,24 @@ describe("an email's sidebar", () => {
     expect([webhook.root.querySelector('jfb-email-preview'), asked]).toEqual([null, []]);
   });
 
+  it("drops a setting's problem as the setting changes, before the check answers again, and keeps another's (16.6's review)", async () => {
+    const nobody = action('a1', { settings: { subject: { '': '' }, body: { '': '<p>Hi.</p>' } } });
+    checking.answer = () => [
+      problem('$.actions[0].settings.to', 'invalid', 'A mail needs someone to go to.'),
+      problem('$.actions[0].settings.subject', 'invalid', 'A mail needs a subject.'),
+    ];
+    const { root, type, found } = await sidebarOf({ action: nobody, definition: emailForm([nobody]) });
+    await frame();
+    expect([found('setting-to'), found('setting-subject')]).toEqual([
+      ['A mail needs someone to go to.'],
+      ['A mail needs a subject.'],
+    ]);
+    must(root.querySelector('details.add'), 'Add recipient').setAttribute('open', '');
+    await type('setting-to-address', 'circle@example.com');
+    // No pause: the check has not answered for the new recipient yet.
+    expect([found('setting-to'), found('setting-subject')]).toEqual([[], ['A mail needs a subject.']]);
+  });
+
   it("describes Add recipient with the To box's problem, where Fix it lands", async () => {
     const nobody = action('a1', { settings: { subject: { '': 'Hello' }, body: { '': '<p>Hi.</p>' } } });
     checking.answer = () => [problem('$.actions[0].settings.to', 'invalid', 'A mail needs someone to go to.')];

@@ -416,7 +416,7 @@ export class InsightAnswersElement extends UmbLitElement {
 
   #ranking(field: InsightAnswerResponseModel): TemplateResult {
     const position = (option: InsightAnswerOptionResponseModel) =>
-      option.position === null || option.position === undefined ? '\u2013' : this.#figure(option.position);
+      option.position === null || option.position === undefined ? this.#term('noData') : this.#figure(option.position);
     const bars = rankBars(field.options);
     return this.#box(
       field,

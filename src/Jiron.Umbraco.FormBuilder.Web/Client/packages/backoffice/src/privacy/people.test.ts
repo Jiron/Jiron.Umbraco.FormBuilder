@@ -383,24 +383,28 @@ function modalContext() {
 }
 
 describe('the erase dialog', () => {
-  async function dialogOf() {
+  const CONTACT = { key: 'a', name: 'Contact us', trashed: false, entries: 2, drafts: 1, held: 0, files: 0, emails: 3 };
+  const BOTH = [
+    CONTACT,
+    { key: 'b', name: 'Job application', trashed: false, entries: 3, drafts: 0, held: 1, files: 2, emails: 1 },
+  ];
+
+  async function dialogOf(forms = BOTH) {
     const element = new PeopleEraseModalElement();
     const context = modalContext();
     element.modalContext = context as never;
+    const sum = (pick: (form: (typeof BOTH)[number]) => number) => forms.reduce((all, form) => all + pick(form), 0);
     element.data = {
       person: { email: 'lena@example.com' },
       who: 'lena@example.com',
       preview: {
-        entries: 5,
-        drafts: 1,
-        held: 1,
-        files: 2,
-        emails: 4,
+        entries: sum((form) => form.entries),
+        drafts: sum((form) => form.drafts),
+        held: sum((form) => form.held),
+        files: sum((form) => form.files),
+        emails: sum((form) => form.emails),
         more: false,
-        forms: [
-          { key: 'a', name: 'Contact us', trashed: false, entries: 2, drafts: 1, held: 0, files: 0, emails: 3 },
-          { key: 'b', name: 'Job application', trashed: false, entries: 3, drafts: 0, held: 1, files: 2, emails: 1 },
-        ],
+        forms,
       },
     };
     document.body.append(element);
@@ -428,6 +432,18 @@ describe('the erase dialog', () => {
     must(root.querySelector<HTMLElement>('uui-button[color="danger"]'), 'Erase').click();
     await vi.waitFor(() => expect(context.submit).toHaveBeenCalled());
     expect(api.erased).toEqual([{ email: 'lena@example.com', mode: 'delete' }]);
+  });
+
+  it("names a lone form in its sentence and lists no row that says the counts again (16.6's review)", async () => {
+    const { root } = await dialogOf([CONTACT]);
+
+    expect(text(root.getElementById('what'))).toBe(
+      "3 entries in Contact us and 3 emails are erased. Statistics stay. You can't undo this.",
+    );
+    expect(root.querySelector('.forms')).toBeNull();
+    expect(must(root.querySelector<HTMLElement>('uui-button[color="danger"]'), 'Erase').getAttribute('label')).toBe(
+      'Erase 3 entries',
+    );
   });
 
   it('anonymises when chosen', async () => {

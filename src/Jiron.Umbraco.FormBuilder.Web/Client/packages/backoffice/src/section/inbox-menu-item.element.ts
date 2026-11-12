@@ -7,6 +7,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { ManifestMenuItem } from '@umbraco-cms/backoffice/menu';
 import { UMB_SECTION_CONTEXT } from '@umbraco-cms/backoffice/section';
 import { readUnseen } from '../entries/entries-api';
+import { jfbBackofficeTokens } from '../styles/tokens';
 import { UnseenPoll, type UnseenCount } from '../entries/unseen-poll';
 import { idleGate, startIdleGate } from '../ui/idle-gate';
 
@@ -21,11 +22,15 @@ export class InboxMenuItemElement extends UmbLitElement {
     _count: { state: true },
   };
 
-  static override styles = css`
-    :host {
-      display: block;
-    }
-  `;
+  // The tokens give the badge its white number on Umbraco's dark fill, as the section's other badges have it (16.6).
+  static override styles = [
+    jfbBackofficeTokens,
+    css`
+      :host {
+        display: block;
+      }
+    `,
+  ];
 
   declare manifest?: ManifestMenuItem;
   declare private _href: string | undefined;
