@@ -201,7 +201,7 @@ row, as every tree's open row does (OWNER-TODO's report).
 | # | Dimension | Score | Key finding |
 | --- | --- | --- | --- |
 | 1 | Accessibility | 3 | AA held in the section's own markup but for the targets below at 375 px; the rest is Umbraco's and UUI's, reported |
-| 2 | Performance | 3 | every size budget held (the backoffice bundle 504 of 512 KB is the one to watch) and no motion added |
+| 2 | Performance | 3 | every size budget held (the backoffice bundle, 505 of 512 KB on the final build, and the runtime with every feature, 59.5 of 60 KB, are the ones to watch) and no motion added |
 | 3 | Responsive design | 3 | the views keep to a phone's window inside Umbraco's 920 px page; the access matrix scrolls in its box |
 | 4 | Theming | 3 | UUI's tokens throughout, walked in light and dark; the designer canvas keeps a small palette of its own for the visitor's preview |
 | 5 | Implementation integrity | 3 | isolated issues, each found by the walk or the assessments and fixed with a test |
