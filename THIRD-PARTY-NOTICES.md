@@ -59,6 +59,8 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`, `tests/e2e/`) |
 | `@actions/workflow-parser` | 0.3.61 | MIT | GitHub's workflow parser, for the workflow check (`scripts/`) |
 | `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
+| `marked` | 18.1.1 | MIT | rendering Markdown as GitHub does, to check the READMEs in Edge (`scripts/`) |
+| `github-markdown-css` | 5.8.1 | MIT | GitHub's Markdown stylesheet for that check (`scripts/`) |
 | `azurite` | 3.37.0 | MIT | the local storage emulator the blob store sample's contract tests start, in memory and without telemetry (`scripts/`, ADR-0234); its dependency `uri-templates` 0.2.0 is in the public domain (ADR-0027) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |

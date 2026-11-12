@@ -88,6 +88,20 @@ The shared vectors in `tests/vectors/` run in the unit tests and in the client's
 node tests/vectors/build.mjs
 ```
 
+**The documentation** (`docs/`, written in the same commit as the code it describes): `node scripts/link-check.mjs`
+finds every relative link and heading anchor in the pages and the backoffice's "Learn more" map, offline, and the
+scripts' tests run it. `node scripts/render-markdown.mjs` shows `README.md` and `docs/README.nuget.md` (or the files you
+name) as GitHub renders them, in Edge, and saves a shot of each in `.local/markdown/`; look at them after changing a
+README.
+
+```
+cd scripts
+npm ci
+cd ..
+node scripts/link-check.mjs
+node scripts/render-markdown.mjs
+```
+
 **Before you push**, format everything, then run the gate. `scripts/ci-local.ps1` runs what CI runs, except the SQL
 Server and load-balancing jobs (`.github/workflows/ci.yml`), stops at the first failure and prints the time of every
 stage. `-SkipE2E` leaves out the browser tests for a quicker run while working; that run is not the gate.
