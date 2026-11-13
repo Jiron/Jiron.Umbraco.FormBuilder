@@ -58,10 +58,10 @@ describe('the form block dialog', () => {
     await settle(element);
 
     expect(api.create).toHaveBeenCalledTimes(1);
-    expect(text(must(shadow(element).querySelector('[role="status"]'), 'the result'))).toContain('One step is left');
-    expect(button(element, 'Open document types').getAttribute('href')).toBe(
-      'section/settings/workspace/document-type-root',
+    expect(text(must(shadow(element).querySelector('[role="status"]'), 'the result'))).toContain(
+      'add the "Form" block to the available blocks of the Block List or Block Grid data type',
     );
+    expect(button(element, 'Open data types').getAttribute('href')).toBe('section/settings/workspace/data-type-root');
     expect(all(element, 'uui-button').map((each) => each.getAttribute('label'))).not.toContain('Create');
   });
 

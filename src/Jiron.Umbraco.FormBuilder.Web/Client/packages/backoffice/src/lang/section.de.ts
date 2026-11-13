@@ -1,4 +1,4 @@
-// Der Bereich „Formulare" und seine Übersicht auf Deutsch (ADR-0021, ADR-0165). Die Beschriftungen der Seitenleiste stehen in
+// Der Bereich „Formulare“ und seine Übersicht auf Deutsch (ADR-0021, ADR-0165). Die Beschriftungen der Seitenleiste stehen in
 // docs/ux/information-architecture.md, Abschnitt 1.
 export default {
   jfbSection: {
@@ -57,18 +57,18 @@ export default {
     action_testEntry: 'Formular öffnen',
     step_formBlock: 'Formular auf eine Seite bringen',
     help_formBlock:
-      'Seiten zeigen Formulare über einen Block. Erstellen Sie den Blocktyp einmal und erlauben Sie ihn dann auf den Seiten, auf denen Formulare stehen dürfen.',
+      'Seiten zeigen Formulare über einen Block. Erstellen Sie den Blocktyp einmal und fügen Sie ihn dann der Blockliste oder dem Blockraster hinzu, die Ihre Seiten verwenden.',
     action_formBlock: 'Formular-Blocktyp erstellen…',
     step_access: 'Festlegen, wer Einträge sieht',
     help_access: 'Geben Sie den Teams, die Einträge bearbeiten, ihre Berechtigungen.',
     action_access: 'Zugriffseinstellungen öffnen',
     blockHeadline: 'Formular-Blocktyp erstellen',
     blockText:
-      'Dabei entstehen ein Elementtyp „Form" und der Datentyp, den er verwendet, damit Formulare auf Seiten eingefügt werden können. Vorhandene Typen bleiben unverändert.',
+      'Dabei entstehen ein Elementtyp „Form“ und der Datentyp, den er verwendet, damit Formulare auf Seiten eingefügt werden können. Vorhandene Typen bleiben unverändert.',
     blockCreate: 'Erstellen',
     blockCreated:
-      'Der Blocktyp ist da. Ein Schritt fehlt noch: Erlauben Sie den Block „Form" auf den Dokumenttypen, auf denen Formulare stehen dürfen.',
-    blockOpenTypes: 'Dokumenttypen öffnen',
+      'Der Blocktyp ist da. Ein Schritt fehlt noch: Fügen Sie den Block „Form“ den verfügbaren Blöcken des Blocklisten- oder Blockraster-Datentyps hinzu, den Ihre Seiten verwenden.',
+    blockOpenTypes: 'Datentypen öffnen',
     blockFailed:
       'Der Blocktyp konnte nicht erstellt werden. Prüfen Sie, ob Sie den Bereich Einstellungen öffnen können, und versuchen Sie es erneut.',
     health: 'Zustand',

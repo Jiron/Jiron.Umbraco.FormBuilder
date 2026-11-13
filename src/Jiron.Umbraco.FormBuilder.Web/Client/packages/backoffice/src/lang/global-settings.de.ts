@@ -91,11 +91,11 @@ export default {
     general_history_draftCountHelp:
       'Unabhängig von ihrem Alter behält jedes Formular so viele seiner neuesten gespeicherten Entwürfe.',
     formBlock: 'Formulare auf Seiten zeigen',
-    formBlockThere: (date: string) => `Seiten zeigen Formulare über den Blocktyp Formular, erstellt am ${date}.`,
+    formBlockThere: (date: string) => `Seiten zeigen Formulare über den Blocktyp Form, erstellt am ${date}.`,
     formBlockHow:
-      'Erlauben Sie ihn in der Blockliste oder dem Blockraster eines Dokumenttyps, wo Redakteure Formulare hinzufügen dürfen.',
+      'Fügen Sie ihn den verfügbaren Blöcken des Blocklisten- oder Blockraster-Datentyps hinzu, den Ihre Seiten verwenden.',
     formBlockMissing:
-      'Seiten können noch keine Formulare zeigen: Sie brauchen den Blocktyp Formular, den Redakteure dann einer Blockliste oder einem Blockraster hinzufügen.',
+      'Seiten können noch keine Formulare zeigen: Sie brauchen den Blocktyp Form, der dann einer Blockliste oder einem Blockraster hinzugefügt wird.',
     formBlockCreate: 'Blocktyp für Formulare erstellen…',
     formBlockAsk: 'Eine Person mit dem Umbraco-Bereich Einstellungen kann ihn erstellen.',
 

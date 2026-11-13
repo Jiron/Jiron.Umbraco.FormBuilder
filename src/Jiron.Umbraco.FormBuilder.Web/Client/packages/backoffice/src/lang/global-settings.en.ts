@@ -88,9 +88,9 @@ export default {
     general_history_draftCountHelp: 'However old they are, each form keeps this many of its newest draft saves.',
     formBlock: 'Putting forms on pages',
     formBlockThere: (date: string) => `Pages show forms through the block type Form, created on ${date}.`,
-    formBlockHow: "Allow it on a document type's block list or block grid where editors may add forms.",
+    formBlockHow: 'Add it to the available blocks of the Block List or Block Grid data type your pages use.',
     formBlockMissing:
-      "Pages can't show forms yet: they need the block type Form, which editors then add to a block list or block grid.",
+      "Pages can't show forms yet: they need the block type Form, which is then added to a Block List or Block Grid.",
     formBlockCreate: 'Create a form block type…',
     formBlockAsk: "A user with Umbraco's Settings section can create it.",
 

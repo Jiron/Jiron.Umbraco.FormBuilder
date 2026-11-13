@@ -72,7 +72,7 @@ export class FormBlockModalElement extends UmbModalBaseElement<never, FormBlockM
                   slot="actions"
                   look="primary"
                   color="positive"
-                  href="section/settings/workspace/document-type-root"
+                  href="section/settings/workspace/data-type-root"
                   label=${this.localize.term('jfbOverview_blockOpenTypes')}
                   @click=${this._submitModal}
                 ></uui-button>

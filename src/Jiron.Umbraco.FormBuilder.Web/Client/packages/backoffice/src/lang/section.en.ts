@@ -58,7 +58,7 @@ export default {
     action_testEntry: 'Open the form',
     step_formBlock: 'Put the form on a page',
     help_formBlock:
-      'Pages show forms through a block. Create the block type once; then allow it on the pages where editors may add forms.',
+      'Pages show forms through a block. Create the block type once; then add it to the Block List or Block Grid your pages use.',
     action_formBlock: 'Create a form block type…',
     step_access: 'Choose who sees entries',
     help_access: 'Give the teams that handle entries their permissions.',
@@ -68,8 +68,8 @@ export default {
       'This creates a "Form" element type and the data type it uses, so that editors can add forms to pages. It never changes types that exist already.',
     blockCreate: 'Create',
     blockCreated:
-      'The block type is there. One step is left: allow the "Form" block on the document types where editors may add forms.',
-    blockOpenTypes: 'Open document types',
+      'The block type is there. One step is left: add the "Form" block to the available blocks of the Block List or Block Grid data type your pages use.',
+    blockOpenTypes: 'Open data types',
     blockFailed: "The block type couldn't be created. Check that you can open the Settings section, then try again.",
     health: 'Health',
     healthLoading: "Checking the site's health",
