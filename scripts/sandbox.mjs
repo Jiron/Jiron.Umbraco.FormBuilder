@@ -31,13 +31,15 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
- * The sites this script manages. Ports come from ROADMAP section 4.11; 5510 is the Phase 1 research sandbox. `heyApi` pins
+ * The sites this script manages. Ports come from ROADMAP section 4.11; 5510 is the Phase 1 research sandbox, 5540 the
+ * Umbraco 18 sandbox of Phase 19 (the latest 18.x, from its own template hive, ADR-0250). `heyApi` pins
  * the extension's client generator: the 17.7.1 extension template asks for `^0.85.2`, while
  * `@umbraco-cms/backoffice@17.7.1` needs a peer `>=0.99.0 <1.0.0`, so `npm install` fails as generated
  * (docs/research/umbraco-backoffice.md).
  */
 export const SITES = {
   sandbox: { folder: '.local/sandbox', umbraco: '17.7.1', port: 5510, heyApi: '0.99.0' },
+  sandbox18: { folder: '.local/sandbox18', umbraco: '18.3.1', port: 5540, heyApi: '0.99.0' },
 };
 
 /** The project names inside a site folder. */

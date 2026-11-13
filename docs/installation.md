@@ -5,9 +5,9 @@ What Jiron Form Builder needs, what installing it adds to a site, and the few th
 
 ## Requirements
 
-- **Umbraco 17.6 or later** within 17 (17.6 is the first 17.x whose runtime cache clears reliably). Umbraco 18 is not
-  supported yet.
-- **.NET 10**, as Umbraco 17 needs.
+- **Umbraco 18.1 or later** within 18 (18.1 is the first 18.x whose runtime cache clears reliably). For Umbraco 17,
+  from 17.6, install version 17 of the packages instead.
+- **.NET 10**, as Umbraco 18 needs.
 - **SQLite or SQL Server.** SQLite suits a small site on one server; a busy site, or one on more than one server,
   belongs on SQL Server ([performance.md](performance.md#where-sqlite-stops-keeping-up) has the numbers).
 - **No Node.js** on the site: the backoffice and website scripts come built inside the package.

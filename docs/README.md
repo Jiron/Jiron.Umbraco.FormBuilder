@@ -1,6 +1,6 @@
 # Jiron Form Builder documentation
 
-Jiron Form Builder is a form builder for Umbraco 17: editors design forms in the **Form Builder** section of the
+Jiron Form Builder is a form builder for Umbraco 18: editors design forms in the **Form Builder** section of the
 backoffice, visitors fill them in on the website, and the site's team works with the entries that arrive.
 
 ## Start here

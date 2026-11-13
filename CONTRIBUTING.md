@@ -125,7 +125,7 @@ node scripts/gate-clone.mjs status
 CI runs on a push only when the repository variable `JFB_CI` is `true`, and always when it is started by hand or for
 a version tag.
 
-**The demo site** (`demo/`, Umbraco on SQLite at http://127.0.0.1:5500) is started, stopped and reset only with
+**The demo site** (`demo/`, Umbraco 18 on SQLite at http://127.0.0.1:5541) is started, stopped and reset only with
 `scripts/demo.ps1`, which generates its accounts into the git-ignored `.local/credentials.json`;
 [demo/README.md](demo/README.md) says what it holds.
 

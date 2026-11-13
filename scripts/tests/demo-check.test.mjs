@@ -12,8 +12,8 @@ const content = JSON.parse(readFileSync(join(root, DEMO, 'Seeding', 'DemoContent
 const settings = (url) => JSON.stringify({ Umbraco: { CMS: { WebRouting: { UmbracoApplicationUrl: url } } } });
 
 describe("the demo's address", () => {
-  test('comes from its appsettings.json, on port 5500', () => {
-    assert.equal(demoUrl(readFileSync(join(root, DEMO, 'appsettings.json'), 'utf8')), 'http://127.0.0.1:5500');
+  test('comes from its appsettings.json, on port 5541, the Umbraco 18 demo\'s (section 4.11)', () => {
+    assert.equal(demoUrl(readFileSync(join(root, DEMO, 'appsettings.json'), 'utf8')), 'http://127.0.0.1:5541');
     assert.equal(demoUrl(settings('http://127.0.0.1:5599/')), 'http://127.0.0.1:5599');
   });
 

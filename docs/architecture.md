@@ -65,7 +65,7 @@ flowchart TB
   core --> umbCore
 ```
 
-All Umbraco references are `[17.6.0, 18.0.0)`, and the AI add-on's of Umbraco.AI `[17.5.2, 18.0.0)`; references
+All Umbraco references are `[18.1.0, 19.0.0)`, and the AI add-on's of Umbraco.AI `[18.5.2, 19.0.0)`; references
 between our packages are exact versions ([ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md)).
 
 **Core** holds every rule of the product and knows nothing about HTTP; an architecture test keeps ASP.NET Core's HTTP,
@@ -391,8 +391,7 @@ flowchart LR
   The review compares the user's draft with the one saved meanwhile and both with the draft they started from through
   `POST form/{key}/versions/{number}/compare`, merges key by key in `review-model.ts`, and saves the merged draft
   through `takeReview`, a step Undo takes back, and an ordinary save. History's words and the review's share
-  `history/words-context.ts`. Umbraco's detail workspace asks before leaving the route and before the tab closes (from
-  17.6.0), so the workspace adds no guard of its own. The workspace's own words, the inspector's, the rules', the
+  `history/words-context.ts`. Umbraco's detail workspace asks before leaving the route and before the tab closes, so the workspace adds no guard of its own. The workspace's own words, the inspector's, the rules', the
   Settings view's and the form check's, load before its editor does (`workspace-words.ts`, ADR-0201), not with the
   backoffice's start.
   From 10.3d (ADR-0202): the publish flow (`publish-flow.ts`) loads History's words and hands the dialog

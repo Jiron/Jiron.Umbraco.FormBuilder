@@ -8,7 +8,8 @@ notes of each version follow at the end, one section per release.
 The policy is [ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md); in short:
 
 - **Versions follow Semantic Versioning within each Umbraco major.** The package's major is Umbraco's: version 17 runs
-  on Umbraco from 17.6.0 up to, but not including, 18. Prereleases are named `-alpha.N`, `-beta.N` and `-rc.N`. A patch
+  on Umbraco from 17.6.0 up to, but not including, 18, and version 18 on Umbraco from 18.1.0 up to, but not including,
+  19. Prereleases are named `-alpha.N`, `-beta.N` and `-rc.N`. A patch
   never needs a migration; a minor may add one, but never breaks the public C# surface, the public API, the website's
   markup and JavaScript, or the backoffice's extension points listed in [extending.md](extending.md). A breaking change
   needs a new major, or a new API version served beside the old one for the rest of the major and the whole next one.

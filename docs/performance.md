@@ -9,7 +9,8 @@ your own hardware before you rely on them ([how](#how-to-measure)).
 Measured on 2026-11-12 in one run of the load test, server and clients on the same machine:
 
 - AMD Ryzen 7 5700G (8 cores, 16 threads), 28 GB of memory, a Samsung 990 PRO NVMe drive, Windows 11 Pro;
-- .NET SDK 10.0.401, Umbraco 17.7.1, the demo site in Release with a fresh SQLite database;
+- .NET SDK 10.0.401, Umbraco 17.7.1 (the measurements were taken on the 17 line), the demo site in Release with a
+  fresh SQLite database;
 - Node 24 for the load script, Microsoft Edge for the browser parts.
 
 ## Server

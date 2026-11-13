@@ -5,7 +5,7 @@
 <h1 align="center">Jiron Form Builder</h1>
 
 <p align="center">
-  Forms for Umbraco 17: designed in the backoffice, filled in on any page, and kept in one calm place afterwards.
+  Forms for Umbraco 18: designed in the backoffice, filled in on any page, and kept in one calm place afterwards.
 </p>
 
 Editors build forms in a **Form Builder** section of the backoffice, with pages, rules and actions. Visitors fill them
@@ -80,7 +80,7 @@ More in [docs/screenshots](docs/screenshots/), and on the documentation's pages.
 
 ## Getting started
 
-You need Umbraco 17.6 or later (within 17) on .NET 10, with SQLite or SQL Server. In the site's project folder:
+You need Umbraco 18.1 or later (within 18) on .NET 10, with SQLite or SQL Server. In the site's project folder:
 
 ```
 dotnet add package Jiron.Umbraco.FormBuilder --prerelease

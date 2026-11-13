@@ -1,6 +1,6 @@
 # Jiron Form Builder AI
 
-An optional add-on for [Jiron Form Builder](https://www.nuget.org/packages/Jiron.Umbraco.FormBuilder) on Umbraco 17
+An optional add-on for [Jiron Form Builder](https://www.nuget.org/packages/Jiron.Umbraco.FormBuilder) on Umbraco 18
 that helps editors in the designer through [Umbraco.AI](https://docs.umbraco.com/umbraco-ai).
 
 - **Draft a form with AI** from a description, or from the pasted text of a questionnaire.

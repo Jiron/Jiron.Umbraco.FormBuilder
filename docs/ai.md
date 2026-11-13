@@ -9,8 +9,8 @@ saves it. Nothing a visitor enters ever reaches an AI. The decisions behind it a
 
 ## Setting it up
 
-1. Install `Jiron.Umbraco.FormBuilder.AI` beside `Jiron.Umbraco.FormBuilder`. It brings Umbraco.AI (17.5.2 or later
-   in the 17 line), whose tables Umbraco.AI creates as the site starts.
+1. Install `Jiron.Umbraco.FormBuilder.AI` beside `Jiron.Umbraco.FormBuilder`. It brings Umbraco.AI (18.5.2 or later
+   in the 18 line), whose tables Umbraco.AI creates as the site starts.
 2. Install the Umbraco.AI provider package for the AI service you use, and in Umbraco.AI's own screens create a
    connection with your key and a chat profile on it. Keys stay in Umbraco.AI's configuration; the add-on never sees
    or stores one.

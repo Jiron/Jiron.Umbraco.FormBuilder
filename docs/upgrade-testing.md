@@ -26,7 +26,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-test.ps1 -Mo
   form's Entries view. Then it publishes the site (`dotnet publish`), starts it from the published folder on a fresh
   database and runs the smoke again, for the static files after publishing.
 - **`-Mode floor`** runs the same smoke on a fresh site of the supported floor, the lower bound of the Umbraco range in
-  `Directory.Packages.props` (17.6.0). It packs the build twice, the second time with a higher version; after the smoke
+  `Directory.Packages.props` (18.1.0 on this line). It packs the build twice, the second time with a higher version; after the smoke
   the site takes the second build, starts again, and the same browser, which kept its cache and its sign-in, opens the
   section without a hard refresh: it must load the second build's start chunk, not the first one's.
 - **`-UmbracoVersion <version>`** gives the site of either mode another Umbraco version.

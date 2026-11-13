@@ -1,6 +1,6 @@
 # Jiron Form Builder
 
-Forms for Umbraco 17: designed in the backoffice, filled in on any page, and kept in one calm place afterwards.
+Forms for Umbraco 18: designed in the backoffice, filled in on any page, and kept in one calm place afterwards.
 
 Editors build forms in a **Form Builder** section of the backoffice, with pages, rules and actions. Visitors fill them
 in on the website, in Razor or headless. The site's team reviews the entries, approves and exports them, and keeps
@@ -22,7 +22,7 @@ personal data in check with the privacy tools.
 
 ## Getting started
 
-You need Umbraco 17.6 or later (within 17) on .NET 10, with SQLite or SQL Server. Install
+You need Umbraco 18.1 or later (within 18) on .NET 10, with SQLite or SQL Server. Install
 `Jiron.Umbraco.FormBuilder`, which brings `Jiron.Umbraco.FormBuilder.Core` and `Jiron.Umbraco.FormBuilder.Web` with
 it. `Jiron.Umbraco.FormBuilder.AI` is an optional add-on that drafts and translates forms through Umbraco.AI.
 

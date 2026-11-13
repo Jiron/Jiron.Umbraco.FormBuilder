@@ -4,8 +4,9 @@ Short answers to common questions, each with the page that says more.
 
 ## Which versions of Umbraco does it run on?
 
-Umbraco 17, from 17.6.0, on .NET 10. Umbraco 18 is planned. The package's versions follow Umbraco's: version 17 is for
-Umbraco 17 ([installation.md](installation.md#requirements), [upgrading.md](upgrading.md)).
+Umbraco 18, from 18.1.0, and Umbraco 17, from 17.6.0, both on .NET 10. The package's versions follow Umbraco's: version
+18 is for Umbraco 18, version 17 for Umbraco 17 ([installation.md](installation.md#requirements),
+[upgrading.md](upgrading.md)).
 
 ## SQLite or SQL Server?
 

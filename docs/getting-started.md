@@ -5,7 +5,7 @@ From installing the package to the first entry in your Inbox, in about ten minut
 
 ## Before you start
 
-- An Umbraco 17.6 or later site that runs, on .NET 10, with SQLite or SQL Server. A site made with `dotnet new umbraco`
+- An Umbraco 18.1 or later site that runs, on .NET 10, with SQLite or SQL Server. A site made with `dotnet new umbraco`
   is fine.
 - A backoffice user in Umbraco's **Administrators** group.
 - For step 6, a published page with a template. A new site has none yet: under Settings, create a **Document Type

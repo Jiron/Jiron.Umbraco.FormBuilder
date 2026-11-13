@@ -1,6 +1,6 @@
 # The demo site
 
-`Jiron.Umbraco.FormBuilder.Demo` is the website of the fictional Lindenhall Library: Umbraco 17.7.1 on SQLite with
+`Jiron.Umbraco.FormBuilder.Demo` is the website of the fictional Lindenhall Library: Umbraco 18.3.1 on SQLite with
 Jiron Form Builder, in English and German. Every roadmap step shows its work here, and the feature steps add their
 demo forms to it. It is never packed or shipped. Why it is built this way: [ADR-0028](../docs/decisions/0028-demo-site.md).
 
@@ -22,9 +22,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\demo.ps1 start
 
 | Address | |
 | --- | --- |
-| http://127.0.0.1:5500/en/ | the site in English |
-| http://127.0.0.1:5500/de/ | the site in German |
-| http://127.0.0.1:5500/umbraco | the backoffice |
+| http://127.0.0.1:5541/en/ | the site in English |
+| http://127.0.0.1:5541/de/ | the site in German |
+| http://127.0.0.1:5541/umbraco | the backoffice |
 
 The port comes from `Umbraco:CMS:WebRouting:UmbracoApplicationUrl` in `appsettings.json`, and the script refuses
 ports outside 5500 to 5599. The site's output goes to `.local/demo/demo.log`.
@@ -116,7 +116,7 @@ each of the checklist's five steps begins open (ROADMAP 12.6); `scripts/demo.ps1
 ## Looking at the themes
 
 `?theme=<alias>` on any page shows its forms in that theme, for example
-`http://127.0.0.1:5500/en/feedback/?theme=bootstrap5`: the demo keeps the choice in the cookie `jfb-demo-theme`, so the
+`http://127.0.0.1:5541/en/feedback/?theme=bootstrap5`: the demo keeps the choice in the cookie `jfb-demo-theme`, so the
 next pages and a post without JavaScript keep it, and `?theme=` alone goes back to each form's own theme. Only a theme
 the site registers counts (`Jiron.Umbraco.FormBuilder.Demo/DemoThemes.cs`; ROADMAP 6.3a). A real site names a form's
 theme in the form, in the General settings or where it places the form
@@ -135,7 +135,7 @@ leaves Bootstrap light, since its own "auto" needs a script
 ([ADR-0108](../docs/decisions/0108-the-bootstrap5-theme.md)). Nothing of Bootstrap ships with the package.
 
 The specimen (`/en/specimen/`, `/de/muster/`), which the menu leaves out, holds a form with a field of every built-in
-type, on two pages, to look at a theme with: `http://127.0.0.1:5500/en/specimen/?theme=default&scheme=dark`. Its
+type, on two pages, to look at a theme with: `http://127.0.0.1:5541/en/specimen/?theme=default&scheme=dark`. Its
 image field and picture choices show the demo's one picture (`Seeding/Media/picture.svg`, drawn for the demo), which
 the seeder adds to the media library.
 
