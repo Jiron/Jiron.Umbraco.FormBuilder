@@ -68,6 +68,9 @@ and the gate's gave the same 7 files with the same 136 entries.
 
 4. In GitHub, open **Actions › Release** and wait for the run. Then open **Releases**: the draft has the packages and
    the notes. Check them, and publish the draft when the version should be visible.
+5. Move `main` on: set `VersionSuffix` to the release's suffix with `.dev` (`alpha.1.dev` after 17.0.0-alpha.1; after
+   a release without a suffix, the next patch with `dev`), commit and push, so no build between releases names a
+   released version ([ADR-0249](decisions/0249-the-version-between-releases.md)).
 
 **A dry run:** **Actions › Release › Run workflow** with a version such as `17.0.0-alpha.1` runs CI and packs that
 version into the run's `release-packages` artifact, without a release and without publishing.

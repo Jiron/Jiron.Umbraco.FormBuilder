@@ -32,11 +32,12 @@
 
   <!--
     Versioning (ROADMAP D16): the package major follows the Umbraco major. Release builds pass the tag's version;
-    local test packs pass a -dev.<yyyyMMddHHmm> suffix. Tests and scripts read these two values from this file.
+    local test packs pass a -dev.<yyyyMMddHHmm> suffix. Between releases the suffix is the last release's with .dev
+    (ADR-0249), so no build looks like a release. Tests and scripts read these two values from this file.
   -->
   <PropertyGroup>
     <VersionPrefix>17.0.0</VersionPrefix>
-    <VersionSuffix>alpha.1</VersionSuffix>
+    <VersionSuffix>alpha.1.dev</VersionSuffix>
   </PropertyGroup>
 
   <!--
