@@ -309,8 +309,10 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
             Assert.That(await ProblemsAsync(page, ("many", string.Empty)), Is.Empty, "nothing picked");
 
             var published = await GetRequiredService<IContentEditingService>().UpdateAndPublishAsync(page, Update(page, ("inFolder", outside.ToString("D"))), new HashSet<string>(), Constants.Security.SuperUserKey);
-            // Umbraco 18 reports the save and the publish apart: the save is what the picker refuses.
-            Assert.That(published.Status.ContentEditingOperationStatus, Is.Not.EqualTo(ContentEditingOperationStatus.Success), "refused");
+            // Umbraco 18 reports the save and the publish apart: a value the picker refuses may be saved as a draft, as
+            // any invalid value may, but it is never published.
+            Assert.That(published.Success, Is.False, "refused");
+            Assert.That(published.Status.ContentPublishingOperationStatus, Is.Not.EqualTo(ContentPublishingOperationStatus.Success), "not published");
             Assert.That(Contents.GetById(page)!.PublishedState == PublishedState.Published && Contents.GetById(page)!.GetValue<string>("inFolder", published: true) is { Length: > 0 }, Is.False);
         });
     }
