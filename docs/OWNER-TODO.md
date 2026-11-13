@@ -194,5 +194,10 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   render as intended on GitHub, and once the first prerelease is on nuget.org, that `docs/README.nuget.md`
   renders there with working links. The build checks both only through a local renderer
   (`node scripts/render-markdown.mjs`).
-- [ ] **The first release run:** pushing the `v17.0.0-alpha.1` tag (ROADMAP 18.4) starts the release
-  workflow once, even before CI is enabled; check its draft release.
+- [ ] **The first release run: check the draft release.** The tag `v17.0.0-alpha.1` was pushed on 2026-11-13
+  (ROADMAP 18.4), which starts the release workflow once, even before `JFB_CI` is set (if Actions are enabled for the
+  repository at all). In GitHub, open **Actions › Release**: the run checks the version and its changelog section,
+  runs CI, packs the four packages and drafts a release. Then open **Releases**: the draft should hold seven
+  files, the four `.nupkg` and the three `.snupkg` (the meta package has no code, so no symbols), with the notes of
+  `CHANGELOG.md`'s section. Publish the draft only when the version should be visible; nothing reaches nuget.org until
+  `JFB_NUGET_PUBLISH` is set ([releasing.md](releasing.md)). Nobody could watch the run from the development machine.
