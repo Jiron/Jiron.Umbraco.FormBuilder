@@ -37,8 +37,8 @@ words. The package collects no telemetry.
 ### The database
 
 The package brings one migration plan. Umbraco runs it as the site starts when
-`Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on, which is Umbraco's default. With it off, an administrator
-runs it from Umbraco's **Packages** section. Each step runs in its own transaction and can safely run again.
+`Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on, which is Umbraco's default. With it off, a user with access
+to Umbraco's **Packages** section runs it there. Each step runs in its own transaction and can safely run again.
 
 The plan creates 25 tables, all named `jfb…`, and keeps its state in Umbraco's `umbracoKeyValue` table.
 [database.md](database.md) describes each table and step.

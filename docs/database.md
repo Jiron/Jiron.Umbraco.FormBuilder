@@ -3,8 +3,9 @@
 Jiron Form Builder keeps its data in 25 tables of its own, next to Umbraco's, on SQLite or SQL Server. Form
 definitions are versioned JSON documents; entries are rows with one typed value per answer, so they can be filtered,
 sorted and exported in SQL ([ADR-0002](decisions/0002-form-definition-model-versions-and-public-projection.md),
-[ADR-0003](decisions/0003-entry-storage.md)). This page describes schema v1 table by table. The diagram is generated
-from the migration's snapshot classes, and a test (`DatabaseDocsTests`) fails when the two differ.
+[ADR-0003](decisions/0003-entry-storage.md)). This page describes the tables table by table as the migrations leave them:
+schema v1, and what the later steps added, one table, three columns and six indexes. The diagram is generated from the
+migration's snapshot classes and those later columns, and a test (`DatabaseDocsTests`) fails when the two differ.
 
 SQLite has one writer, which Umbraco shares, so submissions that arrive together wait for each other there. On the
 measured machine it kept every send within its budget up to 20 submissions arriving at the same moment, not at 40
@@ -46,8 +47,8 @@ server, belongs on SQL Server.
 ## Migrations
 
 The package migration plan `Jiron.Umbraco.FormBuilder` creates and upgrades the tables. Umbraco runs it at start-up
-when `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on (the default); otherwise an administrator runs it from
-the backoffice's Packages section. Each step runs in its own transaction with the state it reaches, and each is
+when `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on (the default); otherwise a user with access to
+Umbraco's Packages section runs it there. Each step runs in its own transaction with the state it reaches, and each is
 idempotent, so a rerun changes nothing.
 
 | State | Step | What it does |
@@ -89,8 +90,8 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   missing folder, a folder moved below itself or deeper than 32 levels, a folder with contents and a row still in use
   throw `FormBuilderConflictException`, which names the reason.
 - **The library and the grants** work the same way ([ADR-0037](decisions/0037-library-and-permission-repositories.md)).
-  Option lists, themes and email layouts are changed and deleted against their concurrency version, and a theme stays
-  while a form's published version names it. A grant changes only from the permissions the editor saw, and a grant
+  Option lists, themes and email layouts are changed and deleted against their concurrency version, and each stays
+  while a form's draft or live version uses it, a trashed form's included (`jfbFormLibraryUse`). A grant changes only from the permissions the editor saw, and a grant
   of nothing is no row.
 - **Entries** ([ADR-0038](decisions/0038-entry-repositories.md)) take their form's next number from
   `jfbForm.lastEntryNumber`, raised as the first write of the unit, and are stored with their values and files in one
@@ -475,7 +476,8 @@ erDiagram
 
 ### `jfbKeyValue`
 
-One-time flags and small markers, such as the record that the Form Builder section was granted, or what the mirror of
+One-time flags and small markers, such as the record that the Form Builder section was granted (`forms-section-granted`,
+with the groups it was granted to), or what the mirror of
 forms as files last saw (ADR-0220): under `mirror/<form key>` the hash of the file's definition, the published version
 it matched and the file's name, and under `mirror-problem/<kind>/<form key or the hash of a file's name>` the file of
 a conflict, a file that could not be written or taken in, or a draft that publishing refused. No indexes besides the primary key on `key`. A background export keeps its record under
@@ -485,7 +487,16 @@ the file store's id of its file; the exports' job removes both a day after it wa
 Retention (ADR-0222) keeps the terms each form's entries were last given their times by under
 `jfb.retention.terms.<form key>`, so a change of the rules gives the form's entries new times once, and the file
 store's sweep keeps how far its pass got under `jfb.retention.filesweep`: the last folder done, or that the pass ended
-and when.
+and when. The other keys:
+
+| Key | Holds |
+| --- | --- |
+| `jfb.setup.complete` | that the Overview's setup checklist was done once, so it stays away |
+| `jfb.jobs.last-run` | when the outbox's job last ran, which the Background jobs health check reads |
+| `jfb.deliverynotice.<form alias>` | when the team last heard of a failed delivery of the form, for the hour between notices |
+| `jfb.usedchallenge.<challenge id>` | a challenge an entry used, so it makes one entry |
+| `sent-copy:<form>:<submission>` | the copy of the answers a visitor sees after a send without JavaScript, for a short while |
+| `ai.profile`, `ai.drafted.<form key>` | the AI add-on's chosen profile, and that a form was drafted by AI until its first save |
 
 ### `jfbFolder`
 
@@ -504,7 +515,8 @@ One row per form. The name, alias and folder live here rather than in the defini
 never renames or moves a form. `draftVersionId` and `publishedVersionId` point at its current versions;
 `publicRevision` rises only when what visitors see changes (ADR-0002). `concurrencyVersion` rises with every save, and
 a save based on an older one is refused. `lastEntryNumber` hands out entry numbers with one atomic update. `themeAlias`
-copies the published version's theme, for the theme library's "used by" list (ADR-0015). `trashKey` names the trash
+copies the published version's theme (ADR-0015); the theme library's "used by" lists come from `jfbFormLibraryUse`, and
+only a theme's delete guard still reads it, for forms published before step 13. `trashKey` names the trash
 operation that put the form in the trash: its own, or its folder's (ADR-0047).
 
 - `IX_jfbForm_key`, `IX_jfbForm_alias`: unique; the alias without regard to case, trashed forms included.
@@ -633,7 +645,8 @@ author changes their own (ADR-0208).
 
 The outbox: one row per action an entry triggered, with its order (`sortOrder`), state, attempts and the lease of the
 server that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised, as a code and a message; a
-skipped run says why with the code `stopped` (an earlier run stopped the rest) or `undone` (ADR-0023, ADR-0040).
+skipped run says why with the code `stopped` (an earlier run stopped the rest), `undone`, or `superseded` (a later move
+of the entry replaced the change that queued it) (ADR-0023, ADR-0040, ADR-0162).
 `startedUtc` is when the first attempt started and `lastAttemptUtc` when the latest did; a retry from the log starts
 the attempts over, their times with them (ADR-0195).
 
@@ -669,7 +682,7 @@ SHA-256 of the option's value; the value itself is kept beside it for reading. N
 
 ### `jfbOptionList`
 
-Shared option lists: typed in by editors, or read from content, a data type, a URL, a file or code.
+Shared option lists: typed in by editors, or read from content, a data type, a URL, a file, the country list or code.
 
 - `IX_jfbOptionList_key`, `IX_jfbOptionList_alias`: unique; the alias without regard to case. A list cannot be
   deleted while a form uses it (`jfbFormLibraryUse`).
@@ -679,13 +692,14 @@ Shared option lists: typed in by editors, or read from content, a data type, a U
 Themes for the rendered forms: a base theme, design tokens and optional custom CSS. The default theme is a setting.
 
 - `IX_jfbTheme_key`, `IX_jfbTheme_alias`: unique; the alias without regard to case, and fixed once created. A
-  theme cannot be deleted while a form's `themeAlias` names it.
+  theme cannot be deleted while a form uses it (`jfbFormLibraryUse`), or a form's `themeAlias` names it.
 
 ### `jfbEmailLayout`
 
 Layouts for outgoing mail: logo, colours, header and footer per culture. The default layout is a setting.
 
-- `IX_jfbEmailLayout_key`, `IX_jfbEmailLayout_alias`: unique; the alias without regard to case.
+- `IX_jfbEmailLayout_key`, `IX_jfbEmailLayout_alias`: unique; the alias without regard to case. A layout cannot be
+  deleted while a form's email action uses it (`jfbFormLibraryUse`).
 
 ### `jfbFormTemplate`
 
@@ -779,11 +793,12 @@ which the server counts when it refuses a post sent without JavaScript. Keys are
 
 ### `jfbFormLibraryUse`
 
-What of the library each form's draft and live version use, by key: so far the option lists its fields take their
-options from (ADR-0214). The form repository writes a version's rows in the unit that writes the version, a draft's
+What of the library each form's draft and live version use, by key: the option lists its fields take their options
+from (ADR-0214), its theme, and the email layouts its actions use (since step 13). The form repository writes a version's rows in the unit that writes the version, a draft's
 save and a publish replacing their version's rows, and taking a form offline removes its live rows; deleting a form for
-good takes its rows. The library's "used by" counts the forms, and an option list's delete is refused while any row names
-it, a form in the recycle bin's included, as it can come back. `uses` is how many of the version's fields use the item.
-The primary key is the form, the version (`draft` or `published`), the kind of item (`optionList`) and its key.
+good takes its rows. The library's "used by" counts the forms, and an option list's, theme's or layout's delete is refused
+while any row names it, a form in the recycle bin's included, as it can come back. `uses` is how many of the version's
+fields use an option list, how many of its email actions use a layout, and 1 for its theme. The primary key is the
+form, the version (`draft` or `published`), the kind of item (`optionList`, `theme` or `emailLayout`) and its key.
 
 - `IX_jfbFormLibraryUse_itemKind_itemKey`: an item's forms, for "used by" and the delete guard.

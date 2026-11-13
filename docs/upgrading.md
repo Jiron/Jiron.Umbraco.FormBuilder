@@ -7,10 +7,13 @@ notes of each version follow at the end, one section per release.
 
 The policy is ROADMAP §4.14 and [ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md); in short:
 
-- **Versions follow Semantic Versioning within each Umbraco major.** The package's major is Umbraco's (17 for Umbraco
-  17). A patch never needs a migration; a minor may add one, but never breaks the public C#, HTTP or JavaScript surface
-  listed in [extending.md](extending.md). A breaking change needs a new major, or a new API version served beside the
-  old one for the rest of the major and the whole next one.
+- **Versions follow Semantic Versioning within each Umbraco major.** The package's major is Umbraco's: version 17 runs
+  on Umbraco from 17.6.0 up to, but not including, 18. Prereleases are named `-alpha.N`, `-beta.N` and `-rc.N`. A patch
+  never needs a migration; a minor may add one, but never breaks the public C# surface, the public API, the website's
+  markup and JavaScript, or the backoffice's extension points listed in [extending.md](extending.md). A breaking change
+  needs a new major, or a new API version served beside the old one for the rest of the major and the whole next one.
+- **The management API is the backoffice's own,** outside this promise: it may change in a minor, and the release
+  notes list such a change for anyone who calls it.
 - **Deprecations last a full major:** `[Obsolete]` names the replacement, and the old member keeps working for the rest
   of its major and the whole next one.
 - **Data only moves forward.** The database migrations are idempotent and never go back; form definitions and settings
@@ -25,9 +28,10 @@ The policy is ROADMAP §4.14 and [ADR-0010](decisions/0010-versioning-branching-
    `JironFormBuilder:Files:Root` names (by default `umbraco/Data/JironFormBuilder/Uploads`).
 2. Update the package: `dotnet add package Jiron.Umbraco.FormBuilder --version <version>`, then build.
 3. Start the site. Umbraco runs the package's migrations at start-up when
-   `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on (Umbraco's default). With it off, a user with access to the
-   Settings section runs them from Umbraco's Packages screen; until then the Form Builder section says the database
-   needs its migrations and visitors see no forms rather than half-upgraded ones.
+   `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on (Umbraco's default). With it off, a user with access to
+   Umbraco's Packages section runs them there. Until then Jiron Form Builder pauses: visitors see no forms rather than
+   half-upgraded ones, no email goes out, the APIs answer `503 migrations_pending`, and the Overview and the **Database
+   migrations** health check say so.
 4. On a site with more than one server, upgrade one server first and let it finish its migrations before the others
    start the new version.
 

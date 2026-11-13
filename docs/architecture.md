@@ -199,7 +199,11 @@ flowchart LR
   ([ADR-0152](decisions/0152-uploads-on-the-page.md)); signs on a pad or types a name (`signature-chunk.ts`, with
   `@jfb/logic/signature`, held to `TypedSignature` by shared vectors), the image going at a send
   ([ADR-0153](decisions/0153-the-signature-pad.md)); works rows, rankings, counters, "Other", growing text areas and
-  cascading options in place (`fields-chunk.ts`, [ADR-0154](decisions/0154-the-field-behaviours.md)); its budget of every feature
+  cascading options in place (`fields-chunk.ts`, [ADR-0154](decisions/0154-the-field-behaviours.md)); shows one page at a
+  time with its progress and summary (`pages-chunk.ts`, [ADR-0155](decisions/0155-pages-in-the-browser.md)); the places left of
+  options (`places.ts`, [ADR-0156](decisions/0156-what-the-challenge-tells-the-page.md)); the proof of work and the captchas with their
+  consent (`protect-chunk.ts`, [ADR-0141](decisions/0141-proof-of-work-on-the-server.md),
+  [ADR-0142](decisions/0142-the-captcha-providers.md), [ADR-0157](decisions/0157-protection-on-the-page.md)); its budget of every feature
   counts the largest language's words, as a page loads one
   ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
   the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));
@@ -408,6 +412,13 @@ flowchart LR
   from `POST form/{key}/preview/ticket`, only once the last one is about to run out, and turns the page light or dark;
   the port closes as the frame goes on or the preview closes. The widths are the canvas's (`canvas/widths.ts`), and the
   preview opens at the canvas's.
+  From Phase 11 to 14: the entries (`entries/`: the Inbox, Spam, the entry panel, exports and the summary email,
+  [ADR-0204](decisions/0204-test-entries-and-sample-answers.md), [ADR-0207](decisions/0207-the-entries-list.md),
+  [ADR-0208](decisions/0208-the-entry-panel.md), [ADR-0209](decisions/0209-the-inbox-spam-badges-and-the-summary-email.md), [ADR-0210](decisions/0210-entry-exports.md)),
+  insights (`insights/`, [ADR-0211](decisions/0211-insights.md)), the privacy screens (`privacy/`: People and Retention,
+  [ADR-0222](decisions/0222-retention.md), [ADR-0223](decisions/0223-data-subject-tools.md)), the member editor's Form entries
+  view (`members/`, [ADR-0231](decisions/0231-members-entries.md)) and the Overview with its setup checklist and health
+  (`overview/`, [ADR-0165](decisions/0165-the-section-shell.md)).
   From 12.1 (ADR-0214): Library › Option lists (`option-lists/option-lists.screen.ts`) lists `GET option-list/library`,
   and Create option list asks the kind in its dialog, then opens the list's routable workspace (`jfb-option-list`) on
   `create/{kind}`, whose scaffold has its key from the start, so the preview and the save name the same list; saved, it
@@ -537,7 +548,7 @@ FormDefinition
 ├─ schemaVersion            1
 ├─ key                      the form's key (name, alias and folder live on the form row)
 ├─ settings
-│  ├─ submission            labels, summary page, progress, storage, approval, verification, resume, entry title and reference
+│  ├─ submission            labels, visitor texts, summary page, progress, storage, approval, verification, resume, entry title and reference
 │  ├─ availability          opening and closing, entry limit, closed message, members, one per member
 │  ├─ protection            level, captcha provider, content-rule strictness          (ADR-0012)
 │  ├─ privacy               retention per state, IP handling, insights                (ADR-0009)
@@ -745,11 +756,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
 
 ## 3. The data model
 
-Twenty-four tables with the prefix `jfb`, all times in UTC, created by the migration plan `Jiron.Umbraco.FormBuilder`
+Twenty-five tables with the prefix `jfb`, all times in UTC, created by the migration plan `Jiron.Umbraco.FormBuilder`
 ([§4.5](../ROADMAP.md#45-database-schema-v1-table-prefix-jfb-all-times-utc-guid-keys-for-anything-exposed) has the
 columns, [ADR-0003](decisions/0003-entry-storage.md) the entry storage). The diagram shows how the tables relate, by
 foreign key or by a key inside a definition; [database.md](database.md) has every column, index and foreign key.
-Umbraco's own tables (users, user groups, members, content) appear as one entity, `umbraco`.
+Umbraco's own tables (users, user groups, members, content) appear as one entity, `umbraco`; `jfbKeyValue`, the flags and
+markers, relates to none and is left out.
 
 ```mermaid
 erDiagram
@@ -863,6 +875,7 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 | `POST verify` | confirms the address once | `verify` | the verification token |
 | `GET forms/{key}/options/{fieldKey}` | a field's options in one culture for the answers up its chain of parents (`parent` for its parent, `parent.{fieldKey}` for any level), each held to the options its parent offers, for every published form (a form for members only to a member it admits and a server key, ADR-0231); `available: false` when a source failed; `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `POST forms/{key}/events` | the insights beacon, no identifiers | `events` | – |
+| `GET forms/{key}/element` | the first render's view model as JSON for `<jfb-form>`, with the stylesheets and script the page loads, for the element's `instance` id, the page's `culture` and `contentKey`, and a `theme`; for the members, themes and availability the render endpoint knows; a form that does not allow headless use answers `404`; `no-store` ([ADR-0128](decisions/0128-the-element-writes-the-servers-view-model.md)) | `read` | – |
 
 - **Every request** below the base path, in any letter case, meets a middleware before Umbraco's routing: no form
   content, `no-store`, `Vary: Origin`. An address that names no endpoint answers `404 not_found`, never a page of the
@@ -872,7 +885,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   preflights, answer `403 origin_denied` before anything runs. The preview frame's opaque origin `null` gets
   `Content-Type, Authorization` in a preflight and passes only with `Authorization: Jfb-Preview <ticket>` that holds
   (`PreviewTickets`, `Jiron.FormBuilder.Preview.v1`, the form, the version, ten minutes); one that does not, or one sent
-  to an endpoint without `[FormBuilderPreview]` (the challenge, the options and the page check take it) or for another
+  to an endpoint without `[FormBuilderPreview]` (the challenge, the options, the page check, uploads, entries and the
+  receipt take it) or for another
   form, answers `401 preview_ticket_invalid`. Those endpoints then read the version the ticket names (ADR-0203).
   A headless server signs with `Authorization: Jfb-Key <key>` against `PublicApi:ServerKeys` (names and SHA-256 hashes,
   compared in fixed time); a key that matches none answers `401 server_key_invalid`, a signed request counts in its
@@ -890,7 +904,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 - **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`,
   `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`,
   `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`,
-  `migrations_pending`, `not_found`, `server_error` (§4.6).
+  `migrations_pending`, `uploads_full`, `server_key_invalid`, `preview_ticket_invalid`, `resume_unavailable`,
+  `resume_expired`, `not_found`, `server_error` (§4.6).
 - **The no-JS path** posts to the page through Umbraco's surface routing, not to this API (ADR-0004).
 
 ## 6. The management API
@@ -999,8 +1014,9 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
 - **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
   record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
-  arriving with the step that builds what it configures (so far `general` with the time zone, the new-form defaults (the consent field and notifying the creator)
-  and how long draft saves stay in the History, and `email` with the sender, the default layout and the team's addresses). `general`, `email` and `protection` are per site: a site row holds the top-level
+  arriving with the step that builds what it configures: `general` with the time zone, the new-form defaults (the consent field and notifying the creator)
+  and how long draft saves stay in the History, `email` with the sender, the default layout and the team's addresses, then
+  `protection`, `files`, `privacy` and `integrations` ([configuration.md](configuration.md) lists the host's keys). `general`, `email` and `protection` are per site: a site row holds the top-level
   fields the site overrides (`null` meaning the default), and a `[GlobalOnly]` field, such as `general.newForms` or
   `general.history`, is shared by every site. A request that names no page holding the form meets the strictest of the sites'
   protection ([ADR-0147](decisions/0147-the-site-that-protects-a-form.md)). `files`, `privacy` and `integrations` are global;
@@ -1062,7 +1078,15 @@ first of each pair cancelable, the second once the change committed, [ADR-0044](
 handler's own words that every transport shows as the code `custom`), `EntrySubmitted`, `EntryApproved`,
 `EntryRejected`, `EntryStateChanged` once a change stands, `EntryDeleting` before a delete and `EntryDeleted`, and
 `EntryActionFailed` ([ADR-0233](decisions/0233-the-extension-surface.md)); `ActionRunning`/`ActionRunCompleted`/
-`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system receives the entry events of 8.4 too.
+`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system receives the entry events of 8.4 too
+([ADR-0161](decisions/0161-webhooks-slack-teams-and-entry-events.md)).
+
+**Email views:** an email action's body written by a site's Razor view in `Views/JironFormBuilder/Emails/`, over
+`EmailViewModel`, through `IFormBuilderEmailView` ([ADR-0160](decisions/0160-the-email-action.md)).
+
+**Exceptions:** a refused change throws `FormBuilderValidationException`, `FormBuilderConcurrencyException`,
+`FormBuilderConflictException` or `FormBuilderCancelledException`, and a list past its read budget
+`FormBuilderQueryTimeoutException`.
 
 **Services:** `IFormBuilderFormService` with `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService`
 (ADR-0053), `IFormBuilderFolderService`, `IFormBuilderEntryService` (entries from a site's code, created through the
@@ -1071,13 +1095,17 @@ pipeline under the reserved server key `@code`), `IFormBuilderEntryReader` (appr
 listed member by member in `docs/api/<assembly>.api.txt`, which a test holds it to.
 
 **The website:** `<jfb-assets nonce>`, `<jfb-render form picked assets theme context-*>` and the view component, the
-theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get` with its `validate`, `submit`, `next`, `back` and `values`, `consent` with `grant('captcha')`, `withdraw()` and `has('captcha')`, ADR-0157), the DOM events
-`jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`, and the `--jfb-*` custom
-properties.
+theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`version`, `init`, `get` with its `validate`, `submit`, `next`, `back` and `values`, `consent` with `grant('captcha')`, `withdraw()` and `has('captcha')`, ADR-0157), the DOM events
+`jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error` and `jfb:consent`, and the
+`--jfb-*` custom properties ([rendering.md](rendering.md)).
+
+**The backoffice:** the condition `Jiron.FormBuilder.Condition.Permission`, the places `JfbLibraryPlaceEntityType` and
+`JfbSettingsMenuAlias`, and the form workspace's context ([extending.md](extending.md#7-the-backoffice)).
 
 **Headless:** the projection's TypeScript types and JSON schema, and `<jfb-form api form culture content theme
-context-*>` with its `render()`, its `fresh()` (the form as it is now, for the runtime to put in the old one's place
-when it was published again) and its `jfb:rendered` event.
+context-*>` with its `render()`, its `defineControl()` for a site's own field type, its `fresh()` (the form as it is now,
+for the runtime to put in the old one's place when it was published again) and its `jfb:rendered` event
+([headless.md](headless.md)).
 
 ## 9. Background work
 
@@ -1088,7 +1116,8 @@ when it was published again) and its `jfb:rendered` event.
 - **An attempt** runs one action of a claimed run on the thread pool, within the type's time limit of at most a minute, and records
   what came of it through its claim's token: a success; a failure with back-off (1, 3, 9, 27 minutes, then for good); or `Uncertain`
   when it was cut off or its lease ran out, which the attempt's own late result can still replace.
-- **No mail server, no attempt:** a mail whose attempt found no mail server (a socket's error) goes back with its attempt,
+- **No mail server, no attempt:** a mail whose attempt made no connection (refused, no such host, an unreachable network)
+  goes back with its attempt,
   and its server sends nothing for a pause that grows from half a minute to five minutes, until a mail leaves; the health
   check says so meanwhile ([ADR-0237](decisions/0237-resilience.md)).
 - **What an entry's events leave for later** is a third queue (`EntryChangeQueue`, [ADR-0162](decisions/0162-state-changes-verification-and-content.md)): at the end of a user's undo window the entry events and letting go, and the mail and expiry of email verification and of saved forms. An event's `dueUtc` says when, and clearing it is the claim.
@@ -1104,7 +1133,8 @@ when it was published again) and its `jfb:rendered` event.
   the mail, the used challenges and the entries of forms that store none), `Jiron.FormBuilder.Digest`
   (hourly, the users' summary emails once the site's 07:00 has passed, each period once, ADR-0209),
   `Jiron.FormBuilder.Exports` (every minute: removes the exports whose day is up, file and record, and wakes its server's
-  export worker, which restarts an export whose lease ran out, ADR-0210) and statistics roll-ups.
+  export worker, which restarts an export whose lease ran out, ADR-0210) and `Jiron.FormBuilder.References` (every minute:
+  rebuilds the "used on" index when it was asked to). Insights need no job: each server's flusher writes its sums.
 - **The export worker** (`EntryExportWorker`), one per server, writes the background exports one after the other; queueing
   one wakes it at once. It renews an export's lease after each page and every minute meanwhile, counts any failure as an
   attempt, a cancellation it did not ask for among them, and deletes what it stored when the host stops (ADR-0210).
@@ -1179,24 +1209,26 @@ others in a cluster.
 | Elevation of privilege | A form designer writes to Umbraco content they may not touch through a content action | the action is held against the Umbraco rights of whoever saves, publishes or previews it: create, update and publish where it writes, the languages, the media folder | ADR-0235 | 16.1 |
 | Information disclosure | A user who manages actions sends themselves sensitive answers through an action | a new or changed action that copies a sensitive field needs `viewSensitive` | ADR-0235 | 16.1 |
 
-Phase reviews 6.8 and 7.4 and the security review 16.1 repeat this pass on the code as it is.
+Phase reviews 6.8 and 7.4 and the security review 16.1 repeat this pass on the code as it is; [security-review.md](security-review.md)
+has the review's findings, and [security.md](security.md) the protections in plain words.
 
 ## 11. Quality budgets
 
-The budgets are §4.12's; the measured starting points come from the spikes.
+The budgets are §4.12's; the measured starting points come from the spikes, and [performance.md](performance.md) has
+the current measurements.
 
 | Budget | Target | Measured so far |
 | --- | --- | --- |
-| Website runtime | ≤ 16 KB gzip core, ≤ 60 KB with everything (ADR-0146); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b) |
+| Website runtime | ≤ 16 KB gzip core, ≤ 60 KB with everything (ADR-0146); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b); core 2.53 KB, everything 59.50 KB with the largest language, default theme 8.06 KB (16.5) |
 | Rendering a 50-field form | ≤ 20 ms from the cached definition | median 0.12 to 0.15 ms (ADR-0004) |
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
 | The first email after a submission | ≤ 10 s | median 7.8 ms, highest 22.7 ms after the commit (ADR-0007) |
-| The designer with 300 fields; the tree with 1,000 forms | < 100 ms per interaction; < 1 s | 72 to 80 ms at the slowest interaction alone (9.4d, ADR-0176); the tree – (16.2) |
-| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b); at start 42.28 KB, the Design view's 45.20 KB, the whole 378.65 KB once the workspace's words load with it (10.3c, ADR-0201); at start 44.06 KB, the largest file 25.75 KB, the whole 511.69 KB (15.3) |
+| The designer with 300 fields; the tree with 1,000 forms | < 200 ms per interaction in a new browser, < 100 ms in one that has drawn before (ADR-0243); < 1 s | 72 to 80 ms at the slowest interaction alone (9.4d, ADR-0176); 88 ms in a new browser and 56 ms in a new page (16.5); the tree 476 ms median (16.1) |
+| The backoffice's files | ≤ 64 KB gzip at each start, in any section (the entry, its static imports, English's words and the largest other language's); ≤ 64 KB any one file; ≤ 512 KB the whole (ADR-0183) | at start 54.47 KB, the Design view's chunk 55.14 KB, the whole 246.76 KB (9.6b); at start 42.28 KB, the Design view's 45.20 KB, the whole 378.65 KB once the workspace's words load with it (10.3c, ADR-0201); at start 44.06 KB, the largest file 25.75 KB, the whole 511.69 KB (15.3); at start 44.49 KB, the largest file 32.40 KB, the whole 504.07 KB (16.5) |
 | The AI add-on's backoffice files | ≤ 8 KB gzip added to each start (its entry, static imports and words); ≤ 64 KB the whole (ADR-0018) | at start 5.42 KB, the whole 19.43 KB (15.3) |
-| Accessibility | WCAG 2.2 AA for every theme and screen | – (6.8, 16.3) |
-| Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | – (ADR-0011) |
+| Accessibility | WCAG 2.2 AA for every theme and screen | audited for every theme and screen (16.1, [ADR-0239](decisions/0239-the-accessibility-audit.md), [accessibility.md](accessibility.md)) |
+| Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | Core 97.6%, Web 97.7% of lines (16.5, ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |
 | The backoffice's words | every word from its dictionaries in English and German; every key used | each area held to the keys its code uses (`lang/key-use.test.ts`, ADR-0229); no word in a template (`jfb/no-hard-coded-text`) |
 

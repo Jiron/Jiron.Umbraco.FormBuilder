@@ -6,7 +6,7 @@ handlers that hear what happens to forms and entries; services to read and write
 extension points in the backoffice and on headless sites. This guide shows each, in the order a site usually needs
 them. The decisions behind it are in [ADR-0233](decisions/0233-the-extension-surface.md) and the ADRs it names.
 
-Everything public is listed, member by member, in [`docs/api/`](api/): `Jiron.Umbraco.FormBuilder.Core.api.txt` and
+Everything public in Core and Web is listed, member by member, in [`docs/api/`](api/): `Jiron.Umbraco.FormBuilder.Core.api.txt` and
 `Jiron.Umbraco.FormBuilder.Web.api.txt`. A test fails whenever that surface changes, so a change to it is always a
 reviewed diff, and a breaking one waits for the next major version with its deprecation (D21).
 
@@ -29,6 +29,7 @@ replace an entry of, or remove an entry from:
 
 ```csharp
 using Jiron.Umbraco.FormBuilder.Core.Composing;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 
@@ -79,7 +80,7 @@ an answer's life. Derive from `FormBuilderFieldTypeBase<TSettings>` and override
 | `AnswerLimits` | the longest answer and the most values the field takes |
 | `CheckAvailabilityAsync` | the designer asks whether the type can be used now (a type that needs a key it lacks says so) |
 
-Its view on the website is `Views/JironFormBuilder/<theme>/fields/<alias>.cshtml` (`default` serves every theme), over
+Its view on the website is `Views/JironFormBuilder/<view folder>/fields/<alias>.cshtml` (`default` serves every theme), over
 the field's view model; the markup contract (section 6) is what the runtime reads. A type whose control is a group of
 controls a visitor answers with together, such as radio buttons, says `GroupsControls = true` in its declaration: its
 field is then a fieldset under a legend, and an error marks each control through `ChoiceErrorId`, as the built-in
@@ -90,23 +91,35 @@ site registers for it (section 8).
 
 ### Actions
 
-An action type runs after a submission, in the background, with retries. Derive from
+An action type runs after a submission, in the background, with retries: an attempt that fails, or throws, is tried
+again after 1, 3, 9 and 27 minutes, five attempts in all. Its declaration (`ActionTypeDeclaration`) names its alias,
+name and icon, how its Test behaves (`Test`), its `Presets` in the designer's list, and the longest an attempt may take
+(`AttemptTimeout`, a minute by default), after which the run is uncertain. Derive from
 `FormBuilderActionTypeBase<TSettings>`: `RunAsync` returns `ActionResult.Succeeded`, `ActionResult.TryAgain(code)` for a
 failure worth another attempt, `ActionResult.Failed(code)` for one that is not, or `ActionResult.Uncertain(code)` when
 it cannot tell whether the receiver got it, which is never sent twice by itself. `TestAsync` answers the designer's
-Test without sending anything real, and `MissingConfiguration` names what the host still has to configure. The run's
+Test without sending anything real, `CheckSettings` refuses settings that can't work together (`ActionSettingsCheck.Invalid`)
+or warns about them (`Warn`), and `MissingConfiguration` names what the host still has to configure. The run's
 context holds the entry as merge tags see it; keep its answers out of your logs.
 
 ### Option sources
 
 `IFormBuilderOptionSource` gives options from code by its `Name`, in the culture asked for and, for a cascade, for the
 parent's answers. Options from a source are read again when a visitor's answer is checked, so a source answers the same
-way for the page and for the server.
+way for the page and for the server. A source that takes longer than 5 seconds gives no options that time.
 
 ### Exports
 
 `IFormBuilderExportFormat` writes an export's columns, tables and entries to a stream, reading entries page by page as it
-asks for them. It names its content type and extension, and whether it takes the delimiter and header choices.
+asks for them. It names its content type and extension, and whether it takes the delimiter and header choices; one
+that writes files too (`WritesFiles`) reads each through `FormBuilderExport.OpenFileAsync`.
+
+### Email views
+
+An email action can have its body written by a Razor view of the site's, in `Views/JironFormBuilder/Emails/<name>.cshtml`,
+over `EmailViewModel`, named in the action's **Razor view** setting. The view writes the body only; the layout, the
+subject and the recipients stay the action's. A view the site lacks falls back to the action's own body, with a warning
+in the log. `IFormBuilderEmailView` is the service behind it, for a site that writes bodies another way.
 
 ### Captchas, spam signals and file scanners
 
@@ -138,13 +151,15 @@ URLs, and a reader never sees a file that is still being written.
 ### Themes and views
 
 `IFormBuilderTheme` names a stylesheet, a class map onto the slots of `FormBuilderThemeSlots`, tokens for the
-`--jfb-*` custom properties, a dark scheme and a view folder. A token's value is colours, sizes, keywords and quoted
+`--jfb-*` custom properties, a dark scheme (`DarkTokens`, `--jfb-color-*` only, with `DarkScheme` on) and a view folder.
+The registry must keep a theme named `default`: replace it if you like, but don't remove it. A token's value is colours, sizes, keywords and quoted
 font names, calling only colour, arithmetic, `var()`, gradient and easing functions: no address, image set or escape, so
 nothing a token feeds (a `background`, say) loads from another host. The site does not start with a theme that breaks this.
 Every theme shares one set of views; a site overrides a
-view by placing its own at the same path below `Views/JironFormBuilder/<theme>/`, or below
-`Views/JironFormBuilder/<theme>/_forms/<alias>/` for one form. Each view starts with its contract header
-(`@* jfb-view: Field 1 *@`), which says the version of the markup contract it follows.
+view by placing its own at the same path below `Views/JironFormBuilder/<view folder>/`, or below
+`Views/JironFormBuilder/<view folder>/_forms/<alias>/` for one form. The view folder is the theme's `ViewFolder`, which a
+library theme takes from its base theme. Each view starts with its contract header (`@* jfb-view: Field 1 *@`), which
+says the version of the markup contract it follows ([rendering.md](rendering.md#overriding-views)).
 
 ## 3. Settings of your types
 
@@ -155,21 +170,24 @@ without any JavaScript, and the server checks every value against the schema bef
 public sealed class ColourSettings
 {
     [FormBuilderSetting("Colours", Description = "The colours a visitor chooses from.", Editor = "acme.swatches", Order = 1)]
-    public List<string> Colours { get; init; } = ["#1f6feb", "#2da44e", "#cf222e"];
+    public IReadOnlyList<string> Colours { get; init; } = ["#1f6feb", "#2da44e", "#cf222e"];
 
     [FormBuilderSetting("Show the colour's name", Order = 2)]
     public bool ShowNames { get; init; } = true;
 }
 ```
 
-`Editor` names the editor: by default the one of the property's kind (`boolean`, `number`, `localizedText`, ...). An
-editor that no built-in one draws comes from a `jfbSettingEditor` manifest of your own, in the backoffice.
+`Editor` names the editor: by default the one of the property's kind (`boolean`, `number`, `localizedText`, ...); a
+setting of kind `Json` or `Key` has no default and must name one. An editor that no built-in one draws comes from a
+`jfbSettingEditor` manifest of your own, in the backoffice. A list of settings is an `IReadOnlyList<T>`; start-up
+refuses another list type.
 
 ## 4. Notifications
 
 Handlers are Umbraco's own: `INotificationAsyncHandler<T>`, registered with `builder.AddNotificationAsyncHandler<T,
-THandler>()`. A notification ending in "-ing" comes before the change and can stop it; the other comes once it
-committed, and a handler that fails then is logged while the change stands.
+THandler>()`. A notification ending in "-ing" comes before the change, and most can stop it (`ActionRunning` and
+`EntryDeleting` only tell); the other comes once it committed, and a handler that fails then is logged while the change
+stands.
 
 | Notifications | Namespace |
 | --- | --- |
@@ -287,8 +305,12 @@ if (result.Entry is { } entry)
   code in `Refusal` and its errors in `Problems`. Files come only as a visitor's uploads.
 - `ChangeStateAsync` moves an entry as an action does: at once, without an undo window, with the actions the state sets
   off.
-- `ListAsync` lists a form's entries newest first, by state and time, a page at a time: pass the page's `Next` as the
-  next query's `After`.
+- `ListAsync` lists a form's entries newest first, a page at a time: `FormBuilderEntryQuery` filters by `States` and by
+  `SubmittedFrom` and `SubmittedBefore`, takes test entries with `IncludeTest`, and returns at most 100 a page (`Take`);
+  pass the page's `Next` as the next query's `After`. A list that takes longer than the database's read budget throws
+  `FormBuilderQueryTimeoutException`.
+- `FormBuilderNewEntry` also takes repeatable groups' `Rows`, `Context` values, the `Page` it came from and its
+  `Culture`.
 
 ### Showing approved entries on a page
 
@@ -326,17 +348,21 @@ exception's type and stack ([ADR-0237](decisions/0237-resilience.md)).
 
 ## 6. The website
 
-- **Placing a form:** `<jfb-render form="contact" />` (by alias, key or the form picker's value), with `theme`,
-  `assets` and `context-<name>` attributes, or `@await Component.InvokeAsync("FormBuilderForm", new { form = "contact" })`.
+- **Placing a form:** `<jfb-render form="contact" />` (by alias or key) or `<jfb-render picked="reference" />` (the form
+  picker's value, with its theme and page after a send), with `theme`, `assets` and `context-<name>` attributes, or
+  `@await Component.InvokeAsync("FormBuilderForm", new { form = "contact" })`.
 - **Assets:** `<jfb-assets />` writes the runtime and the stylesheets once per page, where you place it; otherwise the
-  first form writes them. A CSP nonce comes from `<jfb-assets nonce="...">` or from an `IFormBuilderCspNonceProvider`
-  your site registers.
+  first form writes them, unless `JironFormBuilder:Rendering:IncludeAssetsAutomatically` is off. A CSP nonce comes from
+  `<jfb-assets nonce="...">` or from an `IFormBuilderCspNonceProvider` your site registers.
 - **The markup contract:** the `data-jfb-*` hooks, ids, names and states every theme's views keep and the runtime reads
   (ADR-0015). A view of your own keeps them, and `FormBuilderHtml` writes the contract's attributes.
 - **JavaScript:** `window.JironFormBuilder.init(root)` wakes forms added to the page later; `get(form)` gives `validate()`,
-  `next()`, `back()`, `submit()` and `values()`; `consent.grant('captcha')` and `withdraw()` follow a cookie banner.
+  `next()`, `back()`, `submit()` and `values()`; `consent.grant('captcha')`, `withdraw()` and `has('captcha')` follow a
+  cookie banner; `version` names the runtime.
 - **Events** for your analytics: `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted` and
-  `jfb:error` bubble from the form. Jiron Form Builder tracks nothing itself.
+  `jfb:error` bubble from the form, and `jfb:consent` comes on the document. Jiron Form Builder tracks nothing itself.
+
+[rendering.md](rendering.md) covers each in full.
 
 ## 7. The backoffice
 
@@ -472,6 +498,8 @@ strings:
 | --- | --- |
 | `JfbLibraryPlaceEntityType` | `jfb-library-root` and `jfb-folder`, the places a form is created in, for an `entityCreateOptionAction` of the library's create menu |
 | `JfbSectionPathname` | `jfb-forms`, the section's address: a form opens at `section/jfb-forms/workspace/jfb-form/edit/<key>` |
+| `JfbFormWorkspaceAlias`, `JfbFormEntityType` | `Jiron.FormBuilder.Workspace.Form` and `jfb-form`, the form's workspace and entity type, for views on it (below) |
+| `JfbPermission` | the permissions by the names the conditions and the management API use, such as `viewEntries` |
 | `JfbSettingsMenuAlias` | the menu of the sidebar's Settings group, for a `menuItem` of your own settings screen |
 | `JfbPermissionConditionConfig` | the condition `Jiron.FormBuilder.Condition.Permission`, which shows an extension to a user who holds any of the permissions of each need, globally or, with `anywhere`, on any folder or form |
 
@@ -541,7 +569,8 @@ contract, as the type's Razor view does: controls named as the field's `name` (a
 the field's `id`; a control of its own described by the help and the error, a type that groups its controls described
 by the fieldset around them, each control naming `choiceErrorId` while the field has an error. The runtime then reads,
 checks and posts them as it does a built-in type's. A type with no function shows its label and a warning in the
-console. The script that registers the function is the site's own: a module on the page's origin, or a classic script
+console. `JfbControlWriter` is the function's type, and `JfbFormElementConstructor` the element's, with `defineControl`.
+The script that registers the function is the site's own: a module on the page's origin, or a classic script
 from another, which a page loads without that origin's CORS headers (the colour sample's is one).
 
 ## 9. The samples

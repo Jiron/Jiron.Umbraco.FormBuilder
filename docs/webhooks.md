@@ -7,7 +7,8 @@ A form can tell another system about an entry in two ways:
 
 ## Before the first call
 
-Jiron Form Builder only calls hosts the site's configuration names, over `https`:
+Jiron Form Builder only calls hosts the site's configuration names, over `https`. A name alone allows its standard port, and
+`crm.example.com:8443` allows another; `Webhooks:AllowHttp` allows `http` too, for a test system:
 
 ```json
 {
@@ -48,10 +49,11 @@ The action's sidebar keeps these settings as references too: a credential, a sig
 | A body you write (`template`) | The whole body as a template, in the format's own language; each merge tag is escaped for it |
 | Message (`message`) | A Slack or Teams message, as text with merge tags in the chat's own formatting |
 | Signing secret (`secret`) | A reference; without one, the integrations settings' secret signs, and with neither the request is unsigned |
-| Headers (`headers`) | Names with texts or references. Headers of the request itself and `X-Jfb-*` are refused |
+| Headers (`headers`) | Names with texts or references. A name holds letters, digits and hyphens, up to 100 characters; the request's own headers, `Content-*` and `X-Jfb-*` are refused |
 | Send sensitive fields (`includeSensitive`) | The sensitive fields it may send; none by default |
 
-The sidebar draws no signing secret for Slack or Teams, which check no signature. In the sidebar, **What it sends** is one choice: every answer by its field's alias, the names and values you choose (a table that starts with every field), a body you write, or only that something happened. Only the chosen way's settings are saved; the sidebar keeps the others while it is open, so choosing back brings them back.
+The sidebar draws no signing secret for Slack or Teams, which check no signature. The integrations settings' secret still
+signs their calls when there is one, so a secret named there that the configuration lacks fails them with `secret_missing`. In the sidebar, **What it sends** is one choice: every answer by its field's alias, the names and values you choose (a table that starts with every field), a body you write, or only that something happened. Only the chosen way's settings are saved; the sidebar keeps the others while it is open, so choosing back brings them back.
 
 A field the rules hid is never sent. A sensitive field the action does not name goes as no field at all, and as a mask where a mapping or own body asks for it.
 
@@ -91,9 +93,18 @@ A form-encoded body uses the same names with dots (`form.alias`, `fields.name`).
 | `408`, `425`, `429`, `5xx`, or no connection (10 seconds to connect) | Tried again later, as `http_<status>` or `no_connection` |
 | Any other status, a redirect included | Failed for good, as `http_<status>` |
 | No answer within 30 seconds | Uncertain, as `timed_out`: it may have arrived, so a person decides |
-| An address the configuration refuses | Failed for good, as `not_allowed` |
+| An address the configuration refuses | Failed for good, as `not_allowed`, its message the reason, such as `HostNotAllowed` or `AddressNotPublic` |
+| No address, on the action or in the integrations settings | Failed for good, as `no_address` |
+| A secret the configuration lacks | Failed for good, as `secret_missing`, its message naming the key |
+| A credential written as itself in the settings, as a test run of a draft can meet | Failed for good, as `secret_literal`, and nothing is sent |
 | A body longer than 100,000 characters from one template | Failed for good, as `too_long`, as a body cut short is no body |
 | A header from a secret that HTTP cannot carry | Failed for good, as `header_invalid`, which names no value |
+
+A run that is tried again waits 1, 3, 9 and then 27 minutes. After the fifth attempt it fails for good with the last
+code, and `jfbActionFailed` tells of it; **Retry** in Activity › Deliveries starts it over.
+
+Every call carries `User-Agent: JironFormBuilder/<version>` and the format's content type:
+`application/json; charset=utf-8`, `application/x-www-form-urlencoded` or `application/xml; charset=utf-8`.
 
 `X-Jfb-Delivery` stays the same across the attempts of a run, so a receiver can recognise a repeat. A test run from the designer sends `X-Jfb-Test: true` and `X-Jfb-Delivery: test`.
 
