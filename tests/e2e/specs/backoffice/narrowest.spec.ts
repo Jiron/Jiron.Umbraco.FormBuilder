@@ -260,11 +260,14 @@ test("at 375 px the Settings and Actions views keep to the window, a card's Test
   expect(await right(target), 'the target inside the window').toBeLessThanOrEqual(375.5);
 });
 
-// The form's header beside all six of its views, as the admin has them: Umbraco's bar shares its row with the views'
-// tabs, which leave the name and the chip about 166 px at the narrowest. The chip goes under the name rather than under
-// Umbraco's "..." beside it, and both stay inside the bar (ADR-0213).
-for (const width of [375, 768, 1024]) {
-  test(`at ${width} px the header keeps the name and the whole state inside Umbraco's bar beside six views, in German`, async ({
+// The form's header beside all its views, as the admin has them (the samples' Embed among them on this host): Umbraco's
+// bar shares its row with the views' tabs. Umbraco 17 folds tabs into its "..." and leaves the name and the chip about
+// 166 px at the narrowest; Umbraco 18.3 gives the tabs their whole width first and the header what is left. With the
+// name's 6rem left, the chip goes under the name rather than under Umbraco's "..." beside it, and both stay inside the
+// bar (ADR-0213); with less, the name takes what there is and the chip is cut with an ellipsis, its words its title, and
+// nothing lies past the header's box or makes Umbraco's page any wider (ADR-0250).
+for (const width of [375, 768, 1024, 1440]) {
+  test(`at ${width} px the header keeps the name and the state inside Umbraco's bar beside the views, in German`, async ({
     page,
     loginAs,
     apiAs,
@@ -296,7 +299,19 @@ for (const width of [375, 768, 1024]) {
         editor.locator('.header[slot="header"] > uui-tag').boundingBox(),
       ]);
       if (!bar || !own || !name || !chip) throw new Error(`${state}: the header's parts`);
-      expect(name.width, `${state}: the name's box`).toBeGreaterThanOrEqual(96);
+      const cramped = /\bcramped\b/.test((await editor.locator('.header[slot="header"]').getAttribute('class')) ?? '');
+      expect(cramped, `${state}: cramped exactly where Umbraco leaves the header less than the name's 6rem`).toBe(
+        own.width < 96,
+      );
+      if (cramped) {
+        expect(name.x + name.width, `${state}: the name inside the header's box`).toBeLessThanOrEqual(
+          own.x + own.width + 0.5,
+        );
+        await expect(editor.locator('.header[slot="header"] > uui-tag')).toHaveAttribute('title', state);
+      } else {
+        expect(name.width, `${state}: the name's box`).toBeGreaterThanOrEqual(96);
+        await expect(editor.locator('.header[slot="header"] > uui-tag')).not.toHaveAttribute('title');
+      }
       expect(chip.x, `${state}: the chip's left edge`).toBeGreaterThanOrEqual(own.x - 0.5);
       expect(chip.x + chip.width, `${state}: the chip's right edge, short of Umbraco's "..."`).toBeLessThanOrEqual(
         own.x + own.width + 0.5,
@@ -311,10 +326,16 @@ for (const width of [375, 768, 1024]) {
         );
       }
       // At the narrowest neither state fits beside the name's 6rem, so the chip is under it.
-      if (width < 1024)
+      if (width < 1024 || cramped)
         expect(chip.y, `${state}: the chip under the name`).toBeGreaterThanOrEqual(name.y + name.height);
       const found = await measure(page);
-      expect(found.cut, `${state}: texts cut short inside the section`).toEqual([]);
+      // Only a cramped header's state may be cut, and only with its words as its title.
+      expect(
+        found.cut.filter((text) => !(cramped && text === state)),
+        `${state}: texts cut short inside the section`,
+      ).toEqual([]);
+      // Umbraco's page is never narrower than 920 px; the header makes it no wider.
+      expect(found.width, `${state}: the page no wider than Umbraco's own`).toBeLessThanOrEqual(Math.max(width, 920));
     }
   });
 }

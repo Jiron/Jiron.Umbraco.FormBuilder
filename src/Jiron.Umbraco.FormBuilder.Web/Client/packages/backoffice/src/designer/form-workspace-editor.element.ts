@@ -18,6 +18,12 @@ const CHIP: Record<FormState, { color: string; look: string }> = {
   unpublished: { color: 'default', look: 'secondary' },
 };
 
+/** The name's room in rem, below which the header is cramped (the name's min-width in the styles). */
+const NAME_ROOM = 6;
+
+/** The root's font size in pixels, which rem stands for. */
+const rem = () => Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
 export class FormWorkspaceEditorElement extends UmbLitElement {
   static override properties = {
     _state: { state: true },
@@ -25,6 +31,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     _name: { state: true },
     _canDesign: { state: true },
     _stacked: { state: true },
+    _cramped: { state: true },
   };
 
   // The tokens give the footer's filled buttons, Umbraco's own, the section's white labels (ADR-0182).
@@ -83,6 +90,26 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
         text-align: center;
         line-height: 1.2;
       }
+
+      /* Where Umbraco's row leaves the header less than the name's 6rem (Umbraco 18.3 gives the views' tabs their whole
+         width first, ADR-0250), the name takes what there is, and the state, under it, its own width at most, cut
+         with an ellipsis; its words stay its title and are read in full. Nothing of the header lies over the tabs. */
+      .cramped .name,
+      .cramped h1 {
+        min-width: 0;
+      }
+
+      .cramped uui-tag {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .cramped .state {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     `,
   ];
 
@@ -93,6 +120,8 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   declare private _canDesign: boolean | undefined;
   /** Whether the chip went under the name, which then both take their smaller height. */
   declare private _stacked: boolean;
+  /** Whether Umbraco's row leaves the header less than the name's 6rem, so the name and the state take what there is. */
+  declare private _cramped: boolean;
 
   /** The header's own size follows the window and the chip's words; each change reads again where the chip lies. */
   #resize = new ResizeObserver(() => this.#measure());
@@ -101,6 +130,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     super();
     this._name = '';
     this._stacked = false;
+    this._cramped = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.observe(context?.state, (state) => (this._state = state), 'state');
       this.observe(
@@ -134,22 +164,31 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
    * leaves as they are, so the two never take turns.
    */
   #measure() {
+    const header = this.shadowRoot?.querySelector<HTMLElement>('.header');
     const name = this.shadowRoot?.querySelector<HTMLElement>('.name, h1');
     const chip = this.shadowRoot?.querySelector<HTMLElement>('uui-tag');
     const stacked = !!name && !!chip && chip.offsetTop >= name.offsetTop + name.offsetHeight;
     if (stacked !== this._stacked) this._stacked = stacked;
+    // The header's width is what Umbraco's row leaves it, whatever its own parts ask, so the two never take turns.
+    const cramped = !!header && header.clientWidth > 0 && header.clientWidth < NAME_ROOM * rem();
+    if (cramped !== this._cramped) this._cramped = cramped;
   }
 
   #chip() {
     const state = this._state;
     if (!state) return nothing;
     const label = this.localize.term(`jfbDesigner_state_${state}`);
-    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look}>${label}</uui-tag>`;
+    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look} title=${this._cramped ? label : nothing}
+      ><span class="state">${label}</span></uui-tag
+    >`;
   }
 
   override render() {
     return html`<umb-entity-detail-workspace-editor .backPath=${this._backPath}>
-      <div class=${this._stacked ? 'header stacked' : 'header'} slot="header">
+      <div
+        class=${['header', this._stacked ? 'stacked' : '', this._cramped ? 'cramped' : ''].join(' ').trim()}
+        slot="header"
+      >
         ${
           this._canDesign === false
             ? html`<h1>${this._name}</h1>`
