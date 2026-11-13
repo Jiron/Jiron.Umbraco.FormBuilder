@@ -1083,7 +1083,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 
 ### 4.12 Quality budgets
 
-- **Website runtime:** ≤ 16 KB gzip for the core, with features loaded on demand (uploads, signature, repeater, calculations, captchas): ≤ 60 KB gzip with everything (the owner, 2026-11-01; ADR-0146). The default theme CSS is ≤ 10 KB gzip. Nothing loads from third parties (§4.10). The files are served compressed and cacheable (6.2), because Umbraco's static files are neither, and a page with a form scores the same in Lighthouse as the page without it (16.2).
+- **Website runtime:** ≤ 16 KB gzip for the core, with features loaded on demand (uploads, signature, repeater, calculations, captchas): ≤ 100 KB gzip with everything (the owner, 2026-11-14; ADR-0251, raising the 60 KB of ADR-0146). The default theme CSS is ≤ 10 KB gzip. Nothing loads from third parties (§4.10). The files are served compressed and cacheable (6.2), because Umbraco's static files are neither, and a page with a form scores the same in Lighthouse as the page without it (16.2).
 - **Server speed (demo machine, SQLite):** each budget is measured at a stated concurrency. SQLite has a single writer that Umbraco itself also uses, so parallel writes queue there (Tandem ADR-0063). The load test (16.2) therefore also reports where SQLite stops keeping up, and the docs steer busy sites to SQL Server.
   - rendering a 50-field form takes ≤ 20 ms from the cached definition (1.4a: a median of 0.12 to 0.15 ms, ADR-0004);
   - a submission (store plus outbox) takes ≤ 150 ms at p95, with up to 10 submissions arriving at the same moment on SQLite (ADR-0003);
@@ -2552,7 +2552,9 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resume that gives no file and no consent back, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
-- [~] **8.6b The runtime's "Save and continue later"**
+- [ ] **8.6b The runtime's "Save and continue later"**
+  - **Resumes (2026-11-14):** the owner raised the budget to 100 KB (ADR-0251); this step resumes from
+    `wip/8.6b-resume-control` once 19.1 is ticked, before 20.1, with every check below.
   - **Retried at 9.6b (2026-11-05):** the branch with Phase 9 merged in measures 61.96 KB against 60 KB, and still waits.
   - **Retried at 10.4 (2026-11-07):** the branch merges into Phase 10's main without a conflict and measures 61.95 KB
     against 60 KB, and still waits.
@@ -2571,6 +2573,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     measures 61.67 KB against 60 KB, and still waits.
   - **Retried at 17.1 (2026-11-13):** the branch merges into Phase 17's main with the same two conflicts on the server,
     measures 61.67 KB against 60 KB (the runtime did not change in Phase 17), and still waits.
+  - **Retried at 18.1 (2026-11-13):** the branch merges into Phase 18's main with the same two conflicts on the server,
+    measures 61.69 KB against 60 KB, and still waits.
+  - **Retried at 19.1 (2026-11-13):** the branch merges into Phase 19's main with the same two conflicts on the server,
+    measures 61.71 KB against 60 KB, and still waits.
   - **Blocked on the owner (2026-11-02):** the control and the restoring of answers are built and wait on the branch `wip/8.6b-resume-control`. As the chunk of their own they come to 1.94 KB gzip, which puts the runtime with every feature at 61.95 KB against the 60 KB of ADR-0146, and that ADR leaves anything past 60 KB to the owner. `docs/OWNER-TODO.md` asks.
   - **The control:** the runtime's "Save and continue later" (the only use of browser storage, §4.10), and a link's answers and page restored on arrival, its token taken out of the address at once.
   - **Its switch** in the Settings view's Submission group, under More options, with the link's days (moved from 10.1a: settings come with their feature).
@@ -3268,7 +3274,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 19: The Umbraco 18 line (forward compatibility)
 
-- [ ] **19.1 The Umbraco 18 line: branch, build and everything on 18, and phase review** (19.1 and 19.2 in one, ADR-0197)
+- [x] **19.1 The Umbraco 18 line: branch, build and everything on 18, and phase review** (19.1 and 19.2 in one, ADR-0197) (2026-11-14, e54d894c)
   - **19.1 Branch strategy and an 18 build**:
     - As decided in D16: `main` stays the 17 line and holds every ROADMAP and WORKLOG change. The 18 code lives only on `v18/main`, branched from `main`.
     - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.

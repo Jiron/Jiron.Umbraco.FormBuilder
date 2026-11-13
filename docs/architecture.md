@@ -1218,7 +1218,7 @@ the current measurements.
 
 | Budget | Target | Measured so far |
 | --- | --- | --- |
-| Website runtime | ≤ 16 KB gzip core, ≤ 60 KB with everything (ADR-0146); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b); core 2.53 KB, everything 59.50 KB with the largest language, default theme 8.06 KB (16.5) |
+| Website runtime | ≤ 16 KB gzip core, ≤ 100 KB with everything (ADR-0251); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b); core 2.53 KB, everything 59.50 KB with the largest language, default theme 8.06 KB (16.5) |
 | Rendering a 50-field form | ≤ 20 ms from the cached definition | median 0.12 to 0.15 ms (ADR-0004) |
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
