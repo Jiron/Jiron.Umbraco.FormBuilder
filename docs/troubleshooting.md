@@ -2,7 +2,8 @@
 
 What to check when something doesn't work, symptom by symptom. Start with the **Jiron Form Builder** group on
 Umbraco's Health Check dashboard, which the Form Builder section's Overview shows too: most problems below have a
-health check that names them and the setting that fixes them.
+health check that names them and the setting that fixes them. Configuration keys on this page, such as `Files:Root`,
+are under the `JironFormBuilder` section.
 
 ## Contents
 
@@ -116,8 +117,8 @@ Check, in this order:
   such as `10.0.0.5` or `localhost`, is never called, so an internal system can't be reached this way.
 - **Redirects are never followed.**
 - **The run's code in Deliveries** says why: `not_allowed` (with the reason, such as `HostNotAllowed` or
-  `AddressNotPublic`), `no_connection` and `http_503` (tried again), `timed_out` (uncertain after 30 seconds),
-  `http_4xx` (failed), `secret_missing` (the configuration lacks a secret the action names).
+  `AddressNotPublic`), `no_connection`, `http_5xx`, `http_408`, `http_425` and `http_429` (tried again), `timed_out` (uncertain
+  after 30 seconds), any other `http_4xx` (failed), `secret_missing` (the configuration lacks a secret the action names).
 
 [webhooks.md](webhooks.md) has the full list.
 

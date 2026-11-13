@@ -1,0 +1,58 @@
+# How upgrades are tested
+
+For contributors: how every released schema is kept upgradable. Site developers find what an upgrade does and promises
+in [upgrading.md](upgrading.md).
+
+Every released database schema gets a real upgrade on a real site, and a fixture that runs on SQLite and SQL Server
+([ADR-0240](decisions/0240-the-upgrade-test.md)).
+
+## The install test
+
+`scripts/install-test.ps1` builds packages and installs them into a fresh Umbraco site:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-test.ps1 -Mode upgrade
+```
+
+- **`-Mode install`** packs the current build as `<VersionPrefix>-dev.<yyyyMMddHHmm>`, creates a site from the Umbraco
+  template of the version the repository develops against (in a template hive of the run's own, so the machine's
+  templates stay as they are), installs the packages from a local feed only (package source mapping, a fresh package
+  cache), starts the site on port 5530 and checks it: the migration state the plan in the code ends at, then a form made
+  from the contact template, published, rendered by the public API, sent by a visitor and read back.
+- **`-Mode upgrade`** first packs the tag `baseline/schema-v1` (the first schema, frozen before the first release) as
+  `17.0.0-alpha.0.baseline` from a `git worktree`, installs it, and lets `scripts/install-test/BaselineSeed` write what a
+  site of that time held, through the baseline's own services: settings, folders, forms published twice and changed
+  again in a draft, entries with answers of every storage kind, a file, an approved entry. Then the site stops, takes the
+  current packages and starts again: the remaining migrations run, and the checks read everything back through the
+  database and today's APIs (`tests/e2e/install/check.ts`): the folders and forms in the tree, the versions and the
+  draft, every entry's answers and state, the file byte for byte, the settings. A visitor then sends the upgraded form,
+  and the entry takes the next number.
+- **`-WriteFixture`** (with `-Mode upgrade`) writes `tests/fixtures/upgrade/schema-v1.json` from the baseline's database
+  before the upgrade.
+- **`-Keep`** keeps the run's folders to look into a failure; **`-Version`** packs a given version, for a release.
+
+The run needs the network (the Umbraco template and nuget.org), Node 24 and the .NET SDK, and takes about ten minutes.
+It builds with the throwaway-build settings (no MSBuild node reuse, no build server, no shared compiler), records the
+site's process in `.local/install-test/site.pid.json` and stops it with its whole tree, also when a step fails, and
+removes the site, the feed, the package cache and the worktree at the end, saying so. It runs before each release, not
+in every gate.
+
+## The fixtures
+
+`tests/fixtures/upgrade/schema-v<N>.json` holds the rows a site on that released schema stored, and that site's schema:
+
+- `UpgradeFixtureTests` (integration) runs the plan's steps up to the released state, checks that they still build
+  exactly that schema, puts the rows in, runs the rest of the plan and reads everything back through today's services,
+  on SQLite here and on SQL Server in CI.
+- `StoredDefinitionFixtureTests` (unit) reads every form definition the released version stored with today's reader and
+  upgraders, and checks that it keeps its form, pages, fields, keys, aliases, types and labels.
+
+## When a schema is released
+
+Each release that changes the database schema or the definition schema adds:
+
+1. a tag `baseline/schema-v<N>` on the release's commit;
+2. the seed's changes, if the services it writes through changed;
+3. its fixture, written with `-WriteFixture` against that tag, and its own cases in the two fixture tests.
+
+The install test then upgrades from the newest released schema; the fixtures keep every older one tested.

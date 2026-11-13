@@ -34,6 +34,9 @@ The Actions view groups a form's actions by what starts them:
 ([the editor's guide](editor-guide.md#submission)). Where a trigger needs one that is off, the view says so with a link
 to the setting, and actions placed there wait until it is on.
 
+On a form without manual approval, **Submitted** and **Approved** both run as each entry comes in, so put each action
+under one of them: an email under both goes out twice.
+
 The entry states have names of their own in the lists: an entry waiting for approval is **Submitted** for the
 triggers, and an entry waiting for its address to be confirmed is not yet submitted at all
 ([entries-and-exports.md](entries-and-exports.md#entry-states)).

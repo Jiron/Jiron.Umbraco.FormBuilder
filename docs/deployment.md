@@ -66,6 +66,8 @@ the code, and forms editors publish are written back to the files.
   | deleted | nothing: deleting forms is the site's job |
 
   A file is compared by what its form holds, never by its bytes, so reformatting it changes nothing.
+- **On several servers,** a publish writes the file on the server that published, and only the scheduling server takes
+  files in. Keep the folder on storage every server shares, so both see the same files.
 - **Keys travel with the files,** so pages that pick a form keep working in every environment.
 
 **Conflicts** are listed by the **Forms as files** health check, each naming its file. To keep the file, use **Replace

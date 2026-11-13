@@ -39,8 +39,9 @@ An entry is **refused**, rather than scored, only for something a real visitor c
 or sending too often. The visitor keeps every answer.
 
 **The signed check** behind every form is what makes this work without cookies: when a visitor starts filling in a
-form, the page fetches a signed, single-use token from the site, which the entry must carry. It is tied to the form and
-the time, not to the visitor's address, since phones change networks.
+form, the page fetches a signed, single-use token from the site, which the entry must carry; a page without JavaScript
+gets one written into the form as it renders. It is tied to the form and the time, not to the visitor's address, since
+phones change networks. At the Standard level, a visitor without JavaScript is judged like any other.
 
 ## Protection levels
 
@@ -118,9 +119,9 @@ and only as **Before reCAPTCHA or hCaptcha loads** in Settings › Spam protecti
 | Choice | The script loads |
 | --- | --- |
 | **Ask on the form** (the default) | when the visitor chooses **Load the check** on the form, or ticks a consent field that loads it |
-| **Follow a Cookiebot category** | once the visitor accepts the chosen Cookiebot category; Necessary unless you choose Marketing |
+| **Follow a Cookiebot category** | once the visitor accepts the category you choose: Necessary, the default, where Cookiebot files a captcha's cookie, so it loads at once; or Marketing |
 | **Follow the site's consent manager** | once the site's consent manager calls `JironFormBuilder.consent.grant('captcha')` |
-| **Load without asking** | with the form, for sites that have consent another way; only with `Privacy:AllowImplicitCaptchaConsent` in the configuration |
+| **Load without asking** | with the form, for sites that have consent another way; only with `JironFormBuilder:Privacy:AllowImplicitCaptchaConsent` in the configuration |
 
 The consent lasts as long as the page is open; nothing is stored. If the script can't load, or the visitor doesn't
 agree, the form can still be sent, and the entry goes to Spam for someone to look at.

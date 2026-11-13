@@ -39,7 +39,9 @@ each site. A value set for a site says "This site has its own value", with **Use
 **Shared by all sites:** Files, Privacy, Integrations, Access, the settings for new forms and for history, and the whole
 library of option lists, themes, email layouts and templates.
 
-**The time zone** of a site is used for dates in its emails and exports, and for the times its forms open and close.
+**The time zone** of a site is used for dates in its emails and exports. The time zone set for all sites is the one
+forms open and close in, as a form belongs to no site, and the one the entries list's Received filter, Insights' hours
+and the summary email follow.
 
 **Spam protection** on a request without a page, such as a form placed by a view outside the content tree, uses the
 strictest settings of all sites together, never what the request's address claims ([spam-protection.md](spam-protection.md#several-sites)).
@@ -65,7 +67,8 @@ Each form picker data type can be set up for where it is used, so one site's edi
 - **Allowed folders:** the forms in these folders, and in the folders below them, can be picked.
 - **Allowed forms:** these forms can be picked too. With no allowed folders or forms, every form can be picked.
 - **Theme:** every form placed with this picker renders in this theme, whatever the form says.
-- **Page after a send:** visitors go to this page once they have sent a form placed here.
+- **Page after a send:** visitors go to this page once they have sent a form placed here, in place of the form's own
+  outcomes, its messages included. Left empty, the form's outcomes decide.
 - **Allow several forms:** off by default.
 
 Give each site's document types a picker data type of their own, limited to that site's folder.

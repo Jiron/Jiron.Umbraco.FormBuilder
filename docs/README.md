@@ -46,6 +46,7 @@ backoffice, visitors fill them in on the website, and the site's team works with
 - [Troubleshooting](troubleshooting.md) and the [FAQ](faq.md).
 - [Security](security.md), [the database](database.md), [performance](performance.md) and
   [the architecture](architecture.md).
+- For contributors: [how upgrades are tested](upgrade-testing.md).
 
 ## Licence
 

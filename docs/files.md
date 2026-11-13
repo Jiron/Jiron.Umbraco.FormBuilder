@@ -31,8 +31,9 @@ download it and when it goes. A form takes files through a [file upload field](f
   ceiling, 50 MB unless a developer changes it.
 
 Each file field then chooses its types, any further extensions such as `dwg`, its largest file and how many files it
-takes (one by default, up to 20). The form check warns when a field takes files up to the site's limit, so you give it
-the size its answers need, or when the site no longer takes a size or type the field allows.
+takes (one by default, up to 20). The form check suggests a size for a field that takes files up to the site's
+limit, as a new file field does, so you give it the size its answers need, and warns when the site no longer takes a
+size or type the field allows.
 
 **Never accepted,** whatever a field allows: programs, scripts and web pages, by their extension. The list, which a
 developer can replace with `JironFormBuilder:Files:BlockedExtensions`, is: exe, dll, js, mjs, bat, cmd, ps1, sh, msi,
@@ -81,7 +82,8 @@ Files are downloaded only from their entry in the backoffice, by users who may v
 field's file also needs **View sensitive data**, and each such download is recorded in the audit log. Every file
 downloads as an attachment, never opened in the backoffice's own page.
 
-**Export… › ZIP of the uploaded files** downloads a form's files at once, in a folder per entry, for users who may
+**Export… › ZIP of the uploaded files** prepares a form's files in the background, in a folder per entry, and offers
+the download once it is ready, for users who may
 export entries ([entries-and-exports.md](entries-and-exports.md#exports)).
 
 ## When files go

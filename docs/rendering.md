@@ -157,7 +157,7 @@ A theme's stylesheet styles only its own forms, under `.jfb-form:where(.jfb-them
 with it as with plain `.jfb-form` rules. The form element carries `jfb-theme-<alias>`, and for a library theme its base
 theme's class too.
 
-**A theme of your own** in code implements `IFormBuilderTheme`: its alias and label, a stylesheet (a local path or
+**A theme of your own** in code implements `IFormBuilderTheme`: its name and label, a stylesheet (a local path or
 none), classes for the slots of `FormBuilderThemeSlots` (such as `control`, `button-primary` or `error-summary`, added
 to the package's own classes, never replacing them), tokens, whether it has a dark scheme, and its view folder.
 Register it with `builder.JironFormBuilder().Themes().Append<AcmeTheme>()`. The site refuses to start with a theme that
@@ -176,8 +176,9 @@ Forms are drawn by Razor views a site can override one by one: `Form`, `Page`, `
 `<theme>` is the theme's view folder: its alias for the built-in themes, the base theme's for a library theme. A site's
 own field type ships its view as `fields/<type alias>.cshtml` the same way.
 
-**Start from the built-in view,** never from scratch: copy it from the package's
-`Views/JironFormBuilder/default/` and change what you need. The views carry the hooks the runtime and screen readers
+**Start from the built-in view,** never from scratch. The package holds its views compiled, so copy the view from the
+repository's [`src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/Default/`](../src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/Default/),
+at the tag of the version you run (such as `v17.0.0`), and change what you need. The views carry the hooks the runtime and screen readers
 rely on, and leaving one out quietly drops a feature to its form without JavaScript.
 
 Each view starts with a header that names its contract version:
@@ -192,7 +193,7 @@ say so, and in Development the site logs a warning for each overridden view whos
 
 The view models in `Jiron.Umbraco.FormBuilder.Web.Rendering.Models` carry everything a view needs, every view path
 included. `FormBuilderHtml` has small helpers for overrides, such as `FormBuilderHtml.Attribute(name, value)`, which
-writes a `data-*` attribute only when it has a value. Emails have views of their own, in
+writes an attribute only when it has a value. Emails have views of their own, in
 `Views/JironFormBuilder/Emails/` ([actions.md](actions.md#email)).
 
 ## The markup

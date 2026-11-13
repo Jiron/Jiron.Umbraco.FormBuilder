@@ -21,8 +21,8 @@ files, markup and secrets are handled, and what was reviewed. To report a proble
 ## What is public
 
 - **The public API** under `/jfb/api/v1`, never under `/umbraco`: published forms, their options, the signed check,
-  uploads and entries. Each request has limits on its body, its time and its rate, and no answer is cached by the
-  browser unless it is a form's definition ([headless.md](headless.md)).
+  uploads and entries. Each request has limits on its body, its time and its rate, and a browser may keep only a form's
+  definition and a field's options, which it checks again each time with an `ETag` ([headless.md](headless.md)).
 - **The website's scripts and stylesheets** under `/jfb/assets/`.
 - **Cross-origin requests** only from the origins listed in `JironFormBuilder:PublicApi:AllowedOrigins`, never with
   credentials. Other origins' requests are refused before anything runs. The site's own CORS and rate limiter are left
@@ -74,8 +74,9 @@ files, markup and secrets are handled, and what was reviewed. To report a proble
 Keys, signing secrets and chat addresses are never typed into the backoffice or stored in the database. A setting names
 a secret by reference, `$JironFormBuilder:Secrets:<Name>`, and the value lives in the site's configuration, in user
 secrets, environment variables or a secret store. A value typed where a reference belongs is refused when saved. Captcha
-keys live only in `JironFormBuilder:Captcha`. Choosing an action that sends a secret needs the **Manage settings**
-permission.
+keys live only in `JironFormBuilder:Captcha`. Setting up an action that sends a secret's value somewhere, such as a
+webhook header, needs the **Manage settings** permission; a reference used as a webhook's address or signing secret
+sends no secret elsewhere and needs only **Manage actions**.
 
 ## Calls to other servers
 
@@ -89,8 +90,8 @@ limit on the answer's size ([webhooks.md](webhooks.md)).
 - **Every endpoint declares the permission it needs,** and a test calls each one with users who hold and lack it. A form
   a user may not see answers as if it didn't exist.
 - **Actions that reach further** need more than **Manage actions**: a content action is held to the user's own Umbraco
-  rights, copying sensitive answers needs **View sensitive data**, and sending a secret needs **Manage settings**
-  ([permissions.md](permissions.md#actions-that-reach-further)).
+  rights, copying sensitive answers needs **View sensitive data**, and a webhook header that sends a secret needs
+  **Manage settings** ([permissions.md](permissions.md#actions-that-reach-further)).
 - **Sensitive answers** are masked for users who may not see them, in lists, forwards, exports and the delivery log.
 - **The audit log** records reveals of sensitive answers, exports, deletions, changes of state, settings and
   permissions, and privacy-tool searches and erasures, by whom and when. It never records the values themselves, and it

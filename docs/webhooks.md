@@ -24,6 +24,9 @@ Jiron Form Builder only calls hosts the site's configuration names, over `https`
 
 An address that resolves to a private, loopback or link-local address is refused after the name is resolved, so a name cannot be pointed at the site's own network. A redirect is never followed, as it would carry the signed body to wherever the answer says.
 
+**Testing on your own machine:** as `localhost` is refused too, point the action at a public tunnel to your local
+receiver, and list the tunnel's host in `AllowedHosts` in your development settings only.
+
 **Secrets stay in the configuration.** A setting names one as `$JironFormBuilder:Secrets:<Name>`, and the value is read when the call is made. A header that sends a secret is set up, changed and tested by someone who may manage settings, who decides where the site's secrets go; anyone who manages actions may use a reference as the address or the signing secret, which send no secret elsewhere. Name letters, digits and `_`, up to 64 characters. A value in these settings is refused wherever an action is saved new or changed (a draft, a restore from the History, a replace from a file, an import), and by publishing, and a test run of a draft does not send one:
 
 - the signing secret;
@@ -34,7 +37,7 @@ A plain address is allowed as it is. If yours holds a key, in its path or query,
 
 A form whose secret is missing still publishes, and each run fails with `secret_missing`, its message naming the configuration key it lacks (never a value). An import names a missing secret the action names itself, but not the signing secret or address it takes from the integrations settings.
 
-The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft. A call that skips the sidebar is answered `400` with `secretReference` at the setting. A duplicate, copied actions, a form saved as a template and a new form from a template refuse an action that holds one the same way, at its setting in the form it comes from. An action saved with such a value before this check keeps it until it is changed, so other edits to its form still save; publishing refuses it as before.
+The action's sidebar keeps these settings as references too: a credential, a signing secret or a chat's address typed as itself is said under its box and never reaches the draft. A call that skips the sidebar is answered `400` with `secretReference` at the setting. A duplicate, copied actions, a form saved as a template and a new form from a template refuse an action that holds one the same way, at its setting in the form it comes from.
 
 ## The webhook action
 
@@ -83,7 +86,9 @@ With JSON, the default looks like this:
 }
 ```
 
-A form-encoded body uses the same names with dots (`form.alias`, `fields.name`). An XML body is a `submission` element with `meta` and `field` elements, each with a `name` attribute. Without metadata, a JSON or form-encoded body holds the fields alone.
+`event` is what started the action: `submitted`, `approved`, `rejected` or `verified`. `entry.number` is a string here,
+while Umbraco's webhook events below give it as a number. A form-encoded body uses the same names with dots
+(`form.alias`, `fields.name`). An XML body is a `submission` element with `meta` and `field` elements, each with a `name` attribute. Without metadata, a JSON or form-encoded body holds the fields alone.
 
 ### What comes of a call
 
@@ -126,7 +131,7 @@ Each preset starts with a **message**: text with merge tags, in the chat's own f
 
 Slack and Teams make a link of every address they find in a message, an answer's among them, so a visitor can put a link in your channel; their own formatting characters in an answer are written as text. Quote answers in a message only where the channel's readers expect what visitors write.
 
-Without a message, a chat gets "New entry in" the form's name and the answers. **A body you write** still wins over the message, for another shape of message; actions saved with the earlier presets hold such a body and keep working as they are. A test sends the message with a first line that says it is a test, in the tester's backoffice language.
+Without a message, a chat gets "New entry in" the form's name and the answers. **A body you write** still wins over the message, for another shape of message. A test sends the message with a first line that says it is a test, in the tester's backoffice language.
 
 ## Umbraco's webhook events
 
@@ -137,7 +142,7 @@ Jiron Form Builder registers these in Settings, Webhooks:
 | Forms: entry submitted | `jfbEntrySubmitted` | An entry arrives and is not in Spam or waiting for its confirmation, or comes out of Spam |
 | Forms: entry approved | `jfbEntryApproved` | An entry reaches approved; at once on a form without an approval step, and once its undo window is over for a user's change |
 | Forms: entry rejected | `jfbEntryRejected` | An entry is rejected, by a rule at once and by a user once the undo window is over |
-| Forms: entry deleted | `jfbEntryDeleted` | Entries go for good: a user deletes them, as the entries list's Delete… does (ADR-0207), retention's time for them comes (ADR-0222), or a privacy officer erases a person's entries (ADR-0223); one event for each entry, in their order. Anonymising an entry raises none, as the entry stays |
+| Forms: entry deleted | `jfbEntryDeleted` | Entries go for good: a user deletes them with the entries list's Delete…, retention's time for them comes, or a privacy officer erases a person's entries; one event for each entry, in their order. Anonymising an entry raises none, as the entry stays |
 | Forms: action failed | `jfbActionFailed` | An attempt of an action failed for good, or ended unsure whether it arrived |
 
 The payload never holds an answer, because Umbraco sends it as it is:

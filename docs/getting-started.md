@@ -8,7 +8,8 @@ From installing the package to the first entry in your Inbox, in about ten minut
 - An Umbraco 17.6 or later site that runs, on .NET 10, with SQLite or SQL Server. A site made with `dotnet new umbraco`
   is fine.
 - A backoffice user in Umbraco's **Administrators** group.
-- For step 6, a page on the site that is published and has a template, or access to the site's views.
+- For step 6, a published page with a template. A new site has none yet: under Settings, create a **Document Type
+  with Template** that is allowed at the root, then create and publish a page of that type under Content.
 
 ## 1. Install the package
 
@@ -40,6 +41,10 @@ sending them. Create the folder first, then add this to `appsettings.Development
 }
 ```
 
+Links in emails, such as the one that confirms an address, need the site's address. A local site usually has no
+`https` domain set in Umbraco, so once Form Builder is open, enter the site's address in Settings › General ›
+**Base URL**, such as `https://localhost:44317` ([email.md](email.md#links-in-emails)).
+
 ## 2. Open Form Builder
 
 Start the site. Its database tables are created as it starts. Sign in to the backoffice (reload it if it was already
@@ -65,8 +70,10 @@ deleted after 7 days. The real entry comes in step 7.
 
 ## 5. Publish it
 
-Choose **Publish…**. The dialog shows what the form check found (a built-in template has no problems) and lets you add
-a comment for this version. Choose **Publish**. From now on, visitors get this version of the form.
+Choose **Publish…**. The dialog shows what the form check found and lets you add a comment for this version. For the
+Contact form it suggests a consent field, as the form asks for an email address; a suggestion never stops publishing,
+and [privacy.md](privacy.md) explains when you want one. Choose **Publish**. From now on, visitors get this version of
+the form.
 
 ## 6. Put it on a page
 
@@ -77,11 +84,12 @@ editor, and add:
 @await Component.InvokeAsync("FormBuilderForm", new { form = "contact" })
 ```
 
-`contact` is the form's alias, made from its name. That is all: the script and stylesheet the form needs are added to
-the page by themselves.
+`contact` is the form's alias, made from its name when the form was created; renaming the form keeps it. The form's
+**Settings** view shows it under **Developer**, with **Copy alias**. That is all: the script and stylesheet the form
+needs are added to the page by themselves.
 
 If editors should place forms themselves, use a block instead. In the checklist, **Create a form block type…** creates
-a "Form" block; you then allow it on a block list and write its view. [installation.md](installation.md#a-form-block-for-editors)
+a "Form" block; you then add it to the Block List or Block Grid your pages use and write its view. [installation.md](installation.md#a-form-block-for-editors)
 shows how.
 
 ## 7. Send an entry
@@ -93,17 +101,21 @@ The Contact template sends no email. To get one for each entry, open the form's 
 
 ## 8. Find it in the Inbox
 
-In the Form Builder sidebar, open **Entries › Inbox**. The new entry is at the top, marked as new. Select it to see the
+In the Form Builder sidebar, open **Entries › Inbox**. The new entry is at the top, in bold as unseen. Select it to see the
 answers, its timeline and its notes. The Overview lists it under **Recent entries** too.
 
 ## What next
 
-The checklist has two more steps:
+The checklist has up to three more steps:
+
+- **Put the form on a page:** a form placed in a template, as above, leaves it open. It ticks once the form block type
+  exists or a page picks a form.
 
 - **Check email sending:** Settings › Email › **Send test email** sends a message to your own address. Without a mail
   server, entries are still kept, and their emails go out once sending works ([email.md](email.md)).
-- **Choose who sees entries:** only administrators can open Form Builder at first. Settings › Access gives other user
-  groups their permissions ([permissions.md](permissions.md)).
+- **Choose who sees entries:** only administrators can open Form Builder at first. Another user group needs the
+  section, added in Umbraco's Users section, and its permissions, set in Settings › Access, which also lists the groups
+  that lack the section ([permissions.md](permissions.md)).
 
 Then:
 

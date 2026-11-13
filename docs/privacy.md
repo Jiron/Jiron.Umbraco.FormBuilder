@@ -42,7 +42,7 @@ state:
 
 | State | Kept | |
 | --- | --- | --- |
-| Submitted | 365 days | entries waiting for approval count here too |
+| Submitted | 365 days | entries waiting for approval, which the lists call Waiting for approval |
 | Approved | 365 days | approved by someone, or at once on forms without manual approval |
 | Rejected | 90 days | |
 | Spam | 30 days | |
@@ -67,8 +67,9 @@ daily counts of Insights three years. [The privacy facts](privacy/facts.md#how-l
 Two settings of a field, under **Advanced** in the inspector, protect an answer:
 
 - **Sensitive:** the answer is shown masked in lists and entries, and only users who may **View sensitive data** can
-  reveal it; each reveal is recorded in the audit log. It is left out of emails, exports and webhooks unless an action
-  or export names it and the user may see it, and it never appears in entry titles, search, the timeline or logs.
+  reveal it; each reveal is recorded in the audit log. Emails and webhooks leave it out of the answers they list and
+  write `•••` where a merge tag names it, unless the action includes it; exports leave it out unless the user asks for it
+  and may see it. It never appears in entry titles, search, the timeline or logs.
 - **Keep the answer › Until the entry's actions have run:** emails and webhooks still get the answer, then it is removed
   from the entry, with every copy the actions made. The entry shows "not kept".
 

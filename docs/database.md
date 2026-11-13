@@ -48,8 +48,8 @@ server, belongs on SQL Server.
 
 The package migration plan `Jiron.Umbraco.FormBuilder` creates and upgrades the tables. Umbraco runs it at start-up
 when `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on (the default); otherwise a user with access to
-Umbraco's Packages section runs it there. Each step runs in its own transaction with the state it reaches, and each is
-idempotent, so a rerun changes nothing.
+Umbraco's Packages section runs it there (Installed, **Run pending package migrations** on Jiron Form Builder's row).
+Each step runs in its own transaction with the state it reaches, and each is idempotent, so a rerun changes nothing.
 
 | State | Step | What it does |
 | --- | --- | --- |

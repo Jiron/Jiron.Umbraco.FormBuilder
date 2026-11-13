@@ -25,7 +25,8 @@ the `<jfb-form>` web component, and with the form picker in Umbraco's Content De
 ## Before you start
 
 - **Turn on Headless access** for each form a headless site reads: the form's Settings view › Developer. Without it, the
-  form's definition, the web component and the Delivery API's expansion answer as if the form didn't exist.
+  form's definition and the web component answer as if the form didn't exist, and the Delivery API gives `null` for a
+  form picker's value that names it.
 - **Allow the front end's origin,** when its pages run in the browser on another host than Umbraco:
 
   ```json
@@ -41,8 +42,8 @@ the `<jfb-form>` web component, and with the form picker in Umbraco's Content De
 - **The address:** the API lives under `/jfb/api/v1`. A developer can move it with `JironFormBuilder:PublicApi:BasePath`
   (`/jfb/api` by default), never under `/umbraco`.
 
-The API takes no cookies and no credentials. Members-only forms work only on the site's own pages, where the visitor is
-signed in.
+A front end on another origin calls the API without cookies or credentials, so members-only forms work only on the
+site's own pages, where the browser sends the signed-in member's cookie along.
 
 ## The public API
 
@@ -59,13 +60,14 @@ form's alias.
 | `POST forms/{key}/entries` | Sends an entry; answers its receipt and the outcome to show. |
 | `POST forms/{key}/receipt` | The receipt of an entry whose answer was lost, by its submission id. |
 | `GET forms/{key}/element` | What the web component renders. Needs Headless access. |
-| `GET forms/{key}/render` | The form's markup, as a Razor page has it. |
+| `GET forms/{key}/render?instance=&page=` | The form's markup at one place on a page, which the runtime asks for when a cached page's form was published again. Not a general markup endpoint. |
 | `POST forms/{key}/events` | The Insights counter the runtime reports to; holds no answer. |
 
 `contentKey` names the Umbraco page the form is shown on, if any: that page's site decides the settings, texts and
 merge tags. `culture` is one of the site's languages, such as `de-DE`; otherwise the default language is used.
 
-The API also has endpoints for saving a form to finish later; that feature is not yet available in the backoffice.
+The API also has endpoints for saving a form to finish later (`POST forms/{key}/drafts` and the resume link); the
+feature is not yet available on the website or in the backoffice, so leave them aside for now.
 
 ## Sending an entry
 
@@ -91,6 +93,19 @@ The API also has endpoints for saving a form to finish later; that feature is no
 
    The answer is `{ "receipt": { "submissionId", "reference", "submittedUtc" }, "outcome": { "kind": "message", "html": "…" } }`,
    or a redirect with its `url`.
+
+**What the protection asks of a front end of your own,** besides the `challenge`:
+
+- **Proof of work,** when the challenge's answer has `proofOfWork: { "nonce", "bits" }`: find a whole number `n` such
+  that the SHA-256 of the ASCII text `nonce:n` starts with `bits` zero bits, and send `n` in digits as `proofOfWork`.
+- **A captcha,** when it has `captcha`: load the provider's script from `scriptAddress`, show its check with `siteKey`
+  (and `action` for reCAPTCHA v3), and send the token it gives as `captchaToken`. `consent` and `category` say when the
+  site's settings allow the script to load ([spam-protection.md](spam-protection.md#consent)).
+- **The honeypot:** leave `honeypot` out, or send what a hidden field of your own holds; a person never fills it in, so
+  any text counts towards Spam.
+
+Without a solved puzzle the entry is refused with `401 challenge_required`, and without a token that passes with
+`403 captcha_failed`; a filled honeypot sends it to Spam without a word. A server key needs none of these.
 
 Answers go by field alias: text, a number, `true` or `false`, or a list of texts; a name's or an address's part as
 `alias.part`; a grid's row as `alias.<row key>`; a repeatable group as a list of row objects; a file field as its upload
@@ -156,6 +171,7 @@ developers.
 | 403 | `member_required` | the form is for members |
 | 403 | `captcha_failed` | the captcha didn't pass: the visitor tries again |
 | 404 | `form_not_found` | no such published form, or not open to headless sites |
+| 404 | `not_found` | nothing there, such as a receipt for no entry the check or key made |
 | 409 | `form_changed` | the form was published again: read it again |
 | 409 | `duplicate_submission` | the submission id was used for other answers |
 | 409 | `already_submitted` | the member has sent this form already |
@@ -163,7 +179,9 @@ developers.
 | 415 | `unsupported_media_type` | not JSON, or a file type the field refuses |
 | 422 | `validation_failed` | answers that fail their checks |
 | 429 | `rate_limited` | too many requests: wait the seconds `Retry-After` says |
+| 500 | `server_error` | something failed on the server, which logged it |
 | 503 | `migrations_pending`, `uploads_full` | try again later, as `Retry-After` says |
+| 504 | `timeout` | the request ran past its time limit: send it again |
 
 The rate limits are those of the site's spam protection ([spam-protection.md](spam-protection.md#rate-limits)).
 
@@ -188,8 +206,11 @@ The element adds the form's stylesheets to the page, waits for them briefly so n
 the same script as Razor pages. It renders again when an attribute changes; after changing a `context-` attribute, call
 `element.render()`.
 
-- **Events:** `jfb:rendered` once it has drawn its form, and `jfb:error` with a `code` when it can't; inside, the form
-  raises the same events as on a Razor page ([rendering.md](rendering.md#javascript)).
+- **Events:** `jfb:rendered` once it has drawn its form, and `jfb:error` with a `code` when it can't, such as
+  `network_error`, `contract_mismatch` or a problem code from the table above. Once drawn, the form inside raises the
+  same events as on a Razor page, its own `jfb:error` among them (`timeout`, `rate_limited`, `server_error`,
+  `form_changed`), which bubbles through the element too: tell them apart by whether the form has rendered
+  ([rendering.md](rendering.md#javascript)).
 - **Views:** it draws with the built-in views; a site's Razor view overrides don't apply. A site's own field type
   registers a control writer for it ([extending.md](extending.md#8-headless-sites)).
 - **Caching:** each render is made fresh on the server.
@@ -201,14 +222,14 @@ Load the element's script from the same Umbraco site whose API it calls.
 ## The Content Delivery API
 
 The form picker's value comes out of Umbraco's Content Delivery API as the form's key, alias and name, with the picker's
-theme and page after a send where its data type sets them:
+theme (`theme`) and page after a send (`redirect`, the page's key) where its data type sets them:
 
 ```json
 "form": { "key": "1d0c7a8e-…", "alias": "contact", "name": "Contact", "theme": "bootstrap5" }
 ```
 
-A multiple picker gives a list, with `null` in place of a form that is missing, unpublished or not open to headless
-sites. Expanding the property adds the form itself, as the definition gives it, in the language of `Accept-Language`:
+A form that is missing, unpublished or not open to headless sites comes out as `null`, and a multiple picker gives a
+list with `null` in its place. Expanding the property adds the form itself, as the definition gives it, in the language of `Accept-Language`:
 
 ```
 GET /umbraco/delivery/api/v2/content/item/{id}?expand=properties[form]
@@ -220,7 +241,8 @@ consent wordings. A typical page reads its content from the Delivery API, then r
 
 ## Types and the OpenAPI document
 
-- **TypeScript types and a JSON schema** of the definition's `form` ship in the package's `schemas/` folder:
+- **TypeScript types and a JSON schema** of the definition's `form` ship in the `Jiron.Umbraco.FormBuilder` package's
+  `schemas/` folder, in your NuGet cache, and in the repository's [schemas/](../schemas):
   `jfb-public-form.v1.d.ts` (`JfbPublicForm`, `PublicField`, `PublicRule` and the rest) and
   `jfb-public-form.v1.schema.json`.
 - **The OpenAPI document** of the public API is in the repository at [api/jfb-public.json](api/jfb-public.json), with

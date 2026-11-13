@@ -38,7 +38,8 @@ words. The package collects no telemetry.
 
 The package brings one migration plan. Umbraco runs it as the site starts when
 `Umbraco:CMS:Unattended:PackageMigrationsUnattended` is on, which is Umbraco's default. With it off, a user with access
-to Umbraco's **Packages** section runs it there. Each step runs in its own transaction and can safely run again.
+to Umbraco's **Packages** section runs it there: **Installed**, then **Run pending package migrations** on Jiron Form
+Builder's row. Each step runs in its own transaction and can safely run again.
 
 The plan creates 25 tables, all named `jfb…`, and keeps its state in Umbraco's `umbracoKeyValue` table.
 [database.md](database.md) describes each table and step.
@@ -134,7 +135,9 @@ It never changes a type that exists already, and it creates no block list. Then:
    }
    ```
 
-   It needs `@addTagHelper *, Jiron.Umbraco.FormBuilder.Web` in `Views/_ViewImports.cshtml`.
+   It needs `@addTagHelper *, Jiron.Umbraco.FormBuilder.Web` in `Views/_ViewImports.cshtml`. For a block grid, the view
+   is `Views/Partials/blockgrid/Components/jfbFormBlock.cshtml`, with the same body under
+   `@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockGridItem>`.
 
 Editors then add a **Form** block to a page, choose a form and publish the page.
 

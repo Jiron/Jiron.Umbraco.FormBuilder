@@ -28,8 +28,9 @@ Choose **Form Builder** in the backoffice's top bar. What you see depends on you
   restricted folder or form shows a lock, and a form with entries you haven't seen shows a dot.
 - **Entries:** the **Inbox**, with every form's new entries in one list, and **Spam** ([entries-and-exports.md](entries-and-exports.md)).
 - **Library:** option lists, themes, email layouts and templates that every form can use.
-- **Settings, Privacy and Activity,** for administrators: the site's defaults, access, retention, the privacy tools,
-  the delivery log and the audit log.
+- **Settings, Privacy and Activity,** for users whose group may manage settings or use the privacy tools
+  ([permissions.md](permissions.md)): the site's defaults, access, retention, the privacy tools, the delivery log and the
+  audit log.
 
 Umbraco's search in the header has a **Forms** tab too. It finds forms by name or alias, and fields of every form by
 label or alias; choosing a field opens its form with that field selected.
@@ -66,8 +67,9 @@ Each form in the tree, and the open form's header, has a **…** menu:
 | Permissions… | Limits which user groups may do what with it ([permissions.md](permissions.md)). |
 | Trash | Moves it to the Recycle Bin. |
 
-**Trash** asks first only when pages still show the form, and names them: those pages show nothing in its place until
-the form is restored. Otherwise the form moves at once, and the message that follows offers **Undo** for 10 seconds.
+**Trash** asks first only when a page's form picker or form block uses the form, and names those pages: they show
+nothing in its place until the form is restored. A form placed in a template by code is not known to it, so check
+your views before trashing one placed that way. Otherwise the form moves at once, and the message that follows offers **Undo** for 10 seconds.
 
 A folder's own page lists its forms with their entries over the last 30 days; its name in the header is where you
 rename it. An empty folder can be deleted from its "…" menu.
@@ -198,7 +200,9 @@ The form's settings, in groups: **Submission**, **After sending**, **Availabilit
 ### Submission
 
 - **Send button:** its label. The labels of the next and back buttons are under **More options**.
-- **Store entries:** always, for a number of days, or never. **Never** still runs the actions, but keeps no entry.
+- **Store entries:** always, for a number of days, or never. **For a number of days** is a ceiling: an entry goes
+  after that many days, however long its state would keep it under Privacy. **Never** still runs the actions, but keeps
+  no entry.
 - **Manual approval:** entries wait until someone approves or rejects them. Without it, every entry is approved as it
   arrives ([entries-and-exports.md](entries-and-exports.md)).
 - **Email verification:** visitors confirm their address through a link before any action runs, as newsletters need.
@@ -227,7 +231,8 @@ first if it follows a message (5 by default). **Preview with a sample entry** sh
 
 ### Availability
 
-- **Opens** and **Closes:** times on the site's clock. Empty, the form opens at once and stays open.
+- **Opens** and **Closes:** times in the time zone set for all sites (Settings › General). Empty, the form opens at
+  once and stays open.
 - **Entry limit:** the form closes once it has this many entries.
 - **Message while closed:** shown in place of the form before it opens, after it closes and once it is full.
 - **Who can fill it in:** anyone, members only, or members of chosen groups, with **One entry per member** if each
@@ -317,7 +322,9 @@ you see and edit. In another language, an empty box shows the default language's
 translated, and elements with a missing translation say so.
 
 A text written as `#key` takes its words from Umbraco's dictionary item of that key, in each visitor's language. Users
-who can open Umbraco's Translation section get **Use a dictionary item** beside each text box.
+who can open Umbraco's Translation section get **Use a dictionary item** beside labels, help texts, placeholders,
+titles, button labels and email subjects; other texts take a `#key` typed in, or `{{ dictionary.key }}` where they are
+formatted.
 [multi-language.md](multi-language.md) explains both ways.
 
 ## The AI add-on

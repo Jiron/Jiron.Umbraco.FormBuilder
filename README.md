@@ -43,7 +43,7 @@ personal data in check with the privacy tools.
 **For visitors**
 
 - **Accessible, fast forms** (WCAG 2.2 AA) that work without JavaScript and get better with it, with their texts in
-  seven languages, right to left included.
+  seven languages and a layout that turns for right-to-left languages.
 - **Spam protection without third parties:** a honeypot, a minimum fill time, a signed challenge, content checks and an
   optional proof of work. reCAPTCHA or hCaptcha only when an editor chooses one.
 

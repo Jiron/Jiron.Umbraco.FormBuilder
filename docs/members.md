@@ -22,7 +22,8 @@ entry per member, answers filled in from the member, and what happens to a membe
 | Members only | "This form is for members", and that they need to sign in |
 | Members of chosen groups | not signed in: that they need to sign in; signed in to another group: "This form is not open to your account" |
 
-The site's own sign-in page does the signing in; the form only checks. Member groups are listed from Umbraco's Members
+The site's own sign-in page does the signing in; the form only checks. The notice links nowhere, as only the site
+knows its sign-in page: put a link to it beside the form, or in the form's view ([rendering.md](rendering.md#overriding-views)). Member groups are listed from Umbraco's Members
 section, and a group deleted later admits nobody until the form chooses another, which the form check points out.
 
 The check is made again when the entry arrives, so a page cached or left open can't get round it, and a headless site

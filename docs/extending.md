@@ -8,7 +8,12 @@ them. The decisions behind it are in [ADR-0233](decisions/0233-the-extension-sur
 
 Everything public in Core and Web is listed, member by member, in [`docs/api/`](api/): `Jiron.Umbraco.FormBuilder.Core.api.txt` and
 `Jiron.Umbraco.FormBuilder.Web.api.txt`. A test fails whenever that surface changes, so a change to it is always a
-reviewed diff, and a breaking one waits for the next major version with its deprecation (D21).
+reviewed diff, and a breaking one waits for the next major version with its deprecation ([upgrading.md](upgrading.md)).
+
+**Which package to reference:** a class library of extensions references `Jiron.Umbraco.FormBuilder.Core` for the
+server's extension points (field types, actions, option sources, notifications, services), and
+`Jiron.Umbraco.FormBuilder.Web` only for what renders (view models, `IFormBuilderRenderer`, the tag helpers). A site
+that installed `Jiron.Umbraco.FormBuilder` has both already.
 
 ## Contents
 
@@ -40,7 +45,7 @@ public sealed class SiteFormsComposer : IComposer
         builder.JironFormBuilder().FieldTypes().Append<ColourFieldType>();
         builder.JironFormBuilder().ActionTypes().Append<CrmActionType>();
         builder.JironFormBuilder().OptionSources().Append<ProductOptionSource>();
-        builder.AddNotificationAsyncHandler<EntrySubmittingNotification, BlockedDomainsHandler>();
+        builder.AddNotificationAsyncHandler<EntrySubmittingNotification, RegisteredEmailHandler>();
     }
 }
 ```
@@ -89,6 +94,13 @@ choices do. A view compiled into a Razor class library of yours is found once th
 is not among the parts a site lists for itself. On a headless site, `<jfb-form>` writes its control with the function the
 site registers for it (section 8).
 
+Only settings marked `Public = true` (section 3) reach the view and the headless control; the others stay on the server,
+for your type's own code. A view reads them from `((CustomControlModel)Model.Control!).Settings`, a `JsonElement` of the
+public settings by their names in camelCase, and starts with the header that names its contract,
+`@* jfb-view: fields/<alias> 1 *@`, as the colour sample's
+[`fields/sample.colour.cshtml`](../samples/Jiron.Umbraco.FormBuilder.Samples/Views/JironFormBuilder/default/fields/sample.colour.cshtml)
+does.
+
 ### Actions
 
 An action type runs after a submission, in the background, with retries: an attempt that fails, or throws, is tried
@@ -102,11 +114,45 @@ Test without sending anything real, `CheckSettings` refuses settings that can't 
 or warns about them (`Warn`), and `MissingConfiguration` names what the host still has to configure. The run's
 context holds the entry as merge tags see it; keep its answers out of your logs.
 
+An action reads the answers through merge tags: a setting with `SupportsMergeTags = true` takes a template such as
+`{{ field.email }}`, and `RunAsync` renders it with `IFormBuilderMergeTagService.RenderAsync(template,
+MergeTagPlace.Action, MergeTagContext.Text, context.Scope, cancellationToken)`. `context.DeliveryKey` stays the same
+over a run's attempts, for a receiver that must do a run once. A setting of an enum type is a choice whose members
+carry `[FormBuilderChoice(label)]`, and `TestAsync` answers with an `ActionTestResult`, such as
+`ActionTestOutcome.DryRun` with lines in its `Preview`. The CRM sample,
+[`Crm/CrmActionType.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Crm/CrmActionType.cs), shows each of these.
+
 ### Option sources
 
 `IFormBuilderOptionSource` gives options from code by its `Name`, in the culture asked for and, for a cascade, for the
 parent's answers. Options from a source are read again when a visitor's answer is checked, so a source answers the same
 way for the page and for the server. A source that takes longer than 5 seconds gives no options that time.
+
+```csharp
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+
+public sealed class RoomOptionSource : IFormBuilderOptionSource
+{
+    public string Name => "rooms";
+
+    public string Label => "Meeting rooms";
+
+    public ValueTask<IReadOnlyList<FormBuilderOption>> GetOptionsAsync(FormBuilderOptionRequest request, CancellationToken cancellationToken)
+    {
+        var german = request.Culture.StartsWith("de", StringComparison.Ordinal);
+        return ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(
+        [
+            new FormBuilderOption("north", german ? "Nord" : "North"),
+            new FormBuilderOption("south", german ? "Süd" : "South") { Description = german ? "Mit Beamer" : "With a projector" },
+        ]);
+    }
+}
+```
+
+`request.ParentValues` holds the parent field's answers for a cascade, and `request.Page` the page the form is on. A
+source is a singleton and holds no state of its own. The products sample,
+[`Products/ProductOptionSource.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Products/ProductOptionSource.cs), adds
+categories for a cascade.
 
 ### Exports
 
@@ -119,7 +165,10 @@ that writes files too (`WritesFiles`) reads each through `FormBuilderExport.Open
 An email action can have its body written by a Razor view of the site's, in `Views/JironFormBuilder/Emails/<name>.cshtml`,
 over `EmailViewModel`, named in the action's **Razor view** setting. The view writes the body only; the layout, the
 subject and the recipients stay the action's. A view the site lacks falls back to the action's own body, with a warning
-in the log. `IFormBuilderEmailView` is the service behind it, for a site that writes bodies another way.
+in the log. `EmailViewModel` holds the rendered subject, the culture, the form's name, the entry's number and the
+answers as one text, a line each, as `{{ entry.answers }}` writes them; a body that needs one answer on its own writes it
+with a merge tag in the action's body instead. `IFormBuilderEmailView` is the service behind it, for a site that writes
+bodies another way.
 
 ### Captchas, spam signals and file scanners
 
@@ -169,13 +218,21 @@ without any JavaScript, and the server checks every value against the schema bef
 ```csharp
 public sealed class ColourSettings
 {
-    [FormBuilderSetting("Colours", Description = "The colours a visitor chooses from.", Editor = "acme.swatches", Order = 1)]
-    public IReadOnlyList<string> Colours { get; init; } = ["#1f6feb", "#2da44e", "#cf222e"];
+    // A JSON list of { "name": "Blue", "value": "#1f6feb" }, drawn by an editor of the site's own.
+    [FormBuilderSetting("Colours", Description = "The colours a visitor chooses from.", Editor = "acme.swatches", Order = 1, Public = true)]
+    public JsonElement Colours { get; init; } = JsonSerializer.SerializeToElement(new[]
+    {
+        new { name = "Blue", value = "#1f6feb" },
+        new { name = "Green", value = "#2da44e" },
+    });
 
-    [FormBuilderSetting("Show the colour's name", Order = 2)]
+    [FormBuilderSetting("Show the colour's name", Order = 2, Public = true)]
     public bool ShowNames { get; init; } = true;
 }
 ```
+
+`Public = true` puts a setting in what visitors' browsers get, as the field's view and a headless control need it to
+draw the field; leave it off for a setting only your server code reads, such as a key or an internal address.
 
 `Editor` names the editor: by default the one of the property's kind (`boolean`, `number`, `localizedText`, ...); a
 setting of kind `Json` or `Key` has no default and must name one. An editor that no built-in one draws comes from a
@@ -198,7 +255,8 @@ stands.
 | `ExportCompleted` | `Core.Exports` |
 | `SettingsSaved` | `Core.Settings` |
 
-Every name ends in `Notification` (`EntrySubmittingNotification`). The entry events of 8.4 also reach Umbraco's
+Every name ends in `Notification` (`EntrySubmittingNotification`). The entry events (submitted, approved, rejected,
+deleted and an action failed) also reach Umbraco's
 webhooks while the integrations settings have them on ([webhooks](webhooks.md)); `EntryStateChanged` and
 `EntryDeleting` are for code only.
 
@@ -212,7 +270,8 @@ and one your code creates (`IsFromCode`). A page's check and a saved draft do no
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Umbraco.Cms.Core.Events;
 
-public sealed class BlockedDomainsHandler(IMemberDirectory directory) : INotificationAsyncHandler<EntrySubmittingNotification>
+// IMemberDirectory stands for a service of your site's own.
+public sealed class RegisteredEmailHandler(IMemberDirectory directory) : INotificationAsyncHandler<EntrySubmittingNotification>
 {
     public async Task HandleAsync(EntrySubmittingNotification notification, CancellationToken cancellationToken)
     {
@@ -271,8 +330,9 @@ Inject them; they are singletons and safe on every server of a cluster.
 A change refused for its values throws `FormBuilderValidationException` (each problem with a code, a path and a
 message), one that met someone else's change first `FormBuilderConcurrencyException`, one the database refused
 `FormBuilderConflictException` (its `Conflict` says why), and one a handler stopped `FormBuilderCancelledException`.
-None of them wrote anything. A change is refused inside a unit of work of your own, as it tells handlers and drops
-caches once it committed.
+None of them wrote anything. A change, unlike a read, throws `InvalidOperationException` while an Umbraco scope or a
+unit of work of yours is open, such as one from `ICoreScopeProvider.CreateCoreScope()`: it tells its handlers and drops
+caches only once it has committed, which an outer scope would hold back. Make the change after your scope.
 
 ### Entries from code
 
@@ -369,7 +429,9 @@ exception's type and stack ([ADR-0237](decisions/0237-resilience.md)).
 Your backoffice extensions are an ordinary Umbraco package: an `umbraco-package.json` in `App_Plugins/<your folder>/`
 lists their manifests, and their scripts are ES modules the backoffice loads. They need no module of Jiron Form Builder
 at run time, only the names below. Their types ship with the package as
-`/App_Plugins/JironFormBuilder/types/jiron-form-builder.d.ts`; copy the file into your project, or point a `paths` entry
+`/App_Plugins/JironFormBuilder/types/jiron-form-builder.d.ts`, which your running site serves and the
+`Jiron.Umbraco.FormBuilder.Web` package holds under `staticwebassets/App_Plugins/JironFormBuilder/types/` in your NuGet
+cache; copy the file into your project, or point a `paths` entry
 of your `tsconfig.json` at it. It also adds Jiron Form Builder's four manifest types to Umbraco's manifest map, so a
 typed manifest of yours is checked. Jiron Form Builder's own backoffice and its AI add-on compile against the same file.
 
@@ -570,15 +632,18 @@ the field's `id`; a control of its own described by the help and the error, a ty
 by the fieldset around them, each control naming `choiceErrorId` while the field has an error. The runtime then reads,
 checks and posts them as it does a built-in type's. A type with no function shows its label and a warning in the
 console. `JfbControlWriter` is the function's type, and `JfbFormElementConstructor` the element's, with `defineControl`.
-The script that registers the function is the site's own: a module on the page's origin, or a classic script
-from another, which a page loads without that origin's CORS headers (the colour sample's is one).
+The script that registers the function is the site's own. Served from the page's own host it can be a module; served
+from Umbraco's host to a page elsewhere, make it a classic script (`<script src>` without `type="module"`), which a
+browser loads from another host without asking that host for CORS headers, as the colour sample's
+`colour-control.js` is.
 
 ## 9. The samples
 
 [`samples/Jiron.Umbraco.FormBuilder.Samples`](../samples/Jiron.Umbraco.FormBuilder.Samples) holds an extension of each
-kind, compiled and tested with the rest of the repository ([ADR-0234](decisions/0234-the-samples.md)). None registers
-itself: a site turns one on by its name in a composer, `builder.AddFormBuilderSample(FormBuilderSamples.Colour)`, or
-copies what it needs. The demo turns on the ones its setting `Demo:Samples` names.
+kind, compiled and tested with the rest of the repository ([ADR-0234](decisions/0234-the-samples.md)). They are not in
+the NuGet packages: copy the classes, views and scripts you need into your site, and register them as section 1 shows.
+Inside the repository, a composer turns one on by its name, `builder.AddFormBuilderSample(FormBuilderSamples.Colour)`,
+as the demo site does for those its setting `Demo:Samples` names.
 
 | Sample | What it shows |
 | --- | --- |

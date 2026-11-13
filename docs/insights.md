@@ -59,7 +59,8 @@ and conversion, and their change from the period before.
 - **From the entries:** how many arrived, from which page, at what hour and how long they took to fill in. Spam and test
   entries don't count here.
 
-Counts are added up on each server and saved every 10 seconds. Days in the reports run from midnight to midnight UTC.
+Counts are added up on each server and saved every 10 seconds. Days in the reports run from midnight to midnight UTC, while Entries by hour of day follows the time zone set for all
+sites, so on a site far from UTC an evening's entries can count for the next day.
 The counts are kept for three years.
 
 Previews in the backoffice count nothing, and neither does the message of a closed form or what visitors see after
