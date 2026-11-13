@@ -131,6 +131,7 @@ export default {
     problem_tooFew: (limit: number) => `Choose ${limit} at least.`,
     problem_tooMany: (limit: number) => `Choose ${limit} at most.`,
     problem_notAllowed: "That value isn't one this setting takes.",
+    problem_megabytes: 'Enter a size in MB, such as 10 or 2.5.',
 
     on: 'On',
     off: 'Off',
@@ -169,6 +170,7 @@ export default {
     unit_w: 'weeks',
     unit_m: 'months',
     unit_y: 'years',
+    megabytes: 'MB',
     property_options: 'Options',
     property_rows: 'Rows',
     options_from: 'Options from',

@@ -48,6 +48,8 @@ export function aliasOf(text: string, fallback: string): string {
 /**
  * A field of a type, labelled. A choice field starts with three options and a grid with two rows as well, so that the
  * canvas shows it as it will be used; a heading starts with its label as its text; content without a value has no label.
+ * A consent field starts required, as consent that a visitor may leave out is no basis for keeping the entry (section
+ * 4.3.2); an editor who means an optional agreement, such as a newsletter's, turns it off.
  */
 export function newField(type: NewFieldType, label: string, newKey: () => string, words: NewFieldWords): DesignField {
   const options = type.features.includes('options')
@@ -69,6 +71,7 @@ export function newField(type: NewFieldType, label: string, newKey: () => string
     type: type.alias,
     ...(type.holdsValue ? { alias: aliasOf(label, type.alias), label: { '': label } } : {}),
     ...(type.alias === 'heading' ? { settings: { text: { '': label } } } : {}),
+    ...(type.alias === 'consent' ? { required: true } : {}),
     ...(type.features.includes('childFields') ? { fields: [] } : {}),
     ...options,
     ...rows,

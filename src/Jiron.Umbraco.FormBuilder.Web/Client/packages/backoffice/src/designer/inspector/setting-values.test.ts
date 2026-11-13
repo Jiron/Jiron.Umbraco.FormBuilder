@@ -9,6 +9,7 @@ import {
   isDate,
   ownText,
   parseChoices,
+  parseFileSize,
   parseSetting,
   readDateBound,
   settingsOf,
@@ -146,6 +147,18 @@ describe('what is typed into a setting', () => {
     });
     expect(parseSetting(below, '10')).toEqual({ ok: false, problem: { kind: 'above', limit: '10', exclusive: true } });
     expect(parseSetting(below, '9.99')).toEqual({ ok: true, value: '9.99' });
+  });
+
+  it("is a file's largest size in megabytes, stored as bytes, empty for the site's limit", () => {
+    const maxBytes = settingOf('file', 'maxBytes');
+    expect(maxBytes.editor).toBe('fileSize');
+    expect(parseFileSize(maxBytes, ' 10 ')).toEqual({ ok: true, value: 10_485_760 });
+    expect(parseFileSize(maxBytes, '2,5')).toEqual({ ok: true, value: 2_621_440 });
+    expect(parseFileSize(maxBytes, '0.25')).toEqual({ ok: true, value: 262_144 });
+    expect(parseFileSize(maxBytes, '')).toEqual({ ok: true, value: undefined });
+    for (const wrong of ['2.555', 'ten', '-1', '0'])
+      expect(parseFileSize(maxBytes, wrong)).toEqual({ ok: false, problem: { kind: 'megabytes' } });
+    expect(parseFileSize(maxBytes, '999999999999')).toMatchObject({ ok: false, problem: { kind: 'above' } });
   });
 
   it('is a time as 14:30', () => {

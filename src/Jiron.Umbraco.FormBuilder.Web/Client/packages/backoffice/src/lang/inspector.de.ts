@@ -136,6 +136,7 @@ export default {
     problem_tooFew: (limit: number) => `Wählen Sie mindestens ${limit}.`,
     problem_tooMany: (limit: number) => `Wählen Sie höchstens ${limit}.`,
     problem_notAllowed: 'Diesen Wert nimmt diese Einstellung nicht an.',
+    problem_megabytes: 'Geben Sie eine Größe in MB ein, etwa 10 oder 2,5.',
 
     on: 'An',
     off: 'Aus',
@@ -174,6 +175,7 @@ export default {
     unit_w: 'Wochen',
     unit_m: 'Monate',
     unit_y: 'Jahre',
+    megabytes: 'MB',
     property_options: 'Optionen',
     property_rows: 'Zeilen',
     options_from: 'Optionen aus',

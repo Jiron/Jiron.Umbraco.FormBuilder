@@ -148,6 +148,7 @@ export default {
     fileTypes: 'Allowed file types',
     fileExtensions: 'Other extensions',
     fileMaxBytes: 'Largest file',
+    fileMaxBytesHelp: "Empty takes the site's limit, set in Settings › Files.",
     fileMaxFiles: 'Maximum files',
     fileDropZone: 'Offer a drop zone',
     fileThumbnails: 'Show thumbnails',

@@ -9,10 +9,19 @@ import type { DesignDefinition } from '../definition';
 /**
  * Where a text with tags is used, as the merge tag service names its places: the entry title, an outcome's message and
  * its redirect's address are the form's own, a mail's subject and body an email action's, and the texts of the other
- * actions (a webhook's names and values, its body and a chat's message) theirs.
+ * actions (a webhook's names and values, its body and a chat's message) theirs. A hidden field's value is worked out on
+ * the server when the entry arrives, so it may use every source, a default value only those the same for every visitor.
  */
 export type MergeTagPlace =
-  'visitorText' | 'consentText' | 'defaultValue' | 'entryTitle' | 'outcome' | 'redirect' | 'mail' | 'action';
+  | 'visitorText'
+  | 'consentText'
+  | 'defaultValue'
+  | 'hiddenValue'
+  | 'entryTitle'
+  | 'outcome'
+  | 'redirect'
+  | 'mail'
+  | 'action';
 
 /** The place of a setting's text: a consent's wording is the consent's own, any other a visitor's text. */
 export const placeOf = (type: string, setting: string): MergeTagPlace =>

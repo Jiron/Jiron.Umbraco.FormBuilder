@@ -14,6 +14,7 @@ import { textIn } from '../preview/field-models';
 import { elementNames, inspectorRuleWords } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
 import { outcomeName, type DesignOutcome } from '../settings/outcome-model';
+import { megabytesOf } from '../../settings/settings-values';
 
 type Term = (key: string, ...args: unknown[]) => string;
 type Json = Readonly<Record<string, unknown>>;
@@ -670,6 +671,8 @@ class Words {
     const choice = setting?.choices.find((one) => one.value === value);
     if (choice) return this.#context.say(choice.label);
     if (setting?.kind === 'boolean' && typeof value === 'boolean') return this.#yesNo(value);
+    if (setting?.editor === 'fileSize' && typeof value === 'number')
+      return `${megabytesOf(value)} ${this.#context.term('jfbInspector_megabytes')}`;
     return this.any(value, side);
   }
 

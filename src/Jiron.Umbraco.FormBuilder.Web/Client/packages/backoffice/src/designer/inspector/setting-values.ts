@@ -4,6 +4,7 @@
 import type { FieldSettingResponseModel } from '../../api';
 import type { DesignField, LocalizedText } from '../definition';
 import { keyIn } from '../preview/field-models';
+import { bytesOf, megabytesOf } from '../../settings/settings-values';
 
 /** Why a value can't be kept, in the terms the inspector's words name. */
 export type Problem =
@@ -19,7 +20,8 @@ export type Problem =
   | { readonly kind: 'tooLong'; readonly limit: number }
   | { readonly kind: 'tooFew'; readonly limit: number }
   | { readonly kind: 'tooMany'; readonly limit: number }
-  | { readonly kind: 'notAllowed' };
+  | { readonly kind: 'notAllowed' }
+  | { readonly kind: 'megabytes' };
 
 /** A value read from what was typed: undefined leaves the setting to its default. */
 export type Parsed = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly problem: Problem };
@@ -188,6 +190,20 @@ export function parseChoices(setting: FieldSettingResponseModel, chosen: readonl
   }
   const count = countOf(chosen.length, setting.rules);
   return count ? refused(count) : ok([...chosen]);
+}
+
+/**
+ * What is typed into a file's largest size: megabytes with up to two decimals, as the global settings take the site's
+ * (ADR-0218), stored as bytes within the setting's limits; empty leaves the site's limit.
+ */
+export function parseFileSize(setting: FieldSettingResponseModel, raw: string): Parsed {
+  const bytes = bytesOf(raw);
+  if (bytes === null) return setting.rules.required ? refused({ kind: 'required' }) : ok(undefined);
+  if (bytes === 'invalid') return refused({ kind: 'megabytes' });
+  const most = setting.rules.maximum ? Number(setting.rules.maximum) : null;
+  return most !== null && bytes > most
+    ? refused({ kind: 'above', limit: megabytesOf(most), exclusive: false })
+    : ok(bytes);
 }
 
 /** Whether a text is a date as settings store one: 2026-12-31. */

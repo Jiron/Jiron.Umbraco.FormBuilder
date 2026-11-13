@@ -382,9 +382,12 @@ public sealed class FileFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_fileExtensions", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public IReadOnlyList<string> Extensions { get; init; } = [];
 
-    /// <summary>The most bytes a file has; the site's limit by default (<c>Files:MaxFileBytes</c>).</summary>
+    /// <summary>
+    /// The most bytes a file has; the site's limit by default (<c>Files:MaxFileBytes</c>). The designer shows it in megabytes,
+    /// as the global settings show the site's, and stores bytes.
+    /// </summary>
     [Range(typeof(long), "1", "999999999999999")]
-    [FormBuilderSetting("#jfbFieldSettings_fileMaxBytes", Group = FieldSettingGroup.Validation, Order = 2, Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_fileMaxBytes", Description = "#jfbFieldSettings_fileMaxBytesHelp", Editor = "fileSize", Group = FieldSettingGroup.Validation, Order = 2, Public = true)]
     public long? MaxBytes { get; init; }
 
     /// <summary>The most files a visitor uploads.</summary>

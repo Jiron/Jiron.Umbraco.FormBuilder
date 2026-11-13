@@ -148,6 +148,7 @@ export default {
     fileTypes: 'Erlaubte Dateitypen',
     fileExtensions: 'Weitere Dateiendungen',
     fileMaxBytes: 'Größte Datei',
+    fileMaxBytesHelp: 'Leer gilt die Grenze der Website aus Einstellungen › Dateien.',
     fileMaxFiles: 'Höchstanzahl Dateien',
     fileDropZone: 'Ablagefläche anbieten',
     fileThumbnails: 'Vorschaubilder anzeigen',

@@ -795,6 +795,9 @@ export class InspectorElement extends UmbLitElement {
     const key = subject.field.key;
     const value = subject.field['defaultValue'];
     const id = 'prop-defaultValue';
+    // A hidden field's value is worked out when the entry arrives, so its picker offers the member, the context and the
+    // entry too (MergeTagPlace.HiddenValue), which a default value the page shows may not use.
+    const place: MergeTagPlace = subject.field.type === 'hidden' ? 'hiddenValue' : 'defaultValue';
     if (!many)
       return this.#plain(
         id,
@@ -808,7 +811,7 @@ export class InspectorElement extends UmbLitElement {
             'defaultValue',
           ),
         '',
-        this.#tagPicker('defaultValue', id, key),
+        this.#tagPicker(place, id, key),
       );
     const lines = Array.isArray(value) ? value.map(String).join('\n') : typeof value === 'string' ? value : '';
     return html`<div class="item">
@@ -833,7 +836,7 @@ export class InspectorElement extends UmbLitElement {
         }}
       ></textarea>
       <p class="help" id=${`${id}-help`}>${this.#term('oneALine')}</p>
-      ${this.#tagPicker('defaultValue', id, key)}
+      ${this.#tagPicker(place, id, key)}
     </div>`;
   }
 

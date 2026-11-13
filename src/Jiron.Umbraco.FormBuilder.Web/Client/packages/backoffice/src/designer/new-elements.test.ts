@@ -103,6 +103,11 @@ describe('a new field', () => {
     expect(new Set(grid.rows?.map((row) => row.key)).size).toBe(2);
   });
 
+  it('of the consent type starts required, and no other type does', () => {
+    expect(newField(type('consent'), 'I agree to the privacy policy', key, WORDS).required).toBe(true);
+    expect(newField(type('checkbox'), 'Send me a copy', key, WORDS).required).toBeUndefined();
+  });
+
   it('of a repeatable group holds no field yet; a heading shows its label as its text; content has no label', () => {
     expect(newField(type('repeater', ['childFields']), 'Guests', key, WORDS).fields).toEqual([]);
     const heading = newField(type('heading', [], false), 'Heading', key, WORDS);

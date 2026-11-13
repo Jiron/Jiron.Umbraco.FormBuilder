@@ -12,12 +12,14 @@ import type { JfbSetting } from '../../../public/types/jiron-form-builder';
 import { editorFor } from '../../extending/extension-registry';
 import '../../extending/setting-extension.element';
 import { boxValue } from './box-value';
+import { megabytesOf } from '../../settings/settings-values';
 import { configKey } from '../../ui/config-key';
 import './dictionary-pick.element';
 import './rich-text.element';
 import {
   ownText,
   parseChoices,
+  parseFileSize,
   parseSetting,
   readDateBound,
   writeDateBound,
@@ -189,6 +191,8 @@ export function settingText(
       const count = pickedKeys(setting, value).length;
       return count === 0 ? context.term('pickedNone') : context.term('picked', count);
     }
+    case 'fileSize':
+      return typeof value === 'number' ? `${megabytesOf(value)} ${context.term('megabytes')}` : asText(value);
     case 'nested': {
       const own = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
       return setting.settings
@@ -333,6 +337,32 @@ export function settingEditor(
           />`,
         undefined,
         dictionary,
+      );
+    }
+    case 'fileSize': {
+      // A file's largest size is typed in megabytes, as the global settings take the site's (ADR-0218), and stored in
+      // bytes; the unit stands beside the box, and a screen reader says it with the box.
+      const unit = `${id}-unit`;
+      const sized = (raw: string, done: boolean) => context.set(path, setting, parseFileSize(setting, raw), done);
+      return settingFrame(
+        context,
+        setting,
+        path,
+        (described, invalid, held) =>
+          html`<div class="with-unit">
+            <input
+              type="text"
+              id=${id}
+              inputmode="decimal"
+              autocomplete="off"
+              aria-describedby=${described ?? nothing}
+              aria-invalid=${invalid ? 'true' : 'false'}
+              .value=${boxValue(typeof value === 'number' ? megabytesOf(value) : '', held)}
+              @input=${(event: Event) => sized((event.target as HTMLInputElement).value, false)}
+              @change=${(event: Event) => sized((event.target as HTMLInputElement).value, true)}
+            /><span id=${unit}>${context.term('megabytes')}</span>
+          </div>`,
+        unit,
       );
     }
     case 'wholeNumber':

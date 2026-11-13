@@ -486,12 +486,14 @@ describe('the submission', () => {
     expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 400 });
   });
 
-  it('holds the page buttons, the summary page, the progress and the reference under More options', async () => {
+  it('holds the page buttons, the visitor texts, the summary page, the progress and the reference under More options', async () => {
     const { root, click, type, choose, box, settings } = await viewOf();
     const more = must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options');
-    expect([text(more), root.getElementById('next-label')]).toEqual(['More options (4)', null]);
+    expect([text(more), root.getElementById('next-label')]).toEqual(['More options (5)', null]);
     await click(more);
     expect(more.getAttribute('aria-expanded')).toBe('true');
+    // The toggle counts what it opens.
+    expect(root.querySelectorAll('#submission-more > .item').length).toBe(5);
     expect([box('next-label').placeholder, box('back-label').placeholder]).toEqual(['Next', 'Back']);
     await type('next-label', 'Continue');
     await click(box('summary-page'));

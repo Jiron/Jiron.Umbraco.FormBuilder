@@ -141,8 +141,8 @@ const REFERENCE_DIGITS = 5;
 const MOST_ENTRIES = 2_147_483_647;
 /** The number the reference's example shows. */
 const EXAMPLE_NUMBER = 42;
-/** What Submission's More options hold: the page buttons, the summary page, the progress and the reference. */
-const MORE_OPTIONS = 4;
+/** What Submission's More options hold: the page buttons, the visitor texts, the summary page, the progress and the reference. */
+const MORE_OPTIONS = 5;
 
 /** The form check's problems as this view shows them: by the box they show under, and counted where they hide. */
 interface Checked {

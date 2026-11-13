@@ -318,6 +318,7 @@ describe('a comparison in words', () => {
       { what: 'Privacy, Delete entries after, Spam (days)', older: 'none', newer: '30' },
     );
     expect(row(['span'], null, 1200)).toMatchObject({ older: 'none', newer: '1,200' });
+    expect(row(['settings', 'maxBytes'], null, 10_485_760, { type: 'file' })).toMatchObject({ newer: '10 MB' });
     expect(row(['keep'], 'always', 'untilActionsRun')).toMatchObject({
       older: 'As long as the entry',
       newer: "Until the entry's actions have run",

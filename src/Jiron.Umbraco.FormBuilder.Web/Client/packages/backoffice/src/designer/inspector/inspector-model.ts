@@ -21,6 +21,7 @@ export const MOST_SHOWN = 7;
 export const PLAIN_EDITORS: ReadonlySet<string> = new Set([
   'wholeNumber',
   'number',
+  'fileSize',
   'text',
   'boolean',
   'choice',

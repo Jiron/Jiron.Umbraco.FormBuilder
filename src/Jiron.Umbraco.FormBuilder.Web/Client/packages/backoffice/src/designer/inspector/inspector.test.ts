@@ -464,6 +464,26 @@ describe('the inspector', () => {
     expect(excluded.getAttribute('aria-describedby')).toBe('setting-excluded-lines');
   });
 
+  it("shows a file's largest size in megabytes beside its unit, and writes bytes", async () => {
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['validation']));
+    const upload: DesignField = {
+      key: 'cv',
+      type: 'file',
+      alias: 'cv',
+      label: { '': 'CV' },
+      settings: { maxBytes: 10_485_760 },
+    };
+    const { root, requests } = await inspectorOf('cv', {}, upload);
+    const box = must(root.querySelector<HTMLInputElement>('#setting-maxBytes'), 'the largest file');
+    expect(box.value).toBe('10');
+    expect(text(root.querySelector('#setting-maxBytes-unit'))).toBe('MB');
+    expect(box.getAttribute('aria-describedby')).toContain('setting-maxBytes-unit');
+    type(box, '2.5', true);
+    expect(applied(requests[0], upload)['settings']).toEqual({ maxBytes: 2_621_440 });
+    type(box, '', true);
+    expect(applied(requests.at(-1), upload)['settings']).toBeUndefined();
+  });
+
   it('writes nested settings in their parent, and a choice list as the boxes ticked', async () => {
     localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['validation']));
     const email: DesignField = { key: 'mail', type: 'email', alias: 'mail', label: { '': 'Email' } };
@@ -694,6 +714,16 @@ describe('merge tags in the inspector (ADR-0173)', () => {
 
     const none = await inspectorOf('h', {}, { key: 'h', type: 'heading', alias: 'title' });
     expect(none.root.querySelector('jfb-merge-tag-picker')).toBeNull();
+  });
+
+  it("offers a hidden field's value every source, as the server works it out when the entry arrives", async () => {
+    const source: DesignField = { key: 'src', type: 'hidden', alias: 'source', label: { '': 'Source' } };
+    const { root } = await inspectorOf('src', { form: 'form1' }, source);
+    sectionButton(root, 'advanced').click();
+    await settle(root.host as InspectorElement);
+    const places = [...root.querySelectorAll('jfb-merge-tag-picker')].map((each) => each.place);
+    expect(places).toContain('hiddenValue');
+    expect(places).not.toContain('defaultValue');
   });
 });
 
