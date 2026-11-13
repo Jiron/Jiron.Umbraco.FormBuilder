@@ -120,7 +120,7 @@ describe('the summary email', () => {
     ]);
     expect(text(root.querySelector('legend'))).toBe('How often');
     expect(text(root.querySelector('#when'))).toBe(
-      "It goes out at 07:00 Berlin time, the site's time zone, and covers the day or week before.",
+      'It goes out at 07:00 Berlin time, the time zone set for all sites, and covers the day or week before.',
     );
     expect(root.querySelector('fieldset')?.getAttribute('aria-describedby')).toBe('when');
     expect(server.previews, 'off shows what turning it on would send').toEqual(['daily']);
@@ -181,7 +181,7 @@ describe('the summary email', () => {
     server.choice = { frequency: 'daily', sendsAt: '07:00', timeZone: 'Etc/UTC', address: '' };
     const { root, button } = await open();
     expect(text(root.querySelector('#when'))).toBe(
-      "It goes out at 07:00 UTC, the site's time zone, and covers the day or week before.",
+      'It goes out at 07:00 UTC, the time zone set for all sites, and covers the day or week before.',
     );
     expect(text(root.querySelector('.note'))).toBe('Your user has no email address yet, so no summary can go out.');
     expect(button('Send test email')).toBeNull();

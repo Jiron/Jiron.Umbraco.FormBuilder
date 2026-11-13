@@ -198,7 +198,7 @@ describe('the Insights view', () => {
     ]);
     expect(box('Top website pages').querySelector('jfb-insight-bars')?.values[0]?.said).toBe('214 entries');
     expect(text(box('Entries by hour of day').querySelector('.note'))).toBe(
-      "In Europe/Berlin time, the site's time zone",
+      'In Europe/Berlin time, the time zone set for all sites',
     );
     expect(all(root.host, 'uui-box').some((each) => each.getAttribute('headline') === 'Members')).toBe(false);
   });

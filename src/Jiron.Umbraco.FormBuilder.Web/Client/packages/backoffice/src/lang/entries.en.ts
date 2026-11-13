@@ -254,9 +254,9 @@ export default {
     digest_daily: 'Daily',
     digest_weekly: 'Weekly, on Mondays',
     digest_when: (time: string, place: string) =>
-      `It goes out at ${time} ${place} time, the site's time zone, and covers the day or week before.`,
+      `It goes out at ${time} ${place} time, the time zone set for all sites, and covers the day or week before.`,
     digest_whenUtc: (time: string) =>
-      `It goes out at ${time} UTC, the site's time zone, and covers the day or week before.`,
+      `It goes out at ${time} UTC, the time zone set for all sites, and covers the day or week before.`,
     digest_preview: 'What it looks like',
     digest_note: (address: string) =>
       `It holds counts and links, never answers, and only the forms you may view. It goes to your own address, ${address}.`,

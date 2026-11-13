@@ -241,7 +241,7 @@ test('Email me a summary\u2026 keeps the choice, shows the mail it sends, and se
   };
 
   const sidebar = await open();
-  await expect(sidebar.locator('#when')).toContainText("the site's time zone, and covers the day or week before.");
+  await expect(sidebar.locator('#when')).toContainText("the time zone set for all sites, and covers the day or week before.");
   await sidebar.locator('uui-radio[value="weekly"]').click();
   // The weekly mail of the week before, in the site's layout, its address said once below it.
   await expect(sidebar.locator('jfb-email-preview .subject')).toContainText(' to ');

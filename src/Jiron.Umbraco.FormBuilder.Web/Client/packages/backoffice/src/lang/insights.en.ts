@@ -111,7 +111,7 @@ export default {
     col_websitePage: 'Website page',
 
     hours: 'Entries by hour of day',
-    hoursZone: (zone: string) => `In ${zone} time, the site's time zone`,
+    hoursZone: (zone: string) => `In ${zone} time, the time zone set for all sites`,
     col_hour: 'Hour',
     hoursChart: (heading: string, most: string) => `${heading}: the most at ${most}. Show as table reads each hour.`,
 

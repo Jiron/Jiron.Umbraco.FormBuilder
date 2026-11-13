@@ -157,8 +157,8 @@ answer as a formula.
 
 ## A summary by email
 
-**Email me a summary…** in a list's **…** menu sends you a daily or weekly email (Mondays) at 07:00 in the site's time
-zone, with how many entries arrived on each form you may see, and how many wait for approval, with links. It holds
+**Email me a summary…** in a list's **…** menu sends you a daily or weekly email (Mondays) at 07:00 in the time
+zone set for all sites (Settings › General), with how many entries arrived on each form you may see, and how many wait for approval, with links. It holds
 counts and links, never answers, and nothing is sent when nothing arrived.
 
 ## How long entries are kept

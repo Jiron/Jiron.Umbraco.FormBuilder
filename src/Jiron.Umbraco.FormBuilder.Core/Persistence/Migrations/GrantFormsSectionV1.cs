@@ -6,7 +6,7 @@ using UmbracoConstants = Umbraco.Cms.Core.Constants;
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 
 /// <summary>
-/// Step 3 (<see cref="FormBuilderMigrationPlan.StateGrantSection"/>): grants the Forms section to Umbraco's
+/// Step 3 (<see cref="FormBuilderMigrationPlan.StateGrantSection"/>): grants the Form Builder section to Umbraco's
 /// administrators group, once (ADR-0013). A <c>jfbKeyValue</c> flag records the grant, so a rerun never grants again
 /// and an administrator's later removal stands. When the group does not exist, the step warns and grants nothing.
 /// </summary>
@@ -14,7 +14,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 /// It writes <c>umbracoUserGroup2App</c> directly, as Umbraco's own migrations do: the user group service checks
 /// permissions and publishes notifications that may fail inside a migration. The user group cache is refreshed on
 /// every server once the plan has run (<see cref="FormBuilderMigrationsExecutedHandler"/>). Other groups get the
-/// section from code when they receive a Jiron Form Builder permission (12.4a).
+/// section from an administrator in Umbraco's Users section; the Access settings list each group that lacks it (ADR-0218).
 /// </remarks>
 internal sealed class GrantFormsSectionV1(IMigrationContext context, TimeProvider timeProvider) : AsyncMigrationBase(context)
 {

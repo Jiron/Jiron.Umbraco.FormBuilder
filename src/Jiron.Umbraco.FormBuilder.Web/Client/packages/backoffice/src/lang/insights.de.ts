@@ -113,7 +113,7 @@ export default {
     col_websitePage: 'Seite der Website',
 
     hours: 'Einträge nach Tageszeit',
-    hoursZone: (zone: string) => `In der Zeit von ${zone}, der Zeitzone der Website`,
+    hoursZone: (zone: string) => `In der Zeit von ${zone}, der Zeitzone für alle Websites`,
     col_hour: 'Stunde',
     hoursChart: (heading: string, most: string) =>
       `${heading}: die meisten um ${most}. „Als Tabelle zeigen“ liest jede Stunde vor.`,

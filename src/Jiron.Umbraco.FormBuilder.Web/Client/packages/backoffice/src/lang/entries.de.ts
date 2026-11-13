@@ -259,9 +259,9 @@ export default {
     digest_daily: 'Täglich',
     digest_weekly: 'Wöchentlich, montags',
     digest_when: (time: string, place: string) =>
-      `Die Zusammenfassung geht um ${time} Uhr Ortszeit ${place}, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+      `Die Zusammenfassung geht um ${time} Uhr Ortszeit ${place}, der Zeitzone für alle Websites, raus und umfasst den Tag oder die Woche davor.`,
     digest_whenUtc: (time: string) =>
-      `Die Zusammenfassung geht um ${time} Uhr UTC, der Zeitzone der Website, raus und umfasst den Tag oder die Woche davor.`,
+      `Die Zusammenfassung geht um ${time} Uhr UTC, der Zeitzone für alle Websites, raus und umfasst den Tag oder die Woche davor.`,
     digest_preview: 'So sieht sie aus',
     digest_note: (address: string) =>
       `Enthalten sind Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Die E-Mail geht an Ihre eigene Adresse, ${address}.`,

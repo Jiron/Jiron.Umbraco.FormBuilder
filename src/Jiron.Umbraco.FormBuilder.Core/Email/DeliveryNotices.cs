@@ -32,8 +32,8 @@ internal sealed partial class DeliveryNotices(
 
     private static readonly FrozenDictionary<string, (string Subject, string Text, string Where)> Words = new Dictionary<string, (string, string, string)>(StringComparer.OrdinalIgnoreCase)
     {
-        ["en"] = ("A delivery failed on {0}", "A delivery of the form {0} failed for good: {1} ({2}). More may have failed in the hour since this one.", "See Forms, Activity, Deliveries."),
-        ["de"] = ("Eine Zustellung von {0} ist fehlgeschlagen", "Eine Zustellung des Formulars {0} ist endg" + (char)0xFC + "ltig fehlgeschlagen: {1} ({2}). In der Stunde danach k" + (char)0xF6 + "nnen weitere fehlgeschlagen sein.", "Siehe Formulare, Aktivit" + (char)0xE4 + "t, Zustellungen."),
+        ["en"] = ("A delivery failed on {0}", "A delivery of the form {0} failed for good: {1} ({2}). More may have failed in the hour since this one.", "See Form Builder, Activity, Deliveries."),
+        ["de"] = ("Eine Zustellung von {0} ist fehlgeschlagen", "Eine Zustellung des Formulars {0} ist endg" + (char)0xFC + "ltig fehlgeschlagen: {1} ({2}). In der Stunde danach k" + (char)0xF6 + "nnen weitere fehlgeschlagen sein.", "Siehe Form Builder, Aktivit" + (char)0xE4 + "t, Zustellungen."),
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Tells of an action that failed for good.</summary>

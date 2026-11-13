@@ -1,6 +1,6 @@
 # Database
 
-Jiron Form Builder keeps its data in 24 tables of its own, next to Umbraco's, on SQLite or SQL Server. Form
+Jiron Form Builder keeps its data in 25 tables of its own, next to Umbraco's, on SQLite or SQL Server. Form
 definitions are versioned JSON documents; entries are rows with one typed value per answer, so they can be filtered,
 sorted and exported in SQL ([ADR-0002](decisions/0002-form-definition-model-versions-and-public-projection.md),
 [ADR-0003](decisions/0003-entry-storage.md)). This page describes schema v1 table by table. The diagram is generated

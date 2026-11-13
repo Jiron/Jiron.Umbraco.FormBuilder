@@ -3,7 +3,8 @@
 - Status: accepted; builds on [ADR-0009](0009-privacy-defaults.md) (the defaults), [ADR-0041](0041-file-store-audit-log-and-daily-stats.md)
   (the file store), [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) (the retention job),
   [ADR-0207](0207-the-entries-list.md) (deleting entries) and
-  [ADR-0218](0218-the-settings-screens-and-access.md) (the settings screens); amends ADR-0009's line on consent texts
+  [ADR-0218](0218-the-settings-screens-and-access.md) (the settings screens); amends ADR-0009's line on consent texts;
+  note of 2026-11-13: point 9's longest days are 3,650 since [ADR-0226](0226-the-phase-13-privacy-review.md), not 36,500
 - Date: 2026-11-09
 - Roadmap step: 13.1, its part 13.1 (ADR-0197)
 

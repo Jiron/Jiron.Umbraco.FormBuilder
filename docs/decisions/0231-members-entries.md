@@ -7,7 +7,8 @@
   [ADR-0100](0100-the-post-without-javascript.md) (`member_required` without JavaScript),
   [ADR-0124](0124-prefill.md) (the rules' member on the server, the member link) and
   [ADR-0138](0138-the-challenge.md); builds what [ADR-0184](0184-the-form-settings-view.md) and
-  [ADR-0226](0226-the-phase-13-privacy-review.md) (item 8) left to this step
+  [ADR-0226](0226-the-phase-13-privacy-review.md) (item 8) left to this step; note of 2026-11-13: the member's view this
+  calls Entries is labelled Form entries in the backoffice
 - Date: 2026-11-11
 - Roadmap step: 14.1 (part 14.3, members)
 
