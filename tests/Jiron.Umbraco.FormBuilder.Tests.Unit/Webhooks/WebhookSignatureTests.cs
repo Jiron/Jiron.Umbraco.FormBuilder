@@ -67,6 +67,18 @@ public sealed class WebhookSignatureTests
         Assert.That(code, Is.EqualTo(genuine ? 0 : 1));
     }
 
+    [Test]
+    public async Task TheNodeSample_WithoutATime_ChecksTheHeaderAgainstTheClock()
+    {
+        var fresh = WebhookSignature.Of(Secret, DateTimeOffset.UtcNow, Encoding.UTF8.GetBytes(Body));
+        var old = WebhookSignature.Of(Secret, Time, Encoding.UTF8.GetBytes(Body));
+
+        var freshCode = await RunAsync("node", Path.Combine(Samples, "verify.mjs"), Secret, fresh, Body, now: null);
+        var oldCode = await RunAsync("node", Path.Combine(Samples, "verify.mjs"), Secret, old, Body, now: null);
+
+        Assert.That((freshCode, oldCode), Is.EqualTo((0, 1)));
+    }
+
     [TestCaseSource(nameof(Cases))]
     public async Task ThePhpSample(string secret, string header, string body, long now, bool genuine)
     {
@@ -104,16 +116,21 @@ public sealed class WebhookSignatureTests
         Assert.That(File.ReadAllText(Path.Combine(Samples, "verify.mjs")), Does.Contain($"TOLERANCE_SECONDS = {SignatureCheck.ToleranceSeconds}"));
     }
 
-    private static async Task<int> RunAsync(string program, string script, string secret, string header, string body, long now)
+    private static async Task<int> RunAsync(string program, string script, string secret, string header, string body, long? now)
     {
         var file = Path.Combine(Path.GetTempPath(), "jfb-signature-" + Guid.NewGuid().ToString("N"));
         await File.WriteAllTextAsync(file, body, new UTF8Encoding(false));
         try
         {
             var start = new ProcessStartInfo(program) { RedirectStandardOutput = true, RedirectStandardError = true };
-            foreach (var argument in new[] { script, secret, header, file, now.ToString(CultureInfo.InvariantCulture) })
+            foreach (var argument in new[] { script, secret, header, file })
             {
                 start.ArgumentList.Add(argument);
+            }
+
+            if (now is { } seconds)
+            {
+                start.ArgumentList.Add(seconds.ToString(CultureInfo.InvariantCulture));
             }
 
             using var process = Process.Start(start)!;

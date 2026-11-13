@@ -44,7 +44,8 @@ function jfb_is_genuine(string $secret, ?string $header, string $body, ?int $now
     return hash_equals($expected, $signature);
 }
 
-// From a command line: php verify.php <secret> <header> <file with the body> <seconds since 1970>; exit code 0 when genuine.
+// From a command line: php verify.php <secret> <header> <file with the body> [seconds since 1970, now when left out];
+// exit code 0 when genuine.
 if (PHP_SAPI === 'cli' && realpath($argv[0]) === __FILE__) {
-    exit(jfb_is_genuine($argv[1], $argv[2], file_get_contents($argv[3]), (int) $argv[4]) ? 0 : 1);
+    exit(jfb_is_genuine($argv[1], $argv[2], file_get_contents($argv[3]), isset($argv[4]) ? (int) $argv[4] : null) ? 0 : 1);
 }
