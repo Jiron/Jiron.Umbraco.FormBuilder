@@ -60,10 +60,12 @@ Option 2.
   sign-in. `FormBuilderOperationIds` names every operation after its controller and action as on 17.
   `FormBuilderOpenApiSchemas` holds the rules: Jiron Form Builder's models named as Umbraco names its own; files and
   JSON values inline; validation problems with their errors; numbers as numbers; a nullable member optional unless the
-  model marks it `required`; a member without a setter read-only, and null only when it may be; problems open to
-  extensions; an optional body its model, which the client may leave out; and no media type without a body. The public
-  API's base controller carries `[ApiExplorerSettings]`, which lists its actions without `[ApiController]`'s
-  automatic answers. Each rule has a unit test. The snapshots in `docs/api/` are written as served, OpenAPI 3.1; the
+  model marks it `required`; a member the model only reads (no setter, no constructor parameter) read-only where it
+  is written in place, never on a model or an enum whose schema is shared, and null only when it may be; problems open
+  to extensions; an optional body its model, which the client may leave out; and no media type without a body. The
+  public API's base controller carries `[ApiExplorerSettings]`, which lists its actions without `[ApiController]`'s
+  automatic answers, and its declarations refer to a model under the document's own name, refusing a generic type of
+  another library, which the document names otherwise. Each rule has a unit test. The snapshots in `docs/api/` are written as served, OpenAPI 3.1; the
   generated clients then differ from 17's only in the order of `null` in a union, a body now required where the API
   always wanted one, one key typed nullable as its model says, and a 403 no longer listed for a download that signs in
   by ticket.
@@ -71,9 +73,9 @@ Option 2.
   runtimes after every test, also disposes and forgets the file providers handed out during the test. It lands on
   `main`, where no host watches and nothing else changes, and `TestHostReleaseTests` fails without it on both lines.
 - **The backoffice's adapters:** the forms tree and the Recycle Bin read a level through `readLevel`, which pages by
-  offset and reads a window around an item page by page until it holds the item, answering "not found" for one that is
-  gone (the tree then picks another or starts from the top); the library's conditions read the tree item's base
-  context.
+  offset and reads a window around an item from the start, 500 items at a time (the endpoints' most), until it holds
+  the item, answering "not found" for one that is gone (the tree then picks another or starts from the top); the
+  library's conditions read the tree item's base context.
 - **Ports and sites:** the 18 sandbox on 5540 (`scripts/sandbox.mjs create --site sandbox18`, Umbraco.Templates 18.3.1
   in its own hive), the 18 demo on 5541. The lines share every other port, so only one line's gate runs at a time.
 - **The install test learns the line:** an upgrade whose baseline runs on another Umbraco raises every Umbraco package
