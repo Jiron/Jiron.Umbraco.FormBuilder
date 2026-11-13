@@ -60,7 +60,7 @@ jobs:
           node scripts/check-workflows.mjs
           node scripts/check-audit-suppressions.mjs
           node scripts/check-npm-licences.mjs
-          node scripts/check-marketplace.mjs
+          node scripts/check-marketplace.mjs --ci
       # The script tests render two small pages; in CI they use Playwright's Chromium (scripts/lib/browser.mjs).
       - name: Install Chromium for the script tests
         working-directory: scripts

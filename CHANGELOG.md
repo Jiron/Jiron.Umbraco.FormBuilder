@@ -65,8 +65,8 @@ are tested from now on.
 - **The AI add-on** `Jiron.Umbraco.FormBuilder.AI`, on Umbraco.AI: draft a form from a description, translate a form's
   texts and suggest help texts, for editors only.
 - **The packages:** `Jiron.Umbraco.FormBuilder` (bringing `.Core` and `.Web`) and the AI add-on, each with its readme,
-  icon, symbols and the licence to accept; the Marketplace listings; the documentation for editors, site owners and
-  developers.
+  icon and the licence to accept, and the packages with code with their symbols; the Marketplace listings; the
+  documentation for editors, site owners and developers.
 
 ### Not yet included
 

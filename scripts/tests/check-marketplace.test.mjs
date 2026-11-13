@@ -1,19 +1,28 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for scripts/check-marketplace.mjs. Run: node --test "scripts/tests/*.test.mjs"
 // The schema comes from the copy in .local/marketplace/, which `node scripts/check-marketplace.mjs` downloads first
-// (the gate and CI run it before these tests).
+// (the gate and CI run it before these tests). In CI a schema the run cannot reach skips the tests that need it, as
+// `check-marketplace --ci` only warns then (18.3's review); locally it fails.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { checkListing, LICENCE_WORDS, LISTED, listingFile, pinned, schema, SCHEMA_SHA256, screenshotsOnDisk, validate } from '../check-marketplace.mjs';
+import { createHash } from 'node:crypto';
+import { checkListing, LICENCE_WORDS, LISTED, listingFile, pinned, schema, SCHEMA_COPY, SCHEMA_SHA256, screenshotsOnDisk, validate } from '../check-marketplace.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const MAIN = 'Jiron.Umbraco.FormBuilder';
 const AI = 'Jiron.Umbraco.FormBuilder.AI';
 const listingOf = (id) => JSON.parse(readFileSync(join(root, listingFile(id)), 'utf8'));
-const marketplace = await schema();
+let marketplace = null;
+try {
+  marketplace = await schema();
+} catch (error) {
+  if (!process.env.GITHUB_ACTIONS) throw error;
+}
+const UNREACHABLE = "the Marketplace's schema is not reachable from this run; check-marketplace --ci warned";
 
 describe('the listings', () => {
   test('are one per package with the umbraco-marketplace tag, the main one under the plain name', () => {
@@ -24,7 +33,7 @@ describe('the listings', () => {
 
   test("pass the Marketplace's schema and Jiron Form Builder's rules", async () => {
     for (const id of LISTED) {
-      assert.deepEqual(await validate(listingOf(id), marketplace), [], id);
+      if (marketplace) assert.deepEqual(await validate(listingOf(id), marketplace), [], id);
       assert.deepEqual(checkListing(id, listingOf(id)), [], id);
     }
   });
@@ -38,7 +47,8 @@ describe('the listings', () => {
 });
 
 describe("the Marketplace's schema", () => {
-  test('refuses an unknown field, a category it does not know and a title that is too long', async () => {
+  test('refuses an unknown field, a category it does not know and a title that is too long', async (t) => {
+    if (!marketplace) return t.skip(UNREACHABLE);
     const listing = listingOf(MAIN);
     assert.ok((await validate({ ...listing, Forms: true }, marketplace)).some((error) => /additional properties/.test(error)));
     assert.ok((await validate({ ...listing, Category: 'Forms' }, marketplace)).some((error) => /^\/Category /.test(error)));
@@ -48,6 +58,36 @@ describe("the Marketplace's schema", () => {
   test('is used only with the pinned hash', () => {
     assert.throws(() => pinned(Buffer.from('{}')), /not the one the listings were checked against/);
     assert.match(SCHEMA_SHA256, /^[0-9a-f]{64}$/);
+  });
+
+  test('is downloaded when the copy is missing, and a changed one is kept beside the reviewed copy, which stays', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'jfb-marketplace-'));
+    try {
+      const copy = join(dir, 'umbraco-marketplace-schema.json');
+      const reviewed = Buffer.from('{"type":"object"}');
+      const hash = createHash('sha256').update(reviewed).digest('hex');
+      let downloads = 0;
+      const serve = (bytes) => async () => {
+        downloads++;
+        return bytes;
+      };
+      assert.deepEqual(await schema({ copy, fetchSchema: serve(reviewed), expected: hash }), { type: 'object' });
+      assert.equal(downloads, 1);
+      assert.deepEqual(await schema({ copy, fetchSchema: serve(reviewed), expected: hash }), { type: 'object' }, 'the copy, without a download');
+      assert.equal(downloads, 1);
+      const changed = Buffer.from('{"type":"array"}');
+      await assert.rejects(schema({ refresh: true, copy, fetchSchema: serve(changed), expected: hash }), /not the one the listings were checked against/);
+      assert.deepEqual(readFileSync(copy), reviewed, 'the reviewed copy stays');
+      assert.deepEqual(readFileSync(join(dir, 'umbraco-marketplace-schema.new.json')), changed, 'the changed one waits for review');
+      await assert.rejects(schema({ refresh: true, copy, fetchSchema: async () => Buffer.from('not json'), expected: hash }), SyntaxError);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('the copy in .local/ is the one with the pinned hash', (t) => {
+    if (!existsSync(SCHEMA_COPY)) return t.skip(UNREACHABLE);
+    assert.equal(createHash('sha256').update(readFileSync(SCHEMA_COPY)).digest('hex'), SCHEMA_SHA256);
   });
 });
 

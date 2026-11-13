@@ -85,7 +85,7 @@ export function schemaOf(db) {
 function main() {
   const [command, file, extra, tag, version] = process.argv.slice(2);
   if (!command || !file) {
-    console.error('usage: node jfb-db.mjs state|umbraco|dump|check <db> [file]');
+    console.error('usage: node jfb-db.mjs state|umbraco <db> | dump <db> <fixture.json> <tag> <version> | check <db> [expected.json]');
     process.exit(2);
   }
   const db = new DatabaseSync(file, { readOnly: true });

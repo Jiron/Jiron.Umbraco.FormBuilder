@@ -16,9 +16,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-test.ps1 -Mo
 
 - **`-Mode install`** packs the current build as `<VersionPrefix>-dev.<yyyyMMddHHmm>`, creates a site from the Umbraco
   template of the version the repository develops against (in a template hive of the run's own, so the machine's
-  templates stay as they are), installs the packages from a local feed only (package source mapping, a fresh package
-  cache), and checks after the build that the site's `appsettings-schema.json` references Jiron Form Builder's schema,
-  which lies next to it. It starts the site on port 5530 and runs the smoke
+  templates stay as they are), installs `Jiron.Umbraco.FormBuilder` and the AI add-on from a local feed only (package
+  source mapping, a fresh package cache), and checks after the build that the site's `appsettings-schema.json`
+  references Jiron Form Builder's schema, which lies next to it. It starts the site on port 5530 and runs the smoke
   ([ADR-0248](decisions/0248-the-install-smoke-and-the-supported-floor.md)): the migration state the plan in the code
   ends at; a form made from the contact template with an email action to the team and published; a page that shows it,
   made and published through Umbraco's own Management API; then in Edge the admin signs in and opens the Form Builder

@@ -11,7 +11,12 @@
  *     links into this repository that name files it holds, and for the main listing every picture of
  *     docs/screenshots once, with a caption, at the address GitHub serves it from once the repository is public.
  *
- *   npm ci --prefix scripts, then node scripts/check-marketplace.mjs [--refresh]
+ *   npm ci --prefix scripts, then node scripts/check-marketplace.mjs [--refresh] [--ci]
+ *     --refresh  downloads the schema again; a schema whose hash is not the pinned one is kept beside the reviewed
+ *                copy as umbraco-marketplace-schema.new.json for review, and the reviewed copy stays as it was
+ *     --ci       for CI, which has no reviewed copy: when the schema cannot be downloaded or is not the pinned one,
+ *                that is a warning and the listings are held to Jiron Form Builder's rules alone, so a change on
+ *                the Marketplace's site never blocks CI or a release (18.3's review); the local gate stays strict
  *
  * Exit codes: 0 fine, 1 problems.
  */
@@ -145,22 +150,43 @@ export function pinned(bytes, expected = SCHEMA_SHA256) {
   return Buffer.from(bytes).toString('utf8');
 }
 
-/** The schema: the .local copy, downloaded first when it is missing or asked for, and only with the pinned hash. */
-export async function schema({ refresh = false } = {}) {
-  if (refresh || !existsSync(SCHEMA_COPY)) {
-    const response = await fetch(SCHEMA_URL, { signal: AbortSignal.timeout(30_000) });
-    if (!response.ok) throw new Error(`${SCHEMA_URL} answered ${response.status}`);
-    const bytes = Buffer.from(await response.arrayBuffer());
+/** The Marketplace's schema as its site serves it now. */
+export async function download(url = SCHEMA_URL) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new Error(`${url} answered ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/**
+ * The schema: the .local copy, downloaded first when it is missing or asked for, and used only with the pinned hash.
+ * A download is written over the copy only when its hash is the pinned one; another one goes beside it for review.
+ */
+export async function schema({ refresh = false, copy = SCHEMA_COPY, fetchSchema = download, expected = SCHEMA_SHA256 } = {}) {
+  if (refresh || !existsSync(copy)) {
+    const bytes = await fetchSchema();
     JSON.parse(bytes.toString('utf8'));
-    mkdirSync(dirname(SCHEMA_COPY), { recursive: true });
-    writeFileSync(SCHEMA_COPY, bytes);
-    console.log(`check-marketplace: downloaded the schema to ${SCHEMA_COPY}`);
+    mkdirSync(dirname(copy), { recursive: true });
+    if (createHash('sha256').update(bytes).digest('hex') !== expected) {
+      const review = copy.replace(/\.json$/, '.new.json');
+      writeFileSync(review, bytes);
+      pinned(bytes, expected);
+    }
+    writeFileSync(copy, bytes);
+    console.log(`check-marketplace: downloaded the schema to ${copy}`);
   }
-  return JSON.parse(pinned(readFileSync(SCHEMA_COPY)));
+  return JSON.parse(pinned(readFileSync(copy), expected));
 }
 
 async function main() {
-  const marketplace = await schema({ refresh: process.argv.includes('--refresh') });
+  const ci = process.argv.includes('--ci');
+  let marketplace = null;
+  try {
+    marketplace = await schema({ refresh: process.argv.includes('--refresh') });
+  } catch (error) {
+    if (!ci) throw error;
+    // GitHub shows a ::warning:: line on the run's page.
+    console.log(`::warning::check-marketplace: ${error.message}; the listings are held to Jiron Form Builder's rules alone`);
+  }
   let problems = 0;
   for (const id of LISTED) {
     const file = listingFile(id);
@@ -168,7 +194,8 @@ async function main() {
     const found = existsSync(path)
       ? (() => {
           const listing = JSON.parse(readFileSync(path, 'utf8'));
-          return validate(listing, marketplace).then((errors) => [...errors.map((error) => `schema: ${error}`), ...checkListing(id, listing)]);
+          const errors = marketplace ? validate(listing, marketplace) : Promise.resolve([]);
+          return errors.then((found) => [...found.map((error) => `schema: ${error}`), ...checkListing(id, listing)]);
         })()
       : Promise.resolve([`${file} is missing (${id} carries the umbraco-marketplace tag)`]);
     const lines = await found;

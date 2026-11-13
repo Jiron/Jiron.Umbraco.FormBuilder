@@ -7,8 +7,9 @@
 //     the smoke (18.3): a form from the built-in contact template, given an email action to the team and published
 //     through the management API; a template, a document type and a page that shows it, made and published through
 //     Umbraco's own Management API. Then in Edge, with a browser profile kept in the given folder: the admin signs in
-//     and sees the Form Builder section, a visitor fills the form in on the page and sends it, the team's mail lands in
-//     the pickup folder, and the entry shows in the form's Entries view; the entries list and the entry's panel agree
+//     and sees the Form Builder section with the AI add-on's backoffice beside it, a visitor fills the form in on the
+//     page and sends it, the team's mail lands in the pickup folder, and the entry shows in the form's Entries view;
+//     the entries list and the entry's panel agree
 //   node install/check.ts --url <site> --mode cache --profile <folder> --chunk <name> --old-chunk <name>
 //     after the packages were updated (18.3, on the supported floor): the same browser profile, which keeps its cache
 //     and its sign-in, opens the section again without a hard refresh, and the backoffice must run the new build: the
@@ -207,14 +208,18 @@ async function signIn(page: Page, admin: Admin): Promise<boolean> {
 
 /** The names of the backoffice chunks a page loaded, from the browser's own record of what it fetched. */
 async function loadedChunks(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    performance
-      .getEntriesByType('resource')
-      .map((entry) => new URL(entry.name).pathname)
-      .filter((path) => path.startsWith('/App_Plugins/JironFormBuilder/chunks/'))
-      .map((path) => path.slice(path.lastIndexOf('/') + 1)),
-  );
+  return (await loadedPaths(page))
+    .filter((path) => path.startsWith('/App_Plugins/JironFormBuilder/chunks/'))
+    .map((path) => path.slice(path.lastIndexOf('/') + 1));
 }
+
+/** The paths of every file a page loaded, from the browser's own record of what it fetched. */
+async function loadedPaths(page: Page): Promise<string[]> {
+  return page.evaluate(() => performance.getEntriesByType('resource').map((entry) => new URL(entry.name).pathname));
+}
+
+/** The AI add-on's entry, which the site installs beside the product (18.3's review). */
+const AI_ENTRY = '/App_Plugins/JironFormBuilderAI/jfb-ai.js';
 
 /** A template that shows the form by its alias, as getting-started.md shows; Layout off, as on an empty site. */
 const templateOf = (alias: string): string =>
@@ -387,6 +392,7 @@ async function install(
       (await loadedChunks(backoffice)).some((name) => name.startsWith('start-')),
       "the backoffice loads the package's start chunk",
     );
+    ok((await loadedPaths(backoffice)).includes(AI_ENTRY), "and the AI add-on's backoffice loads beside it");
     await backoffice.goto(`${url}${SECTION}/workspace/jfb-form/edit/${key}/view/entries`);
     // A row is named by the entry's number, as the list names an entry of a form without a title field.
     const rows = backoffice.locator('jfb-entries-view tbody tr');

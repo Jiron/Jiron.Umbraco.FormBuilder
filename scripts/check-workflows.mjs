@@ -37,8 +37,13 @@ export const MANUAL = "github.event_name == 'workflow_dispatch'";
 /** A job whose `if` starts with this runs only for a version tag, which only a release pushes (18.2). */
 export const TAGS = "startsWith(github.ref, 'refs/tags/v')";
 
-/** Expressions whose text someone else chooses (a tag, a branch, an input, an event), which a script must not inline. */
-export const UNTRUSTED_INLINE = /\$\{\{[^}]*\b(inputs\.|github\.(ref_name|ref|head_ref|event\.))/;
+/**
+ * Expressions whose text someone else chooses or that pass such text on (a tag, a branch, an input, an event, a step's
+ * or a job's outputs, the environment), which a script must not inline; github.ref_type is GitHub's own word. The
+ * expression runs to its closing braces, so a brace inside one of its strings does not end it (18.2's review).
+ */
+export const UNTRUSTED_INLINE =
+  /\$\{\{(?:(?!\}\})[\s\S])*?(?:\binputs\.|\bgithub\.(?:ref_name|head_ref|event\.)|\bgithub\.ref\b(?!_)|\b(?:steps|needs)\.[\w-]+\.outputs\.|\benv\.)/;
 
 /** The branches a push trigger must name: the Umbraco 17 line and the Umbraco 18 line (D16). */
 export const PUSH_BRANCHES = Object.freeze(['main', 'v18/main']);

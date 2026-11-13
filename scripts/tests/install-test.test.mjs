@@ -12,6 +12,7 @@ import { test } from 'node:test';
 import { normaliseFilter, schemaOf, SEEDED } from '../install-test/jfb-db.mjs';
 import { CONSTANTS, finalState, PLAN, planName, steps } from '../install-test/migration-plan.mjs';
 import { startChunkOf } from '../install-test/start-chunk.mjs';
+import { baselineVersion, newestBaseline, nextVersion } from '../install-test/versions.mjs';
 
 const PLAN_TEXT = `
     public const string StateCreateSchema = "jfb-001-create-schema";
@@ -122,4 +123,21 @@ test("the upgrade check on the floor knows a build by its Web package's start ch
   assert.throws(() => startChunkOf([`${chunks}section-4a_OWk5C.js`]), /holds 0 start chunks/);
   assert.throws(() => startChunkOf([`${chunks}start-a.js`, `${chunks}start-b.js`]), /holds 2 start chunks/);
   assert.throws(() => startChunkOf([`${chunks}nested/start-a.js`]), /holds 0 start chunks/);
+});
+
+test("the floor's update packs a version above the first: one more identifier on a prerelease, the next patch on a release (18.3's review)", () => {
+  assert.equal(nextVersion('17.0.0-alpha.1'), '17.0.0-alpha.1.2');
+  assert.equal(nextVersion('17.0.0-dev.202611130443'), '17.0.0-dev.202611130443.2');
+  assert.equal(nextVersion('17.0.0'), '17.0.1');
+  assert.equal(nextVersion('17.2.9'), '17.2.10');
+  assert.throws(() => nextVersion('17.0'), /not a semantic version/);
+  assert.throws(() => nextVersion('17.01.0'), /not a semantic version/);
+});
+
+test('a baseline packs as its own version with baseline added, and the newest released schema is the highest number', () => {
+  assert.equal(baselineVersion('<VersionPrefix>17.0.0</VersionPrefix><VersionSuffix>alpha.0</VersionSuffix>'), '17.0.0-alpha.0.baseline');
+  assert.equal(baselineVersion('<VersionPrefix>17.0.0</VersionPrefix><VersionSuffix></VersionSuffix>'), '17.0.0-baseline');
+  assert.throws(() => baselineVersion('<Project />'), /no VersionPrefix/);
+  assert.equal(newestBaseline(['baseline/schema-v2', 'baseline/schema-v10', 'baseline/schema-v1', 'v17.0.0-alpha.1', '']), 'baseline/schema-v10');
+  assert.throws(() => newestBaseline(['v17.0.0-alpha.1', 'baseline/schema-vx']), /no tag baseline\/schema-v<N>/);
 });

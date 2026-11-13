@@ -5,7 +5,9 @@
  *
  *   node scripts/release.mjs version <tag or version>   the version a tag or a manual run releases:
  *                                                       v17.0.0-alpha.1 -> 17.0.0-alpha.1, on this branch's line only
- *   node scripts/release.mjs notes <version>             that version's section of CHANGELOG.md, without its heading
+ *   node scripts/release.mjs notes <version>             that version's section of CHANGELOG.md, without its heading,
+ *                                                       each paragraph and list item on one line, as a GitHub release
+ *                                                       shows every line break it is given
  *   node scripts/release.mjs compare <folder> <folder>   whether two folders of packs hold the same packages with the
  *                                                       same entries, whatever their versions: the release's pack
  *                                                       steps against the gate's (18.2's dry run)
@@ -16,6 +18,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFileName, zipEntries } from './check-packages.mjs';
+import { builtVersion } from './pack.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
@@ -29,7 +32,10 @@ export function releaseVersion(input, propsText) {
     .trim()
     .replace(/^refs\/tags\//, '')
     .replace(/^v/, '');
-  if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/.test(version)) {
+  // Semantic Versioning: no leading zeros in a number, nor in a numeric identifier of a prerelease.
+  const identifier = '(0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)';
+  const semver = new RegExp(`^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-${identifier}(\\.${identifier})*)?$`);
+  if (!semver.test(version)) {
     throw new Error(`"${input}" is not a version such as v17.0.0-alpha.1`);
   }
   const major = propsText.match(/<VersionPrefix>(\d+)\./)?.[1];
@@ -59,16 +65,31 @@ export function releaseNotes(version, changelog) {
   if (!body) throw new Error(`CHANGELOG.md has no section "## [${version}]"; add one before tagging (docs/releasing.md)`);
   const text = body.join('\n').trim();
   if (!text) throw new Error(`the CHANGELOG.md section of ${version} is empty`);
-  return `${text}\n`;
+  return `${unwrap(text)}\n`;
 }
 
-/** The version Directory.Build.props names: VersionPrefix, with VersionSuffix when there is one. */
-export function propsVersion(propsText) {
-  const prefix = propsText.match(/<VersionPrefix>([^<]+)<\/VersionPrefix>/)?.[1]?.trim();
-  const suffix = propsText.match(/<VersionSuffix>([^<]*)<\/VersionSuffix>/)?.[1]?.trim();
-  if (!prefix) throw new Error('Directory.Build.props has no VersionPrefix');
-  return suffix ? `${prefix}-${suffix}` : prefix;
+/**
+ * Markdown whose paragraphs and list items are wrapped over several lines, each joined onto one line: a GitHub release
+ * keeps every line break its notes hold. Headings, blank lines, list items, tables and code blocks stay as they are.
+ */
+export function unwrap(markdown) {
+  const out = [];
+  let fence = false;
+  for (const line of markdown.split('\n')) {
+    const starts = /^\s*(#|[-*+] |\d+\. |\||```|>)/.test(line) || line.trim() === '';
+    if (/^\s*```/.test(line)) fence = !fence;
+    const previous = out.at(-1);
+    if (!fence && !starts && previous !== undefined && previous.trim() !== '' && !/^\s*(#|\||```)/.test(previous)) {
+      out[out.length - 1] = `${previous} ${line.trim()}`;
+    } else {
+      out.push(line);
+    }
+  }
+  return out.join('\n');
 }
+
+/** The version Directory.Build.props names: pack.mjs's reading, VersionPrefix with VersionSuffix when there is one. */
+export const propsVersion = builtVersion;
 
 /**
  * A package's entries with what differs from one pack to the next taken out: the version, and the content hash a

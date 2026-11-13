@@ -92,7 +92,10 @@ $Database = [System.IO.Path]::Combine($Site, 'umbraco', 'Data', 'Umbraco.sqlite.
 # Section 4.11: the install-test site's port.
 $Port = 5530
 $Url = "http://127.0.0.1:$Port"
+# What a site installs from the feed: the product, and in the smoke the optional AI add-on beside it, as the listings
+# offer it (18.3's review). The baselines had no add-on.
 $Packages = @('Jiron.Umbraco.FormBuilder')
+if ($Mode -ne 'upgrade') { $Packages += 'Jiron.Umbraco.FormBuilder.AI' }
 $script:SiteProcess = $null
 
 # The throwaway-build settings (CLAUDE.md rule 6) for this process and everything it starts: no MSBuild node reuse, no
@@ -125,18 +128,13 @@ function Get-PropsValue([string] $Checkout, [string] $Name) {
 
 function Get-NewestBaseline {
     # The newest released schema's tag: baseline/schema-v<N> with the highest N (docs/upgrade-testing.md).
-    $tags = @(& git -C $Repo tag --list 'baseline/schema-v*' | Where-Object { $_ -match '^baseline/schema-v\d+$' })
-    if ($tags.Count -eq 0) { throw 'The repository has no tag baseline/schema-v<N>.' }
-    return ($tags | Sort-Object { [int]($_ -replace '^baseline/schema-v', '') } | Select-Object -Last 1)
+    return Get-NodeLine @((Join-Path $Helper 'versions.mjs'), 'newest')
 }
 
 function Get-BaselineVersion([string] $Checkout) {
-    # The version a baseline is packed as: its own version with .baseline, lower than any test version of the line.
-    $props = [System.IO.File]::ReadAllText((Join-Path $Checkout 'Directory.Build.props'))
-    $prefix = Get-PropsValue $Checkout 'VersionPrefix'
-    $suffix = [regex]::Match($props, '<VersionSuffix>([^<]*)</VersionSuffix>').Groups[1].Value.Trim()
-    if ($suffix) { return "$prefix-$suffix.baseline" }
-    return "$prefix-baseline"
+    # The version a baseline is packed as: its own version with baseline added, so the feed holds it beside the build
+    # it is upgraded to; the site names each exact version it takes.
+    return Get-NodeLine @((Join-Path $Helper 'versions.mjs'), 'baseline', $Checkout)
 }
 
 function Get-UmbracoFloor {
@@ -213,6 +211,9 @@ function Stop-RecordedSite {
     # Stops the recorded site with its whole tree, only while the record still names that very process.
     $record = Get-RecordedSite
     if ($null -ne $record) {
+        # taskkill complains on stderr when the process ended a moment ago; in Windows PowerShell 5.1 a redirected stderr
+        # line is a terminating error under 'Stop', so it is only reported here.
+        $ErrorActionPreference = 'Continue'
         & taskkill.exe /T /F /PID $record.pid 2>&1 | Out-Null
         for ($i = 0; $i -lt 60 -and $null -ne (Get-RecordedSite); $i++) { Start-Sleep -Milliseconds 500 }
     }
@@ -353,7 +354,9 @@ function Invoke-Smoke([string] $BrowserProfile, [string] $SiteDatabase = $Databa
 function Remove-Folder([string] $Folder) {
     # Through Node, because the worktree's node_modules and the package cache go past MAX_PATH, where Remove-Item fails.
     if (-not $Folder -or -not (Test-Path $Folder)) { return }
-    # (No double quotes in the script: Windows PowerShell 5.1 drops them on the way to a native program.)
+    # (No double quotes in the script: Windows PowerShell 5.1 drops them on the way to a native program. A warning on
+    # stderr must not end the run, which a redirected stderr line does in Windows PowerShell 5.1 under 'Stop'.)
+    $ErrorActionPreference = 'Continue'
     & node -e 'require(''fs'').rmSync(process.argv[1], { recursive: true, force: true, maxRetries: 5, retryDelay: 1000 })' $Folder 2>&1 | Out-Null
 }
 
@@ -402,8 +405,8 @@ try {
 
     Write-Host "install-test: packing the current build as $Version"
     Invoke-Node @((Join-Path $Repo (Join-Path 'scripts' 'pack.mjs')), '--output', $Feed, '--version', $Version)
-    $NextVersion = "$Version.2"
     if ($Mode -eq 'floor') {
+        $NextVersion = Get-NodeLine @((Join-Path $Helper 'versions.mjs'), 'next', $Version)
         # The same sources as a second build of a higher version: every file carries its version, so the chunks differ.
         Write-Host "install-test: packing the current build again as $NextVersion, for the update"
         # In a folder of its own, then into the feed: pack.mjs empties its output folder of packages first.

@@ -121,7 +121,17 @@ describe('workflowRuleErrors', () => {
   });
 
   test("refuses a tag's name, an input or an event's text written into a script, and accepts it through env (ADR-0247)", async () => {
-    for (const inline of ['${{ github.ref_name }}', '${{ inputs.version }}', '${{ github.event.head_commit.message }}', '${{ github.head_ref }}']) {
+    for (const inline of [
+      '${{ github.ref_name }}',
+      '${{ github.ref }}',
+      '${{ inputs.version }}',
+      '${{ github.event.head_commit.message }}',
+      '${{ github.head_ref }}',
+      "${{ format('{0}', github.head_ref) }}",
+      '${{ steps.version.outputs.version }}',
+      '${{ needs.prepare.outputs.version }}',
+      '${{ env.VERSION }}',
+    ]) {
       const doc = await parse(GOOD);
       doc.jobs.build.steps.push({ name: 'Use it', run: `node scripts/release.mjs version "${inline}"` });
       assert.deepEqual(workflowRuleErrors(doc), [
@@ -130,6 +140,8 @@ describe('workflowRuleErrors', () => {
     }
     const doc = await parse(GOOD);
     doc.jobs.build.steps.push({ name: 'Use it', env: { REQUESTED: '${{ inputs.version || github.ref_name }}' }, run: 'node scripts/release.mjs version "$REQUESTED"' });
+    // GitHub's own words and values inline are fine: the kind of ref, the run's id, a service's container.
+    doc.jobs.build.steps.push({ name: 'Safe', run: 'echo "${{ github.ref_type }} ${{ github.run_id }} ${{ job.services.mssql.id }}"' });
     assert.deepEqual(workflowRuleErrors(doc), []);
   });
 });

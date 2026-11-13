@@ -63,6 +63,18 @@ For the check of the packed files: Tandem's allowlist (Tandem ADR-0077), ported,
   must be the repository's files byte for byte, so the owner's licence ships as placed (D2). `scripts/pack.mjs` runs it
   after every pack, so the gate, CI and the release check alike.
 
+Amended by the phase review of Phase 18:
+
+- **`--refresh` keeps the reviewed copy:** a downloaded schema whose hash is not the pinned one is written beside it
+  as `umbraco-marketplace-schema.new.json` for review, and the run fails; the reviewed copy changes only when the
+  pinned hash does.
+- **CI runs `check-marketplace --ci`:** CI has no reviewed copy, so a schema it cannot download, or one that changed on
+  the Marketplace's site, is a warning there and the listings are held to our rules alone; a change on another site
+  never blocks CI or a release. The local gate, which has the copy, stays strict, and the script tests that need the
+  schema skip in CI only when it is out of reach.
+- The listing no longer says merge tags are "never typed" (they can be), counts email verification as a form setting
+  rather than an action, and links the owner to jiron.dev as the readmes do.
+
 ## Consequences
 
 - A new kind of file in a package (another chunk folder, a new schema) needs its line in the allowlist; that is the

@@ -51,12 +51,16 @@ The 16.5 check went through the APIs only, and its form had no action, so no mai
   site, starts it from the published folder alone on a fresh database (the published copy of the database is removed, so
   it installs as a new site does), and runs the smoke again with a profile of its own.
 - **`-Mode floor`** runs the smoke on a fresh site of the floor, the lower bound of `Umbraco.Cms.Core`'s range in
-  `Directory.Packages.props` (17.6.0), from its own template hive. It packs the same sources twice, as `<version>` and
-  `<version>.2`; after the smoke on the first, the site takes the second, is built and started again, and `check.ts
-  --mode cache` reopens the section in the same browser profile, which kept its cache and cookies, by its address (no
-  hard refresh). The backoffice must have loaded the second build's start chunk and not the first's;
-  `scripts/install-test/start-chunk.mjs` reads both names from the packed Web packages. The second build is packed
-  into a folder of its own and copied into the feed, since `scripts/pack.mjs` empties its output folder of packages.
+  `Directory.Packages.props` (17.6.0), from its own template hive. It packs the same sources twice, the second time with
+  a higher version (`scripts/install-test/versions.mjs`: a prerelease gains `.2`, a release its next patch); after the
+  smoke on the first, the site takes the second, is built and started again, and `check.ts --mode cache` reopens the
+  section in the same browser profile, which kept its cache and cookies, by its address (no hard refresh). The
+  backoffice must have loaded the second build's start chunk and not the first's; `scripts/install-test/start-chunk.mjs`
+  reads both names from the packed Web packages. The second build is packed into a folder of its own and copied into the
+  feed, since `scripts/pack.mjs` empties its output folder of packages.
+- **The AI add-on is installed beside the product** in both modes, as the listings offer it, and the smoke checks that
+  its backoffice loads (18.3's review); the upgrade from a released schema installs the product alone, as the baselines
+  had no add-on.
 - **The site's builds fail on NuGet's NU1603:** a package reference names a lowest version, so without it a version
   missing from the feed is quietly replaced by the next higher one, which hid the floor run's first mistake.
 - **`-UmbracoVersion <version>`** gives the site another Umbraco version for either mode, for a check on a newer 17.x.

@@ -2,12 +2,13 @@
 // Unit tests for scripts/release.mjs and the shape of the release workflow (ROADMAP 18.2, ADR-0247).
 // Needs `npm ci --prefix scripts` (yaml). Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
-import { comparePacks, normalisedEntries, propsVersion, releaseNotes, releaseVersion } from '../release.mjs';
+import { comparePacks, normalisedEntries, packsOf, propsVersion, releaseNotes, releaseVersion, unwrap } from '../release.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -25,6 +26,11 @@ describe('the version a release packs (D16)', () => {
     assert.throws(() => releaseVersion('v17.0', PROPS), /is not a version such as v17\.0\.0-alpha\.1/);
     assert.throws(() => releaseVersion('latest', PROPS), /is not a version/);
     assert.throws(() => releaseVersion('v17.0.0-alpha..1', PROPS), /is not a version/);
+    // Semantic Versioning forbids leading zeros, which NuGet would also drop, so the pack would miss its own name.
+    assert.throws(() => releaseVersion('v17.01.0', PROPS), /is not a version/);
+    assert.throws(() => releaseVersion('v17.0.0-alpha.01', PROPS), /is not a version/);
+    assert.equal(releaseVersion('v17.0.10-rc.10', PROPS), '17.0.10-rc.10');
+    assert.equal(releaseVersion('v17.0.0-0a.1', PROPS), '17.0.0-0a.1');
     assert.throws(() => releaseVersion('v18.0.0-alpha.1', PROPS), /not on this branch's line 17\.x/);
     assert.throws(() => releaseVersion('v17.0.0', '<Project />'), /no VersionPrefix/);
   });
@@ -59,6 +65,47 @@ describe('the notes of a release', () => {
     'Not part of a release.',
   ].join('\n');
 
+  test('come with each paragraph and list item on one line, as a GitHub release shows every line break (18.4\'s review)', () => {
+    const wrapped = [
+      'The first prerelease, for Umbraco 17.6',
+      'or later.',
+      '',
+      '### Added',
+      '',
+      '- **The designer:** pages, groups',
+      '  and fields.',
+      '- **Rules** that show',
+      '  and hide.',
+      '',
+      '```bash',
+      'git tag v17.0.0-alpha.1',
+      'git push',
+      '```',
+      '',
+      '| Kind | Count |',
+      '| --- | --- |',
+    ].join('\n');
+    assert.equal(
+      unwrap(wrapped),
+      [
+        'The first prerelease, for Umbraco 17.6 or later.',
+        '',
+        '### Added',
+        '',
+        '- **The designer:** pages, groups and fields.',
+        '- **Rules** that show and hide.',
+        '',
+        '```bash',
+        'git tag v17.0.0-alpha.1',
+        'git push',
+        '```',
+        '',
+        '| Kind | Count |',
+        '| --- | --- |',
+      ].join('\n'),
+    );
+  });
+
   test("are the version's section without its heading, up to the next section", () => {
     assert.equal(releaseNotes('17.0.0-alpha.1', changelog), '### Added\n\n- Everything.\n');
     assert.equal(releaseNotes('17.0.0-alpha.2', changelog), '### Fixed\n\n- A fix.\n');
@@ -71,8 +118,9 @@ describe('the notes of a release', () => {
 
   test("exist in CHANGELOG.md for the version Directory.Build.props names, once it names a release", () => {
     const version = propsVersion(read('Directory.Build.props'));
-    // alpha.0 is the line's placeholder before the first prerelease (D16), never released.
-    if (version.endsWith('-alpha.0')) return;
+    // alpha.0 is the line's placeholder before the first prerelease (D16), and a version ending in dev names the work
+    // between two releases (ADR-0249); neither is ever released.
+    if (/-alpha\.0$|[.-]dev$/.test(version)) return;
     assert.ok(releaseNotes(version, read('CHANGELOG.md')).length > 0);
   });
 });
@@ -88,6 +136,20 @@ describe('two folders of packs', () => {
     const a = new Map([['Jiron.Umbraco.FormBuilder.Web.nupkg', normalisedEntries(web(v1, 'CdFF-JzS'), v1)]]);
     const b = new Map([['Jiron.Umbraco.FormBuilder.Web.nupkg', normalisedEntries(web(v2, 'Ab_cd123'), v2)]]);
     assert.deepEqual(comparePacks(a, b), []);
+  });
+
+  test('are read from a folder by their file names, versions and entries', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'jfb-release-'));
+    try {
+      writeFileSync(join(dir, `Jiron.Umbraco.FormBuilder.Web.${v1}.nupkg`), zipOf(web(v1, 'CdFF-JzS')));
+      writeFileSync(join(dir, `Jiron.Umbraco.FormBuilder.Web.${v1}.snupkg`), zipOf(['lib/net10.0/Jiron.Umbraco.FormBuilder.Web.pdb']));
+      writeFileSync(join(dir, 'notes.txt'), 'not a package');
+      const packs = packsOf(dir);
+      assert.deepEqual([...packs.keys()].sort(), ['Jiron.Umbraco.FormBuilder.Web.nupkg', 'Jiron.Umbraco.FormBuilder.Web.snupkg']);
+      assert.deepEqual(packs.get('Jiron.Umbraco.FormBuilder.Web.nupkg'), normalisedEntries(web(v2, 'Ab_cd123'), v2));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test('name a package only one holds, and an entry only one holds or holds more often', () => {
@@ -155,7 +217,8 @@ describe('the release workflow (ADR-0247)', () => {
     assert.equal(job.if, "startsWith(github.ref, 'refs/tags/v') && vars.JFB_NUGET_PUBLISH == 'true'");
     assert.equal(job.environment, 'nuget');
     assert.deepEqual(job.permissions, { contents: 'read', 'id-token': 'write' });
-    assert.ok(job.steps.some((step) => step.uses === 'NuGet/login@v1'));
+    const login = job.steps.find((step) => step.uses === 'NuGet/login@v1');
+    assert.equal(login?.with?.user, '${{ vars.JFB_NUGET_USER }}', 'signed in as the profile the owner names');
     assert.match(job.steps.at(-1).run, /dotnet nuget push "packages\/\*\.nupkg" .* --skip-duplicate$/);
   });
 
@@ -170,3 +233,31 @@ describe('the release workflow (ADR-0247)', () => {
     }
   });
 });
+
+/** A zip of empty entries with these names, stored, as a package's central directory lists them. */
+function zipOf(names) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const name of names) {
+    const bytes = Buffer.from(name, 'utf8');
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(bytes.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(bytes.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, bytes);
+    centrals.push(central, bytes);
+    offset += local.length + bytes.length;
+  }
+  const directory = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(names.length, 8);
+  end.writeUInt16LE(names.length, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, directory, end]);
+}
