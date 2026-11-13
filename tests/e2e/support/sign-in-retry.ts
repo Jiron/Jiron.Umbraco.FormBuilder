@@ -3,8 +3,10 @@
 // overtake that read, and the harness runs sign-ins one at a time (support/user-lock.ts). Umbraco 18 takes the shared
 // cache out, so any write of another worker between the read and the write leaves the sign-in's snapshot stale, and
 // SQLite refuses it until its busy timeout, again and again: the request does not answer for minutes. A sign-in that
-// has not finished within 20 s is that stall; it is signed in once more, and the run says so. A second stall, or any
-// other failure, fails the test.
+// has not finished within 20 s is that stall; it is signed in once more, the test gets back the time the stall took,
+// and the run says so. A second stall, or any other failure, fails the test.
+
+import { test } from '@playwright/test';
 
 /** How long a sign-in may take before it counts as stalled; a sound one takes well under a second. */
 export const SIGN_IN_STALL_MS = 20_000;
@@ -29,10 +31,32 @@ export interface SignInOnceMore<T> {
   readonly again?: () => Promise<void>;
   /** Where the run says that a sign-in stalled. */
   readonly warn?: (message: string) => void;
+  /** Gives back the time a stalled sign-in took; by default the running test's time limit grows by it. */
+  readonly lengthen?: (ms: number) => void;
+}
+
+/**
+ * Lengthens the running test's time limit by `ms`, so a stall the harness waited out does not use up the test's time.
+ * Outside a test (the global set-up), and in a test without a limit, it does nothing.
+ */
+export function lengthenTest(ms: number): void {
+  let info: ReturnType<typeof test.info>;
+  try {
+    info = test.info();
+  } catch {
+    return;
+  }
+  if (info.timeout > 0) info.setTimeout(info.timeout + ms);
 }
 
 /** Signs in, and once more when the first sign-in stalled. */
-export async function signInOnceMore<T>({ who, attempt, again, warn = console.warn }: SignInOnceMore<T>): Promise<T> {
+export async function signInOnceMore<T>({
+  who,
+  attempt,
+  again,
+  warn = console.warn,
+  lengthen = lengthenTest,
+}: SignInOnceMore<T>): Promise<T> {
   try {
     return await attempt(SIGN_IN_STALL_MS);
   } catch (error) {
@@ -41,6 +65,7 @@ export async function signInOnceMore<T>({ who, attempt, again, warn = console.wa
       `e2e: the sign-in of ${who} did not finish within ${SIGN_IN_STALL_MS / 1000} s, ` +
         "Umbraco's SQLite stall (ADR-0250); signing in once more.",
     );
+    lengthen(SIGN_IN_STALL_MS);
     await again?.();
     return attempt(SECOND_SIGN_IN_MS);
   }

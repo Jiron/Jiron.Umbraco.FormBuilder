@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { e2eState } from './paths.ts';
 
-const LOCK_DIR = join(e2eState, 'locks', 'backoffice-user-writes');
+const LOCK_DIR = join(e2eState, 'locks', 'sign-ins');
 
 /** How long a lock may live before it counts as left behind, and how long a caller waits for it. */
 export interface UserLockTimes {
@@ -49,13 +49,14 @@ export function createUserLock(dir: string, times: UserLockTimes = DEFAULT_TIMES
 }
 
 /**
- * Runs backoffice sign-ins and password resets one at a time across all test workers.
+ * Runs sign-ins, a backoffice user's or a member's, and password resets one at a time across all test workers.
  *
  * Umbraco 17 on SQLite updates the signed-in user (BackOfficeUserStore.UpdateAsync) in a deferred transaction that
  * reads before it writes and takes no write lock first. When several sign-ins overlap, the transactions whose read
  * snapshot went stale retry the update indefinitely and the requests hang (the lessons file, ROADMAP section 3.3;
  * ADR-0011). One at a time costs well under a second each. Umbraco 18 takes SQLite's shared cache out, so any other
- * write can overtake the read too; such a sign-in is signed in once more (support/sign-in-retry.ts, ADR-0250).
+ * write can overtake the read too; such a sign-in is signed in once more (support/sign-in-retry.ts, ADR-0250). A member
+ * who signs in is updated the same way.
  */
 export const withUserLock = createUserLock(LOCK_DIR);
 
