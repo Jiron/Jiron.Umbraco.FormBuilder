@@ -28,6 +28,11 @@ samples compile unchanged. What broke:
   items (`paging`), and wants how many come before and after; the tree item context matches only a tree view that
   loads children itself, with a base context for every view; and the package path of the generated backend API is the
   same file Umbraco's own modules import.
+- **The integration test run.** Umbraco's test helper gives each fixture one mocked web host environment, which answers
+  every read of its content root's file provider with a new provider and remembers it. Every Umbraco 18 test host
+  watches one, and the watchers nobody disposed kept the mock, and through it every host of the fixture, in memory: the
+  test host held 31 GB by the 2,089th test, and late requests timed out. A refused value's save and publish are also
+  reported apart now.
 
 ## Options
 
@@ -62,6 +67,9 @@ Option 2.
   generated clients then differ from 17's only in the order of `null` in a union, a body now required where the API
   always wanted one, one key typed nullable as its model says, and a 403 no longer listed for a download that signs in
   by ticket.
+- **One test support for both lines:** the integration tests' assembly-wide action, which already released Umbraco's
+  runtimes after every test, also disposes and forgets the file providers handed out during the test. It lands on
+  `main`, where no host watches and nothing else changes, and `TestHostReleaseTests` fails without it on both lines.
 - **The backoffice's adapters:** the forms tree and the Recycle Bin read a level through `readLevel`, which pages by
   offset and reads a window around an item page by page until it holds the item, answering "not found" for one that is
   gone (the tree then picks another or starts from the top); the library's conditions read the tree item's base
