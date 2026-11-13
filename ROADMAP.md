@@ -3274,7 +3274,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 19: The Umbraco 18 line (forward compatibility)
 
-- [ ] **19.1 The Umbraco 18 line: branch, build and everything on 18, and phase review** (19.1 and 19.2 in one, ADR-0197)
+- [x] **19.1 The Umbraco 18 line: branch, build and everything on 18, and phase review** (19.1 and 19.2 in one, ADR-0197) (2026-11-14, e54d894c)
   - **19.1 Branch strategy and an 18 build**:
     - As decided in D16: `main` stays the 17 line and holds every ROADMAP and WORKLOG change. The 18 code lives only on `v18/main`, branched from `main`.
     - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.
