@@ -1671,8 +1671,13 @@ said once per document, the form shown when the runtime cannot load, and no post
 - A test server fixture that calls the Management API derives from `Support/FormBuilderTestServerTestBase` and boots
   the runtime (`[UmbracoTest(Boot = true)]`): it runs Jiron Form Builder's migration plan after the host starts, and
   its `ConfigureHost` sets the configuration before the host is built.
-- Every test's host goes once the test ends: Umbraco's runtime listens to the process's unhandled exceptions and stays
-  listening after its host is disposed, which kept each test's host in memory (about 25 GB by the two-thousandth test,
-  where late tests' requests timed out as the machine paged). `Support/UmbracoRuntimes.cs` releases the listeners after
-  every test, assembly-wide, and `Composition/TestHostReleaseTests` holds that a test's runtime listens alone.
+- Every test's host goes once the test ends. Two things kept each test's host in memory until the machine paged and late
+  tests' requests timed out: Umbraco's runtime listens to the process's unhandled exceptions and stays listening after
+  its host is disposed (about 25 GB by the two-thousandth test); and the web host environment of Umbraco's test helper,
+  one mock per fixture, answers every read of `ContentRootFileProvider` with a new provider and records it, while on
+  Umbraco 18 every host watches one, so the watchers nobody disposes kept the mock and with it every host of the
+  fixture (110 hosts and 3 GB after two minutes). `Support/UmbracoRuntimes.cs` releases both after every test,
+  assembly-wide: the listeners, and the providers handed out during the test, disposed and forgotten.
+  `Composition/TestHostReleaseTests` holds that a test's runtime listens alone and that a test's host holds its own
+  providers alone.
 - Read files of the repository in place through `RepositoryRoot.Path(...)`.
