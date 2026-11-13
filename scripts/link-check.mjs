@@ -112,16 +112,21 @@ export function linksOf(text) {
 const external = (target) => /^[a-z][a-z0-9+.-]*:/i.test(target);
 
 /**
- * The part of a path inside `base` whose letter case differs from the names on disk, or null when every part matches:
- * a file system that ignores case finds `Default/` for `default/`, which GitHub does not.
+ * The part of a path inside `base` that exists on disk only in another letter case, or null when every part is spelt
+ * as on disk or a part does not exist at all: a file system that ignores case finds `Default/` for `default/`, which
+ * GitHub does not, and one that heeds case finds neither, so both get the same answer.
  */
 export function caseMismatch(path, base = root) {
   const inside = relative(base, path);
   if (!inside || inside.startsWith('..')) return null;
   let at = base;
   for (const part of inside.split(sep).filter(Boolean)) {
-    if (!readdirSync(at).includes(part)) return part;
-    at = join(at, part);
+    const names = existsSync(at) && statSync(at).isDirectory() ? readdirSync(at) : [];
+    if (names.includes(part)) {
+      at = join(at, part);
+      continue;
+    }
+    return names.some((name) => name.toLowerCase() === part.toLowerCase()) ? part : null;
   }
   return null;
 }
@@ -139,15 +144,21 @@ export function checkFile(file, base = root) {
       continue;
     }
     const [path, anchor] = target.split('#', 2);
-    const decoded = decodeURIComponent((path ?? '').split('?')[0] ?? '');
-    const destination = decoded ? resolve(dirname(file), decoded) : resolve(file);
-    if (!existsSync(destination)) {
-      problems.push(`${name}:${line}: no such file: ${target}`);
+    let decoded;
+    try {
+      decoded = decodeURIComponent((path ?? '').split('?')[0] ?? '');
+    } catch {
+      problems.push(`${name}:${line}: not a valid address (a stray %): ${target}`);
       continue;
     }
+    const destination = decoded ? resolve(dirname(file), decoded) : resolve(file);
     const wrong = caseMismatch(destination, base);
     if (wrong) {
       problems.push(`${name}:${line}: "${wrong}" is spelt with other letter case on disk: ${target}`);
+      continue;
+    }
+    if (!existsSync(destination)) {
+      problems.push(`${name}:${line}: no such file: ${target}`);
       continue;
     }
     if (anchor && destination.endsWith('.md') && !anchorsOf(readFileSync(destination, 'utf8')).has(anchor))
@@ -164,6 +175,11 @@ export function checkLearnMore(map = LEARN_MORE, base = root) {
   for (const [key, page] of Object.entries(pages)) {
     const [path, anchor] = String(page).split('#', 2);
     const file = join(base, 'docs', path ?? '');
+    const wrong = path ? caseMismatch(file, base) : null;
+    if (wrong) {
+      problems.push(`learn-more.json: "${key}" spells "${wrong}" with other letter case than the file on disk: ${page}`);
+      continue;
+    }
     if (!path || !existsSync(file)) {
       problems.push(`learn-more.json: "${key}" names no page under docs/: ${page}`);
       continue;

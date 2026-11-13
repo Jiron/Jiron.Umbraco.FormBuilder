@@ -76,8 +76,17 @@ test('a link whose letter case differs from the file on disk is named, as GitHub
   assert.equal(caseMismatch(join(base, 'docs', 'views', 'default'), base), null);
   assert.equal(caseMismatch(join(base, 'docs', 'views', 'Default'), base), 'Default');
   assert.equal(caseMismatch(join(base, '..', 'elsewhere'), base), null);
+  assert.equal(caseMismatch(join(base, 'docs', 'views', 'missing', 'x.md'), base), null);
   assert.deepEqual(checkFile(join(base, 'docs', 'guide.md'), base), [
     'docs/guide.md:2: "Default" is spelt with other letter case on disk: views/Default/Field.cshtml',
+  ]);
+});
+
+test('a link with a stray % is named rather than ending the check', () => {
+  const base = folder({ 'docs/guide.md': '# Guide\n[odd](100%25-sure.md) [broken](100%-sure.md)\n' });
+  assert.deepEqual(checkFile(join(base, 'docs', 'guide.md'), base), [
+    'docs/guide.md:2: no such file: 100%25-sure.md',
+    'docs/guide.md:2: not a valid address (a stray %): 100%-sure.md',
   ]);
 });
 
@@ -91,17 +100,23 @@ test('the NuGet readme may only link to whole addresses, which nuget.org can fol
   ]);
 });
 
-test('a Learn more page that is missing, or whose heading is, is named with its key', () => {
+test('a Learn more page that is missing, spelt in other letter case, or whose heading is, is named with its key', () => {
   const base = folder({
     'docs/privacy.md': '# Privacy\n\n## Retention\n',
     'map.json': JSON.stringify({
       base: 'https://example.com/docs/',
-      pages: { retention: 'privacy.md#retention', erase: 'privacy.md#erasing', scanners: 'files.md#scanners' },
+      pages: {
+        retention: 'privacy.md#retention',
+        erase: 'privacy.md#erasing',
+        scanners: 'files.md#scanners',
+        shouting: 'Privacy.md#retention',
+      },
     }),
   });
   assert.deepEqual(checkLearnMore(join(base, 'map.json'), base), [
     'learn-more.json: "erase" names no heading "#erasing" in docs/privacy.md',
     'learn-more.json: "scanners" names no page under docs/: files.md#scanners',
+    'learn-more.json: "shouting" spells "Privacy.md" with other letter case than the file on disk: Privacy.md#retention',
   ]);
 });
 
