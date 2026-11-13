@@ -2,34 +2,39 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
 /// <summary>
-/// The definition upgrader's fixture of the released schema (ROADMAP 16.5, ADR-0240): every definition a site on the
-/// baseline packages stored (the <c>jfbFormVersion</c> rows of <c>tests/fixtures/upgrade/schema-v1.json</c>, written by
-/// the baseline's own form service) reads with today's reader of stored documents and upgrader chain, keeps its form,
-/// its pages, groups and fields with their keys, aliases, types and labels, and is stored as the text its hash names.
-/// Rewritten by today's writer and read again it stays the same, so a later save of an old form loses nothing. Each
-/// later released schema adds its fixture (docs/upgrading.md).
+/// The definition upgrader's fixtures of the released schemas (ROADMAP 16.5 and 18.4, ADR-0240): every definition a site
+/// on a baseline's packages stored (the <c>jfbFormVersion</c> rows of each <c>tests/fixtures/upgrade/schema-v&lt;N&gt;.json</c>,
+/// written by that baseline's own form service) reads with today's reader of stored documents and upgrader chain, keeps
+/// its form, its pages, groups and fields with their keys, aliases, types and labels, and is stored as the text its hash
+/// names. Rewritten by today's writer and read again it stays the same, so a later save of an old form loses nothing.
+/// Each released schema adds its fixture (docs/upgrade-testing.md).
 /// </summary>
 public sealed class StoredDefinitionFixtureTests
 {
     private static IEnumerable<TestCaseData> Versions()
     {
-        using var fixture = JsonDocument.Parse(File.ReadAllText(FixturePath()));
-        var tables = fixture.RootElement.GetProperty("tables");
-        var forms = tables.GetProperty("jfbForm").EnumerateArray().ToDictionary(form => form.GetProperty("id").GetInt64(), form => form.GetProperty("key").GetString()!);
-        foreach (var version in tables.GetProperty("jfbFormVersion").EnumerateArray())
+        foreach (var path in UpgradeFixtures.Paths(typeof(StoredDefinitionFixtureTests).Assembly))
         {
-            var formKey = forms[version.GetProperty("formId").GetInt64()];
-            var number = version.GetProperty("number").GetInt64();
-            yield return new TestCaseData(
-                    formKey,
-                    version.GetProperty("schemaVersion").GetInt32(),
-                    version.GetProperty("definition").GetString()!,
-                    version.GetProperty("definitionHash").GetString()!)
-                .SetName($"TheBaselinesVersion_{formKey[..8]}_{number}_ReadsWithTodaysReader");
+            var schema = Path.GetFileNameWithoutExtension(path).Replace('-', '_');
+            using var fixture = JsonDocument.Parse(File.ReadAllText(path));
+            var tables = fixture.RootElement.GetProperty("tables");
+            var forms = tables.GetProperty("jfbForm").EnumerateArray().ToDictionary(form => form.GetProperty("id").GetInt64(), form => form.GetProperty("key").GetString()!);
+            foreach (var version in tables.GetProperty("jfbFormVersion").EnumerateArray())
+            {
+                var formKey = forms[version.GetProperty("formId").GetInt64()];
+                var number = version.GetProperty("number").GetInt64();
+                yield return new TestCaseData(
+                        formKey,
+                        version.GetProperty("schemaVersion").GetInt32(),
+                        version.GetProperty("definition").GetString()!,
+                        version.GetProperty("definitionHash").GetString()!)
+                    .SetName($"TheBaselinesVersion_{schema}_{formKey[..8]}_{number}_ReadsWithTodaysReader");
+            }
         }
     }
 
@@ -72,18 +77,4 @@ public sealed class StoredDefinitionFixtureTests
     private static IEnumerable<JsonElement> Items(JsonElement element, string name) =>
         element.TryGetProperty(name, out var items) ? items.EnumerateArray() : Enumerable.Empty<JsonElement>();
 
-    /// <summary>The fixture, from the repository's tests folder above the test assembly.</summary>
-    private static string FixturePath()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
-        {
-            var path = Path.Combine(folder.FullName, "tests", "fixtures", "upgrade", "schema-v1.json");
-            if (File.Exists(path))
-            {
-                return path;
-            }
-        }
-
-        throw new FileNotFoundException("tests/fixtures/upgrade/schema-v1.json was not found above the test assembly.");
-    }
 }

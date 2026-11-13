@@ -23,14 +23,18 @@
                  browser profile, which kept its cache and sign-in, opens the section without a hard refresh: the
                  backoffice must load the new build's start chunk, not the old one's.
   -UmbracoVersion  The Umbraco version of the site for -Mode install or floor, instead of the line's or the floor.
-  -Mode upgrade  Also checks out the tag baseline/schema-v1 (4.8) with git worktree into %TEMP%\jfb-baseline-<timestamp>
-                 and packs it as 17.0.0-alpha.0.baseline. The site installs the baseline first, on the baseline's own
+  -Mode upgrade  Also checks out a released schema's tag (-Baseline, by default the newest baseline/schema-v<N>: v1 is
+                 the schema frozen in 4.8, v2 the one 17.0.0-alpha.1 released) with git worktree into
+                 %TEMP%\jfb-baseline-<timestamp> and packs it as <its version>.baseline (17.0.0-alpha.0.baseline for
+                 v1). The site installs the baseline first, on the baseline's own
                  Umbraco; on its first start the baseline's migrations run and scripts\install-test\BaselineSeed writes
                  its data through the baseline's own services. The site stops, swaps the baseline for the current
                  packages, and starts again with Umbraco:CMS:Unattended:UpgradeUnattended: the remaining migrations
                  run, and the checks read the data back through the database and today's APIs, then send a new entry.
-  -WriteFixture  With -Mode upgrade: writes tests\fixtures\upgrade\schema-v1.json from the baseline's database before
-                 the upgrade, for UpgradeFixtureTests and StoredDefinitionFixtureTests.
+  -Baseline      With -Mode upgrade: the tag of the released schema to upgrade from, such as baseline/schema-v1.
+  -WriteFixture  With -Mode upgrade: writes tests\fixtures\upgrade\schema-v<N>.json, named after the baseline's tag,
+                 from the baseline's database before the upgrade, for UpgradeFixtureTests and
+                 StoredDefinitionFixtureTests.
   -Keep          Keeps the temporary folders and the worktree (to look into a failure).
   -Version       Packs this version instead of <VersionPrefix>-dev.<yyyyMMddHHmm>, for a release check.
 
@@ -52,6 +56,9 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string] $UmbracoVersion = '',
 
+    [ValidatePattern('^baseline/schema-v\d+$')]
+    [string] $Baseline = '',
+
     [switch] $WriteFixture,
 
     [switch] $Keep,
@@ -70,7 +77,6 @@ $E2E = Join-Path $Repo (Join-Path 'tests' 'e2e')
 $State = Join-Path $Repo (Join-Path '.local' 'install-test')
 $PidFile = Join-Path $State 'site.pid.json'
 $Credentials = Join-Path $Repo (Join-Path '.local' 'credentials.json')
-$Fixture = [System.IO.Path]::Combine($Repo, 'tests', 'fixtures', 'upgrade', 'schema-v1.json')
 $Run = Get-Date -Format 'yyyyMMddHHmmss'
 $Root = Join-Path $env:TEMP "jfb-install-$Run"
 $Cache = Join-Path $env:TEMP "jfb-nuget-$Run"
@@ -86,8 +92,6 @@ $Database = [System.IO.Path]::Combine($Site, 'umbraco', 'Data', 'Umbraco.sqlite.
 # Section 4.11: the install-test site's port.
 $Port = 5530
 $Url = "http://127.0.0.1:$Port"
-$BaselineTag = 'baseline/schema-v1'
-$BaselineVersion = '17.0.0-alpha.0.baseline'
 $Packages = @('Jiron.Umbraco.FormBuilder')
 $script:SiteProcess = $null
 
@@ -117,6 +121,22 @@ function Get-PropsValue([string] $Checkout, [string] $Name) {
     $match = [regex]::Match([System.IO.File]::ReadAllText((Join-Path $Checkout 'Directory.Build.props')), "<$Name>([^<]+)</$Name>")
     if (-not $match.Success) { throw "Directory.Build.props has no $Name." }
     return $match.Groups[1].Value.Trim()
+}
+
+function Get-NewestBaseline {
+    # The newest released schema's tag: baseline/schema-v<N> with the highest N (docs/upgrade-testing.md).
+    $tags = @(& git -C $Repo tag --list 'baseline/schema-v*' | Where-Object { $_ -match '^baseline/schema-v\d+$' })
+    if ($tags.Count -eq 0) { throw 'The repository has no tag baseline/schema-v<N>.' }
+    return ($tags | Sort-Object { [int]($_ -replace '^baseline/schema-v', '') } | Select-Object -Last 1)
+}
+
+function Get-BaselineVersion([string] $Checkout) {
+    # The version a baseline is packed as: its own version with .baseline, lower than any test version of the line.
+    $props = [System.IO.File]::ReadAllText((Join-Path $Checkout 'Directory.Build.props'))
+    $prefix = Get-PropsValue $Checkout 'VersionPrefix'
+    $suffix = [regex]::Match($props, '<VersionSuffix>([^<]*)</VersionSuffix>').Groups[1].Value.Trim()
+    if ($suffix) { return "$prefix-$suffix.baseline" }
+    return "$prefix-baseline"
 }
 
 function Get-UmbracoFloor {
@@ -393,8 +413,11 @@ try {
     }
 
     if ($Mode -eq 'upgrade') {
-        Write-Host "install-test: packing $BaselineTag as $BaselineVersion"
-        Invoke-Native 'git' @('worktree', 'add', '--detach', $Worktree, $BaselineTag)
+        if (-not $Baseline) { $Baseline = Get-NewestBaseline }
+        $Fixture = [System.IO.Path]::Combine($Repo, 'tests', 'fixtures', 'upgrade', "$($Baseline -replace '^baseline/', '').json")
+        Invoke-Native 'git' @('worktree', 'add', '--detach', $Worktree, $Baseline)
+        $BaselineVersion = Get-BaselineVersion $Worktree
+        Write-Host "install-test: packing $Baseline as $BaselineVersion"
         # The baseline's NuGet.config names its git-ignored local feed, which a fresh checkout does not have.
         New-Item -ItemType Directory -Force -Path (Join-Path $Worktree (Join-Path '.local' 'nuget-feed')) | Out-Null
         Build-ClientAssets ([System.IO.Path]::Combine($Worktree, 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Client')) $BaselineVersion
@@ -431,7 +454,7 @@ try {
         $umbracoBefore = Get-NodeLine @((Join-Path $Helper 'jfb-db.mjs'), 'umbraco', $Database)
         if ($WriteFixture) {
             New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Fixture) | Out-Null
-            Invoke-Node @((Join-Path $Helper 'jfb-db.mjs'), 'dump', $Database, $Fixture)
+            Invoke-Node @((Join-Path $Helper 'jfb-db.mjs'), 'dump', $Database, $Fixture, $Baseline, $BaselineVersion)
         }
 
         Write-Host "install-test: upgrading the site to $Version"

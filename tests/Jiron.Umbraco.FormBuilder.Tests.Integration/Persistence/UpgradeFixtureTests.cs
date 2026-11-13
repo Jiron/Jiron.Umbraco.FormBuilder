@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Testing;
 using NPoco;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -13,20 +14,18 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence;
 
 /// <summary>
-/// The upgrade from the released schema, on real data (ROADMAP 16.5, ADR-0240): <c>tests/fixtures/upgrade/schema-v1.json</c>
-/// holds the rows a site on the baseline packages (tag <c>baseline/schema-v1</c>) stored through the baseline's own
-/// services, written by <c>scripts/install-test.ps1 -Mode upgrade -WriteFixture</c>, and that site's schema. The test runs
-/// the baseline's steps, checks that today's first steps still build exactly that schema, puts the rows in as they were,
-/// runs the rest of the plan and reads everything back through today's services. It runs in the integration suite, so on
-/// SQLite here and on SQL Server in CI. Each later released schema adds a fixture of its own (docs/upgrading.md).
+/// The upgrade from each released schema, on real data (ROADMAP 16.5 and 18.4, ADR-0240): every
+/// <c>tests/fixtures/upgrade/schema-v&lt;N&gt;.json</c> holds the rows a site on that baseline's packages (tag
+/// <c>baseline/schema-v&lt;N&gt;</c>) stored through the baseline's own services, written by
+/// <c>scripts/install-test.ps1 -Mode upgrade -WriteFixture</c>, and that site's schema. The test runs the baseline's
+/// steps, checks that today's first steps still build exactly that schema, puts the rows in as they were, runs the rest
+/// of the plan and reads everything back through today's services. It runs in the integration suite, so on SQLite here
+/// and on SQL Server in CI. Each released schema adds a fixture of its own (docs/upgrade-testing.md).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed class UpgradeFixtureTests : FormBuilderMigrationTestBase
 {
-    /// <summary>The baseline's plan ended at its third step.</summary>
-    private const int BaselineSteps = 3;
-
     /// <summary>The rows go in in this order, so each row's parents are there first (forms point at their versions after).</summary>
     private static readonly string[] Tables =
         ["jfbSetting", "jfbFolder", "jfbForm", "jfbFormVersion", "jfbFormField", "jfbEntry", "jfbEntryFile", "jfbEntryValue", "jfbEntryEvent", "jfbAuditEntry"];
@@ -45,12 +44,20 @@ public sealed class UpgradeFixtureTests : FormBuilderMigrationTestBase
         ["fileId"] = "jfbEntryFile",
     };
 
-    [Test]
-    public async Task TheBaselinesData_SurvivesTheUpgrade_AndReadsBackThroughTodaysServices()
+    private static IEnumerable<TestCaseData> Fixtures() =>
+        UpgradeFixtures.Paths(typeof(UpgradeFixtureTests).Assembly)
+            .Select(path => new TestCaseData(path).SetName($"TheBaselinesData_{Path.GetFileNameWithoutExtension(path).Replace('-', '_')}_SurvivesTheUpgrade_AndReadsBackThroughTodaysServices"));
+
+    [TestCaseSource(nameof(Fixtures))]
+    public async Task TheBaselinesData_SurvivesTheUpgrade_AndReadsBackThroughTodaysServices(string fixturePath)
     {
-        using var fixture = JsonDocument.Parse(await File.ReadAllTextAsync(FixturePath()));
+        using var fixture = JsonDocument.Parse(await File.ReadAllTextAsync(fixturePath));
         var root = fixture.RootElement;
-        await RunAsync(new TestPlan(BaselineSteps));
+        // The baseline's plan ended at the step whose state the fixture names.
+        var baselineState = root.GetProperty("state").GetString();
+        var baselineSteps = FormBuilderMigrationPlan.Steps.Select(step => step.State).ToList().IndexOf(baselineState!) + 1;
+        Assert.That(baselineSteps, Is.GreaterThan(0), $"the fixture's state {baselineState} is a step of today's plan");
+        await RunAsync(new TestPlan(baselineSteps));
         Assert.That(StoredState(), Is.EqualTo(root.GetProperty("state").GetString()), "the fixture comes from the baseline's final state");
         var built = Inspect();
         var schema = root.GetProperty("schema");
@@ -93,7 +100,7 @@ public sealed class UpgradeFixtureTests : FormBuilderMigrationTestBase
         Assert.Multiple(() =>
         {
             Assert.That(upgrade.Successful, Is.True, upgrade.Exception?.ToString());
-            Assert.That(upgrade.InitialState, Is.EqualTo(FormBuilderMigrationPlan.StateGrantSection));
+            Assert.That(upgrade.InitialState, Is.EqualTo(baselineState));
             Assert.That(StoredState(), Is.EqualTo(FinalState));
 
             // The folders, the forms where the baseline put them, their drafts and versions.
@@ -239,19 +246,4 @@ public sealed class UpgradeFixtureTests : FormBuilderMigrationTestBase
 
     private static IEnumerable<string?> Aliases(Core.Definitions.FormDefinition definition) =>
         definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Select(field => field.Alias);
-
-    /// <summary>The fixture, from the repository's tests folder above the test assembly.</summary>
-    internal static string FixturePath()
-    {
-        for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
-        {
-            var path = Path.Combine(folder.FullName, "tests", "fixtures", "upgrade", "schema-v1.json");
-            if (File.Exists(path))
-            {
-                return path;
-            }
-        }
-
-        throw new FileNotFoundException("tests/fixtures/upgrade/schema-v1.json was not found above the test assembly.");
-    }
 }

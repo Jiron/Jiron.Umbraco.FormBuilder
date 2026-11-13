@@ -30,16 +30,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-test.ps1 -Mo
   the site takes the second build, starts again, and the same browser, which kept its cache and its sign-in, opens the
   section without a hard refresh: it must load the second build's start chunk, not the first one's.
 - **`-UmbracoVersion <version>`** gives the site of either mode another Umbraco version.
-- **`-Mode upgrade`** first packs the tag `baseline/schema-v1` (the first schema, frozen before the first release) as
-  `17.0.0-alpha.0.baseline` from a `git worktree`, installs it, and lets `scripts/install-test/BaselineSeed` write what
-  a site of that time held, through the baseline's own services: settings, folders, forms published twice and changed
+- **`-Mode upgrade`** first packs a released schema's tag from a `git worktree` as its own version with `.baseline`:
+  by default the newest, `baseline/schema-v2` (the schema 17.0.0-alpha.1 released, packed as
+  `17.0.0-alpha.1.baseline`); `-Baseline baseline/schema-v1` takes the first schema, frozen before the first release
+  (`17.0.0-alpha.0.baseline`). It installs the baseline and lets `scripts/install-test/BaselineSeed` write what a site
+  of that time held, through the baseline's own services: settings, folders, forms published twice and changed
   again in a draft, entries with answers of every storage kind, a file, an approved entry. Then the site stops, takes
   the current packages and starts again: the remaining migrations run, and the checks read everything back through the
   database and today's APIs (`tests/e2e/install/check.ts`): the folders and forms in the tree, the versions and the
   draft, every entry's answers and state, the file byte for byte, the settings. A visitor then sends the upgraded form,
   and the entry takes the next number.
-- **`-WriteFixture`** (with `-Mode upgrade`) writes `tests/fixtures/upgrade/schema-v1.json` from the baseline's database
-  before the upgrade.
+- **`-WriteFixture`** (with `-Mode upgrade`) writes the baseline's fixture, `tests/fixtures/upgrade/schema-v<N>.json`
+  after its tag, from the baseline's database before the upgrade.
 - **`-Keep`** keeps the run's folders to look into a failure; **`-Version`** packs a given version, for a release.
 
 The run needs the network (the Umbraco template and nuget.org), Node 24, the .NET SDK and Edge, and takes ten to twenty
@@ -67,4 +69,10 @@ Each release that changes the database schema or the definition schema adds:
 2. the seed's changes, if the services it writes through changed;
 3. its fixture, written with `-WriteFixture` against that tag, and its own cases in the two fixture tests.
 
-The install test then upgrades from the newest released schema; the fixtures keep every older one tested.
+The install test then upgrades from the newest released schema; the fixtures keep every older one tested. The
+released schemas so far:
+
+| Tag | Released with | Plan's last state |
+| --- | --- | --- |
+| `baseline/schema-v1` | none: the schema frozen at the end of Phase 4, before the first release | `jfb-003-grant-forms-section` |
+| `baseline/schema-v2` | 17.0.0-alpha.1 | `jfb-015-entry-site` |

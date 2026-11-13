@@ -6,7 +6,9 @@
  *
  *   node jfb-db.mjs state <db>                 Jiron Form Builder's migration state
  *   node jfb-db.mjs umbraco <db>               Umbraco's own migration state
- *   node jfb-db.mjs dump <db> <fixture.json>   the baseline's schema and the rows its seed wrote: the upgrade fixture
+ *   node jfb-db.mjs dump <db> <fixture.json> <tag> <version>
+ *                                              the baseline's schema and the rows its seed wrote: the upgrade fixture of
+ *                                              the released schema with that tag, packed as that version
  *   node jfb-db.mjs check <db> [expected.json] the plan's last state is reached, and the rows the seed wrote are all
  *                                              there with their values (the seed's file of expectations)
  *
@@ -81,7 +83,7 @@ export function schemaOf(db) {
 }
 
 function main() {
-  const [command, file, extra] = process.argv.slice(2);
+  const [command, file, extra, tag, version] = process.argv.slice(2);
   if (!command || !file) {
     console.error('usage: node jfb-db.mjs state|umbraco|dump|check <db> [file]');
     process.exit(2);
@@ -101,14 +103,14 @@ function main() {
   } else if (command === 'umbraco') {
     console.log(stateOf('Umbraco.Core') ?? '(none)');
   } else if (command === 'dump') {
-    if (!extra) fail('dump needs the fixture path');
+    if (!extra || !tag || !version) fail("dump needs the fixture's path, the baseline's tag and its version");
     // Every column of every row the seed wrote, as SQLite keeps it (times and keys as text). The settings rows are
     // those that differ from the defaults the baseline's second step wrote: the general section.
     const tables = Object.fromEntries(SEEDED.map((table) => [table, all(`SELECT * FROM ${table} ORDER BY 1`)]));
     tables.jfbSetting = tables.jfbSetting.filter((row) => row.updatedByUserKey !== null);
     const fixture = {
       $comment:
-        "Rows a site on the baseline packages (tag baseline/schema-v1, 17.0.0-alpha.0.baseline) stored, and its schema, written by scripts/install-test.ps1 -Mode upgrade -WriteFixture from scripts/install-test/BaselineSeed (ROADMAP 16.5, ADR-0240). UpgradeFixtureTests applies them after the baseline's steps; StoredDefinitionFixtureTests reads their definitions.",
+        `Rows a site on the baseline packages (tag ${tag}, ${version}) stored, and its schema, written by scripts/install-test.ps1 -Mode upgrade -WriteFixture from scripts/install-test/BaselineSeed (ROADMAP 16.5, ADR-0240). UpgradeFixtureTests applies them after the baseline's steps; StoredDefinitionFixtureTests reads their definitions.`,
       state: stateOf(planName()),
       schema: schemaOf(db),
       tables,
