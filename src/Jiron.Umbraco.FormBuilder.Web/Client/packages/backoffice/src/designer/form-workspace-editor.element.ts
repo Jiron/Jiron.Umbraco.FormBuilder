@@ -18,7 +18,7 @@ const CHIP: Record<FormState, { color: string; look: string }> = {
   unpublished: { color: 'default', look: 'secondary' },
 };
 
-/** The name's room in rem, below which the header is cramped (the name's min-width in the styles). */
+/** The name's room in rem: its least width in the styles, below which the header's parts wait for room. */
 const NAME_ROOM = 6;
 
 /** The root's font size in pixels, which rem stands for. */
@@ -31,7 +31,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     _name: { state: true },
     _canDesign: { state: true },
     _stacked: { state: true },
-    _cramped: { state: true },
+    _waiting: { state: true },
   };
 
   // The tokens give the footer's filled buttons, Umbraco's own, the section's white labels (ADR-0182).
@@ -92,28 +92,11 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
       }
 
       /* Where Umbraco's row leaves the header less than the name's 6rem (Umbraco 18.3 gives the views' tabs their whole
-         width first, ADR-0250), the name takes what there is, and the state, under it, its own width at most, cut
-         with an ellipsis; its words stay its title and are read in full. The header clips its parts to its box, so
-         nothing of it lies over Umbraco's menu or the tabs, also where Umbraco leaves it no room at all. */
-      .cramped {
-        overflow: hidden;
-      }
-
-      .cramped .name,
-      .cramped h1 {
-        min-width: 0;
-      }
-
-      .cramped uui-tag {
-        min-width: 0;
-        max-width: 100%;
-      }
-
-      .cramped .state {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+         width first, ADR-0250), a sliver of the name would be no box to type in and crowd Umbraco's back button, and a
+         cut state would say less than nothing: both wait out of sight and reach, in their place, until the window
+         leaves them room. */
+      .waiting > * {
+        visibility: hidden;
       }
     `,
   ];
@@ -125,8 +108,8 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   declare private _canDesign: boolean | undefined;
   /** Whether the chip went under the name, which then both take their smaller height. */
   declare private _stacked: boolean;
-  /** Whether Umbraco's row leaves the header less than the name's 6rem, so the name and the state take what there is. */
-  declare private _cramped: boolean;
+  /** Whether Umbraco's row leaves the header less than the name's 6rem, so the name and the state wait for room. */
+  declare private _waiting: boolean;
 
   /** The header's own size follows the window and the chip's words; each change reads again where the chip lies. */
   #resize = new ResizeObserver(() => this.#measure());
@@ -135,7 +118,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     super();
     this._name = '';
     this._stacked = false;
-    this._cramped = false;
+    this._waiting = false;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.observe(context?.state, (state) => (this._state = state), 'state');
       this.observe(
@@ -169,29 +152,28 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
    * leaves as they are, so the two never take turns.
    */
   #measure() {
-    const header = this.shadowRoot?.querySelector<HTMLElement>('.header');
     const name = this.shadowRoot?.querySelector<HTMLElement>('.name, h1');
     const chip = this.shadowRoot?.querySelector<HTMLElement>('uui-tag');
     const stacked = !!name && !!chip && chip.offsetTop >= name.offsetTop + name.offsetHeight;
     if (stacked !== this._stacked) this._stacked = stacked;
-    // The header's width is what Umbraco's row leaves it, whatever its own parts ask, so the two never take turns.
-    const cramped = !!header && header.clientWidth < NAME_ROOM * rem();
-    if (cramped !== this._cramped) this._cramped = cramped;
+    // The header's width is what Umbraco's row leaves it; its parts keep their place while they wait, so the two never
+    // take turns.
+    const header = this.shadowRoot?.querySelector<HTMLElement>('.header');
+    const waiting = !!header && header.clientWidth < NAME_ROOM * rem();
+    if (waiting !== this._waiting) this._waiting = waiting;
   }
 
   #chip() {
     const state = this._state;
     if (!state) return nothing;
     const label = this.localize.term(`jfbDesigner_state_${state}`);
-    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look} title=${this._cramped ? label : nothing}
-      ><span class="state">${label}</span></uui-tag
-    >`;
+    return html`<uui-tag color=${CHIP[state].color} look=${CHIP[state].look}>${label}</uui-tag>`;
   }
 
   override render() {
     return html`<umb-entity-detail-workspace-editor .backPath=${this._backPath}>
       <div
-        class=${['header', this._stacked ? 'stacked' : '', this._cramped ? 'cramped' : ''].join(' ').trim()}
+        class=${['header', this._stacked ? 'stacked' : '', this._waiting ? 'waiting' : ''].filter(Boolean).join(' ')}
         slot="header"
       >
         ${

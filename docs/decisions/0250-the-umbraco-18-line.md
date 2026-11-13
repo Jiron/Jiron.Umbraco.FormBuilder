@@ -86,10 +86,11 @@ Option 2.
   database is Umbraco's (or Umbraco.AI's) own contention. The 18 demo names Umbraco 18's connection string, without
   the shared cache.
 - **The form's header (refines ADR-0213):** the header lives in the box Umbraco's row leaves it. Where that is less
-  than the name's 6rem, it is cramped: the name takes what there is, the state under it is cut with an ellipsis, its
-  words its title and read in full, and the header clips its parts to its box, so nothing of it lies over Umbraco's
-  menu or the tabs; where Umbraco leaves nothing, neither shows until the window leaves room. On 17 the header always
-  has room and nothing changes. The header test checks what Umbraco leaves, with room the design of ADR-0213.
+  than the name's 6rem, the name and the state wait out of sight and reach, in their place, until the window leaves
+  them room; otherwise the header is as ADR-0213 has it. A name squeezed to what is left was tried first: its box
+  became a sliver no one could type in, crowding Umbraco's back button below a target's 24 px of clear space, and a
+  state cut to a letter said less than nothing. On 17 the header always has room and nothing changes. Both narrowest
+  tests check what Umbraco leaves: with room the design of ADR-0213, without it the parts hidden.
 - **The backoffice's adapters:** the forms tree and the Recycle Bin read a level through `readLevel`, which pages by
   offset and reads a window around an item from the start, 500 items at a time (the endpoints' most), until it holds
   the item, answering "not found" for one that is gone (the tree then picks another or starts from the top); the
