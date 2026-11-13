@@ -53,6 +53,11 @@ export interface EditorContext {
   /** Says that an item was picked from the dictionary, whose texts are then read again. */
   readonly dictionaryPicked?: () => void;
   /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
+  /**
+   * A line after a setting's help that links to its page of the documentation, where the help needs more than two
+   * sentences (ROADMAP 17.2a); nothing for a setting without one.
+   */
+  readonly learnMore?: (setting: FieldSettingResponseModel) => TemplateResult | typeof nothing;
   readonly mergeTags?: (setting: FieldSettingResponseModel, path: string) => TemplateResult | typeof nothing;
   /**
    * What the form check found at a box, by its id: the ids that describe the box, the lines that say it, and whether
@@ -232,6 +237,7 @@ export function settingFrame(
         : label
     }
     ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
+    ${context.learnMore?.(setting) ?? nothing}
     ${box(described, problem !== undefined || (found?.error ?? false), problem !== undefined)}
     ${said ? html`<p class="help" id=${said}>${dictionary?.said}</p>` : nothing}
     ${problem ? html`<p class="why" id=${why ?? ''}>${problem}</p>` : nothing} ${found?.lines ?? nothing}
@@ -340,6 +346,9 @@ export function settingEditor(
       );
     }
     case 'fileSize': {
+      // The global settings draw the site's largest file with the host's cap under it, their own editor of the alias.
+      const own = context.editors?.['fileSize'];
+      if (own) return own(setting, value, path);
       // A file's largest size is typed in megabytes, as the global settings take the site's (ADR-0218), and stored in
       // bytes; the unit stands beside the box, and a screen reader says it with the box.
       const unit = `${id}-unit`;

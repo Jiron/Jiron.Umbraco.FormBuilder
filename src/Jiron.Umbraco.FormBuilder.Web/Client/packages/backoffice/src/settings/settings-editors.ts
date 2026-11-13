@@ -110,6 +110,7 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
     >
       <legend class="label">${context.say(setting.label)}</legend>
       ${help ? html`<p class="help" id=${help}>${context.say(setting.description)}</p>` : nothing}
+      ${context.learnMore?.(setting) ?? nothing}
       <div class="choices">
         ${rows.map((row) => {
           const rowId = `${id}-${row.value.replace(/[^a-zA-Z0-9]/g, '-')}`;
@@ -299,6 +300,7 @@ export function settingsEditors(host: SettingsEditorHost): Readonly<Record<strin
       html`<fieldset class="item" id=${boxId(path)}>
         <legend class="label">${context.say(setting.label)}</legend>
         ${setting.description ? html`<p class="help">${context.say(setting.description)}</p>` : nothing}
+        ${context.learnMore?.(setting) ?? nothing}
         <jfb-visitor-texts
           .texts=${isVisitorTexts(value) ? value : undefined}
           culture=${context.culture}

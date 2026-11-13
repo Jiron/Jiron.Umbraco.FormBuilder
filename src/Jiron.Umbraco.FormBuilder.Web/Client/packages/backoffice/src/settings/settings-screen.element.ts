@@ -17,6 +17,7 @@ import type { FieldSettingResponseModel, SettingsSectionResponseModel } from '..
 import type { LocalizedText } from '../designer/definition';
 import { controlStyles } from '../designer/inspector/control.styles';
 import { focusableIn } from '../designer/inspector/item-focus';
+import { learnMore, type LearnMoreTopic } from '../docs/learn-more.element';
 import {
   boxId,
   inspectorWords,
@@ -47,6 +48,19 @@ export const LEADS: Readonly<Record<string, readonly string[]>> = {
   protection: ['content'],
   integrations: ['chat'],
   privacy: ['ip', 'insights', 'members'],
+};
+
+/** The boxes whose lead the documentation carries on (ROADMAP 17.2a), by section and box. */
+export const LEAD_TOPICS: Readonly<Record<string, Readonly<Record<string, LearnMoreTopic>>>> = {
+  protection: { content: 'contentChecks' },
+  privacy: { ip: 'ipAddresses', insights: 'insights', members: 'memberDeletion' },
+};
+
+/** The fields whose help the documentation carries on (ROADMAP 17.2a), by section and field. */
+export const FIELD_TOPICS: Readonly<Record<string, Readonly<Record<string, LearnMoreTopic>>>> = {
+  general: { texts: 'visitorTexts' },
+  protection: { level: 'protectionLevels', captchaConsent: 'captchaConsent', blockedRanges: 'blockedRanges' },
+  integrations: { signingSecret: 'signatures' },
 };
 
 type Values = Readonly<Record<string, unknown>>;
@@ -130,7 +144,8 @@ export class SettingsScreenElement extends UmbLitElement {
       .lead,
       .note,
       .alert,
-      .own {
+      .own,
+      .learn {
         margin: 0;
       }
 
@@ -556,6 +571,10 @@ export class SettingsScreenElement extends UmbLitElement {
       defaultCulture: this.#defaultCulture(),
       problems: this._problems,
       set: (path, setting, parsed, done) => this.#set(path, setting, parsed, done),
+      learnMore: (setting) => {
+        const topic = FIELD_TOPICS[this.section]?.[setting.name];
+        return topic ? html`<p class="learn">${learnMore(topic)}</p>` : nothing;
+      },
     };
     const model = this._model;
     if (!model) return context;
@@ -618,8 +637,15 @@ export class SettingsScreenElement extends UmbLitElement {
     const rest = items.slice(MOST_IN_A_BOX);
     const open = this._more.has(box);
     const lead = LEADS[this.section]?.includes(box);
+    const topic = LEAD_TOPICS[this.section]?.[box];
     return html`<uui-box headline-variant="h2" headline=${this.#words(`${this.section}Box_${box}`)}>
-      ${lead ? html`<p class="lead">${this.#words(`${this.section}Box_${box}Lead`)}</p>` : nothing}
+      ${
+        lead
+          ? html`<p class="lead">
+              ${this.#words(`${this.section}Box_${box}Lead`)} ${topic ? learnMore(topic) : nothing}
+            </p>`
+          : nothing
+      }
       ${
         items.length > 0
           ? html`<div class="fields">
@@ -691,7 +717,10 @@ export class SettingsScreenElement extends UmbLitElement {
           </div>
           <div>
             <dt>${this.#words('scanner')}</dt>
-            <dd>${files.scanners === 0 ? this.#words('scannerNone') : this.#words('scannerSome', files.scanners)}</dd>
+            <dd>
+              ${files.scanners === 0 ? this.#words('scannerNone') : this.#words('scannerSome', files.scanners)}
+              ${learnMore('fileScanners')}
+            </dd>
           </div>
           <div>
             <dt>${this.#words('storedIn')}</dt>
@@ -708,8 +737,8 @@ export class SettingsScreenElement extends UmbLitElement {
               ? html`<p>
                     ${this.#words('formBlockThere', block.createdAt ? this.localize.date(block.createdAt, { dateStyle: 'medium' }) : '')}
                   </p>
-                  <p class="note">${this.#words('formBlockHow')}</p>`
-              : html`<p>${this.#words('formBlockMissing')}</p>
+                  <p class="note">${this.#words('formBlockHow')} ${learnMore('formBlock')}</p>`
+              : html`<p>${this.#words('formBlockMissing')} ${learnMore('formBlock')}</p>
                   ${
                     block.canCreate
                       ? html`<uui-button
@@ -794,7 +823,7 @@ export class SettingsScreenElement extends UmbLitElement {
     ${
       email && !email.canSend
         ? html`<p class="note" role="note">
-            ${this.#words('cannotSend')} ${this.#words('cannotSendKey', email.sendingKey)}
+            ${this.#words('cannotSend')} ${this.#words('cannotSendKey', email.sendingKey)} ${learnMore('sendingEmail')}
           </p>`
         : nothing
     }

@@ -115,6 +115,9 @@ describe('the retention screen', () => {
       '30',
     ]);
     expect(text(root.getElementById('days-spam-unit'))).toBe('days');
+    expect([...root.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
+      'retention',
+    ]);
     expect([...root.querySelectorAll('uui-box')].map((one) => one.getAttribute('headline'))).toEqual([
       'How long entries are kept',
       'Forms with their own retention',

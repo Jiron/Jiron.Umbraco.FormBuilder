@@ -1,4 +1,24 @@
 {
   "base": "https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/main/docs/",
-  "pages": {}
+  "pages": {
+    "formBlock": "installation.md#a-form-block-for-editors",
+    "migrations": "installation.md#the-database",
+    "sendingEmail": "email.md#setting-up-sending",
+    "mailLimits": "email.md#limits",
+    "fileScanners": "files.md#malware-scanners",
+    "signatures": "actions.md#checking-a-webhooks-signature",
+    "protectionLevels": "spam-protection.md#protection-levels",
+    "contentChecks": "spam-protection.md#content-checks",
+    "blockedRanges": "spam-protection.md#blocked-address-ranges",
+    "captchaConsent": "spam-protection.md#consent",
+    "retention": "privacy.md#retention",
+    "ipAddresses": "privacy.md#ip-addresses",
+    "insights": "insights.md#what-is-counted",
+    "memberDeletion": "members.md#when-a-member-is-deleted",
+    "keepAnswer": "privacy.md#sensitive-answers",
+    "patterns": "rules-and-validation.md#patterns",
+    "mergeTags": "merge-tags.md",
+    "visitorTexts": "multi-language.md#visitor-texts",
+    "headless": "headless.md#before-you-start"
+  }
 }

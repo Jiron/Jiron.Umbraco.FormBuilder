@@ -86,6 +86,9 @@ describe('the merge tag picker', () => {
     const panel = must(shadow.querySelector('.panel'), 'the panel');
     expect([button.getAttribute('aria-expanded'), button.getAttribute('aria-controls')]).toEqual(['true', panel.id]);
     expect([panel.getAttribute('role'), panel.getAttribute('aria-label')]).toEqual(['group', 'Insert merge tag']);
+    expect([...panel.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
+      'mergeTags',
+    ]);
     expect(shadow.activeElement).toBe(shadow.querySelector('input[type="search"]'));
     expect([...shadow.querySelectorAll('.heading')].map((heading) => text(heading))).toEqual([
       'The form',

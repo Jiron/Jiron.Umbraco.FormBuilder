@@ -7,6 +7,7 @@ import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { DeliveryDetailResponseModel } from '../api';
 import { ENTRY_ENTITY_TYPE, screenPath } from '../section/entity-types';
+import { learnMore } from '../docs/learn-more.element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { confirmText } from '../ui/confirm';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
@@ -210,6 +211,7 @@ export class DeliveryModalElement extends UmbModalBaseElement<DeliveryModalData,
         story.lines.length > 0
           ? html`<div class="story">
               ${story.lines.map((line) => html`<p>${detail.limit ? this.#withKey(line, detail.limit.key) : line}</p>`)}
+              ${detail.limit ? html`<p>${learnMore('mailLimits')}</p>` : nothing}
               ${story.tries ? html`<p class="muted">${story.tries}</p>` : nothing}
             </div>`
           : nothing

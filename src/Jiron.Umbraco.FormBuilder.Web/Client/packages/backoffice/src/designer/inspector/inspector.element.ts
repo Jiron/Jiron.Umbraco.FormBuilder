@@ -10,6 +10,7 @@ import { html, nothing, type PropertyValues, type TemplateResult } from '@umbrac
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
 import type { JfbFieldText } from '../../../public/types/jiron-form-builder';
+import { learnMore } from '../../docs/learn-more.element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import {
   allFields,
@@ -664,6 +665,7 @@ export class InspectorElement extends UmbLitElement {
           (value) =>
             this.#change(key, (one) => withProperty(one, 'keep', value === 'always' ? undefined : value), name),
           this.#helpOf(item),
+          html`<p class="help">${learnMore('keepAnswer')}</p>`,
         );
       case 'plain':
         return this.#plain(`prop-${item.property}`, name, String(own[item.property] ?? ''), (text) =>
@@ -753,6 +755,7 @@ export class InspectorElement extends UmbLitElement {
     choices: readonly (readonly [string, string])[],
     chosen: (value: string) => void,
     help = '',
+    after: TemplateResult | typeof nothing = nothing,
   ): TemplateResult {
     return html`<div class="item">
       <label class="label" for=${id}>${name}</label>
@@ -763,7 +766,7 @@ export class InspectorElement extends UmbLitElement {
       >
         ${choices.map(([one, label]) => html`<option value=${one} ?selected=${one === value}>${label}</option>`)}
       </select>
-      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing}
+      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing} ${after}
     </div>`;
   }
 
@@ -1012,6 +1015,7 @@ export class InspectorElement extends UmbLitElement {
       <div class="item">
         <label class="label" for=${id}>${name}</label>
         <p class="help" id=${`${id}-help`}>${this.#term('help_pattern')}</p>
+        <p class="help">${learnMore('patterns')}</p>
         <input
           type="text"
           id=${id}

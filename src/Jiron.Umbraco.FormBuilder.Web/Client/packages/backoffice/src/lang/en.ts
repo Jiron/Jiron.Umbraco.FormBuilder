@@ -6,6 +6,7 @@ import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localiza
 import designer from './designer.en';
 import fieldTypes from './field-types.en';
 import formPicker from './form-picker.en';
+import learnMore from './learn-more.en';
 import library from './library.en';
 import mergeTags from './merge-tags.en';
 import options from './options.en';
@@ -21,4 +22,5 @@ export default {
   ...library,
   ...designer,
   ...mergeTags,
+  ...learnMore,
 } satisfies UmbLocalizationDictionary;

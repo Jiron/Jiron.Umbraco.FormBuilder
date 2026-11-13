@@ -494,6 +494,11 @@ describe('the submission', () => {
     expect(more.getAttribute('aria-expanded')).toBe('true');
     // The toggle counts what it opens.
     expect(root.querySelectorAll('#submission-more > .item').length).toBe(5);
+    expect(
+      [...must(root.getElementById('submission-more'), 'More options').querySelectorAll('jfb-learn-more')].map((link) =>
+        link.getAttribute('topic'),
+      ),
+    ).toEqual(['visitorTexts']);
     expect([box('next-label').placeholder, box('back-label').placeholder]).toEqual(['Next', 'Back']);
     await type('next-label', 'Continue');
     await click(box('summary-page'));
@@ -647,8 +652,11 @@ describe('the appearance and the developer', () => {
   });
 
   it('takes the names one a line as the server checks them', async () => {
-    const { open, type, why, settings } = await viewOf();
+    const { root, open, type, why, settings } = await viewOf();
     await open('developer');
+    expect([...root.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
+      'headless',
+    ]);
     await type('context-values', 'crm\njfbServer');
     expect(why('context-values')).toEqual([
       '"jfbServer" starts with "jfb", which Jiron Form Builder keeps for itself.',

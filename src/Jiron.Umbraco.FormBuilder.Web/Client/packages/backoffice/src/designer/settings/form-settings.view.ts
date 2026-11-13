@@ -91,6 +91,7 @@ import { jfbPhoneColumn } from '../../styles/phone';
 import { isInstant, toInstant, toLocal, zoneOf } from './time-zone';
 import { withThemeLabel } from '../../themes/theme-label';
 import './visitor-texts.element';
+import { learnMore } from '../../docs/learn-more.element';
 import { isVisitorTexts, type VisitorTexts } from './visitor-texts';
 
 const OPEN_KEY = 'jfb.designer.settings.open';
@@ -646,6 +647,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     on: boolean,
     change: (on: boolean) => void,
     disabled = false,
+    after: TemplateResult | typeof nothing = nothing,
   ): TemplateResult {
     const problems = this.#problemsAt(id);
     return html`<div class="item">
@@ -661,7 +663,7 @@ export class FormSettingsViewElement extends UmbLitElement {
         />
         <label class="label" for=${id}>${label}</label>
       </div>
-      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing} ${this.#whys(id, problems)}
+      ${help ? html`<p class="help" id=${`${id}-help`}>${help}</p>` : nothing} ${after} ${this.#whys(id, problems)}
     </div>`;
   }
 
@@ -1034,6 +1036,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       <fieldset class="item">
         <legend class="label">${this.#term('texts')}</legend>
         <p class="help">${this.#term('textsHelp')}</p>
+        <p class="help">${learnMore('visitorTexts')}</p>
         <jfb-visitor-texts
           .texts=${isVisitorTexts(submission['texts']) ? submission['texts'] : undefined}
           culture=${look.culture}
@@ -1667,6 +1670,8 @@ export class FormSettingsViewElement extends UmbLitElement {
         this.#term('headlessHelp'),
         flagIn(developer, 'headless', false),
         (on) => this.#set(['developer', 'headless'], on, this.#term('headless')),
+        false,
+        html`<p class="help">${learnMore('headless')}</p>`,
       )}
       ${this.#names(
         'query-values',

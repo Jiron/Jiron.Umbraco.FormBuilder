@@ -16,6 +16,7 @@ import {
 } from '../api';
 import { ENTRY_ENTITY_TYPE, FORM_ENTITY_TYPE, INBOX_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { myPermissions } from '../section/my-permissions';
+import { learnMore } from '../docs/learn-more.element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { doneCount, findingsToShow, receivedText, stepViews, type StepView } from './checklist';
 import { FORM_BLOCK_MODAL } from './form-block-modal.token';
@@ -561,7 +562,9 @@ export class OverviewElement extends UmbLitElement {
 
   override render() {
     if (this._paused) {
-      return html`<uui-box><p role="alert">${this.localize.term('jfbOverview_paused')}</p></uui-box>`;
+      return html`<uui-box
+        ><p role="alert">${this.localize.term('jfbOverview_paused')} ${learnMore('migrations')}</p></uui-box
+      >`;
     }
 
     return html`${this.#renderChecklist()}${this.#renderHealth()}${this.#renderRecent()}${

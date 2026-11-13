@@ -280,6 +280,7 @@ describe('every area', () => {
     jfbOptionLists: 'option-lists/option-list-words.test.ts',
     jfbEmailLayouts: 'email-layouts/email-layout-words.test.ts',
     jfbThemes: 'themes/theme-words.test.ts',
+    jfbLearnMore: 'docs/learn-more.test.ts',
   };
   const HERE = [
     'jfbInspector',

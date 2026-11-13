@@ -285,6 +285,9 @@ async function screenOf(section: string, ...reads: SettingsSectionResponseModel[
   return { screen, root, box, type, button, save, peek };
 }
 
+/** The topics of the Learn more links a screen shows, in their order. */
+const topics = (root: ParentNode) => all(root, 'jfb-learn-more').map((link) => link.getAttribute('topic'));
+
 beforeAll(registerEnglish);
 
 afterEach(() => {
@@ -517,6 +520,14 @@ describe('the global settings screen', () => {
     expect(api.sent).toEqual([{ version: 2, site: null, values: { memberDeleted: 'delete' } }]);
   });
 
+  it('links the help that needs more than its lines to its page of the documentation (ROADMAP 17.2a)', async () => {
+    expect(topics((await screenOf('protection', protection())).root)).toEqual(['protectionLevels', 'captchaConsent']);
+    document.body.replaceChildren();
+    expect(topics((await screenOf('privacy', privacy())).root)).toEqual(['ipAddresses', 'insights', 'memberDeletion']);
+    document.body.replaceChildren();
+    expect(topics((await screenOf('general', general())).root)).toEqual(['formBlock']);
+  });
+
   it("says Email can't send yet with the key that sets it up, and offers no test mail until it can", async () => {
     const email = (canSend: boolean): SettingsSectionResponseModel => ({
       ...protection(),
@@ -529,6 +540,7 @@ describe('the global settings screen', () => {
     const cannot = await screenOf('email', email(false));
     expect(text(cannot.root.querySelector('.note[role="note"]'))).toContain('Umbraco:CMS:Global:Smtp');
     expect(cannot.button('Send test email')).toBeUndefined();
+    expect(topics(cannot.root)).toEqual(['sendingEmail']);
     document.body.replaceChildren();
     const can = await screenOf('email', email(true));
     await can.type('setting-senderName', 'Nordwind Travel');
@@ -597,6 +609,7 @@ describe('the global settings screen', () => {
     };
     const { root, type, save } = await screenOf('files', files);
     expect(said(root)).toContain('JPG, PNG');
+    expect(topics(root)).toEqual(['fileScanners']);
     expect(text(root.getElementById('setting-maxFileBytes-cap'))).toBe(
       'Host configuration allows at most 50 MB: JironFormBuilder:Files:MaxFileBytes',
     );
@@ -623,6 +636,7 @@ describe('the global settings screen', () => {
       facts: { integrations: { allowedHosts: [], allowHttp: false, found: ['signingSecret'] } },
     };
     const { root, type } = await screenOf('integrations', integrations);
+    expect(topics(root)).toEqual(['signatures']);
     expect(text(root.getElementById('setting-signingSecret-status'))).toBe('Found in host configuration.');
     expect(text(root.getElementById('setting-slackWebhook-status'))).toBe(
       'Not in host configuration yet: a developer adds JironFormBuilder:Secrets:Slack.',

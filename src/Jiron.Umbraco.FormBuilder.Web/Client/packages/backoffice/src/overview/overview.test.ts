@@ -332,6 +332,9 @@ describe('the Overview', () => {
     expect(text(must(root.querySelector('[role="alert"]'), 'the sentence'))).toContain(
       'database migrations are pending',
     );
+    expect([...root.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
+      'migrations',
+    ]);
     expect(root.querySelector('ol')).toBeNull();
     expect(root.querySelector('.failed')).toBeNull();
   });

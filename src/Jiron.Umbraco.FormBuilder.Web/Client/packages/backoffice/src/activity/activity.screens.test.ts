@@ -292,6 +292,9 @@ describe("a delivery's details", () => {
     expect(button('Retry')).toBeUndefined();
     expect(said(root)).toContain('3 emails to anna@example.org that day');
     expect(root.querySelector('code')?.textContent).toBe('JironFormBuilder:Limits:Mail:PerRecipientPerDay');
+    expect([...root.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
+      'mailLimits',
+    ]);
   });
 
   it('says who can retry when the reader may not', async () => {

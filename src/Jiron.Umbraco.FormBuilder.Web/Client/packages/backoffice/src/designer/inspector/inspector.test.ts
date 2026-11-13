@@ -244,6 +244,11 @@ describe('the inspector', () => {
       'Until the actions have run: emails and webhooks still get the answer, then it is removed from the entry, which shows "not kept", and from its emails. Sensitive only masks an answer; this removes it.',
     );
     choose(must(root.querySelector<HTMLSelectElement>('#prop-keep'), 'keep'), 'untilActionsRun');
+    expect(
+      [
+        ...must(root.querySelector('#prop-keep')?.parentElement, 'the keep item').querySelectorAll('jfb-learn-more'),
+      ].map((link) => link.getAttribute('topic')),
+    ).toEqual(['keepAnswer']);
     expect(applied(requests[3], NAME)['keep']).toBe('untilActionsRun');
     choose(must(root.querySelector<HTMLSelectElement>('#prop-keep'), 'keep'), 'always');
     expect(applied(requests[4], { ...NAME, keep: 'untilActionsRun' })).toEqual(NAME);
@@ -813,6 +818,11 @@ describe("a field's pattern in the inspector (ADR-0173)", () => {
     const box = must(root.querySelector<HTMLInputElement>('#prop-pattern'), 'the pattern');
     expect(text(root.querySelector('label[for="prop-pattern"]'))).toBe('Must match a pattern');
     expect(box.getAttribute('aria-describedby')).toBe('prop-pattern-help');
+    expect(
+      [...must(box.closest('.item-stack'), 'the pattern item').querySelectorAll('jfb-learn-more')].map((link) =>
+        link.getAttribute('topic'),
+      ),
+    ).toEqual(['patterns']);
     expect(root.querySelector('#prop-pattern-sample')).toBeNull();
     type(box, CODE);
     expect(applied(requests[0], NAME)['validation']).toEqual([{ kind: 'pattern', pattern: CODE }]);

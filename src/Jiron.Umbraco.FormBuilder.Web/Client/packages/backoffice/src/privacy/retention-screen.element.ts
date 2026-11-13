@@ -24,6 +24,7 @@ import { formPath } from '../section/entity-types';
 import { myPermissions } from '../section/my-permissions';
 import { saveSection } from '../settings/settings-api';
 import { loadSettingsWords } from '../settings/settings-words';
+import { learnMore } from '../docs/learn-more.element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { jfbPhoneColumn } from '../styles/phone';
@@ -654,7 +655,7 @@ export class RetentionScreenElement extends UmbLitElement {
     return html`<uui-box headline-variant="h2" headline=${this.#words('privacyBox_retention')}>
       ${model.lockedBy ? this.#note(this.#words('locked', model.lockedBy)) : nothing}
       <div class="rows">${STATES.map((state) => this.#day(state, model))}</div>
-      <p class="help">${this.#words('privacy_retentionHelp')}</p>
+      <p class="help">${this.#words('privacy_retentionHelp')} ${learnMore('retention')}</p>
       ${
         this.#editable() && !model.keepForGood
           ? this.#note(html`${this.#words('retentionForGoodLocked')} ${configKey(model.keepForGoodKey)}`)

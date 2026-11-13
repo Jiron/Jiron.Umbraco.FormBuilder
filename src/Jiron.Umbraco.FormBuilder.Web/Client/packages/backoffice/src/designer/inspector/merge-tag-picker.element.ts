@@ -6,6 +6,7 @@
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { MergeTagPathResponseModel } from '../../api';
+import { learnMore } from '../../docs/learn-more.element';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import type { DesignDefinition } from '../definition';
 import { groupPaths, readMergeTagPaths, tagOf, withTag, type MergeTagPlace } from './merge-tags';
@@ -135,6 +136,7 @@ export class MergeTagPickerElement extends UmbLitElement {
         @input=${(event: Event) => (this._query = (event.target as HTMLInputElement).value)}
       />
       ${this.#list()}
+      <p class="note">${learnMore('mergeTags')}</p>
     </div>`;
   }
 
