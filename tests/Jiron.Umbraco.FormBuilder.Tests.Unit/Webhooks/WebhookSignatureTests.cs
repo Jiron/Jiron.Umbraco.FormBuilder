@@ -79,6 +79,28 @@ public sealed class WebhookSignatureTests
         Assert.That((freshCode, oldCode), Is.EqualTo((0, 1)));
     }
 
+    [Test]
+    public async Task ThePhpSample_WithoutATime_ChecksTheHeaderAgainstTheClock()
+    {
+        if (!IsOnThePath("php"))
+        {
+            if (Environment.GetEnvironmentVariable("CI") is not null)
+            {
+                Assert.Fail("CI's runner has PHP, so this sample is run there.");
+            }
+
+            Assert.Ignore("PHP is not installed here; this sample runs on CI's runner.");
+        }
+
+        var fresh = WebhookSignature.Of(Secret, DateTimeOffset.UtcNow, Encoding.UTF8.GetBytes(Body));
+        var old = WebhookSignature.Of(Secret, Time, Encoding.UTF8.GetBytes(Body));
+
+        var freshCode = await RunAsync("php", Path.Combine(Samples, "verify.php"), Secret, fresh, Body, now: null);
+        var oldCode = await RunAsync("php", Path.Combine(Samples, "verify.php"), Secret, old, Body, now: null);
+
+        Assert.That((freshCode, oldCode), Is.EqualTo((0, 1)));
+    }
+
     [TestCaseSource(nameof(Cases))]
     public async Task ThePhpSample(string secret, string header, string body, long now, bool genuine)
     {
