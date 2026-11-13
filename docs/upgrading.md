@@ -8,8 +8,8 @@ notes of each version follow at the end, one section per release.
 The policy is [ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md); in short:
 
 - **Versions follow Semantic Versioning within each Umbraco major.** The package's major is Umbraco's: version 17 runs
-  on Umbraco from 17.6.0 up to, but not including, 18, and version 18 on Umbraco from 18.1.0 up to, but not including,
-  19. Prereleases are named `-alpha.N`, `-beta.N` and `-rc.N`. A patch
+  on Umbraco from 17.6.0 up to, but not including, 18, and version 18 on Umbraco from 18.1.0 up to, but not
+  including, 19. Prereleases are named `-alpha.N`, `-beta.N` and `-rc.N`. A patch
   never needs a migration; a minor may add one, but never breaks the public C# surface, the public API, the website's
   markup and JavaScript, or the backoffice's extension points listed in [extending.md](extending.md). A breaking change
   needs a new major, or a new API version served beside the old one for the rest of the major and the whole next one.
@@ -39,6 +39,38 @@ The policy is [ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.
 
 Read the release's notes below before you upgrade: they list anything a site's own code, views or scripts should look
 at.
+
+## Moving a site from Umbraco 17 to 18
+
+Version 18 of the packages runs on Umbraco 18.1 or later (within 18), version 17 on Umbraco 17.6 or later (within 17).
+A site moves its Umbraco and Jiron Form Builder together:
+
+1. Back up as for any upgrade, and read Umbraco's own notes for version 18.
+2. Raise every Umbraco package the site references (`Umbraco.Cms`, `Umbraco.Cms.DevelopmentMode.Backoffice` and any
+   other `Umbraco.Cms.*`) to the same 18.x, and `Jiron.Umbraco.FormBuilder` to 18.x. With the AI add-on, raise
+   `Jiron.Umbraco.FormBuilder.AI` and the site's Umbraco.AI packages to 18.x too. Then build.
+3. Start the site. Umbraco upgrades its own database first: on its own with
+   `Umbraco:CMS:Unattended:UpgradeUnattended`, otherwise on its upgrade screen after a user signs in. Jiron Form
+   Builder's migrations then run as for any upgrade.
+
+What stays as it was:
+
+- **The data.** Both lines share one database schema and one migration plan, so the site keeps its folders, forms with
+  their versions and drafts, entries with their answers, states and files, and settings. Only the migrations the 18
+  release has and the site's 17 release lacked run. Before each release the install test moves a 17 site with data to
+  18 and reads everything back ([upgrade-testing.md](upgrade-testing.md)).
+- **Everything a site builds on:** the public API under `/jfb/api/v1`, the website's markup, theme views, scripts and
+  events, merge tags, webhooks and the C# extension points in [extending.md](extending.md). Code of the site's own that
+  uses them builds against version 18 unchanged, unless it also uses something Umbraco 18 removed.
+
+What differs:
+
+- **The OpenAPI documents** Umbraco serves outside production are OpenAPI 3.1 at `/umbraco/openapi/jfb-public.json`
+  (and `jfb.json`, `jfb-ai.json`), where Umbraco 17 served them through Swagger at
+  `/umbraco/swagger/<name>/swagger.json`. They describe the same operations, answers and models; a free JSON value is
+  written as an open object. The 18 line's snapshot is [api/jfb-public.json](api/jfb-public.json).
+- **Backoffice extensions** that build on Jiron Form Builder's backoffice extension points build against
+  `@umbraco-cms/backoffice` 18.
 
 ## How the upgrade is tested
 
