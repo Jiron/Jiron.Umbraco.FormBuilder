@@ -70,9 +70,9 @@ What differs:
   `/umbraco/swagger/<name>/swagger.json`. They describe the same operations, answers and models; a free JSON value is
   written as an open object. The 18 line's snapshot is [api/jfb-public.json](api/jfb-public.json).
 - **The form's header on a narrow window.** Umbraco 18.3 gives a workspace's view tabs their whole width first and
-  the header what is left. Beside all of a form's views, the name and the state then take what there is, the state cut
-  with an ellipsis (its words in its tooltip), down to nothing where Umbraco leaves nothing; a wider window brings them
-  back.
+  the header what is left. Beside all of a form's views on a narrow window (about 1,100 px in German), that is less
+  than the form's name needs, and the name and the state wait out of sight until a wider window leaves them room; the
+  form stays selected in the tree.
 - **Backoffice extensions** that build on Jiron Form Builder's backoffice extension points build against
   `@umbraco-cms/backoffice` 18.
 
