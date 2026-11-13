@@ -347,7 +347,7 @@ public sealed class PublicFormProofOfWorkTests : PublicApiTestBase
         var contact = Published("Contact", shop);
         var other = Published("Other", null);
         await GetRequiredService<global::Umbraco.Cms.Core.Services.Navigation.IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<global::Umbraco.Cms.Core.Services.Navigation.IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<global::Umbraco.Cms.Core.Services.Navigation.IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return (shop.Key, contact.Key, other.Key);
     }
 }

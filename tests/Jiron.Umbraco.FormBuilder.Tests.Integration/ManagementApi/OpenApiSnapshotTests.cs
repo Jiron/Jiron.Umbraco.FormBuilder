@@ -6,9 +6,10 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Jiron.Umbraco.FormBuilder.Web.OpenApi;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.Swagger;
-using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
@@ -54,16 +55,17 @@ public sealed class OpenApiSnapshotTests : FormBuilderTestServerTestBase
             Assert.That(operations, Is.All.Not.Null);
             Assert.That(operations, Is.Unique);
             Assert.That(operations, Does.Contain("FolderCreate").And.Contain("TreeRoot").And.Contain("TrashEmpty"));
-            Assert.That(GetRequiredService<IEnumerable<ISchemaIdHandler>>().OfType<FormBuilderSchemaIdHandler>().Count(), Is.EqualTo(1), "its own models are named by its own handler");
+            Assert.That(Services.GetKeyedServices<FormBuilderOpenApiDocument>(FormBuilderManagementApi.ApiName).Count(), Is.EqualTo(1), "registered once, however often its registration runs");
             Assert.That(document["components"]!["schemas"]!.AsObject().Select(schema => schema.Key), Is.All.Matches<string>(name => name.EndsWith("RequestModel", StringComparison.Ordinal) || name.EndsWith("ResponseModel", StringComparison.Ordinal) || name == "ProblemDetails"), "only its own models, never a framework type described by its properties");
         });
     }
 
     private async Task<string> GenerateAsync()
     {
-        var document = GetRequiredService<ISwaggerProvider>().GetSwagger("jfb");
+        var document = await Services.GetRequiredKeyedService<IOpenApiDocumentProvider>("jfb").GetOpenApiDocumentAsync();
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        await document.SerializeAsync(new OpenApiJsonWriter(writer), OpenApiSpecVersion.OpenApi3_0);
+        // As Umbraco 18 serves it: OpenAPI 3.1 (ADR-0250).
+        await document.SerializeAsync(new OpenApiJsonWriter(writer), OpenApiSpecVersion.OpenApi3_1);
         var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         return JsonNode.Parse(writer.ToString())!.ToJsonString(options).ReplaceLineEndings("\n") + "\n";
     }

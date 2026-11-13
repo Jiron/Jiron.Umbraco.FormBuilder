@@ -6,13 +6,14 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Architecture;
 
 /// <summary>
 /// The unit tests run against the Umbraco that NuGet resolves for the packages' range, its floor (D3), and the floor
-/// clears the runtime cache reliably (ADR-0074): before 17.6.0 a key removed and inserted again could drop out of the
-/// cache's own key set, so a later clear by prefix left the value kept. Lowering the range below 17.6.0 fails here.
+/// clears the runtime cache reliably (ADR-0074): before 18.1.0 on the Umbraco 18 line (17.6.0 on 17) a key removed and
+/// inserted again could drop out of the cache's own key set, so a later clear by prefix left the value kept. Lowering the
+/// range below 18.1.0 fails here.
 /// </summary>
 [TestFixture]
 public sealed class UmbracoFloorTests
 {
-    private static readonly Version Floor = new(17, 6, 0);
+    private static readonly Version Floor = new(18, 1, 0);
 
     [Test]
     public void TheTests_RunOnAnUmbracoWhoseRuntimeCacheClearsReliably()
@@ -21,6 +22,6 @@ public sealed class UmbracoFloorTests
         var numbers = informational?.Split('+', '-')[0];
 
         Assert.That(Version.TryParse(numbers, out var version), Is.True, string.Create(CultureInfo.InvariantCulture, $"Umbraco's version '{informational}'"));
-        Assert.That(version, Is.GreaterThanOrEqualTo(Floor), "Umbraco before 17.6.0 can keep a value its runtime cache was told to clear (ADR-0074).");
+        Assert.That(version, Is.GreaterThanOrEqualTo(Floor), "Umbraco 18 before 18.1.0 can keep a value its runtime cache was told to clear (ADR-0074).");
     }
 }

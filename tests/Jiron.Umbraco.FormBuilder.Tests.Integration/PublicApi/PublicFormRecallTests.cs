@@ -329,7 +329,7 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
         contents.Save(contact);
         contents.Publish(contact, ["*"]);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return (shop.Key, contact.Key);
     }
 

@@ -1,8 +1,8 @@
-using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
+using IElement = AngleSharp.Dom.IElement;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 

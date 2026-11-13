@@ -29,6 +29,7 @@ using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Web.Common.Controllers;
 using Umbraco.Cms.Web.Common.Security;
+using IElement = AngleSharp.Dom.IElement;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 
@@ -272,7 +273,7 @@ public abstract class RenderingTestBase : PublicApiTestBase
         }
 
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         await GetRequiredService<IDocumentUrlService>().InitAsync(forceEmpty: false, CancellationToken.None);
         return pages;
     }
@@ -311,7 +312,7 @@ public abstract class RenderingTestBase : PublicApiTestBase
         }
 
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         await GetRequiredService<IDocumentUrlService>().InitAsync(forceEmpty: false, CancellationToken.None);
         var culture = await GetRequiredService<ILanguageService>().GetDefaultIsoCodeAsync();
         await DomainsAsync(first.Key, culture, FirstHost);

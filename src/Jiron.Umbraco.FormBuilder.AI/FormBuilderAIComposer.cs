@@ -12,8 +12,6 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 
@@ -49,7 +47,7 @@ internal static class FormBuilderAIServices
         builder.Services.TryAddSingleton<AIExceptionFilter>();
         builder.Services.TryAddSingleton<AIHealth>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<HealthProbe, AIHealth>(provider => provider.GetRequiredService<AIHealth>()));
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderAISwagger>());
+        builder.AddFormBuilderAIDocument();
         builder.AddNotificationAsyncHandler<FormDeletedNotification, DraftMarkCleanup>();
         builder.AddNotificationAsyncHandler<FolderDeletedNotification, DraftMarkCleanup>();
         builder.AddNotificationAsyncHandler<TrashEmptiedNotification, DraftMarkCleanup>();

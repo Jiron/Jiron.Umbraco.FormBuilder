@@ -27,14 +27,14 @@ Runtime dependencies, direct and transitive, may only be MIT, Apache-2.0, BSD-2-
 | `SmartReader` | 0.11.1 | Apache-2.0 | Strumenta |
 | `System.IO.Packaging` | 10.0.2 | MIT | © Microsoft Corporation. All rights reserved. |
 | `System.Numerics.Tensors` | 10.0.9 | MIT | © Microsoft Corporation. All rights reserved. |
-| `Umbraco.AI` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Core` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Persistence` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Persistence.Sqlite` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Persistence.SqlServer` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Startup` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Web` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
-| `Umbraco.AI.Web.StaticAssets` | 17.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0, read 2026-11-11, ADR-0018)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Core` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence.Sqlite` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Persistence.SqlServer` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Startup` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Web` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
+| `Umbraco.AI.Web.StaticAssets` | 18.5.2 | MIT (its nuspec names no licence; the package carries the Umbraco.AI repository's LICENSE.md, the MIT licence (17.5.2 and 17.7.0 read 2026-11-11; 18.5.2 and 18.7.0 the same file, read 2026-11-13; ADR-0018, ADR-0250)) | Copyright © Umbraco 2026 |
 <!-- jfb-shipped:end -->
 
 Umbraco CMS packages, and what they bring, are not listed here: sites already run them, and Jiron Form Builder only
@@ -65,13 +65,13 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `azurite` | 3.37.0 | MIT | the local storage emulator the blob store sample's contract tests start, in memory and without telemetry (`scripts/`, ADR-0234); its dependency `uri-templates` 0.2.0 is in the public domain (ADR-0027) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
-| `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests, and with its MIT dependency Microsoft.CodeCoverage the coverage of the phase reviews, instrumented in memory (ADR-0079) (`tests/`) |
+| `Microsoft.NET.Test.Sdk` | 18.10.1 | MIT | running the tests, and with its MIT dependency Microsoft.CodeCoverage the coverage of the phase reviews, instrumented in memory (ADR-0079) (`tests/`) |
 | `NSubstitute` | 6.2.0 | BSD-3-Clause | test doubles in unit and integration tests (`tests/`) |
 | `JsonSchema.Net` | 8.0.5 | MIT | validating definitions against the schema in `schemas/` in the unit tests, and the element endpoint's answers against the element's schema in the integration tests, with its MIT dependencies JsonPointer.Net, Json.More.Net and Humanizer.Core; kept below 9.0, whose releases carry a fee agreement (ADR-0034) (`tests/`) |
-| `Umbraco.Cms.Tests.Integration` | 17.7.1 | MIT | integration tests on a real Umbraco (`tests/`) |
-| `Umbraco.Cms` | 17.7.1 | MIT | the demo site, a whole Umbraco site on SQLite (`demo/`) |
-| `MimeKit` | 4.17.0 | MIT | reading the test hosts' mail in the Testing project; Umbraco already brings it (`tests/`) |
-| `@umbraco-cms/backoffice` | 17.5.0 | MIT | the backoffice extension's types; external in its build, since Umbraco provides it in the page (`Client/`) |
+| `Umbraco.Cms.Tests.Integration` | 18.3.1 | MIT | integration tests on a real Umbraco (`tests/`) |
+| `Umbraco.Cms` | 18.3.1 | MIT | the demo site, a whole Umbraco site on SQLite (`demo/`) |
+| `MimeKit` | 4.17.0, 4.18.1 | MIT | reading the test hosts' mail in the Testing project; Umbraco already brings it, 4.17.0 at the packages' floor and 4.18.1 with the hosts' Umbraco (`tests/`) |
+| `@umbraco-cms/backoffice` | 18.1.0 | MIT | the backoffice extension's types; external in its build, since Umbraco provides it in the page (`Client/`) |
 | `@hey-api/openapi-ts` | 0.99.0 | MIT | generating the management API client (`Client/`) |
 | `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`, `tests/e2e/`) |
 | `vite` | 8.3.3 | MIT | the library builds (`Client/`) |

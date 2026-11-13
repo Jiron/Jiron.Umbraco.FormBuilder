@@ -10,8 +10,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 
@@ -25,7 +23,7 @@ internal static class FormBuilderPublicApiServices
 
     /// <summary>
     /// Adds the controllers below the configured base path, their filter, the middleware before routing, and the OpenAPI
-    /// document <c>jfb-public</c> with its operation names. Safe to call more than once.
+    /// document <c>jfb-public</c> (ADR-0250). Safe to call more than once.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderPublicApi(this IUmbracoBuilder builder)
     {
@@ -58,8 +56,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddSingleton<UploadRequests>();
         builder.Services.TryAddSingleton<EntryRequests>();
         builder.Services.TryAddSingleton<InsightRequests>();
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderPublicApiSwagger>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderPublicOperationIdHandler>());
+        builder.AddFormBuilderPublicApiDocument();
         builder.Services.Configure<UmbracoPipelineOptions>(options =>
         {
             if (!options.PipelineFilters.Any(filter => filter.Name == PipelineFilterName))

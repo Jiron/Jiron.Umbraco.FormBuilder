@@ -3,17 +3,16 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Jiron.Umbraco.FormBuilder.Web.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Api.Common.OpenApi;
+using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
@@ -49,9 +48,13 @@ internal static class FormBuilderPublicApi
 /// limit (<see cref="FormBuilderRateLimitAttribute"/>, <see cref="FormBuilderBodyLimitAttribute"/>,
 /// <see cref="FormBuilderTimeLimitAttribute"/>), and a test fails for one that does not. Each response names its media type,
 /// <c>application/json</c> (<c>text/html</c> for a form's markup) or, for a refusal, <c>application/problem+json</c>.
-/// The controllers are internal; the public API's registration adds them to MVC.
+/// The controllers are internal; the public API's registration adds them to MVC. <c>[ApiExplorerSettings]</c> lists them in the
+/// document: Umbraco 18's generator describes only the actions ASP.NET Core's API explorer lists, which without
+/// <c>[ApiController]</c> (and its automatic answers, which the public API does not use) are those that ask (ADR-0250); the
+/// actions that stay out of the document say so themselves.
 /// </summary>
 [MapToApi(FormBuilderPublicApi.ApiName)]
+[ApiExplorerSettings]
 [AllowAnonymous]
 [ServiceFilter(typeof(FormBuilderPublicApiFilter))]
 internal abstract class FormBuilderPublicApiController : ControllerBase;
@@ -218,40 +221,34 @@ internal sealed class FormBuilderTimeLimitAttribute(int seconds) : Attribute
 }
 
 /// <summary>
-/// The document <c>jfb-public</c>, with each operation's declarations as extensions, so the test that lists the
-/// endpoints from the document finds a missing one. It is registered here only, because Umbraco 18 replaces Swashbuckle
-/// (ROADMAP 3.4, Phase 19).
+/// The document <c>jfb-public</c> on Umbraco 18 (ADR-0250): Umbraco's document builder over Microsoft.AspNetCore.OpenApi,
+/// served at <c>/umbraco/openapi/jfb-public.json</c> outside production, without the backoffice's sign-in (the public API
+/// is anonymous), and with each operation's declarations as extensions, so the test that lists the endpoints from the
+/// document finds a missing one.
 /// </summary>
-internal sealed class ConfigureFormBuilderPublicApiSwagger : IConfigureOptions<SwaggerGenOptions>
+internal static class FormBuilderPublicApiDocument
 {
-    /// <inheritdoc />
-    public void Configure(SwaggerGenOptions options)
+    /// <summary>Registers the document once.</summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    public static IUmbracoBuilder AddFormBuilderPublicApiDocument(this IUmbracoBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        options.SwaggerDoc(FormBuilderPublicApi.ApiName, new OpenApiInfo
+        ArgumentNullException.ThrowIfNull(builder);
+        if (!FormBuilderOpenApiDocuments.Claim(builder.Services, FormBuilderPublicApi.ApiName))
         {
-            Title = "Jiron Form Builder public API",
-            Version = "1.0",
-            Description = "What visitors' browsers and headless sites call: forms, their options, uploads, the checks of a page, entries and their receipts. Anonymous; errors are ProblemDetails with a stable code.",
-        });
-        options.OperationFilter<FormBuilderPublicDeclarations>();
-        options.DocumentFilter<FormBuilderPublicDocument>();
-    }
-}
-
-/// <summary>Leaves the backoffice's sign-in out of the document <c>jfb-public</c>: the public API is anonymous.</summary>
-internal sealed class FormBuilderPublicDocument : IDocumentFilter
-{
-    /// <inheritdoc />
-    public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
-    {
-        ArgumentNullException.ThrowIfNull(swaggerDoc);
-        ArgumentNullException.ThrowIfNull(context);
-        if (context.DocumentName == FormBuilderPublicApi.ApiName)
-        {
-            swaggerDoc.Components?.SecuritySchemes?.Clear();
-            swaggerDoc.Security?.Clear();
+            return builder;
         }
+
+        return builder.AddBackOfficeOpenApiDocument(FormBuilderPublicApi.ApiName, document => document
+            .WithTitle("Jiron Form Builder public API")
+            .ConfigureOpenApiOptions(options =>
+            {
+                options.AddDocumentTransformer(FormBuilderOpenApiDocuments.Describe(
+                    "1.0",
+                    "What visitors' browsers and headless sites call: forms, their options, uploads, the checks of a page, entries and their receipts. Anonymous; errors are ProblemDetails with a stable code."));
+                options.AddOperationTransformer<FormBuilderOperationIds>();
+                options.AddOperationTransformer<FormBuilderPublicDeclarations>();
+                FormBuilderOpenApiSchemas.Apply(options);
+            }));
     }
 }
 
@@ -262,19 +259,19 @@ internal sealed class FormBuilderPublicDocument : IDocumentFilter
 /// <c>403 origin_denied</c> for one a browser on another origin may not send.
 /// </summary>
 /// <param name="host">The host's limits for files, which give the largest upload.</param>
-internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOperationFilter
+internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpenApiOperationTransformer
 {
     /// <inheritdoc />
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    public async Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
-        if (context.DocumentName != FormBuilderPublicApi.ApiName)
+        if (context.Description.ActionDescriptor is not ControllerActionDescriptor action || !typeof(FormBuilderPublicApiController).IsAssignableFrom(action.ControllerTypeInfo))
         {
             return;
         }
 
-        var method = context.MethodInfo;
+        var method = action.MethodInfo;
         operation.Extensions ??= new Dictionary<string, IOpenApiExtension>();
         if (method.GetCustomAttributes(typeof(FormBuilderRateLimitAttribute), false).FirstOrDefault() is FormBuilderRateLimitAttribute rate)
         {
@@ -298,14 +295,14 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
                 Required = true,
                 Content = new Dictionary<string, OpenApiMediaType>
                 {
-                    [FormBuilderJsonBodyAttribute.MediaType] = new() { Schema = context.SchemaGenerator.GenerateSchema(json.Model, context.SchemaRepository) },
+                    [FormBuilderJsonBodyAttribute.MediaType] = new() { Schema = await ReferenceAsync(context, json.Model, cancellationToken) },
                 },
             };
         }
 
         if (method.GetCustomAttributes(typeof(FormBuilderBeaconBodyAttribute), false).FirstOrDefault() is FormBuilderBeaconBodyAttribute beacon)
         {
-            var schema = context.SchemaGenerator.GenerateSchema(beacon.Model, context.SchemaRepository);
+            var schema = await ReferenceAsync(context, beacon.Model, cancellationToken);
             operation.RequestBody = new OpenApiRequestBody
             {
                 Required = true,
@@ -328,9 +325,10 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
             operation.Extensions[FormBuilderPublicApi.PreviewExtension] = new JsonNodeExtension(JsonValue.Create(true));
         }
 
-        var problem = context.SchemaGenerator.GenerateSchema(typeof(ProblemDetails), context.SchemaRepository);
+        var problem = await ReferenceAsync(context, typeof(ProblemDetails), cancellationToken);
         operation.Responses ??= [];
-        if (!HttpMethods.IsGet(context.ApiDescription.HttpMethod ?? string.Empty) && !HttpMethods.IsHead(context.ApiDescription.HttpMethod ?? string.Empty))
+        var verb = context.Description.HttpMethod ?? string.Empty;
+        if (!HttpMethods.IsGet(verb) && !HttpMethods.IsHead(verb))
         {
             Refusal(operation.Responses, problem, StatusCodes.Status403Forbidden, "Forbidden", "a browser on an origin the site does not allow sent it (origin_denied).");
         }
@@ -342,6 +340,33 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
         Refusal(operation.Responses, problem, StatusCodes.Status429TooManyRequests, "Too Many Requests", "a rate limit is reached; Retry-After says when to send again (rate_limited).");
         Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error", "something failed unexpectedly (server_error).");
         Refusal(operation.Responses, problem, StatusCodes.Status504GatewayTimeout, "Gateway Timeout", "the endpoint did not answer within its time limit (timeout).");
+    }
+
+    /// <summary>
+    /// A reference to a model's schema in the document's components, which it adds when the document lacks it, as the
+    /// generator does for the models an action names itself.
+    /// </summary>
+    /// <param name="context">The operation's context.</param>
+    /// <param name="type">The model.</param>
+    /// <param name="cancellationToken">Cancels the generation.</param>
+    internal static async Task<IOpenApiSchema> ReferenceAsync(OpenApiOperationTransformerContext context, Type type, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(type);
+        var schema = await context.GetOrCreateSchemaAsync(type, null, cancellationToken);
+        if (context.Document is not { } document || FormBuilderOpenApiSchemas.ReferenceId(type, () => type.Name) is not { } id)
+        {
+            return schema;
+        }
+
+        document.Components ??= new OpenApiComponents();
+        document.Components.Schemas ??= new Dictionary<string, IOpenApiSchema>();
+        if (!document.Components.Schemas.ContainsKey(id))
+        {
+            document.AddComponent(id, schema);
+        }
+
+        return new OpenApiSchemaReference(id, document);
     }
 
     // The parts of an upload: the challenge, which 7.1 requires, and the file.
@@ -396,24 +421,5 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
             Description = $"{phrase}: {reason}",
             Content = new Dictionary<string, OpenApiMediaType> { [FormBuilderProblemResult.MediaType] = new() { Schema = problem } },
         };
-    }
-}
-
-/// <summary>
-/// Names the document's operations after their controller and action (<c>FormDefinition</c>), as the management API
-/// names its own; Umbraco's own handler names only its own API's operations.
-/// </summary>
-internal sealed class FormBuilderPublicOperationIdHandler : IOperationIdHandler
-{
-    /// <inheritdoc />
-    public bool CanHandle(ApiDescription apiDescription) =>
-        apiDescription?.ActionDescriptor is ControllerActionDescriptor action && typeof(FormBuilderPublicApiController).IsAssignableFrom(action.ControllerTypeInfo);
-
-    /// <inheritdoc />
-    public string Handle(ApiDescription apiDescription)
-    {
-        ArgumentNullException.ThrowIfNull(apiDescription);
-        var action = (ControllerActionDescriptor)apiDescription.ActionDescriptor;
-        return string.Create(CultureInfo.InvariantCulture, $"{action.ControllerName}{action.ActionName}");
     }
 }

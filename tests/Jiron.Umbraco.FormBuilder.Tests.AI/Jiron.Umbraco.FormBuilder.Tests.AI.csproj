@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Tests.Integration" />
     <!-- The latest 17.x the add-on was tested with (ADR-0018); the add-on itself compiles against its floor. -->
-    <PackageReference Include="Umbraco.AI" VersionOverride="17.7.0" />
+    <PackageReference Include="Umbraco.AI" VersionOverride="18.7.0" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
 

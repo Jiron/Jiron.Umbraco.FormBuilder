@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.1.1",
   "info": {
     "title": "Jiron Form Builder public API",
     "description": "What visitors' browsers and headless sites call: forms, their options, uploads, the checks of a page, entries and their receipts. Anonymous; errors are ProblemDetails with a stable code.",
@@ -8,16 +8,15 @@
   "paths": {
     "/jfb/api/v1/drafts/resume": {
       "post": {
+        "tags": [
+          "Drafts"
+        ],
         "operationId": "DraftsResume",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ResumeRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/ResumeRequestModel"
               }
             }
           },
@@ -29,11 +28,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ResumeResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ResumeResponseModel"
                 }
               }
             }
@@ -43,11 +38,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -57,11 +48,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -71,11 +58,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -85,25 +68,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -113,11 +88,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -127,11 +98,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -141,11 +108,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -155,11 +118,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -169,11 +128,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -183,11 +138,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -200,6 +151,9 @@
     },
     "/jfb/api/v1/forms/{key}/challenge": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormChallenge",
         "parameters": [
           {
@@ -215,11 +169,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ChallengeRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/ChallengeRequestModel"
               }
             }
           },
@@ -231,11 +181,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChallengeResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ChallengeResponseModel"
                 }
               }
             }
@@ -245,11 +191,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -259,11 +201,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -273,11 +211,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -287,11 +221,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -301,11 +231,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -315,11 +241,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -329,11 +251,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -343,11 +261,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -357,11 +271,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -371,11 +281,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -389,6 +295,9 @@
     },
     "/jfb/api/v1/forms/{key}/drafts": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormDrafts",
         "parameters": [
           {
@@ -404,11 +313,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/DraftRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/DraftRequestModel"
               }
             }
           },
@@ -420,11 +325,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/DraftResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/DraftResponseModel"
                 }
               }
             }
@@ -434,11 +335,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -448,11 +345,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -462,11 +355,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -476,11 +365,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -490,25 +375,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -518,25 +395,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -546,11 +415,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -560,11 +425,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -574,11 +435,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -588,11 +445,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -605,6 +458,9 @@
     },
     "/jfb/api/v1/forms/{key}/element": {
       "get": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormElement",
         "parameters": [
           {
@@ -651,11 +507,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/FormElementResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FormElementResponseModel"
                 }
               }
             }
@@ -665,11 +517,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -679,11 +527,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -693,11 +537,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -707,11 +547,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -721,11 +557,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -735,11 +567,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -749,11 +577,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -763,11 +587,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -780,6 +600,9 @@
     },
     "/jfb/api/v1/forms/{key}/entries": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormEntries",
         "parameters": [
           {
@@ -795,11 +618,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/EntryRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/EntryRequestModel"
               }
             }
           },
@@ -811,11 +630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/EntryResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/EntryResponseModel"
                 }
               }
             }
@@ -825,11 +640,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -839,11 +650,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -853,11 +660,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -867,11 +670,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -881,25 +680,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -909,25 +700,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -937,11 +720,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -951,11 +730,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -965,11 +740,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -979,11 +750,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -997,6 +764,9 @@
     },
     "/jfb/api/v1/forms/{key}/events": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormEvents",
         "parameters": [
           {
@@ -1027,20 +797,12 @@
           "content": {
             "text/plain": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/InsightEventRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/InsightEventRequestModel"
               }
             },
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/InsightEventRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/InsightEventRequestModel"
               }
             }
           },
@@ -1055,11 +817,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1069,11 +827,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1083,11 +837,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1097,11 +847,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1111,11 +857,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1125,11 +867,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1139,11 +877,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1153,11 +887,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1167,11 +897,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1184,6 +910,9 @@
     },
     "/jfb/api/v1/forms/{key}/options/{fieldKey}": {
       "get": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormOptions",
         "parameters": [
           {
@@ -1233,11 +962,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/FieldOptionsResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FieldOptionsResponseModel"
                 }
               }
             }
@@ -1250,11 +975,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1264,11 +985,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1278,11 +995,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1292,11 +1005,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1306,11 +1015,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1320,11 +1025,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1334,11 +1035,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1348,11 +1045,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1362,11 +1055,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1380,6 +1069,9 @@
     },
     "/jfb/api/v1/forms/{key}/receipt": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormReceipt",
         "parameters": [
           {
@@ -1395,11 +1087,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ReceiptRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/ReceiptRequestModel"
               }
             }
           },
@@ -1411,11 +1099,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/EntryResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/EntryResponseModel"
                 }
               }
             }
@@ -1425,11 +1109,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1439,11 +1119,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1453,25 +1129,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1481,11 +1149,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1495,11 +1159,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1509,11 +1169,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1523,11 +1179,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1537,11 +1189,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1551,11 +1199,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1569,6 +1213,9 @@
     },
     "/jfb/api/v1/forms/{key}/render": {
       "get": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormRender",
         "parameters": [
           {
@@ -1640,11 +1287,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1654,11 +1297,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1668,11 +1307,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1682,11 +1317,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1696,11 +1327,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1710,11 +1337,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1724,11 +1347,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1738,11 +1357,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1755,6 +1370,9 @@
     },
     "/jfb/api/v1/forms/{key}/uploads": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormUpload",
         "parameters": [
           {
@@ -1805,11 +1423,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/FileUploadResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FileUploadResponseModel"
                 }
               }
             }
@@ -1819,11 +1433,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1833,11 +1443,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1847,11 +1453,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1861,25 +1463,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1889,11 +1483,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1903,11 +1493,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1917,11 +1503,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1931,11 +1513,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1945,11 +1523,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1963,6 +1537,9 @@
     },
     "/jfb/api/v1/forms/{key}/validate": {
       "post": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormValidate",
         "parameters": [
           {
@@ -1978,11 +1555,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PageRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/PageRequestModel"
               }
             }
           },
@@ -1997,11 +1570,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2011,11 +1580,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2025,11 +1590,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2039,11 +1600,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2053,25 +1610,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "413": {
-            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "description": "Payload Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2081,25 +1630,17 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2109,11 +1650,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2123,11 +1660,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2137,11 +1670,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2151,11 +1680,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2169,6 +1694,9 @@
     },
     "/jfb/api/v1/forms/{keyOrAlias}": {
       "get": {
+        "tags": [
+          "Form"
+        ],
         "operationId": "FormDefinition",
         "parameters": [
           {
@@ -2200,11 +1728,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/FormDefinitionResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/FormDefinitionResponseModel"
                 }
               }
             }
@@ -2217,11 +1741,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2231,11 +1751,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2245,11 +1761,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2259,11 +1771,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2273,11 +1781,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2287,11 +1791,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2301,11 +1801,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2315,11 +1811,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2329,11 +1821,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2349,10 +1837,10 @@
     "schemas": {
       "ChallengeCaptchaResponseModel": {
         "required": [
-          "consent",
           "provider",
+          "siteKey",
           "scriptAddress",
-          "siteKey"
+          "consent"
         ],
         "type": "object",
         "properties": {
@@ -2366,27 +1854,32 @@
             "type": "string"
           },
           "global": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "action": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "consent": {
             "type": "string"
           },
           "category": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ChallengeMemberResponseModel": {
         "required": [
-          "groups",
-          "signedIn"
+          "signedIn",
+          "groups"
         ],
         "type": "object",
         "properties": {
@@ -2399,13 +1892,12 @@
               "type": "string"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ChallengeProofResponseModel": {
         "required": [
-          "bits",
-          "nonce"
+          "nonce",
+          "bits"
         ],
         "type": "object",
         "properties": {
@@ -2416,23 +1908,25 @@
             "type": "integer",
             "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ChallengeRequestModel": {
         "type": "object",
         "properties": {
           "previous": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "contentKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ChallengeResponseModel": {
         "required": [
@@ -2449,47 +1943,54 @@
             "format": "int32"
           },
           "places": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "object",
               "additionalProperties": {
                 "type": "integer",
                 "format": "int32"
               }
-            },
-            "nullable": true
+            }
           },
           "captcha": {
             "oneOf": [
               {
+                "type": "null"
+              },
+              {
                 "$ref": "#/components/schemas/ChallengeCaptchaResponseModel"
               }
-            ],
-            "nullable": true
+            ]
           },
           "proofOfWork": {
             "oneOf": [
               {
+                "type": "null"
+              },
+              {
                 "$ref": "#/components/schemas/ChallengeProofResponseModel"
               }
-            ],
-            "nullable": true
+            ]
           },
           "member": {
             "oneOf": [
               {
+                "type": "null"
+              },
+              {
                 "$ref": "#/components/schemas/ChallengeMemberResponseModel"
               }
-            ],
-            "nullable": true
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "DraftRequestModel": {
         "required": [
-          "email",
-          "revision"
+          "revision",
+          "email"
         ],
         "type": "object",
         "properties": {
@@ -2501,46 +2002,62 @@
             "type": "string"
           },
           "culture": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "contentKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "pageKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "values": {
-            "type": "object",
-            "additionalProperties": {},
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           },
           "resume": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "challenge": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "honeypot": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "proofOfWork": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "captchaToken": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "DraftResponseModel": {
         "required": [
@@ -2552,8 +2069,7 @@
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "EntryOutcomeResponseModel": {
         "required": [
@@ -2565,33 +2081,42 @@
             "type": "string"
           },
           "html": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "url": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "delaySeconds": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "showAnswers": {
-            "type": "boolean",
-            "nullable": true
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "copy": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "EntryReceiptResponseModel": {
         "required": [
-          "reference",
           "submissionId",
+          "reference",
           "submittedUtc"
         ],
         "type": "object",
@@ -2607,8 +2132,7 @@
             "type": "string",
             "format": "date-time"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "EntryRequestModel": {
         "required": [
@@ -2617,102 +2141,116 @@
         "type": "object",
         "properties": {
           "submissionId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "placement": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "revision": {
             "type": "integer",
             "format": "int32"
           },
           "culture": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "contentKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "values": {
-            "type": "object",
-            "additionalProperties": {},
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           },
           "consents": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "string"
-            },
-            "nullable": true
+            }
           },
           "query": {
-            "type": "object",
-            "additionalProperties": {},
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           },
           "context": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "string"
-            },
-            "nullable": true
+            }
           },
           "honeypot": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "challenge": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "captchaToken": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "proofOfWork": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "EntryResponseModel": {
         "required": [
-          "outcome",
-          "receipt"
+          "receipt",
+          "outcome"
         ],
         "type": "object",
         "properties": {
           "receipt": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/EntryReceiptResponseModel"
-              }
-            ]
+            "$ref": "#/components/schemas/EntryReceiptResponseModel"
           },
           "outcome": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/EntryOutcomeResponseModel"
-              }
-            ]
+            "$ref": "#/components/schemas/EntryOutcomeResponseModel"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FieldOptionResponseModel": {
         "required": [
-          "label",
-          "value"
+          "value",
+          "label"
         ],
         "type": "object",
         "properties": {
@@ -2723,21 +2261,24 @@
             "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "image": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FieldOptionsResponseModel": {
         "required": [
-          "available",
           "culture",
+          "available",
           "options"
         ],
         "type": "object",
@@ -2751,22 +2292,17 @@
           "options": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/FieldOptionResponseModel"
-                }
-              ]
+              "$ref": "#/components/schemas/FieldOptionResponseModel"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FileUploadResponseModel": {
         "required": [
-          "contentType",
+          "token",
           "name",
           "size",
-          "token"
+          "contentType"
         ],
         "type": "object",
         "properties": {
@@ -2783,21 +2319,20 @@
           "contentType": {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FormDefinitionResponseModel": {
         "required": [
           "alias",
-          "consents",
-          "culture",
-          "fields",
-          "form",
-          "formats",
-          "open",
           "revision",
+          "culture",
           "timeZone",
-          "words"
+          "open",
+          "form",
+          "fields",
+          "formats",
+          "words",
+          "consents"
         ],
         "type": "object",
         "properties": {
@@ -2821,37 +2356,26 @@
           "fields": {
             "type": "object",
             "additionalProperties": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/FormFieldLogicResponseModel"
-                }
-              ]
+              "$ref": "#/components/schemas/FormFieldLogicResponseModel"
             }
           },
           "formats": {},
           "words": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FormWordsResponseModel"
-              }
-            ]
+            "$ref": "#/components/schemas/FormWordsResponseModel"
           },
-          "mergeTags": {
-            "nullable": true
-          },
+          "mergeTags": {},
           "consents": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FormElementAssetsResponseModel": {
         "required": [
-          "script",
-          "styles"
+          "styles",
+          "script"
         ],
         "type": "object",
         "properties": {
@@ -2864,14 +2388,13 @@
           "script": {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FormElementResponseModel": {
         "required": [
-          "assets",
           "contract",
-          "form"
+          "form",
+          "assets"
         ],
         "type": "object",
         "properties": {
@@ -2881,29 +2404,28 @@
           },
           "form": {},
           "assets": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FormElementAssetsResponseModel"
-              }
-            ]
+            "$ref": "#/components/schemas/FormElementAssetsResponseModel"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FormFieldLogicResponseModel": {
         "required": [
-          "builtIn",
-          "canBeRequired"
+          "canBeRequired",
+          "builtIn"
         ],
         "type": "object",
         "properties": {
           "kind": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "rowKind": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "canBeRequired": {
             "type": "boolean"
@@ -2911,13 +2433,12 @@
           "builtIn": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "FormWordsResponseModel": {
         "required": [
-          "no",
-          "yes"
+          "yes",
+          "no"
         ],
         "type": "object",
         "properties": {
@@ -2927,8 +2448,7 @@
           "no": {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "InsightEventRequestModel": {
         "required": [
@@ -2940,25 +2460,30 @@
             "type": "string"
           },
           "page": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "field": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "kind": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "PageRequestModel": {
         "required": [
-          "pageKey",
-          "revision"
+          "revision",
+          "pageKey"
         ],
         "type": "object",
         "properties": {
@@ -2971,72 +2496,95 @@
             "format": "uuid"
           },
           "culture": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "contentKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "values": {
-            "type": "object",
-            "additionalProperties": {},
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           },
           "consents": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "string"
-            },
-            "nullable": true
+            }
           },
           "query": {
-            "type": "object",
-            "additionalProperties": {},
-            "nullable": true
+            "type": [
+              "null",
+              "object"
+            ]
           },
           "context": {
-            "type": "object",
+            "type": [
+              "null",
+              "object"
+            ],
             "additionalProperties": {
               "type": "string"
-            },
-            "nullable": true
+            }
           },
           "honeypot": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "challenge": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ProblemDetails": {
         "type": "object",
         "properties": {
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "detail": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "additionalProperties": {}
@@ -3052,15 +2600,18 @@
             "format": "uuid"
           },
           "challenge": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "placement": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ResumeRequestModel": {
         "required": [
@@ -3071,14 +2622,13 @@
           "token": {
             "type": "string"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ResumeResponseModel": {
         "required": [
-          "expiresUtc",
           "form",
           "revision",
+          "expiresUtc",
           "values"
         ],
         "type": "object",
@@ -3092,21 +2642,29 @@
             "format": "int32"
           },
           "pageKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "expiresUtc": {
             "type": "string",
             "format": "date-time"
           },
           "values": {
-            "type": "object",
-            "additionalProperties": {}
+            "type": "object"
           }
-        },
-        "additionalProperties": false
+        }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Drafts"
+    },
+    {
+      "name": "Form"
+    }
+  ]
 }

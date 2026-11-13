@@ -1,18 +1,14 @@
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
+using Jiron.Umbraco.FormBuilder.Web.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Api.Common.Filters;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.Authorization;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi;
@@ -52,58 +48,47 @@ internal abstract class FormBuilderManagementApiController : ManagementApiContro
 }
 
 /// <summary>
-/// The document <c>jfb</c> with the backoffice's security requirements. It is registered here only, because Umbraco 18
-/// replaces Swashbuckle (ROADMAP 3.4, Phase 19).
+/// The OpenAPI documents of the backoffice's APIs on Umbraco 18 (ROADMAP 3.4, Phase 19, ADR-0250): Umbraco's document
+/// builder over Microsoft.AspNetCore.OpenApi, served at <c>/umbraco/openapi/{name}.json</c> outside production. Each
+/// takes the controllers with <c>[MapToApi(name)]</c>, the backoffice's JSON settings and sign-in, Jiron Form Builder's
+/// operation names and the schema rules that keep the generated client's types as on Umbraco 17.
 /// </summary>
-internal sealed class ConfigureFormBuilderManagementApiSwagger : IConfigureOptions<SwaggerGenOptions>
+internal static class FormBuilderManagementApiDocuments
 {
-    /// <inheritdoc />
-    public void Configure(SwaggerGenOptions options)
+    /// <summary>
+    /// Registers a backoffice document once: Umbraco adds a document's transformers each time it is registered, so a
+    /// second registration of the same name is left out.
+    /// </summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <param name="name">The document's name, as the controllers' <c>[MapToApi]</c> names it.</param>
+    /// <param name="title">The document's title.</param>
+    /// <param name="description">What the document holds.</param>
+    public static IUmbracoBuilder AddFormBuilderBackOfficeDocument(this IUmbracoBuilder builder, string name, string title, string description)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        options.SwaggerDoc(FormBuilderManagementApi.ApiName, new OpenApiInfo
+        ArgumentNullException.ThrowIfNull(builder);
+        if (!FormBuilderOpenApiDocuments.Claim(builder.Services, name))
         {
-            Title = "Jiron Form Builder management API",
-            Version = "1.0",
-            Description = "The Form Builder section's API: backoffice users of the section, each call by its Jiron Form Builder permission.",
-        });
-        options.OperationFilter<FormBuilderBackOfficeSecurityRequirements>();
+            return builder;
+        }
+
+        return builder.AddBackOfficeOpenApiDocument(name, document => document
+            .WithTitle(title)
+            // The controllers' own JSON settings ([JsonOptionsName(BackOffice)]): enums as text, as the API answers.
+            .WithJsonOptions(Constants.JsonOptionsNames.BackOffice)
+            .WithBackOfficeAuthentication()
+            .ConfigureOpenApiOptions(options =>
+            {
+                options.AddDocumentTransformer(FormBuilderOpenApiDocuments.Describe("1.0", description));
+                options.AddOperationTransformer<FormBuilderOperationIds>();
+                FormBuilderOpenApiSchemas.Apply(options);
+            }));
     }
-}
 
-/// <summary>
-/// Names the document's operations after their controller and action (<c>FolderCreate</c>, <c>TreeChildren</c>), so the
-/// generated client has short, stable method names. Umbraco's own handler names only its own API's operations.
-/// </summary>
-internal sealed class FormBuilderOperationIdHandler : IOperationIdHandler
-{
-    /// <inheritdoc />
-    public bool CanHandle(ApiDescription apiDescription) =>
-        apiDescription?.ActionDescriptor is ControllerActionDescriptor action && typeof(FormBuilderManagementApiController).IsAssignableFrom(action.ControllerTypeInfo);
-
-    /// <inheritdoc />
-    public string Handle(ApiDescription apiDescription)
-    {
-        ArgumentNullException.ThrowIfNull(apiDescription);
-        var action = (ControllerActionDescriptor)apiDescription.ActionDescriptor;
-        return action.ControllerName + action.ActionName;
-    }
-}
-
-/// <summary>
-/// Names the schemas of Jiron Form Builder's models as Umbraco names its own (<c>FolderResponseModel</c>), so that two
-/// models of one generic type never share a name, which makes the document fail (1.2b).
-/// </summary>
-internal sealed class FormBuilderSchemaIdHandler : SchemaIdHandler
-{
-    /// <inheritdoc />
-    public override bool CanHandle(Type type) =>
-        type?.Namespace?.StartsWith("Jiron.Umbraco.FormBuilder", StringComparison.Ordinal) == true;
-}
-
-/// <summary>Marks the document's operations as needing a backoffice sign-in.</summary>
-internal sealed class FormBuilderBackOfficeSecurityRequirements : BackOfficeSecurityRequirementsOperationFilterBase
-{
-    /// <inheritdoc />
-    protected override string ApiName => FormBuilderManagementApi.ApiName;
+    /// <summary>Registers the document <c>jfb</c>.</summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    public static IUmbracoBuilder AddFormBuilderManagementApiDocument(this IUmbracoBuilder builder) =>
+        builder.AddFormBuilderBackOfficeDocument(
+            FormBuilderManagementApi.ApiName,
+            "Jiron Form Builder management API",
+            "The Form Builder section's API: backoffice users of the section, each call by its Jiron Form Builder permission.");
 }

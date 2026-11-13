@@ -6,33 +6,34 @@
     rule 4), and THIRD-PARTY-NOTICES.md lists the shipped and the development packages, which
     scripts/third-party-notices.mjs keeps current (ADR-0032).
 
-    Umbraco is a range, not a pin: it becomes the packages' dependency range [17.6.0, 18.0.0) (D3). NuGet
+    Umbraco is a range, not a pin: it becomes the packages' dependency range [18.1.0, 19.0.0) on the Umbraco 18 line (D3, Phase 19; 18.1.0 is the first
+    18.x whose runtime cache clears reliably, ADR-0074). NuGet
     resolves the lowest version of a range, so Jiron Form Builder compiles against its minimum supported
-    version; the demo and test hosts reference the latest 17.x exactly. Tools and test packages are pinned
+    version; the demo and test hosts reference the latest 18.x exactly. Tools and test packages are pinned
     exactly. Floating versions stay off (the template's CentralPackageFloatingVersionsEnabled is not used).
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Umbraco CMS 17 (D3): the packages' dependency ranges. -->
+  <!-- Umbraco CMS 18 (D3, Phase 19): the packages' dependency ranges. -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.6.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[18.1.0, 19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[18.1.0, 19.0.0)" />
   </ItemGroup>
 
   <!--
-    The AI add-on only (D23, ADR-0018): Umbraco HQ's Umbraco.AI (MIT), a range like the CMS's. 17.5.2 is the floor: its
-    profile picker needs only backoffice access. The demo and the add-on's test host pin the latest 17.x it was tested
-    with through VersionOverride.
+    The AI add-on only (D23, ADR-0018): Umbraco HQ's Umbraco.AI (MIT), a range like the CMS's. 18.5.2 is the floor, the 18
+    release of 17.5.2, whose profile picker needs only backoffice access. The demo and the add-on's test host pin the 18.x
+    of the 17.x the 17 line tests with through VersionOverride.
   -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.AI" Version="[17.5.2, 18.0.0)" />
+    <PackageVersion Include="Umbraco.AI" Version="[18.5.2, 19.0.0)" />
   </ItemGroup>
 
   <!--
@@ -44,10 +45,10 @@
     <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
   </ItemGroup>
 
-  <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). -->
+  <!-- The demo site and the test hosts only: the latest 18.x, pinned exactly (D3, Phase 19). -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms" Version="17.7.1" />
-    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.7.1" />
+    <PackageVersion Include="Umbraco.Cms" Version="18.3.1" />
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="18.3.1" />
   </ItemGroup>
 
   <!--
@@ -55,17 +56,17 @@
     sample stores through (ADR-0006), pinned exactly.
   -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.StorageProviders.AzureBlob" Version="17.1.0" />
+    <PackageVersion Include="Umbraco.StorageProviders.AzureBlob" Version="18.0.0" />
   </ItemGroup>
 
   <!--
-    Test tools (ADR-0011), pinned exactly, all dev-only. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration 17
-    depends on it (D19).
+    Test tools (ADR-0011), pinned exactly, all dev-only. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration 18
+    depends on it as 17 does (D19).
   -->
   <ItemGroup>
     <PackageVersion Include="NUnit" Version="3.14.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <!--
       Validates definitions against schemas/jfb-form.v1.schema.json in the unit tests only (ROADMAP 4.2a, ADR-0034).

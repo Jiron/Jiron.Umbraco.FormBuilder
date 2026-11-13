@@ -245,7 +245,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         var draft = new Content("Coming soon", shop, page);
         Contents.Save(draft);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return (shop.Key, contact.Key, otherPage.Key, draft.Key);
     }
 }

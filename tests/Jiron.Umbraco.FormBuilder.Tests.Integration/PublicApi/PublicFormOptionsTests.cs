@@ -306,7 +306,7 @@ public sealed class PublicFormOptionsTests : PublicApiTestBase
         contents.Save(shop);
         contents.Publish(shop, ["*"]);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return shop.Key;
     }
 }

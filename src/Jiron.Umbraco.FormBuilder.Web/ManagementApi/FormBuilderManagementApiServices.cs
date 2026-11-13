@@ -5,9 +5,6 @@ using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi;
@@ -17,7 +14,7 @@ internal static class FormBuilderManagementApiServices
 {
     /// <summary>
     /// Adds the policies (ADR-0049), the controllers, their access and exception filters, and the OpenAPI document
-    /// <c>jfb</c> with its operation and schema names. Safe to call more than once.
+    /// <c>jfb</c> (ADR-0250). Safe to call more than once.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderManagementApi(this IUmbracoBuilder builder)
     {
@@ -46,9 +43,7 @@ internal static class FormBuilderManagementApiServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Files.FilesSettings>, Settings.FilesFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.IntegrationSettings>, Settings.IntegrationFacts>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<Settings.ISettingsFacts<Core.Settings.PrivacySettings>, Settings.PrivacyFacts>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<SwaggerGenOptions>, ConfigureFormBuilderManagementApiSwagger>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOperationIdHandler, FormBuilderOperationIdHandler>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISchemaIdHandler, FormBuilderSchemaIdHandler>());
+        builder.AddFormBuilderManagementApiDocument();
         return builder;
     }
 

@@ -54,22 +54,30 @@ internal sealed class FormReferenceController(
 
         var uses = await usage.OfAsync(key, users.GetUmbracoUser(User), cancellationToken);
         var typeNames = new Dictionary<Guid, string?>();
+        var items = new List<FormDocumentReferenceResponseModel>();
+        foreach (var page in uses.Shown.Skip(skip).Take(take))
+        {
+            items.Add(await ItemAsync(page, typeNames));
+        }
+
         return Ok(new FormReferencesResponseModel
         {
             Total = uses.Shown.Count,
-            Items = [.. uses.Shown.Skip(skip).Take(take).Select(page => Item(page, typeNames))],
+            Items = items,
             NotShown = uses.NotShown,
         });
     }
 
-    private FormDocumentReferenceResponseModel Item(IDocumentEntitySlim page, Dictionary<Guid, string?> typeNames)
+    // Umbraco 18 reads a page's variants asynchronously (its synchronous read is obsolete, ADR-0250).
+    private async Task<FormDocumentReferenceResponseModel> ItemAsync(IDocumentEntitySlim page, Dictionary<Guid, string?> typeNames)
     {
         if (!typeNames.TryGetValue(page.ContentTypeKey, out var typeName))
         {
-            typeName = contentTypes.Get(page.ContentTypeKey)?.Name;
+            typeName = (await contentTypes.GetAsync(page.ContentTypeKey))?.Name;
             typeNames[page.ContentTypeKey] = typeName;
         }
 
+        var variants = await documents.CreateVariantsItemResponseModelsAsync(page);
         return new FormDocumentReferenceResponseModel
         {
             Id = page.Key,
@@ -82,7 +90,7 @@ internal sealed class FormReferenceController(
                 Alias = page.ContentTypeAlias,
                 Name = typeName,
             },
-            Variants = [.. documents.CreateVariantsItemResponseModels(page).Select(variant => new FormDocumentVariantResponseModel
+            Variants = [.. variants.Select(variant => new FormDocumentVariantResponseModel
             {
                 Name = variant.Name,
                 Culture = variant.Culture,

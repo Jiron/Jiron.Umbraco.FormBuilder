@@ -70,7 +70,7 @@ public sealed class FormReferencesTests
         var handler = Handler(new RecordingLogger<FormReferenceHandler>());
 
         await handler.HandleAsync(new ContentSavedNotification([first, second], new EventMessages()), CancellationToken.None);
-        await handler.HandleAsync(new ContentCopiedNotification(first, second, -1, null, false, new EventMessages()), CancellationToken.None);
+        await handler.HandleAsync(new ContentCopiedNotification(first, second, null, false, new EventMessages()), CancellationToken.None);
         await handler.HandleAsync(new ContentDeletedNotification(first, new EventMessages()), CancellationToken.None);
 
         // The keys are read first: a substitute's property read inside the check is not a call to it.

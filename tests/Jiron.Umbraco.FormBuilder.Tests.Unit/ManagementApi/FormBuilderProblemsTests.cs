@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
+using Jiron.Umbraco.FormBuilder.Web.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -174,20 +175,19 @@ public sealed class FormBuilderProblemsTests
     }
 
     [Test]
-    public void TheDocument_NamesOnlyJironFormBuilders_OperationsAndSchemas()
+    public void TheDocuments_NameOnlyJironFormBuilders_OperationsAndSchemas()
     {
-        var operations = new FormBuilderOperationIdHandler();
-        var schemas = new FormBuilderSchemaIdHandler();
-        var ours = Description(typeof(TreeController), "Root");
-        var theirs = Description(typeof(ControllerBase), "Root");
-
         Assert.Multiple(() =>
         {
-            Assert.That((operations.CanHandle(ours), operations.Handle(ours)), Is.EqualTo((true, "TreeRoot")));
-            Assert.That(operations.CanHandle(theirs), Is.False);
-            Assert.That(operations.CanHandle(new ApiDescription { ActionDescriptor = new ActionDescriptor() }), Is.False);
-            Assert.That(schemas.CanHandle(typeof(FolderResponseModel)), Is.True);
-            Assert.That(schemas.CanHandle(typeof(ProblemDetails)), Is.False);
+            Assert.That(FormBuilderOperationIds.NameOf(Description(typeof(TreeController), "Root").ActionDescriptor), Is.EqualTo("TreeRoot"));
+            Assert.That(FormBuilderOperationIds.NameOf(Description(typeof(Web.PublicApi.FormController), "Definition").ActionDescriptor), Is.EqualTo("FormDefinition"), "the public API's too");
+            Assert.That(FormBuilderOperationIds.NameOf(Description(typeof(ControllerBase), "Root").ActionDescriptor), Is.Null);
+            Assert.That(FormBuilderOperationIds.NameOf(new ActionDescriptor()), Is.Null);
+            Assert.That(FormBuilderOperationIds.NameOf(null), Is.Null);
+            Assert.That(FormBuilderOpenApiSchemas.ReferenceId(typeof(FolderResponseModel), () => "theirs"), Is.EqualTo("FolderResponseModel"), "named as Umbraco names its own");
+            Assert.That(FormBuilderOpenApiSchemas.ReferenceId(typeof(ProblemDetails), () => "theirs"), Is.EqualTo("theirs"));
+            Assert.That(FormBuilderOpenApiSchemas.ReferenceId(typeof(JsonElement), () => "theirs"), Is.Null, "inline");
+            Assert.That(FormBuilderOpenApiSchemas.ReferenceId(typeof(FileContentResult), () => "theirs"), Is.Null, "inline");
         });
     }
 

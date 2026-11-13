@@ -492,7 +492,7 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
         var contact = Published("Contact", shop);
         var other = Published("Other", null);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return (shop.Key, contact.Key, other.Key);
     }
 

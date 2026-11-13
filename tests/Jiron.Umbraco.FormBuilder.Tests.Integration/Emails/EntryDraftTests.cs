@@ -125,7 +125,7 @@ public sealed partial class EntryDraftTests : EmailTestBase
         contents.Save(page);
         contents.Publish(page, ["*"]);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         _page = page.Key;
     }
 

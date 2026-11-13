@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.1.1",
   "info": {
     "title": "Jiron Form Builder AI add-on API",
     "description": "The AI add-on's endpoints: drafting, translating and suggesting for backoffice users, each by its Jiron Form Builder permission.",
@@ -16,32 +16,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AIDraftRequestModel"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AIDraftRequestModel"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AIDraftRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/AIDraftRequestModel"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -49,11 +28,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AIDraftResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AIDraftResponseModel"
                 }
               }
             }
@@ -63,11 +38,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -77,25 +48,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -105,11 +68,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -151,11 +110,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AIMarkResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AIMarkResponseModel"
                 }
               }
             }
@@ -165,11 +120,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -209,32 +160,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISuggestionRequestModel"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISuggestionRequestModel"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISuggestionRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/AISuggestionRequestModel"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -242,11 +172,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AISuggestionsResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AISuggestionsResponseModel"
                 }
               }
             }
@@ -256,11 +182,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -270,25 +192,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -298,11 +212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -342,32 +252,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AITranslationRequestModel"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AITranslationRequestModel"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AITranslationRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/AITranslationRequestModel"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -375,11 +264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AITranslationResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AITranslationResponseModel"
                 }
               }
             }
@@ -389,11 +274,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -403,11 +284,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -417,25 +294,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           },
           "422": {
-            "description": "Unprocessable Content",
+            "description": "Unprocessable Entity",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -445,11 +314,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -480,11 +345,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AISettingsResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AISettingsResponseModel"
                 }
               }
             }
@@ -511,32 +372,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISettingsRequestModel"
-                  }
-                ]
-              }
-            },
-            "text/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISettingsRequestModel"
-                  }
-                ]
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/AISettingsRequestModel"
-                  }
-                ]
+                "$ref": "#/components/schemas/AISettingsRequestModel"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -544,11 +384,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AISettingsResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AISettingsResponseModel"
                 }
               }
             }
@@ -558,11 +394,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -593,11 +425,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/AIStatusResponseModel"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/AIStatusResponseModel"
                 }
               }
             }
@@ -631,19 +459,20 @@
             "type": "string"
           },
           "folderKey": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AIDraftResponseModel": {
         "required": [
-          "draftVersion",
           "key",
-          "left",
-          "name"
+          "name",
+          "draftVersion",
+          "left"
         ],
         "type": "object",
         "properties": {
@@ -662,41 +491,43 @@
             "type": "integer",
             "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AIMarkResponseModel": {
         "type": "object",
         "properties": {
           "draftVersion": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AISettingsRequestModel": {
         "type": "object",
         "properties": {
           "profileId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AISettingsResponseModel": {
         "type": "object",
         "properties": {
           "profileId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AIStatusResponseModel": {
         "required": [
@@ -708,20 +539,23 @@
             "type": "boolean"
           },
           "problem": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "profileName": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AISuggestedTextResponseModel": {
         "required": [
-          "path",
           "setting",
+          "path",
           "text"
         ],
         "type": "object",
@@ -736,11 +570,12 @@
             "type": "string"
           },
           "reason": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AISuggestionRequestModel": {
         "required": [
@@ -752,8 +587,7 @@
             "type": "string",
             "format": "uuid"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AISuggestionsResponseModel": {
         "required": [
@@ -769,30 +603,27 @@
           "help": {
             "oneOf": [
               {
+                "type": "null"
+              },
+              {
                 "$ref": "#/components/schemas/AISuggestedTextResponseModel"
               }
-            ],
-            "nullable": true
+            ]
           },
           "improvements": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/AISuggestedTextResponseModel"
-                }
-              ]
+              "$ref": "#/components/schemas/AISuggestedTextResponseModel"
             }
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AITranslatedTextResponseModel": {
         "required": [
-          "html",
           "path",
           "source",
-          "text"
+          "text",
+          "html"
         ],
         "type": "object",
         "properties": {
@@ -808,8 +639,7 @@
           "html": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AITranslationRequestModel": {
         "required": [
@@ -826,15 +656,14 @@
           "replaceExisting": {
             "type": "boolean"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "AITranslationResponseModel": {
         "required": [
           "culture",
           "draftVersion",
-          "left",
-          "texts"
+          "texts",
+          "left"
         ],
         "type": "object",
         "properties": {
@@ -848,43 +677,48 @@
           "texts": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/AITranslatedTextResponseModel"
-                }
-              ]
+              "$ref": "#/components/schemas/AITranslatedTextResponseModel"
             }
           },
           "left": {
             "type": "integer",
             "format": "int32"
           }
-        },
-        "additionalProperties": false
+        }
       },
       "ProblemDetails": {
         "type": "object",
         "properties": {
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "detail": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "additionalProperties": {}
@@ -904,6 +738,11 @@
       }
     }
   },
+  "security": [
+    {
+      "Backoffice-User": []
+    }
+  ],
   "tags": [
     {
       "name": "AI"

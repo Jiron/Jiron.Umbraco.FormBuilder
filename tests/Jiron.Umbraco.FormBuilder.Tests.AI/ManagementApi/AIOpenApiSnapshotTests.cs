@@ -4,8 +4,9 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.Swagger;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.AI.ManagementApi;
@@ -52,9 +53,10 @@ public sealed class AIOpenApiSnapshotTests : AITestBase
 
     private async Task<string> GenerateAsync(string name)
     {
-        var document = GetRequiredService<ISwaggerProvider>().GetSwagger(name);
+        var document = await Services.GetRequiredKeyedService<IOpenApiDocumentProvider>(name).GetOpenApiDocumentAsync();
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        await document.SerializeAsync(new OpenApiJsonWriter(writer), OpenApiSpecVersion.OpenApi3_0);
+        // As Umbraco 18 serves it: OpenAPI 3.1 (ADR-0250).
+        await document.SerializeAsync(new OpenApiJsonWriter(writer), OpenApiSpecVersion.OpenApi3_1);
         var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         return JsonNode.Parse(writer.ToString())!.ToJsonString(options).ReplaceLineEndings("\n") + "\n";
     }

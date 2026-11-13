@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" />
     <!-- The latest Umbraco.AI the AI add-on was tested with (ADR-0018); the add-on itself accepts any 17.x from 17.5.2. -->
-    <PackageReference Include="Umbraco.AI" VersionOverride="17.7.0" />
+    <PackageReference Include="Umbraco.AI" VersionOverride="18.7.0" />
   </ItemGroup>
 
   <ItemGroup>

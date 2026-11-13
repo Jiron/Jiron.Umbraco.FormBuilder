@@ -303,7 +303,7 @@ public sealed class PublicFormInsightTests : PublicApiTestBase
         contents.Save(page);
         contents.Publish(page, ["*"]);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return page.Key;
     }
 

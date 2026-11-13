@@ -924,7 +924,7 @@ public sealed class EntryExportTests : ActionTestBase
         contents.Save(page);
         contents.Publish(page, ["*"]);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return (root.Key, page.Key);
     }
 

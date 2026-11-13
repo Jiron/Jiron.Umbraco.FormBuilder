@@ -7,12 +7,13 @@
     (scripts/check-audit-suppressions.mjs guards that, and the host-only group below). Each entry names exactly one
     reviewed advisory URL and its package; any advisory not listed here fails the build.
 
-    Reviewed 2026-10-27 (step 5.5a, ADR-0074) at the packages' floor, CMS 17.6.0, and at the hosts' 17.7.1; first
-    reviewed in step 3.1. Review the list at every phase review and in 16.1, and remove an entry as soon as neither
-    version brings the affected package version any more.
+    On the Umbraco 18 line, reviewed 2026-11-13 (step 19.1, ADR-0250) at the packages' floor, CMS 18.1.0, and at the
+    hosts' 18.3.1, by a restore without these entries: it reported exactly these advisories, on the same package
+    versions as the 17 line (reviewed 2026-10-27 at 17.6.0 and 17.7.1, step 5.5a). Review the list at every phase
+    review, and remove an entry as soon as neither version brings the affected package version any more.
   -->
   <ItemGroup>
-    <!-- MessagePack 3.1.8 (17.6.0 and 17.7.1), via Umbraco.Cms.Web.Common, Api.Common and Api.Delivery. -->
+    <!-- MessagePack 3.1.8 (18.1.0 and 18.3.1), via Umbraco.Cms.Web.Common, Api.Common and Api.Delivery. -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-qhrr-8q5h-9q3h" Package="MessagePack" />
 
     <!--
@@ -38,7 +39,7 @@
     setting counts here.
   -->
   <ItemGroup Condition="'$(JfbUmbracoHost)' == 'true'">
-    <!-- SixLabors.ImageSharp 3.1.12, via Umbraco.Cms (Umbraco.Cms.Imaging.ImageSharp) 17.7.1. Never reference it directly. -->
+    <!-- SixLabors.ImageSharp 3.1.12, via Umbraco.Cms (Umbraco.Cms.Imaging.ImageSharp) 18.3.1. Never reference it directly. -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" Package="SixLabors.ImageSharp" />
@@ -51,11 +52,11 @@
   <!--
     The AI add-on only (ADR-0018): the one Jiron Form Builder package that brings these, transitively through
     Umbraco.AI, which the site installs at its own version beside its own CMS; the add-on uses neither. The project sets
-    JfbUmbracoAI. Reviewed 2026-11-11 at the add-on's floor, Umbraco.AI 17.5.2 on CMS 17.6.0. A host that references the
+    JfbUmbracoAI. Reviewed 2026-11-13 at the add-on's floor, Umbraco.AI 18.5.2 on CMS 18.1.0. A host that references the
     add-on (the demo, its tests) has the host group's entries instead, which NuGet refuses to see twice.
   -->
   <ItemGroup Condition="'$(JfbUmbracoAI)' == 'true' And '$(JfbUmbracoHost)' != 'true'">
-    <!-- SixLabors.ImageSharp 3.1.12, via Umbraco.AI.Core 17.5.2 (its file processing). Never reference it directly. -->
+    <!-- SixLabors.ImageSharp 3.1.12, via Umbraco.AI.Core 18.5.2 (its file processing). Never reference it directly. -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" Package="SixLabors.ImageSharp" />
@@ -63,8 +64,8 @@
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" Package="SixLabors.ImageSharp" />
     <!--
-      SQLitePCLRaw.lib.e_sqlite3 2.1.11, via Umbraco.AI.Persistence.Sqlite 17.5.2 and Umbraco.Cms.Persistence.EFCore.Sqlite
-      at the CMS floor 17.6.0; a site's own CMS decides the version it runs.
+      SQLitePCLRaw.lib.e_sqlite3 2.1.11, via Umbraco.AI.Persistence.Sqlite 18.5.2 and Umbraco.Cms.Persistence.EFCore.Sqlite
+      at the CMS floor 18.1.0; a site's own CMS decides the version it runs.
     -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" Package="SQLitePCLRaw.lib.e_sqlite3" />
   </ItemGroup>

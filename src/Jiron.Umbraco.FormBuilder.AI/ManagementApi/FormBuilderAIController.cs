@@ -2,12 +2,8 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.Attributes;
-using Umbraco.Cms.Api.Management.OpenApi;
+using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.AI.ManagementApi;
 
@@ -52,26 +48,17 @@ internal sealed class AIExceptionFilter : IExceptionFilter
     };
 }
 
-/// <summary>The document <c>jfb-ai</c>, which the add-on's backoffice client is made from (ADR-0018).</summary>
-internal sealed class ConfigureFormBuilderAISwagger : IConfigureOptions<SwaggerGenOptions>
+/// <summary>
+/// The document <c>jfb-ai</c>, which the add-on's backoffice client is made from (ADR-0018): on Umbraco 18, Umbraco's
+/// document builder with the management API's settings, sign-in, operation names and schema rules (ADR-0250).
+/// </summary>
+internal static class FormBuilderAIDocument
 {
-    /// <inheritdoc />
-    public void Configure(SwaggerGenOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        options.SwaggerDoc(FormBuilderAI.ApiName, new OpenApiInfo
-        {
-            Title = "Jiron Form Builder AI add-on API",
-            Version = "1.0",
-            Description = "The AI add-on's endpoints: drafting, translating and suggesting for backoffice users, each by its Jiron Form Builder permission.",
-        });
-        options.OperationFilter<FormBuilderAISecurityRequirements>();
-    }
-}
-
-/// <summary>Marks the document's operations as needing a backoffice sign-in.</summary>
-internal sealed class FormBuilderAISecurityRequirements : BackOfficeSecurityRequirementsOperationFilterBase
-{
-    /// <inheritdoc />
-    protected override string ApiName => FormBuilderAI.ApiName;
+    /// <summary>Registers the document once.</summary>
+    /// <param name="builder">The Umbraco builder.</param>
+    public static IUmbracoBuilder AddFormBuilderAIDocument(this IUmbracoBuilder builder) =>
+        builder.AddFormBuilderBackOfficeDocument(
+            FormBuilderAI.ApiName,
+            "Jiron Form Builder AI add-on API",
+            "The AI add-on's endpoints: drafting, translating and suggesting for backoffice users, each by its Jiron Form Builder permission.");
 }

@@ -483,7 +483,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
         var contents = GetRequiredService<IContentService>();
         contents.Unpublish(contents.GetById(page)!);
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         using var gone = await PostAsync(thanking, """{"revision":1,"values":{"name":"Ada"}}""");
         var warnings = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(SubmissionOutcomes).FullName).ToList();
 
@@ -664,7 +664,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
 
         var page = Named("Contact", Named("Shop", null));
         await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
-        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
         return page.Key;
     }
 }
