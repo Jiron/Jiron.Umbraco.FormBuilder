@@ -20,6 +20,12 @@ using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Webhooks;
 
+/// <summary>A load-balanced site's front-end server, which has not the scheduling role.</summary>
+internal sealed class FrontEndServerRole : IServerRoleAccessor
+{
+    public ServerRole CurrentServerRole => ServerRole.Subscriber;
+}
+
 /// <summary>What the tests' handler heard.</summary>
 internal sealed class HeardEntries
 {
@@ -79,8 +85,8 @@ public sealed class EntryEventTests : ActionTestBase
     [Test]
     public async Task ASubmission_ReachesAWebhookOnTheEvent_WithTheStablePayload_AndNoAnswer()
     {
-        // A test host has no server role, as a load-balanced site's front-end has not the scheduling one: the request is queued all the same.
-        Assert.That(GetRequiredService<IServerRoleAccessor>().CurrentServerRole, Is.Not.EqualTo(ServerRole.Single));
+        // A load-balanced site's front-end has not the scheduling role: the request is queued all the same.
+        Assert.That(GetRequiredService<IServerRoleAccessor>().CurrentServerRole, Is.EqualTo(ServerRole.Subscriber));
 
         await GetRequiredService<IWebhookService>().CreateAsync(new Webhook("https://hooks.jfb.test/entries", true, null, ["jfbEntrySubmitted"]));
         var form = await FormAsync();
@@ -257,6 +263,8 @@ public sealed class EntryEventTests : ActionTestBase
         builder.Services.AddSingleton<HeardEntries>();
         builder.AddNotificationAsyncHandler<EntrySubmittedNotification, HeardEntriesHandler>();
         builder.AddNotificationAsyncHandler<EntryActionFailedNotification, HeardEntriesHandler>();
+        // A front-end server, whichever role Umbraco gives a test host (none on 17, a single server's on 18).
+        builder.Services.AddUnique<IServerRoleAccessor, FrontEndServerRole>();
     }
 }
 
