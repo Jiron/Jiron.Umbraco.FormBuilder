@@ -214,6 +214,9 @@ export default {
     cssClass: 'CSS-Klasse',
     cssClassHelp: 'Kommt an das äußere Element des Formulars, für die eigenen Styles der Website.',
 
+    alias: 'Alias',
+    aliasHelp: 'Vorlagen und Code nennen das Formular bei seinem Alias. Beim Umbenennen bleibt er.',
+    copyAlias: 'Alias kopieren',
     headless: 'Headless-Zugriff',
     headlessHelp: 'Eine Headless-Website kann die Definition des Formulars über die öffentliche API lesen.',
     retentionDays: 'Aufbewahrung je Status (Tage)',

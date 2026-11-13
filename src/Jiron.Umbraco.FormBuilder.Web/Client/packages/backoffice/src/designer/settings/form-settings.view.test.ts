@@ -153,6 +153,8 @@ class StandIn {
   host: Element | undefined;
   /** The form's key, as the workspace has it once the form is read. */
   readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
+  /** The form as the workspace read it: its alias is all this view shows of it. */
+  readonly form = new UmbBasicState<{ alias: string } | undefined>({ alias: 'contact-us' }).asObservable();
   /** Whether visitors get a published version. */
   readonly states = new UmbBasicState<string | undefined>('draft');
   readonly state = this.states.asObservable();
@@ -663,6 +665,32 @@ describe('the appearance and the developer', () => {
     ]);
     await type('query-values', 'ref\nutm_source');
     expect(settings('developer')['queryValues']).toEqual(['ref', 'utm_source']);
+  });
+
+  it("shows the form's alias, which code places it by, and copies it, or says why it could not", async () => {
+    const { root, view, open, click } = await viewOf();
+    await open('developer');
+    const alias = must(root.querySelector('code[aria-labelledby="form-alias-label"]'), 'the alias');
+    expect(text(alias)).toBe('contact-us');
+    expect(text(root.getElementById('form-alias-label'))).toBe('Alias');
+    const copy = must(root.querySelector<HTMLElement>('uui-button[label="Copy alias"]'), 'Copy alias');
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await click(copy);
+    await settle(view);
+    expect(writeText).toHaveBeenCalledWith('contact-us');
+    expect(text(root.getElementById('said'))).toBe('Copied contact-us');
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: async () => {
+          throw new Error('denied');
+        },
+      },
+      configurable: true,
+    });
+    await click(copy);
+    await settle(view);
+    expect(toasts.shown.at(-1)?.data.message).toBe("The alias couldn't be copied.");
   });
 });
 

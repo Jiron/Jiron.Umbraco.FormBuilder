@@ -207,4 +207,12 @@ export const settingsStyles = css`
   .failed p {
     margin: 0;
   }
+
+  /* The form's alias with Copy beside it, which goes under it where the alias is long. */
+  .alias {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--uui-size-space-3);
+  }
 `;

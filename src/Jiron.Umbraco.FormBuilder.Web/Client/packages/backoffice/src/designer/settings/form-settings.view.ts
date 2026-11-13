@@ -175,6 +175,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     _problems: { state: true },
     _said: { state: true },
     _lookups: { state: true },
+    _alias: { state: true },
   };
 
   static override styles = [
@@ -200,6 +201,8 @@ export class FormSettingsViewElement extends UmbLitElement {
   declare private _said: string;
   /** The dictionary items the buttons' labels name in the language shown (ADR-0228). */
   declare private _lookups: DictionaryLookups;
+  /** The form's alias, by which templates and code place it; empty until the workspace has the form. */
+  declare private _alias: string;
   readonly #dictionary = new DictionaryReader();
   // The keys and language the lookups were asked for: an answer for others is dropped.
   #dictionaryAsked = '';
@@ -233,11 +236,13 @@ export class FormSettingsViewElement extends UmbLitElement {
     this._problems = new Map();
     this._said = '';
     this._lookups = new Map();
+    this._alias = '';
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
       this.#context = context;
       if (!context) return;
       this.#culture = context.getLanguage();
       this.observe(context.editor, (view) => (this._view = view), 'editor');
+      this.observe(context.form, (form) => (this._alias = form?.alias ?? ''), 'form');
       this.observe(context.check, (check) => (this._check = check ?? UNCHECKED), 'check');
       this.observe(context.fieldTypes, (types) => (this._types = types ?? {}), 'types');
       this.observe(context.state, (state) => (this.#published = state === 'published' || state === 'pending'), 'state');
@@ -1664,6 +1669,23 @@ export class FormSettingsViewElement extends UmbLitElement {
   #developer(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel): TemplateResult {
     const developer = groupOf(definition, 'developer');
     return html`
+      ${
+        this._alias
+          ? html`<div class="item">
+              <span class="label" id="form-alias-label">${this.#term('alias')}</span>
+              <p class="help">${this.#term('aliasHelp')}</p>
+              <div class="alias">
+                <code aria-labelledby="form-alias-label">${this._alias}</code>
+                <uui-button
+                  compact
+                  look="outline"
+                  label=${this.#term('copyAlias')}
+                  @click=${() => this.#copyAlias()}
+                ></uui-button>
+              </div>
+            </div>`
+          : nothing
+      }
       ${this.#switch(
         'headless',
         this.#term('headless'),
@@ -1873,6 +1895,19 @@ export class FormSettingsViewElement extends UmbLitElement {
 
   #getNotifications() {
     return this.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
+  }
+
+  // Copy alias: the form's alias to the clipboard, said when it is there, as a field's Copy alias does.
+  async #copyAlias() {
+    const alias = this._alias;
+    try {
+      await navigator.clipboard.writeText(alias);
+      this.#announce(this.localize.term('jfbDesigner_saidCopied', alias));
+    } catch {
+      (await this.#getNotifications())?.peek('warning', {
+        data: { message: this.localize.term('jfbDesigner_copyFailed') },
+      });
+    }
   }
 
   // A toast with Undo for the outcome just deleted, closed by the next one: its Undo would take back another. Undo puts

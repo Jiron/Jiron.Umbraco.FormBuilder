@@ -209,6 +209,9 @@ export default {
     cssClass: 'CSS class',
     cssClassHelp: "Added to the form's outer element, for the site's own styles.",
 
+    alias: 'Alias',
+    aliasHelp: 'Templates and code name the form by its alias. Renaming the form keeps it.',
+    copyAlias: 'Copy alias',
     headless: 'Headless access',
     headlessHelp: "A headless site can read the form's definition from the public API.",
     retentionDays: 'Days kept in each state',
