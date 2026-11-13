@@ -89,8 +89,8 @@ action's **Reply to** names their email field.
 
 **The team**
 
-- **System notices go to:** addresses that hear of failed deliveries and health warnings, at most once an hour per
-  form.
+- **System notices go to:** addresses that hear when a delivery fails for good, at most once an hour per form. Health
+  warnings show on the Overview and on Umbraco's Health Check dashboard.
 - **Addresses entries may be forwarded to:** besides backoffice users, **Forward…** offers only these, so entries leave
   the site only to people it already trusts.
 

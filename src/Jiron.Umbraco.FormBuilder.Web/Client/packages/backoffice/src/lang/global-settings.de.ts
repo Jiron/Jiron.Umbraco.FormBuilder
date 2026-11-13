@@ -118,7 +118,7 @@ export default {
     email_defaultLayout_letter: 'Brief',
     emailBox_team: 'Das Team',
     email_teamRecipients: 'Systemhinweise gehen an',
-    email_teamRecipientsHelp: 'Fehlgeschlagene Zustellungen und Warnungen zum Zustand der Website.',
+    email_teamRecipientsHelp: 'Sie erfahren, wenn eine Zustellung endgültig fehlschlägt, höchstens einmal pro Stunde und Formular.',
     email_forwardAddresses: 'Adressen, an die Einträge weitergeleitet werden dürfen',
     email_forwardAddressesHelp:
       'Neben Backoffice-Benutzern bietet Weiterleiten nur diese an, damit Einträge die Website nur zu Personen verlassen, denen sie bereits vertraut.',

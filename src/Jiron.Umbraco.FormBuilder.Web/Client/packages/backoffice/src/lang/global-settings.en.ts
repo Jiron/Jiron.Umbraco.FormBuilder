@@ -112,7 +112,7 @@ export default {
     email_defaultLayout_letter: 'Letter',
     emailBox_team: 'The team',
     email_teamRecipients: 'System notices go to',
-    email_teamRecipientsHelp: 'Failed deliveries and health warnings.',
+    email_teamRecipientsHelp: 'They hear when a delivery fails for good, at most once an hour per form.',
     email_forwardAddresses: 'Addresses entries may be forwarded to',
     email_forwardAddressesHelp:
       'Besides backoffice users, Forward offers only these, so entries leave the site only to people it already trusts.',
