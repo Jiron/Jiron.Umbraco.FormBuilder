@@ -8,7 +8,7 @@
  *
  *   - the runtime's core, its entry and every chunk the entry imports statically: at most 16 KB;
  *   - the runtime with every feature: every file but the languages' words, and the largest language's, as a page
- *     loads its culture's words alone: at most 60 KB (ADR-0116, ADR-0146); the sum with every language is reported beside it;
+ *     loads its culture's words alone: at most 100 KB (ADR-0116, ADR-0251); the sum with every language is reported beside it;
  *   - the runtime's chunk names: every file but the entry carries a content hash, since the entry's `?v=` does not
  *     reach the chunks it imports, so a changed chunk needs a name of its own (ADR-0004);
  *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105), and
@@ -36,7 +36,7 @@ export const REPORTS = join(WEB_PROJECT, 'Client', '.build');
 const KB = 1024;
 export const BUDGETS = {
   runtimeCore: 16 * KB,
-  runtimeAll: 60 * KB,
+  runtimeAll: 100 * KB,
   themeCss: 10 * KB,
   backofficeStart: 64 * KB,
   backofficeFile: 64 * KB,

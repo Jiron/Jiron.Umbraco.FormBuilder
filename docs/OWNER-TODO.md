@@ -122,8 +122,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   page loads only the features its form uses. Once you set a number, the blocked steps resume from the
   branch.
 
-- [ ] **The website runtime's budget, once more: 60 KB or about 62 KB? (ROADMAP §4.12,
-  [ADR-0163](decisions/0163-save-and-resume.md)).** It blocks step 8.6b. The runtime with every feature stands at 59.50
+- [x] **Decided 2026-11-14: the website runtime's budget "with everything" grows from 60 KB to 100 KB at most, for
+  now (ROADMAP §4.12, [ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)).** Step 8.6b resumes after
+  step 19.1. What was asked ([ADR-0163](decisions/0163-save-and-resume.md)): It blocks step 8.6b. The runtime with every feature stands at 59.50
   KB gzip. "Save and continue later" and bringing a saved form back come to about 2 KB as a chunk only a form offering
   it loads, which makes 61.71 KB. No visitor loads all of that: a form loads only the features it uses, and what every page
   with a form loads stays 2.3 KB. The bytes have been through a terser pass, and nothing obvious is left to take out.
