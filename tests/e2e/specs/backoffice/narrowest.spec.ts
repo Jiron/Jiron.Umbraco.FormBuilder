@@ -304,18 +304,20 @@ for (const width of [375, 768, 1024, 1440]) {
         own.width < 96,
       );
       if (cramped) {
-        expect(name.x + name.width, `${state}: the name inside the header's box`).toBeLessThanOrEqual(
-          own.x + own.width + 0.5,
-        );
+        // The header clips its parts to its box, so nothing of it lies over Umbraco's menu or the tabs.
+        expect(
+          await editor.locator('.header[slot="header"]').evaluate((element) => getComputedStyle(element).overflow),
+          `${state}: the header clips its parts`,
+        ).toBe('hidden');
         await expect(editor.locator('.header[slot="header"] > uui-tag')).toHaveAttribute('title', state);
       } else {
         expect(name.width, `${state}: the name's box`).toBeGreaterThanOrEqual(96);
         await expect(editor.locator('.header[slot="header"] > uui-tag')).not.toHaveAttribute('title');
+        expect(chip.x, `${state}: the chip's left edge`).toBeGreaterThanOrEqual(own.x - 0.5);
+        expect(chip.x + chip.width, `${state}: the chip's right edge, short of Umbraco's "..."`).toBeLessThanOrEqual(
+          own.x + own.width + 0.5,
+        );
       }
-      expect(chip.x, `${state}: the chip's left edge`).toBeGreaterThanOrEqual(own.x - 0.5);
-      expect(chip.x + chip.width, `${state}: the chip's right edge, short of Umbraco's "..."`).toBeLessThanOrEqual(
-        own.x + own.width + 0.5,
-      );
       for (const [part, box] of [
         ['the name', name],
         ['the chip', chip],

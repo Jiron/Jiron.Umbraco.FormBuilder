@@ -93,7 +93,12 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
 
       /* Where Umbraco's row leaves the header less than the name's 6rem (Umbraco 18.3 gives the views' tabs their whole
          width first, ADR-0250), the name takes what there is, and the state, under it, its own width at most, cut
-         with an ellipsis; its words stay its title and are read in full. Nothing of the header lies over the tabs. */
+         with an ellipsis; its words stay its title and are read in full. The header clips its parts to its box, so
+         nothing of it lies over Umbraco's menu or the tabs, also where Umbraco leaves it no room at all. */
+      .cramped {
+        overflow: hidden;
+      }
+
       .cramped .name,
       .cramped h1 {
         min-width: 0;
@@ -170,7 +175,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     const stacked = !!name && !!chip && chip.offsetTop >= name.offsetTop + name.offsetHeight;
     if (stacked !== this._stacked) this._stacked = stacked;
     // The header's width is what Umbraco's row leaves it, whatever its own parts ask, so the two never take turns.
-    const cramped = !!header && header.clientWidth > 0 && header.clientWidth < NAME_ROOM * rem();
+    const cramped = !!header && header.clientWidth < NAME_ROOM * rem();
     if (cramped !== this._cramped) this._cramped = cramped;
   }
 
