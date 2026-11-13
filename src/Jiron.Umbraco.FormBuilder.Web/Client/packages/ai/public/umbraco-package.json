@@ -1,7 +1,7 @@
 {
   "id": "Jiron.Umbraco.FormBuilder.AI",
   "name": "Jiron Form Builder AI",
-  "version": "17.0.0-alpha.0",
+  "version": "0.0.0",
   "allowTelemetry": false,
   "extensions": [
     {

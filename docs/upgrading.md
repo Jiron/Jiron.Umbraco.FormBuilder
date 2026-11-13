@@ -47,5 +47,17 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 
 ## Releases
 
-No version has been released yet. Each release adds its own section here: what changed for sites, the migrations it runs, the theme views whose contract changed, and
-anything to check.
+Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
+whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
+
+### 17.0.0-alpha.1 (2026-11-13)
+
+The first prerelease, for Umbraco 17.6 or later (within 17). There is nothing to upgrade from: install it on a site
+you can reset, and expect changes before 17.0.0.
+
+- **Migrations:** the plan runs from `jfb-001-create-schema` to `jfb-015-entry-site` on the first start
+  ([database.md](database.md#migrations) lists each step). This schema is the released schema
+  `baseline/schema-v2`: from this version on, every upgrade is tested from it with data
+  ([how upgrades are tested](upgrade-testing.md)).
+- **Theme views:** every view carries contract version 1.
+- **Not yet included:** saving a form to continue later through an emailed link.
