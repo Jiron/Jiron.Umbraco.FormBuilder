@@ -3,7 +3,8 @@
 - Status: accepted; amends decision 1 of [ADR-0206](0206-the-phase-10-ux-walk.md) (the chip wraps its words beside
   the name) and builds on [ADR-0182](0182-the-phase-9-ux-walk.md) (the walk and the phone),
   [ADR-0207](0207-the-entries-list.md) (the entries list) and [ADR-0020](0020-three-design-skills.md) (the design
-  reviews)
+  reviews); refined by [ADR-0250](0250-the-umbraco-18-line.md) where Umbraco 18.3 leaves the header less than the
+  name's 6rem
 - Date: 2026-11-08
 - Roadmap step: 11.4, its part 11.6 (ADR-0197)
 

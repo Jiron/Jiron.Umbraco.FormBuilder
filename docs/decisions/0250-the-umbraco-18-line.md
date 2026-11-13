@@ -1,6 +1,6 @@
 # 0250. The Umbraco 18 line
 
-- Status: accepted (refines D3, D16 and ADR-0010)
+- Status: accepted (refines D3, D16, ADR-0010 and ADR-0213)
 - Date: 2026-11-13
 - Roadmap step: 19.1 (19.1 and 19.2, the Umbraco 18 line and its phase review)
 
@@ -32,7 +32,11 @@ samples compile unchanged. What broke:
   every read of its content root's file provider with a new provider and remembers it. Every Umbraco 18 test host
   watches one, and the watchers nobody disposed kept the mock, and through it every host of the fixture, in memory: the
   test host held 31 GB by the 2,089th test, and late requests timed out. A refused value's save and publish are also
-  reported apart now.
+  reported apart now, and a test host has a single server's role where it had none.
+- **The workspace's header row.** Umbraco 18.3 gives its header slot no width of its own (`flex-basis: 0`): the views'
+  tabs take their whole width first, and the header what is left, where Umbraco 17 folds tabs into its "..." and
+  leaves the header its content's width. Beside all the form's views on a narrow window, the name and the state chip
+  lay over the tabs. Umbraco offers no hook for that row.
 
 ## Options
 
@@ -72,6 +76,11 @@ Option 2.
 - **One test support for both lines:** the integration tests' assembly-wide action, which already released Umbraco's
   runtimes after every test, also disposes and forgets the file providers handed out during the test. It lands on
   `main`, where no host watches and nothing else changes, and `TestHostReleaseTests` fails without it on both lines.
+- **The form's header (refines ADR-0213):** the header lives in the box Umbraco's row leaves it. Where that is less
+  than the name's 6rem, it is cramped: the name takes what there is, the state under it is cut with an ellipsis, its
+  words its title and read in full, and the header clips its parts to its box, so nothing of it lies over Umbraco's
+  menu or the tabs; where Umbraco leaves nothing, neither shows until the window leaves room. On 17 the header always
+  has room and nothing changes. The header test checks what Umbraco leaves, with room the design of ADR-0213.
 - **The backoffice's adapters:** the forms tree and the Recycle Bin read a level through `readLevel`, which pages by
   offset and reads a window around an item from the start, 500 items at a time (the endpoints' most), until it holds
   the item, answering "not found" for one that is gone (the tree then picks another or starts from the top); the
@@ -88,6 +97,8 @@ Option 2.
 
 ## Consequences
 
+- On Umbraco 18.3, beside all the form's views, a window narrower than about 1,100 px (in German) leaves the name
+  little or no room, as Umbraco's row does for every workspace with that many views; a wider window brings it back.
 - The backoffice code is the same on both lines but for the tree adapters and the conditions; the generated clients and
   the snapshots differ per line.
 - A fix on `main` reaches `v18/main` by merging `main` into it; a conflict there is resolved on `v18/main`.
