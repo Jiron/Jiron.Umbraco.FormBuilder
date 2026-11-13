@@ -115,17 +115,19 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   branch.
 
 - [ ] **The website runtime's budget, once more: 60 KB or about 62 KB? (ROADMAP §4.12,
-  [ADR-0163](decisions/0163-save-and-resume.md)).** It blocks step 8.6b. The runtime with every feature stands at 59.80 KB
-  gzip. "Save and continue later" and bringing a saved form back come to 1.94 KB as a chunk only a form offering it loads,
-  which makes 61.95 KB. No visitor loads all of that: a form loads only the features it uses, and what every page with a form
-  loads stays 2.3 KB. The bytes have been through a terser pass, and nothing obvious is left to take out. The server side of save
-  and resume is finished and works for headless sites either way. **My recommendation: raise it to 64 KB,** which also leaves room for
-  the insights beacons of step 11.5, a small addition. Keeping 60 KB means forms have no "Save and continue later" button
-  of their own. Once you set a number, the step resumes from the branch `wip/8.6b-resume-control`. Retried at the Phase 9
-  review (2026-11-05): with Phase 9 merged in, 61.96 KB; at the Phase 10 review (2026-11-07): with Phase 10 merged in,
-  61.95 KB; at the Phase 11 review (2026-11-08), the Phase 12 review and the Phase 13 review (both 2026-11-09): with each
-  merged in, 62.15 KB; at the Phase 14 review (2026-11-11): with Phase 14 merged in, 61.53 KB, the runtime's words now in
-  seven languages; at the Phase 15 review (2026-11-11): with Phase 15 merged in, 61.62 KB.
+  [ADR-0163](decisions/0163-save-and-resume.md)).** It blocks step 8.6b. The runtime with every feature stands at 59.50
+  KB gzip. "Save and continue later" and bringing a saved form back come to about 2 KB as a chunk only a form offering
+  it loads, which makes 61.67 KB. No visitor loads all of that: a form loads only the features it uses, and what every page
+  with a form loads stays 2.3 KB. The bytes have been through a terser pass, and nothing obvious is left to take out.
+  The server side of save and resume is finished and works for headless sites either way. **My recommendation: raise it
+  to 64 KB,** which also leaves room for the insights beacons of step 11.5, a small addition. Keeping 60 KB means forms
+  have no "Save and continue later" button of their own. Once you set a number, the step resumes from the branch
+  `wip/8.6b-resume-control`. Retried at the Phase 9 review (2026-11-05): with Phase 9 merged in, 61.96 KB; at the Phase
+  10 review (2026-11-07): with Phase 10 merged in, 61.95 KB; at the Phase 11 review (2026-11-08), the Phase 12 review
+  and the Phase 13 review (both 2026-11-09): with each merged in, 62.15 KB; at the Phase 14 review (2026-11-11): with
+  Phase 14 merged in, 61.53 KB, the runtime's words now in seven languages; at the Phase 15 review (2026-11-11): with
+  Phase 15 merged in, 61.62 KB; at the Phase 16 review (2026-11-12) and the Phase 17 review (2026-11-13): with each
+  merged in, 61.67 KB.
 
 ## Legal judgements (privacy)
 
