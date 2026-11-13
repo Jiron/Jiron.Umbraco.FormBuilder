@@ -21,6 +21,8 @@ render their pages elsewhere, see [headless.md](headless.md).
 
 ## Placing a form
 
+![The contact form on a phone: filled in, with mistakes named in the error summary, and sent](screenshots/website-phone.png)
+
 Nothing needs registering: the package adds rendering, the public API and the middleware that serves its scripts and
 stylesheets by itself, ahead of Umbraco's routing. A form must be **published** before it renders.
 
@@ -202,6 +204,8 @@ writes an attribute only when it has a value. Emails have views of their own, in
 
 The markup is a contract: the class names, ids, `data-jfb-*` attributes and custom properties below stay the same within
 a major version.
+
+![A form after a send with a mistake: the error summary above the form names the field, and the field says what is wrong](screenshots/website-errors.png)
 
 ```html
 <form class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="…" data-jfb-contract="1" lang="en" dir="ltr"

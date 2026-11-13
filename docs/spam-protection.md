@@ -48,6 +48,8 @@ phones change networks. At the Standard level, a visitor without JavaScript is j
 **Settings › Spam protection › Default protection** sets the level for a site's forms; a form can choose another in its
 Settings view, under Spam protection.
 
+![Settings › Spam protection: the default protection level and the consent for third-party captchas](screenshots/settings.png)
+
 - **Standard,** the default: the hidden field, the shortest time to fill it in, the signed check and the content checks.
   Nothing loads from other sites.
 - **Standard, with a proof-of-work check:** the visitor's browser also solves a small puzzle before it sends, which

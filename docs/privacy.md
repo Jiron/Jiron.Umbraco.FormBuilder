@@ -103,6 +103,8 @@ consent is the basis the entries are kept on.
 **Privacy › People** finds, hands over and erases one person's data across every form, restricted and trashed ones
 included:
 
+![Privacy › People: a person's entries found by their email address, ready to export or erase](screenshots/privacy.png)
+
 1. **Find** by email address, or by member. It finds entries whose email field holds the address and entries the
    member sent while signed in. An address typed into a plain text field isn't found; search the entries lists for
    those too. Every search is recorded in the audit log, without the address.

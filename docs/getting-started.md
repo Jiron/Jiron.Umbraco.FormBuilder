@@ -46,6 +46,8 @@ sending them. Create the folder first, then add this to `appsettings.Development
 Start the site. Its database tables are created as it starts. Sign in to the backoffice (reload it if it was already
 open) and choose **Form Builder** in the top bar.
 
+![The Overview of the Form Builder section, with the setup checklist, recent entries and the health of the site](screenshots/overview.png)
+
 The section opens on its **Overview**, with a **Setup checklist** of five steps. Each step ticks itself off when it
 is done, whoever does it, so you can follow it in any order. This page follows it too.
 
@@ -95,6 +97,8 @@ If editors should place forms themselves, use a block instead. In the checklist,
 ## 7. Send an entry
 
 Open the page on the website, fill in the form and choose **Send**. The form makes way for its thank-you message.
+
+![The contact form on a page of the demo site, after sending: its thank-you message in place of the form](screenshots/website-sent.png)
 
 The Contact template sends no email. To get one for each entry, open the form's **Actions** view and choose
 **Add action** (see [actions.md](actions.md)).

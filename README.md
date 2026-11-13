@@ -14,6 +14,8 @@ personal data in check with the privacy tools.
 
 > **Status:** in development. The first prerelease is being prepared.
 
+![The designer: a contact form on the canvas, the palette of field types on the left, and the selected field's inspector on the right](docs/screenshots/designer.png)
+
 ## Features
 
 **For editors**
@@ -67,6 +69,14 @@ personal data in check with the privacy tools.
   tag sources, file scanners and file stores, with compiled samples.
 - **An optional AI add-on** on Umbraco.AI that drafts and translates forms for editors. Visitors' answers never reach
   an AI.
+
+## Screenshots
+
+![The Inbox: the newest entries of every form, unseen ones in bold](docs/screenshots/inbox.png)
+
+![The contact form on a phone: filled in, with mistakes named in the error summary, and sent](docs/screenshots/website-phone.png)
+
+More in [docs/screenshots](docs/screenshots/), and on the documentation's pages.
 
 ## Getting started
 

@@ -25,6 +25,8 @@ exporting them.
 - **Entries › Spam:** what the spam checks caught ([below](#spam)).
 - **The Overview's Recent entries:** the latest ten.
 
+![The Inbox: the newest entries of every form, unseen ones in bold](screenshots/inbox.png)
+
 An entry is **unseen** until someone opens it; it is shown in bold with a dot, and opening it marks it seen for
 everyone. Test entries sent from the preview never appear in any list.
 
@@ -55,6 +57,8 @@ the link longer.
 - **Save as…** keeps the filters as a named set, under **Saved** in the Filter menu, for you alone.
 - **Choose columns** adds the form's fields as columns, up to 20. In the Inbox, filter by one form first.
 
+![A form's Entries view: the list with its search, filters and columns](screenshots/entries.png)
+
 Every list shows each entry's title (or its number), its state, when it arrived and its actions: "2/2 delivered", "1
 failed" or "Not run". The list shows 50 entries at a time, with **Show more**.
 
@@ -67,6 +71,8 @@ Keyboard shortcuts in a list (**?** shows them): `j` and `k` next and previous, 
 ## One entry
 
 Choosing an entry opens its panel beside the list, in three tabs.
+
+![A form's entries with one entry's panel open: its answers, timeline and notes](screenshots/entry-panel.png)
 
 ### Answers
 

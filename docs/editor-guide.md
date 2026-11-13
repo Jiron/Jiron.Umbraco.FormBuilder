@@ -105,6 +105,8 @@ and [insights.md](insights.md).
 The palette is on the left, the form in the middle and the inspector on the right. On a smaller screen the palette and
 inspector fold to the side; below 700 pixels they open over the form, and Esc closes them.
 
+![The Design view of a contact form: the palette on the left, the form on the canvas, and the inspector of the selected Email address field on the right](screenshots/designer.png)
+
 ### Adding fields
 
 The **palette** lists, in order: the field types you used most recently, **Layout** (a **Group** and **New page**), the
@@ -285,6 +287,8 @@ publish.
 **Preview** saves any unsaved changes and shows the form as visitors get it, in its own theme, at phone, tablet or
 desktop width. **Fill with sample answers** fills it in; its **…** menu switches the colour scheme or the language.
 
+![The preview of the contact form, filled in with sample answers](screenshots/preview.png)
+
 **Entries sent in the preview are test entries.** They run no actions, never appear in the Inbox or the lists of
 entries, and are deleted after 7 days. Users who may manage the form's actions can turn on **Run actions for test
 entries**, or run them for one test entry after sending; then the emails and messages really go out.
@@ -296,6 +300,8 @@ A draft whose rules have errors can't be previewed until the form check's errors
 The **History** view lists the published versions, newest first: when and by whom, what changed against the version
 before, and the comment. The version visitors get is marked **Published**. **Show draft saves** adds the saves in
 between.
+
+![Two published versions of a form compared, the changed Send button said in words](screenshots/history.png)
 
 - **Compare:** tick two versions, then **Compare** shows what was added, removed, moved or changed between them.
 - **A version's name** opens it compared with the current draft, with **Restore as a new draft** and **Restore and

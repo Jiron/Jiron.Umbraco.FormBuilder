@@ -23,6 +23,8 @@ actions in its **Actions** view.
 
 The Actions view groups a form's actions by what starts them:
 
+![The Actions view with an email action open in its sidebar, the email previewed with a sample entry](screenshots/action-email.png)
+
 | Trigger | Runs |
 | --- | --- |
 | Submitted | when an entry comes in |

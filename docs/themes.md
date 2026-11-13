@@ -20,6 +20,12 @@ lets you make your own without writing CSS, with every colour checked for contra
 | Bootstrap 5 | Bootstrap's own classes, for sites that load Bootstrap 5 themselves; the package never ships Bootstrap. |
 | Unstyled | Only the few rules every form needs to work, such as hiding what should be hidden, for sites that style forms entirely themselves. |
 
+![The contact form in the Default theme](screenshots/website-default.png)
+
+![The same form in the Bootstrap 5 theme, on a page that loads Bootstrap](screenshots/website-bootstrap5.png)
+
+![The same form Unstyled: the browser's own controls and the site's styles](screenshots/website-unstyled.png)
+
 Developers can add themes in code and change a theme's views ([rendering.md](rendering.md)).
 
 ## Which theme a form uses
@@ -36,6 +42,8 @@ The first of these that is set wins:
 **Library › Themes › Create theme** asks which theme the new one builds on, then opens its editor: the settings beside a
 live preview of a sample form, in light and, for a base with a dark scheme, dark. Your theme changes only what you set,
 and follows the base theme for the rest.
+
+![The theme editor: the colours and sizes on the left, the form previewed in light and dark on the right](screenshots/theme-editor.png)
 
 | Section | Settings |
 | --- | --- |

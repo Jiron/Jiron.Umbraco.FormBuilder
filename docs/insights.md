@@ -19,6 +19,8 @@ started or stopped at a field.
 Choose a **Date range** (the last 30 days unless you choose another), how to **Group by** (day, week or month), and
 whether to **Compare with the previous period**. The view then shows:
 
+![A form's Insights: views, starts, entries and conversion over time](screenshots/insights.png)
+
 - **Views, Starts, Entries and Conversion,** each with its change from the period before. A start is a visitor's first
   answer; conversion is entries per view. Entries also say how many were caught as spam.
 - **Entries per day** (or week, or month), with the period before as a quieter bar.
