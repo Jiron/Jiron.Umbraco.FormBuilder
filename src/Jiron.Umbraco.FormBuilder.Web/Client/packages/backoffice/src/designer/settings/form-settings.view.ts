@@ -1671,11 +1671,11 @@ export class FormSettingsViewElement extends UmbLitElement {
     return html`
       ${
         this._alias
-          ? html`<div class="item">
+          ? html`<div class="item" role="group" aria-labelledby="form-alias-label">
               <span class="label" id="form-alias-label">${this.#term('alias')}</span>
               <p class="help">${this.#term('aliasHelp')}</p>
               <div class="alias">
-                <code aria-labelledby="form-alias-label">${this._alias}</code>
+                <code>${this._alias}</code>
                 <uui-button
                   compact
                   look="outline"

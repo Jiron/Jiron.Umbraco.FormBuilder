@@ -52,12 +52,12 @@ export interface EditorContext {
   readonly dictionaryLine?: (text: string) => string | null;
   /** Says that an item was picked from the dictionary, whose texts are then read again. */
   readonly dictionaryPicked?: () => void;
-  /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
   /**
    * A line after a setting's help that links to its page of the documentation, where the help needs more than two
    * sentences (ROADMAP 17.2a); nothing for a setting without one.
    */
   readonly learnMore?: (setting: FieldSettingResponseModel) => TemplateResult | typeof nothing;
+  /** "Insert merge tag" under the box of a setting that takes tags, which puts a tag into it (ADR-0173). */
   readonly mergeTags?: (setting: FieldSettingResponseModel, path: string) => TemplateResult | typeof nothing;
   /**
    * What the form check found at a box, by its id: the ids that describe the box, the lines that say it, and whether

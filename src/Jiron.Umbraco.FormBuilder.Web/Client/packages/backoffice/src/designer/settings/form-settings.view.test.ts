@@ -672,7 +672,7 @@ describe('the appearance and the developer', () => {
   it("shows the form's alias, which code places it by, and copies it, or says why it could not", async () => {
     const { root, view, open, click } = await viewOf();
     await open('developer');
-    const alias = must(root.querySelector('code[aria-labelledby="form-alias-label"]'), 'the alias');
+    const alias = must(root.querySelector('[role="group"][aria-labelledby="form-alias-label"] code'), 'the alias');
     expect(text(alias)).toBe('contact-us');
     expect(text(root.getElementById('form-alias-label'))).toBe('Alias');
     const copy = must(root.querySelector<HTMLElement>('uui-button[label="Copy alias"]'), 'Copy alias');

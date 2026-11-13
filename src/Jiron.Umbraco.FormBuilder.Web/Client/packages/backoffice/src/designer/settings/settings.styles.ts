@@ -208,11 +208,15 @@ export const settingsStyles = css`
     margin: 0;
   }
 
-  /* The form's alias with Copy beside it, which goes under it where the alias is long. */
+  /* The form's alias with Copy beside it, which goes under it where the alias is long; the alias itself wraps anywhere. */
   .alias {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--uui-size-space-3);
+  }
+
+  .alias code {
+    min-width: 0;
   }
 `;
