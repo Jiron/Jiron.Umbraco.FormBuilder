@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
-import { anchorsOf, checkFile, checkLearnMore, defaultFiles, linksOf, slug } from '../link-check.mjs';
+import { anchorsOf, caseMismatch, checkFile, checkLearnMore, defaultFiles, linksOf, slug } from '../link-check.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'jfb-link-check-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -65,6 +65,19 @@ test('a missing file, a missing heading or a missing image is named with its lin
     'docs/guide.md:3: no such file: missing.md',
     'docs/guide.md:4: no heading "#part-three" in docs/page.md',
     'docs/guide.md:5: no such file: shot.png',
+  ]);
+});
+
+test('a link whose letter case differs from the file on disk is named, as GitHub would not find it', () => {
+  const base = folder({
+    'docs/views/default/Field.cshtml': '@* view *@\n',
+    'docs/guide.md': '# Guide\n[right](views/default/Field.cshtml) [wrong](views/Default/Field.cshtml)\n',
+  });
+  assert.equal(caseMismatch(join(base, 'docs', 'views', 'default'), base), null);
+  assert.equal(caseMismatch(join(base, 'docs', 'views', 'Default'), base), 'Default');
+  assert.equal(caseMismatch(join(base, '..', 'elsewhere'), base), null);
+  assert.deepEqual(checkFile(join(base, 'docs', 'guide.md'), base), [
+    'docs/guide.md:2: "Default" is spelt with other letter case on disk: views/Default/Field.cshtml',
   ]);
 });
 

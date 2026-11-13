@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Checks the documentation's links (ROADMAP 17.2a): every relative link and image in the Markdown files names a file
-// that exists, every anchor names a heading in its file (as GitHub makes them), the NuGet readme has no relative link
+// that exists, spelt with the same letter case (GitHub's paths are case-sensitive, though Windows and macOS are not),
+// every anchor names a heading in its file (as GitHub makes them), the NuGet readme has no relative link
 // (nuget.org can't resolve one), and every page of the backoffice's "Learn more" map exists with its heading. Links to
 // other sites are not fetched: the check runs offline. Exits 1 and names each broken link.
 // Usage: node scripts/link-check.mjs [files...]   (no files: every Markdown file it covers, see FILES below)
@@ -110,6 +111,21 @@ export function linksOf(text) {
 
 const external = (target) => /^[a-z][a-z0-9+.-]*:/i.test(target);
 
+/**
+ * The part of a path inside `base` whose letter case differs from the names on disk, or null when every part matches:
+ * a file system that ignores case finds `Default/` for `default/`, which GitHub does not.
+ */
+export function caseMismatch(path, base = root) {
+  const inside = relative(base, path);
+  if (!inside || inside.startsWith('..')) return null;
+  let at = base;
+  for (const part of inside.split(sep).filter(Boolean)) {
+    if (!readdirSync(at).includes(part)) return part;
+    at = join(at, part);
+  }
+  return null;
+}
+
 /** The problems of one Markdown file's links, as "file:line: message". */
 export function checkFile(file, base = root) {
   const text = readFileSync(file, 'utf8');
@@ -127,6 +143,11 @@ export function checkFile(file, base = root) {
     const destination = decoded ? resolve(dirname(file), decoded) : resolve(file);
     if (!existsSync(destination)) {
       problems.push(`${name}:${line}: no such file: ${target}`);
+      continue;
+    }
+    const wrong = caseMismatch(destination, base);
+    if (wrong) {
+      problems.push(`${name}:${line}: "${wrong}" is spelt with other letter case on disk: ${target}`);
       continue;
     }
     if (anchor && destination.endsWith('.md') && !anchorsOf(readFileSync(destination, 'utf8')).has(anchor))
