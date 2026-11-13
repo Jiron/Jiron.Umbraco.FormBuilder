@@ -31,6 +31,11 @@
                  its data through the baseline's own services. The site stops, swaps the baseline for the current
                  packages, and starts again with Umbraco:CMS:Unattended:UpgradeUnattended: the remaining migrations
                  run, and the checks read the data back through the database and today's APIs, then send a new entry.
+                 Umbraco must then run with nothing left to upgrade (its server status Run). The line learns itself
+                 (ROADMAP 19.2): when the baseline's Umbraco is another than the line's, every Umbraco package the site
+                 names is raised to the line's with Jiron Form Builder's; on v18/main the newest baseline is a 17
+                 release, so the run is the real upgrade of a 17 site with data to Umbraco 18 and the 18 packages,
+                 and across a major Umbraco's own migration state must also move on.
   -Baseline      With -Mode upgrade: the tag of the released schema to upgrade from, such as baseline/schema-v1.
   -WriteFixture  With -Mode upgrade: writes tests\fixtures\upgrade\schema-v<N>.json, named after the baseline's tag,
                  from the baseline's database before the upgrade, for UpgradeFixtureTests and
@@ -267,6 +272,20 @@ function Set-SitePackage([string] $Id, [string] $PackageVersion) {
     Invoke-Native 'dotnet' @('add', $Project, 'package', $Id, '--version', $PackageVersion, '--no-restore') $Site
 }
 
+function Set-SiteUmbraco([string] $UmbracoVersion) {
+    # Every Umbraco package the site's template named (Umbraco.Cms, Umbraco.Cms.DevelopmentMode.Backoffice), as moving a
+    # site to another Umbraco moves them all; one left behind would refuse the restore.
+    $props = [xml](Get-Content -Raw (Join-Path $Site 'Directory.Packages.props'))
+    $ids = @($props.Project.ItemGroup.PackageVersion | Where-Object { $_.Include -like 'Umbraco.Cms*' } | ForEach-Object { $_.Include })
+    if ($ids.Count -eq 0) { throw "The site's Directory.Packages.props names no Umbraco package." }
+    foreach ($id in $ids) { Set-SitePackage $id $UmbracoVersion }
+}
+
+function Get-ServerStatus {
+    # Umbraco's runtime level as its Management API tells anyone: Run once nothing is left to install or upgrade.
+    return (Invoke-RestMethod -UseBasicParsing -Uri "$Url/umbraco/management/api/v1/server/status" -TimeoutSec 10).serverStatus
+}
+
 function Build-Site([string[]] $Extra = @()) {
     # A version the feed lacks fails the build instead of being swapped for the next higher one (NuGet's NU1603).
     Invoke-Native 'dotnet' (@('build', $Project, '-c', 'Release', '-warnaserror:NU1603') + $BuildArguments + $Extra) $Site
@@ -462,9 +481,11 @@ try {
 
         Write-Host "install-test: upgrading the site to $Version"
         Invoke-Native 'dotnet' @('remove', $Project, 'reference', (Join-Path $Seed 'JfbBaselineSeed.csproj')) $Site
+        # A baseline of another line (ROADMAP 19.2): its Umbraco's major is not the line's.
+        $lineUpgrade = $siteUmbraco.Split('.')[0] -ne $umbraco.Split('.')[0]
         if ($siteUmbraco -ne $umbraco) {
-            Write-Host "install-test: and Umbraco from $siteUmbraco to $umbraco"
-            Set-SitePackage 'Umbraco.Cms' $umbraco
+            Write-Host "install-test: and Umbraco from $siteUmbraco to $umbraco$(if ($lineUpgrade) { ', from one line to the next' })"
+            Set-SiteUmbraco $umbraco
         }
         foreach ($id in $Packages) { Set-SitePackage $id $Version }
         Build-Site
@@ -472,9 +493,13 @@ try {
         $umbracoAfter = Get-NodeLine @((Join-Path $Helper 'jfb-db.mjs'), 'umbraco', $Database)
         if ($siteUmbraco -eq $umbraco) {
             Assert-That ($umbracoAfter -eq $umbracoBefore) "Umbraco's own migration state is untouched ($umbracoAfter)"
+        } elseif ($lineUpgrade) {
+            Assert-That ($umbracoAfter -ne $umbracoBefore) "Umbraco's own migration state moved on from $siteUmbraco's ($umbracoBefore) to $umbraco's ($umbracoAfter)"
         } else {
             Write-Host "  ok: Umbraco's own migration state after $siteUmbraco to $umbraco is $umbracoAfter"
         }
+        $status = Get-ServerStatus
+        Assert-That ($status -eq 'Run') "Umbraco $umbraco runs with nothing left to install or upgrade (server status $status)"
         Write-Host 'install-test: checks'
         Invoke-Node @((Join-Path $Helper 'jfb-db.mjs'), 'check', $Database, $expected)
         Invoke-Node @((Join-Path 'install' 'check.ts'), '--url', $Url, '--mode', 'upgrade', '--expected', $expected) $E2E

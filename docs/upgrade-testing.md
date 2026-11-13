@@ -39,7 +39,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-test.ps1 -Mo
   the current packages and starts again: the remaining migrations run, and the checks read everything back through the
   database and today's APIs (`tests/e2e/install/check.ts`): the folders and forms in the tree, the versions and the
   draft, every entry's answers and state, the file byte for byte, the settings. A visitor then sends the upgraded form,
-  and the entry takes the next number.
+  and the entry takes the next number. Umbraco must then run with nothing left to install or upgrade: its Management
+  API's server status says `Run`.
+- **The line upgrade.** The baseline's site runs on the baseline's own Umbraco. When that is another than the line's,
+  the upgrade raises every Umbraco package the site names (`Umbraco.Cms`, `Umbraco.Cms.DevelopmentMode.Backoffice`)
+  with Jiron Form Builder's. On `v18/main` the newest baseline is a 17 release, so `-Mode upgrade` there is the real
+  upgrade of an Umbraco 17 site with data to Umbraco 18 and the 18 packages; across a major, Umbraco's own migration
+  state must also have moved on.
 - **`-WriteFixture`** (with `-Mode upgrade`) writes the baseline's fixture, `tests/fixtures/upgrade/schema-v<N>.json`
   after its tag, from the baseline's database before the upgrade.
 - **`-Keep`** keeps the run's folders to look into a failure; **`-Version`** packs a given version, for a release.
