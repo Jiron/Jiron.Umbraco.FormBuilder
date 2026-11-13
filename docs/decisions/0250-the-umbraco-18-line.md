@@ -41,6 +41,9 @@ samples compile unchanged. What broke:
   of the connection string at start-up (its template no longer names it). The stall ADR-0011 allows one rerun for,
   overlapping writes in a transaction that reads before it writes, no longer hangs: the write fails as SQLite's
   error 5, "database is locked". The first 18 gate met it once, in Umbraco's own audit write of a password reset.
+  Sign-ins meet it most: Umbraco updates the signed-in user in a transaction that reads first, and with the shared
+  cache gone any other worker's write overtakes that read, not only another sign-in, which the harness already runs one
+  at a time. Two of three gates on 18 lost a sign-in that never answered, with nothing in the log.
 
 ## Options
 
@@ -84,7 +87,9 @@ Option 2.
   database locked as it counts a command that ran into its 30 s timeout: the run leaves the hang marker, and the gate
   runs once more, never twice. Our own writes go through the database gate and begin as writes, so a locked
   database is Umbraco's (or Umbraco.AI's) own contention. The 18 demo names Umbraco 18's connection string, without
-  the shared cache.
+  the shared cache. A sign-in or a password reset that has not finished within 20 s, where a sound one takes well
+  under a second, is that stall on the client: it is signed in once more, and the run says so; a second stall, or
+  any other failure, fails the test (`support/sign-in-retry.ts`, each case tested).
 - **The form's header (refines ADR-0213):** the header lives in the box Umbraco's row leaves it. Where that is less
   than the name's 6rem, the name and the state wait out of sight and reach, in their place, until the window leaves
   them room; otherwise the header is as ADR-0213 has it. A name squeezed to what is left was tried first: its box
