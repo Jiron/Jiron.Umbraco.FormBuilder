@@ -3162,7 +3162,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 17: Branding, documentation, screenshots
 
-- [ ] **17.1 Logo and icon, documentation and screenshots, and phase review** (17.1, 17.2a, 17.2b and 17.3 in one, ADR-0197)
+- [x] **17.1 Logo and icon, documentation and screenshots, and phase review** (17.1, 17.2a, 17.2b and 17.3 in one, ADR-0197) (2026-11-13, 45c03bb7)
   - **17.1 Logo and icon**:
     - **Design `assets/logo.svg`:**
       - **Concept:** a minimal form card (stacked field lines) whose submit button is a small check mark, drawn to sit next to the "Jiron" wordmark and to work alone as a 32 px section icon.
