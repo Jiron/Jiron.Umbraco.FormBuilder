@@ -344,7 +344,9 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
 
     /// <summary>
     /// A reference to a model's schema in the document's components, which it adds when the document lacks it, as the
-    /// generator does for the models an action names itself.
+    /// generator does for the models an action names itself. It names a model as the document does: Jiron Form Builder's
+    /// own as Umbraco names its own, another by its name, which the document's own naming gives only a type that is not
+    /// generic; a generic one of another library is refused, so it never comes twice under two names.
     /// </summary>
     /// <param name="context">The operation's context.</param>
     /// <param name="type">The model.</param>
@@ -353,6 +355,11 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(type);
+        if (type.IsGenericType && !FormBuilderOpenApiSchemas.IsOwn(type))
+        {
+            throw new ArgumentException($"{type.Name} is a generic type of another library, which the document names otherwise.", nameof(type));
+        }
+
         var schema = await context.GetOrCreateSchemaAsync(type, null, cancellationToken);
         if (context.Document is not { } document || FormBuilderOpenApiSchemas.ReferenceId(type, () => type.Name) is not { } id)
         {

@@ -70,8 +70,14 @@ export type LevelReader = (skip: number, take: number) => Promise<{ data?: Paged
 /** Changes a page's items, such as a folders-only picker leaving the forms out. */
 export type PageChange = (items: LibraryItemResponseModel[]) => LibraryItemResponseModel[];
 
-/** The page the server answers with when the tree names none, and by which a window around an item is read. */
+/** The page the server answers with when the tree names none. */
 export const LEVEL_PAGE = 100;
+
+/**
+ * The most the tree's endpoints answer per read (the server's `PageRequest.MaxTake`), by which a window around an item is
+ * read, so the window of a long level takes few reads.
+ */
+export const WINDOW_READ = 500;
 
 const unchanged: PageChange = (items) => items;
 
@@ -126,8 +132,8 @@ async function readWindow(
 ): Promise<TreePage> {
   const items: LibraryItemResponseModel[] = [];
   let at = -1;
-  for (let skip = 0; ; skip += LEVEL_PAGE) {
-    const { data, error } = await tryExecute(host, read(skip, LEVEL_PAGE));
+  for (let skip = 0; ; skip += WINDOW_READ) {
+    const { data, error } = await tryExecute(host, read(skip, WINDOW_READ));
     if (!data) return { error: error as Error };
     const kept = change(data.items);
     items.push(...kept);

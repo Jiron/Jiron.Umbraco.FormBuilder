@@ -2,8 +2,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.OpenApi;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 
@@ -118,6 +121,86 @@ public sealed class FormBuilderOpenApiSchemasTests
     }
 
     [Test]
+    public void AProperty_TheModelOnlyReads_WrittenInPlace_IsReadOnly_AndNullOnlyWhenItMayBe()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web) { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                ["kind"] = new OpenApiSchema { Type = JsonSchemaType.String | JsonSchemaType.Null },
+                ["note"] = new OpenApiSchema { Type = JsonSchemaType.String | JsonSchemaType.Null },
+                ["child"] = new OpenApiSchema { Type = JsonSchemaType.Object | JsonSchemaType.Null },
+                ["day"] = new OpenApiSchema { Type = JsonSchemaType.Integer },
+                ["given"] = new OpenApiSchema { Type = JsonSchemaType.String | JsonSchemaType.Null },
+                ["name"] = new OpenApiSchema { Type = JsonSchemaType.String | JsonSchemaType.Null },
+            },
+        };
+
+        FormBuilderOpenApiSchemas.ReadOnly(schema, options.GetTypeInfo(typeof(Reading)));
+
+        var readOnly = schema.Properties.Where(property => property.Value is OpenApiSchema { ReadOnly: true }).Select(property => property.Key);
+        Assert.Multiple(() =>
+        {
+            Assert.That(readOnly, Is.EquivalentTo(new[] { "kind", "note" }), "not a model or an enum with a schema of its own, a value set through the constructor or one with a setter");
+            Assert.That(((OpenApiSchema)schema.Properties["kind"]).Type, Is.EqualTo(JsonSchemaType.String), "never null");
+            Assert.That(((OpenApiSchema)schema.Properties["note"]).Type, Is.EqualTo(JsonSchemaType.String | JsonSchemaType.Null), "null, as it may be");
+        });
+    }
+
+    [Test]
+    public void AProblem_MayCarryExtensions_AndKeepsTheOnesItDescribes()
+    {
+        var plain = new OpenApiSchema { Type = JsonSchemaType.Object };
+        var described = new OpenApiSchema { Type = JsonSchemaType.Object, AdditionalProperties = new OpenApiSchema { Type = JsonSchemaType.String } };
+
+        FormBuilderOpenApiSchemas.Extensible(plain);
+        FormBuilderOpenApiSchemas.Extensible(described);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plain.AdditionalPropertiesAllowed, Is.True);
+            Assert.That(plain.AdditionalProperties, Is.InstanceOf<OpenApiSchema>().With.Property(nameof(OpenApiSchema.Type)).Null, "any value");
+            Assert.That(described.AdditionalProperties?.Type, Is.EqualTo(JsonSchemaType.String), "kept");
+        });
+    }
+
+    [Test]
+    public void ABody_AnActionMayGoWithout_IsItsModel_WhichTheClientMayLeaveOut()
+    {
+        var model = new OpenApiSchemaReference("ActionTestRequestModel");
+        var optional = BodyOf(new OpenApiSchema { OneOf = [new OpenApiSchema { Type = JsonSchemaType.Null }, model] });
+        var required = BodyOf(model);
+
+        FormBuilderOpenApiSchemas.OptionalBodies(optional);
+        FormBuilderOpenApiSchemas.OptionalBodies(required);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(optional.RequestBody!.Content!["application/json"].Schema, Is.SameAs(model), "the model, not the model or null");
+            Assert.That(optional.RequestBody.Required, Is.False, "which the client may leave out");
+            Assert.That(required.RequestBody!.Content!["application/json"].Schema, Is.SameAs(model));
+            Assert.That(required.RequestBody.Required, Is.True, "a body the action needs stays required");
+        });
+    }
+
+    [Test]
+    public void APublicDeclaration_RefusesAGenericTypeOfAnotherLibrary_WhichTheDocumentNamesOtherwise()
+    {
+        var context = new OpenApiOperationTransformerContext
+        {
+            DocumentName = "jfb-public",
+            Description = new ApiDescription(),
+            ApplicationServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        Assert.That(
+            async () => await FormBuilderPublicDeclarations.ReferenceAsync(context, typeof(List<string>), CancellationToken.None),
+            Throws.ArgumentException.With.Message.Contains("List`1"));
+    }
+
+    [Test]
     public void AResponse_ListsOnlyTheMediaTypesWithABody()
     {
         var json = new OpenApiMediaType { Schema = new OpenApiSchema { Type = JsonSchemaType.Object } };
@@ -215,6 +298,26 @@ public sealed class FormBuilderOpenApiSchemasTests
         }
 
         return new OpenApiDocument { Paths = paths, Components = new OpenApiComponents { Schemas = components } };
+    }
+
+    private static OpenApiOperation BodyOf(IOpenApiSchema schema) => new()
+    {
+        RequestBody = new OpenApiRequestBody { Required = true, Content = new Dictionary<string, OpenApiMediaType> { ["application/json"] = new() { Schema = schema } } },
+    };
+
+    private sealed class Reading(string given)
+    {
+        public string Kind { get; } = "reading";
+
+        public string? Note { get; }
+
+        public Sample Child { get; } = new("a", null, 1, null) { Kept = null, KeptToo = null };
+
+        public DayOfWeek Day { get; } = DayOfWeek.Monday;
+
+        public string Given { get; } = given;
+
+        public string Name { get; set; } = string.Empty;
     }
 
     private sealed record Sample(string Name, string? Note, int Count, int? Limit)

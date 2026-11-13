@@ -21,7 +21,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.OpenApi;
 /// <item>a validation problem (<see cref="HttpValidationProblemDetails"/>) has its fields and its <c>errors</c>;</item>
 /// <item>a number is a number: the API writes numbers, though the web's JSON defaults also read them from strings;</item>
 /// <item>a property that may be null is not required, unless the model marks it <c>required</c>;</item>
-/// <item>a property the model only reads is read-only, and null only when it may be;</item>
+/// <item>a property the model only reads, written in place, is read-only, and null only when it may be;</item>
 /// <item>a problem (<see cref="ProblemDetails"/>) may carry extensions, such as its stable <c>code</c>;</item>
 /// <item>a body an action may go without is its model, which the client may leave out, rather than the model or null;</item>
 /// <item>a response lists only the media types it has a body for.</item>
@@ -212,8 +212,10 @@ internal static class FormBuilderOpenApiSchemas
     }
 
     /// <summary>
-    /// A property the model only reads (it has no setter, such as a constant type name) is read-only, as the Umbraco 17
-    /// line's documents said, so a client never sends it; and it is null only when the model says it may be.
+    /// A property the model only reads (it has no setter and no constructor parameter, such as a constant type name) is
+    /// read-only, as the Umbraco 17 line's documents said, so a client never sends it; and it is null only when the model
+    /// says it may be. Only a value written in place is marked: a model or an enum has a schema of its own, which the
+    /// mark would change wherever the schema is used.
     /// </summary>
     /// <param name="schema">An object's schema.</param>
     /// <param name="type">The object's JSON contract.</param>
@@ -226,7 +228,7 @@ internal static class FormBuilderOpenApiSchemas
             return;
         }
 
-        foreach (var property in type.Properties.Where(property => property.Get is not null && property.Set is null))
+        foreach (var property in type.Properties.Where(OnlyRead))
         {
             if (properties.TryGetValue(property.Name, out var found) && found is OpenApiSchema read)
             {
@@ -238,6 +240,15 @@ internal static class FormBuilderOpenApiSchemas
             }
         }
     }
+
+    // Read but never written, by a setter or through the constructor, and written in place rather than as a schema of
+    // its own.
+    private static bool OnlyRead(JsonPropertyInfo property) =>
+        property.Get is not null
+        && property.Set is null
+        && property.AssociatedParameter is null
+        && property.Options.GetTypeInfo(property.PropertyType).Kind == JsonTypeInfoKind.None
+        && !(Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType).IsEnum;
 
     /// <summary>
     /// A body an action may go without (its parameter may be null) is its model, and the client may leave it out, as the

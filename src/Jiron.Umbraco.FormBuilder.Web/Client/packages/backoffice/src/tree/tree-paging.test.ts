@@ -2,7 +2,7 @@
 // around one of a level's items, from a server that pages by offset only.
 import { describe, expect, it, vi } from 'vitest';
 import type { LibraryItemResponseModel, PagedLibraryItemResponseModel } from '../api';
-import { LEVEL_PAGE, readLevel, type LevelReader } from './library-tree.repository';
+import { LEVEL_PAGE, WINDOW_READ, readLevel, type LevelReader } from './library-tree.repository';
 
 vi.mock('@umbraco-cms/backoffice/resources', () => ({
   tryExecute: async (_host: unknown, request: Promise<unknown>) => request,
@@ -63,39 +63,48 @@ describe("a level's page from an offset", () => {
 });
 
 describe("a level's window around an item", () => {
-  it('reads from the start until it holds the item and what comes after it, and gives the window', async () => {
+  it('reads from the start, as much as the server answers at once, until it holds the item and gives the window', async () => {
+    const { read, reads } = level(many(700));
+
+    const { data } = await readLevel(host, read, target('i560', 5, 5));
+
+    expect(reads).toEqual([
+      [0, WINDOW_READ],
+      [WINDOW_READ, WINDOW_READ],
+    ]);
+    expect(keys(data)).toEqual([
+      'i555',
+      'i556',
+      'i557',
+      'i558',
+      'i559',
+      'i560',
+      'i561',
+      'i562',
+      'i563',
+      'i564',
+      'i565',
+    ]);
+    expect(data).toMatchObject({ total: 700, totalBefore: 555, totalAfter: 134 });
+  });
+
+  it("reads a level the server answers at once in one read, whatever the tree's own page", async () => {
     const { read, reads } = level(many(250));
 
     const { data } = await readLevel(host, read, target('i160', 5, 5));
 
-    expect(reads).toEqual([
-      [0, LEVEL_PAGE],
-      [LEVEL_PAGE, LEVEL_PAGE],
-    ]);
-    expect(keys(data)).toEqual([
-      'i155',
-      'i156',
-      'i157',
-      'i158',
-      'i159',
-      'i160',
-      'i161',
-      'i162',
-      'i163',
-      'i164',
-      'i165',
-    ]);
+    expect(reads).toEqual([[0, WINDOW_READ]]);
     expect(data).toMatchObject({ total: 250, totalBefore: 155, totalAfter: 84 });
   });
 
   it('reads the next page when the items after the item run past the one that holds it', async () => {
-    const { read, reads } = level(many(250));
+    const { read, reads } = level(many(600));
 
-    const { data } = await readLevel(host, read, target('i98', 0, 5));
+    const { data } = await readLevel(host, read, target('i498', 0, 5));
 
     expect(reads).toHaveLength(2);
-    expect(keys(data)).toEqual(['i98', 'i99', 'i100', 'i101', 'i102', 'i103']);
-    expect(data).toMatchObject({ totalBefore: 98, totalAfter: 146 });
+    expect(keys(data)).toEqual(['i498', 'i499', 'i500', 'i501', 'i502', 'i503']);
+    expect(data).toMatchObject({ totalBefore: 498, totalAfter: 96 });
   });
 
   it('starts at the first item and ends at the last', async () => {
@@ -108,7 +117,7 @@ describe("a level's window around an item", () => {
   });
 
   it('answers "not found" for an item the level no longer holds, so the tree picks another or starts from the top', async () => {
-    const { read, reads } = level(many(150));
+    const { read, reads } = level(many(750));
 
     const { data, error } = await readLevel(host, read, target('gone', 5, 5));
 
