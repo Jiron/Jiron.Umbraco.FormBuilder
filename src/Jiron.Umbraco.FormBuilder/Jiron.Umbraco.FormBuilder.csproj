@@ -7,7 +7,7 @@
   <PropertyGroup>
     <Title>Jiron Form Builder</Title>
     <Description>A form builder for Umbraco 17: editors design forms with pages, rules and actions in a Form Builder section of the backoffice, visitors fill them in on the website (Razor or headless), and teams review, approve and export the entries.</Description>
-    <PackageTags>umbraco umbraco-marketplace forms form-builder</PackageTags>
+    <PackageTags>umbraco umbraco-marketplace forms form-builder contact-form</PackageTags>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

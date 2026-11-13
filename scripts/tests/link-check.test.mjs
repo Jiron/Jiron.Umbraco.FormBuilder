@@ -100,6 +100,18 @@ test('the NuGet readme may only link to whole addresses, which nuget.org can fol
   ]);
 });
 
+test("a package's own NuGet readme follows the same rule, and a page that only mentions one in its name does not", () => {
+  const base = folder({
+    'docs/README.nuget.ai.md': '# Add-on\n[set-up](ai.md)\n',
+    'docs/ai.md': '# AI\n',
+    'docs/README.nuget-notes.md': '# Notes\n[set-up](ai.md)\n',
+  });
+  assert.deepEqual(checkFile(join(base, 'docs', 'README.nuget.ai.md'), base), [
+    "docs/README.nuget.ai.md:2: a relative link in the NuGet readme, which nuget.org can't resolve: ai.md",
+  ]);
+  assert.deepEqual(checkFile(join(base, 'docs', 'README.nuget-notes.md'), base), []);
+});
+
 test('a Learn more page that is missing, spelt in other letter case, or whose heading is, is named with its key', () => {
   const base = folder({
     'docs/privacy.md': '# Privacy\n\n## Retention\n',

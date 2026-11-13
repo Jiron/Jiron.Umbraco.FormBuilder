@@ -4,13 +4,17 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <!--
-    Every package's metadata (§3.5); each project adds its Title and Description, and the meta package its Marketplace
-    tag. The NuGet readme and the icon follow in 18.1, once docs/README.nuget.md and assets/ exist.
+    Every package's metadata (§3.5, ADR-0246); each project adds its Title and Description, and the two packages a site
+    installs (the meta package and the AI add-on) their Marketplace tags. Every package carries the NuGet readme and the
+    icon: docs/README.nuget.md, which the AI add-on replaces with its own, and the colour mark at 128 px.
   -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <PackageTags>umbraco</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <JfbPackageReadme Condition="'$(JfbPackageReadme)' == ''">$(MSBuildThisFileDirectory)..\docs\README.nuget.md</JfbPackageReadme>
     <!-- The Marketplace reads umbraco-marketplace.json from here, once the repository is public (OWNER-TODO). -->
     <PackageProjectUrl>https://github.com/Jiron/Jiron.Umbraco.FormBuilder</PackageProjectUrl>
     <!--
@@ -29,6 +33,9 @@
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\assets\icon-128.png" Pack="true" PackagePath="icon.png" Visible="false" />
+    <!-- Items are evaluated after every property, so a project's own JfbPackageReadme counts here. -->
+    <None Include="$(JfbPackageReadme)" Pack="true" PackagePath="README.md" Visible="false" />
   </ItemGroup>
 
   <!--

@@ -7,12 +7,14 @@
   connects to a SQL Server (CLAUDE.md rule 6). Stops at the first failure, and prints the time of every stage.
 
   1. Repository checks: the secret scan, the term guard and the text check of every tracked file, the workflow and
-     Dependabot check, the NuGet audit suppressions, the npm licences, and the script tests.
+     Dependabot check, the NuGet audit suppressions, the npm licences, the Marketplace listings against the
+     Marketplace's schema (downloaded once into .local\marketplace), and the script tests.
   2. Client: npm ci, lint, tests, build, the size budgets.
   3. .NET: restore, a Release build with warnings as errors, dotnet format, the NuGet licences, the third-party
      notices.
   4. Packages: the four packages from the Release build (the three a site installs and the AI add-on), through
-     scripts/pack.mjs as CI and the release pack them.
+     scripts/pack.mjs as CI and the release pack them, which checks every entry against the allowlist and every
+     nuspec (scripts/check-packages.mjs).
   5. Unit and integration tests on SQLite; a test that hangs fails after 10 minutes and is named.
   6. The browser projects on a fresh demo host from the Release build, in Edge, through scripts/e2e-gate.mjs. When
      a host's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and
@@ -81,6 +83,8 @@ try {
         Invoke-Native 'node' @('scripts/check-workflows.mjs')
         Invoke-Native 'node' @('scripts/check-audit-suppressions.mjs')
         Invoke-Native 'node' @('scripts/check-npm-licences.mjs')
+        # Before the script tests, which read the schema it downloads.
+        Invoke-Native 'node' @('scripts/check-marketplace.mjs')
         Invoke-Native 'node' @('--test', 'scripts/tests/*.test.mjs')
     }
 

@@ -9,7 +9,10 @@
   <PropertyGroup>
     <Title>Jiron Form Builder AI</Title>
     <Description>An optional add-on for Jiron Form Builder on Umbraco 17: editors draft a form from a description or a pasted questionnaire, translate a form's texts and get help texts suggested, through Umbraco.AI. Nothing a visitor enters ever reaches an AI.</Description>
-    <PackageTags>umbraco umbraco-marketplace forms form-builder ai</PackageTags>
+    <!-- The Marketplace tags of the packages a site installs (§3.5, 18.1), and the add-on's own subject (ADR-0246). -->
+    <PackageTags>umbraco umbraco-marketplace forms form-builder contact-form ai</PackageTags>
+    <!-- The add-on's own NuGet readme: what it does and how to set it up, beside the product's (ADR-0246). -->
+    <JfbPackageReadme>$(MSBuildThisFileDirectory)..\..\docs\README.nuget.ai.md</JfbPackageReadme>
     <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
     <!-- What Umbraco.AI brings transitively has the add-on's own reviewed audit entries (NuGetAudit.props, ADR-0018). -->
     <JfbUmbracoAI>true</JfbUmbracoAI>

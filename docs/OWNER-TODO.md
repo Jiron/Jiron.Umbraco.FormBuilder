@@ -67,9 +67,11 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Repository, CI and dependencies
 
-- [ ] **Make the repository public** when ready. The Umbraco Marketplace reads
-  `umbraco-marketplace.json` from the repository, so the listing needs this. Before that, run
-  `node scripts/term-guard.mjs --history` in your working copy (which has `.private/`).
+- [ ] **Make the repository public** when ready. The Umbraco Marketplace reads the listings
+  `umbraco-marketplace.json` (the product) and `umbraco-marketplace-jiron.umbraco.formbuilder.ai.json` (the AI
+  add-on, shown with the product) from the repository's root, and their screenshots from GitHub's raw addresses, so
+  the listings need this (ROADMAP 18.1, ADR-0246). Before that, run `node scripts/term-guard.mjs --history` in your
+  working copy (which has `.private/`).
 - [ ] **Repository settings:**
   - enable private vulnerability reporting (`SECURITY.md` points to it);
   - enable Discussions (the issue template links questions there);
@@ -94,7 +96,11 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Create the nuget.org trusted-publishing policy** for this repository and the release workflow,
   then set the repository variable `JFB_NUGET_PUBLISH` to `true` (ROADMAP D17, §3.5).
 - [ ] **Publish to NuGet and list on the Umbraco Marketplace.** Run the validator at
-  marketplace.umbraco.com/validate after the repository is public. Nothing is published during the build.
+  marketplace.umbraco.com/validate after the repository is public, for `Jiron.Umbraco.FormBuilder` and for
+  `Jiron.Umbraco.FormBuilder.AI`; check that the add-on shows its own listing as a sub-package of the product, not the
+  product's (ADR-0246). The build checks both listings against the Marketplace's schema
+  (`node scripts/check-marketplace.mjs`), but only the Marketplace can read them from the repository. Nothing is
+  published during the build.
 
 ## Budgets
 

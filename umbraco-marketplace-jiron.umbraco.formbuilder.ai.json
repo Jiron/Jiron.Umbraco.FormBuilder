@@ -1,0 +1,25 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Jiron Form Builder AI",
+  "Description": "An optional add-on for Jiron Form Builder on Umbraco 17 that helps editors in the designer through Umbraco.AI.\n\nFeatures:\n- Draft a form with AI from a description, or from the pasted text of a questionnaire.\n- Translate with AI: a form's texts into another of the site's languages, side by side before they are applied.\n- Suggest help text: a help text and clearer wording for a field, each with its reason.\n\nEverything it writes is a draft for an editor to review: nothing is published, or even saved, until an editor saves it. Nothing a visitor enters ever reaches an AI, and the add-on never sees or stores a key. It works with any Umbraco.AI provider: install one next to it.\n\nFree to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available.",
+  "Category": "Artificial Intelligence",
+  "AlternateCategory": "Editor Tools",
+  "AuthorDetails": {
+    "Name": "Jiron",
+    "Description": "Jiron Form Builder is made by Manassés Zähnler (jiron.dev) of Ligata (ligata.ch).",
+    "Url": "https://jiron.dev",
+    "Contributors": [
+      {
+        "Name": "Manassés Zähnler",
+        "Url": "https://ligata.ch"
+      }
+    ]
+  },
+  "DocumentationUrl": "https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/main/docs/ai.md",
+  "IssueTrackerUrl": "https://github.com/Jiron/Jiron.Umbraco.FormBuilder/issues",
+  "Tags": ["ai", "forms", "form builder", "translation", "umbraco ai"],
+  "PackageType": "Package",
+  "LicenseTypes": ["Free"],
+  "VersionDependencyMode": "Default",
+  "IsSubPackageOf": "Jiron.Umbraco.FormBuilder"
+}

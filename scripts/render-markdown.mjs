@@ -4,7 +4,7 @@
 // (github-markdown-css), with GitHub's heading anchors and the file's folder as the base for its images, written to
 // .local/markdown/<name>.html, opened in Edge (Chromium in CI), shot whole into .local/markdown/<name>.png and checked:
 // every image loads, and no table or list is left as text. Both are development tools, MIT, never shipped.
-// Usage: node scripts/render-markdown.mjs [files...]   (no files: README.md and docs/README.nuget.md)
+// Usage: node scripts/render-markdown.mjs [files...]   (no files: README.md and the NuGet readmes)
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -15,8 +15,8 @@ import { slug } from './link-check.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 
-/** The files rendered by default: the repository's README and the NuGet readme. */
-export const DEFAULT_FILES = [join(root, 'README.md'), join(root, 'docs', 'README.nuget.md')];
+/** The files rendered by default: the repository's README and the NuGet readmes, the product's and the AI add-on's. */
+export const DEFAULT_FILES = [join(root, 'README.md'), join(root, 'docs', 'README.nuget.md'), join(root, 'docs', 'README.nuget.ai.md')];
 
 /** Markdown as HTML, the way GitHub renders it: GFM tables, task lists and autolinks, and anchors on headings. */
 export function toHtml(markdown) {

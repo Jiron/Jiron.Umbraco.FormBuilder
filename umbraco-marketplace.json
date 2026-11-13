@@ -1,0 +1,108 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Jiron Form Builder",
+  "Description": "Jiron Form Builder brings forms to Umbraco 17: designed in the backoffice, filled in on any page, and kept in one calm place afterwards. Editors build forms in a Form Builder section with pages, rules and actions; visitors fill them in on the website, rendered with Razor or headless; the site's team reviews the entries, approves and exports them, and keeps personal data in check.\n\nFeatures:\n- A drag-and-drop designer with 33 field types, multi-page forms, rules that show, hide and require, calculations, a live preview, drafts and a history of every published version.\n- Merge tags inserted from a picker, never typed: answers, the page, the member, the entry's number.\n- Actions after each entry: emails with a preview, signed webhooks, Slack and Microsoft Teams, Umbraco content and email verification, each with a delivery log and retries.\n- An Inbox across every form, with Spam, approval, notes and a timeline, exports to CSV, Excel, JSON and ZIP, and insights without cookies.\n- Accessible forms (WCAG 2.2 AA) that work without JavaScript, in seven visitor languages, with themes for your own styles, Bootstrap 5 or none.\n- Spam protection that needs no third party: a honeypot, a signed challenge, timing and content rules; reCAPTCHA and hCaptcha only if you choose them.\n- Privacy built in: retention, sensitive fields, no IP addresses by default, and tools to find, export and erase one person's data.\n- For developers: a form picker and block, tag helpers, a headless API with a web component and TypeScript types, forms as files for deployment, and extension points for field types, actions, option sources and more.\n\nFree to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available.",
+  "Category": "Editor Tools",
+  "AlternateCategory": "Campaign & Marketing",
+  "AuthorDetails": {
+    "Name": "Jiron",
+    "Description": "Jiron Form Builder is made by Manassés Zähnler (jiron.dev) of Ligata (ligata.ch).",
+    "Url": "https://jiron.dev",
+    "Contributors": [
+      {
+        "Name": "Manassés Zähnler",
+        "Url": "https://ligata.ch"
+      }
+    ]
+  },
+  "DocumentationUrl": "https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/main/docs/README.md",
+  "IssueTrackerUrl": "https://github.com/Jiron/Jiron.Umbraco.FormBuilder/issues",
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/designer.png",
+      "Caption": "The designer: field types on the left, the form on the canvas, the selected field's inspector on the right"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-default.png",
+      "Caption": "A contact form on the website in the Default theme"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/inbox.png",
+      "Caption": "The Inbox: the newest entries of every form in one place"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-phone.png",
+      "Caption": "On a phone: filled in, mistakes named in the error summary, and sent"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/rule-builder.png",
+      "Caption": "Rules in plain words: what a rule does, the answer it looks at and its value"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/action-email.png",
+      "Caption": "An email action with its preview, filled in from a sample entry"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/entry-panel.png",
+      "Caption": "One entry's answers, timeline and notes beside the list"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/preview.png",
+      "Caption": "The preview, filled in with sample answers before anything is published"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/history.png",
+      "Caption": "Two published versions compared, each change said in words"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/entries.png",
+      "Caption": "A form's entries with search, filters and columns"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/insights.png",
+      "Caption": "Insights: views, starts, entries and conversion, without cookies"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/theme-editor.png",
+      "Caption": "The theme editor, with the form previewed in light and dark"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-bootstrap5.png",
+      "Caption": "The same form in the Bootstrap 5 theme"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-unstyled.png",
+      "Caption": "The same form unstyled, taking the site's own styles"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-errors.png",
+      "Caption": "After a send with a mistake: the error summary names the field, and the field says what is wrong"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-sent.png",
+      "Caption": "The thank-you message in place of the form after sending"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/overview.png",
+      "Caption": "The section's Overview: a setup checklist, recent entries and the site's health"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/settings.png",
+      "Caption": "Spam protection settings, with no third party by default"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/privacy.png",
+      "Caption": "Privacy tools: one person's entries found, ready to export or erase"
+    }
+  ],
+  "Tags": ["forms", "form builder", "contact form", "surveys", "multi-page forms", "conditional logic", "webhooks", "email", "headless", "accessibility", "gdpr", "spam protection"],
+  "PackageType": "Package",
+  "LicenseTypes": ["Free"],
+  "VersionDependencyMode": "Default",
+  "RelatedPackages": [
+    {
+      "PackageId": "Jiron.Umbraco.FormBuilder.AI",
+      "Description": "An optional add-on that drafts a form from a description, translates a form's texts and suggests help texts through Umbraco.AI, for editors only."
+    }
+  ]
+}

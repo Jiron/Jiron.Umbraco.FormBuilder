@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * Packs Jiron Form Builder's packages, the three a site installs and the AI add-on (ROADMAP 3.2, ADR-0018; the file allowlist follows in 18.1, ADR-0026). Each pack
+ * Packs Jiron Form Builder's packages, the three a site installs and the AI add-on (ROADMAP 3.2, ADR-0018). Each pack
  * builds the client for the version it packs (JFB_VERSION), then runs `dotnet pack` of the packages' solution filter
- * in Release, which runs NuGet's package validation and the JFB001 check of the client assets. CI, the local gate
- * and the release pack through this script, so they pack the same way.
+ * in Release, which runs NuGet's package validation and the JFB001 check of the client assets, and then
+ * scripts/check-packages.mjs: every entry on its package's allowlist, the nuspecs' metadata, and the licence, readme
+ * and icon as the repository holds them (18.1, ADR-0246). CI, the local gate and the release pack through this
+ * script, so they pack the same way.
  *
  *   node scripts/pack.mjs --output <folder> [--version <version>] [--no-build]
  *     --version   the packages' version; without it a local test version <VersionPrefix>-dev.<yyyyMMddHHmm> in UTC
@@ -21,12 +23,16 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkFolder, PACKAGES } from './check-packages.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const SOLUTION_FILTER = 'src/Jiron.Umbraco.FormBuilder.Packages.slnf';
 export const CLIENT = 'src/Jiron.Umbraco.FormBuilder.Web/Client';
-/** The packages a release packs: the meta package first, then its two parts, then the optional AI add-on (ADR-0018). */
-export const PACKAGE_IDS = ['Jiron.Umbraco.FormBuilder', 'Jiron.Umbraco.FormBuilder.Core', 'Jiron.Umbraco.FormBuilder.Web', 'Jiron.Umbraco.FormBuilder.AI'];
+/**
+ * The packages a release packs: the meta package first, then its two parts, then the optional AI add-on (ADR-0018),
+ * as the package check's allowlist names them.
+ */
+export const PACKAGE_IDS = Object.keys(PACKAGES);
 
 /** The local test version for a moment: VersionPrefix plus -dev.<yyyyMMddHHmm> in UTC. */
 export function devVersion(propsText, now = new Date()) {
@@ -85,39 +91,6 @@ export function packProblems(files, version) {
   return problems;
 }
 
-/** What the main package must hold besides its marker: the schemas and the visitor form's types (ADR-0125). */
-export const SHIPPED_SCHEMAS = [
-  'schemas/jfb-form.v1.schema.json',
-  'schemas/jfb-form-export.v1.schema.json',
-  'schemas/jfb-public-form.v1.schema.json',
-  'schemas/jfb-public-form.v1.d.ts',
-];
-
-/**
- * The names of the entries of a zip file, a package among them, from its central directory: the end record found
- * from the end, then each entry's header in turn (no ZIP64, which no package of ours needs).
- * @param {Buffer} zip
- */
-export function zipEntries(zip) {
-  const end = zip.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  if (end < 0) throw new Error('not a zip file: no end of central directory');
-  const count = zip.readUInt16LE(end + 10);
-  let at = zip.readUInt32LE(end + 16);
-  const names = [];
-  for (let i = 0; i < count; i++) {
-    if (zip.readUInt32LE(at) !== 0x02014b50) throw new Error('not a zip file: a broken central directory');
-    const nameLength = zip.readUInt16LE(at + 28);
-    names.push(zip.toString('utf8', at + 46, at + 46 + nameLength));
-    at += 46 + nameLength + zip.readUInt16LE(at + 30) + zip.readUInt16LE(at + 32);
-  }
-  return names;
-}
-
-/** What the main package lacks of the files it ships (ADR-0125). */
-export function contentProblems(entries) {
-  return SHIPPED_SCHEMAS.filter((name) => !entries.includes(name)).map((name) => `the main package lacks ${name}`);
-}
-
 function option(args, name) {
   const at = args.indexOf(name);
   return at >= 0 ? args[at + 1] : undefined;
@@ -159,8 +132,7 @@ function main() {
   run('dotnet', packArguments({ output: folder, version, build }), { cwd: root });
 
   const problems = packProblems(packageFiles(folder), version);
-  const main = join(folder, `${PACKAGE_IDS[0]}.${version}.nupkg`);
-  if (existsSync(main)) problems.push(...contentProblems(zipEntries(readFileSync(main))));
+  if (problems.length === 0) problems.push(...checkFolder(folder));
   for (const problem of problems) console.error(`pack: ${problem}`);
   if (problems.length > 0) process.exit(1);
   console.log(`pack: ${PACKAGE_IDS.length} packages of ${version} in ${output}`);

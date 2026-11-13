@@ -6,7 +6,7 @@
 // other sites are not fetched: the check runs offline. Exits 1 and names each broken link.
 // Usage: node scripts/link-check.mjs [files...]   (no files: every Markdown file it covers, see FILES below)
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,6 +26,9 @@ export const LEARN_MORE = join(
 
 /** The NuGet readme, which nuget.org shows without the repository around it. */
 export const NUGET_README = join(root, 'docs', 'README.nuget.md');
+
+/** Whether a file is a NuGet readme: the product's, or a package's own such as the AI add-on's (ADR-0246). */
+export const isNugetReadme = (file) => /^README\.nuget(\.[a-z0-9-]+)?\.md$/i.test(basename(file)) && basename(dirname(resolve(file))) === 'docs';
 
 /**
  * The Markdown files checked by default: the repository's own pages and every page under docs/. The decision records,
@@ -136,7 +139,7 @@ export function checkFile(file, base = root) {
   const text = readFileSync(file, 'utf8');
   const problems = [];
   const name = relative(base, file).split(sep).join('/');
-  const nuget = resolve(file) === resolve(join(base, 'docs', 'README.nuget.md'));
+  const nuget = isNugetReadme(file) && resolve(dirname(file)) === resolve(join(base, 'docs'));
   for (const { target, line } of linksOf(text)) {
     if (external(target)) continue;
     if (nuget) {
