@@ -99,7 +99,8 @@ feature is not yet available on the website or in the backoffice, so leave them 
 - **Proof of work,** when the challenge's answer has `proofOfWork: { "nonce", "bits" }`: find a whole number `n` such
   that the SHA-256 of the ASCII text `nonce:n` starts with `bits` zero bits, and send `n` in digits as `proofOfWork`.
 - **A captcha,** when it has `captcha`: load the provider's script from `scriptAddress`, show its check with `siteKey`
-  (and `action` for reCAPTCHA v3), and send the token it gives as `captchaToken`. `consent` and `category` say when the
+  (and `action` for reCAPTCHA v3, or `global`, the object a site's own provider's script defines), and send the token
+  it gives as `captchaToken`. `consent` and `category` say when the
   site's settings allow the script to load ([spam-protection.md](spam-protection.md#consent)).
 - **The honeypot:** leave `honeypot` out, or send what a hidden field of your own holds; a person never fills it in, so
   any text counts towards Spam.

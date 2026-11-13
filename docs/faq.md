@@ -16,8 +16,8 @@ Both. SQLite suits a small site on one server; a busy site, or one on several se
 
 Yes. Background work is coordinated through the database, so each email and webhook is sent by one server, and caches
 follow Umbraco's server messages. A failed call is tried again, and a call cut off may have arrived, so a receiver tells
-a repeat by its `X-Jfb-Delivery` key ([webhooks.md](webhooks.md#what-comes-of-a-call)). A load-balanced site shares its uploads folder and its Data Protection keys, and uses SQL
-Server ([deployment.md](deployment.md#several-servers)).
+a repeat by its `X-Jfb-Delivery` key ([webhooks.md](webhooks.md#what-comes-of-a-call)). A load-balanced site shares its
+uploads folder and its Data Protection keys, and uses SQL Server ([deployment.md](deployment.md#several-servers)).
 
 ## Does it run on Umbraco Cloud?
 

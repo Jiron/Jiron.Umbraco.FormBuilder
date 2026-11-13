@@ -99,7 +99,8 @@ In Razor, a single picker's value is a `FormBuilderFormReference` (null when emp
 
 A reference holds the form's `Key`, the picker's `Theme` and its `Redirect`. The page after a send travels in Umbraco's
 encrypted route token, so a visitor can't change it. In the Content Delivery API the picker's value is the form's key,
-alias and name, or the form itself when expanded ([headless.md](headless.md#the-content-delivery-api)).
+alias and name, or the form itself when expanded, and `null` for a form without Headless access
+([headless.md](headless.md#the-content-delivery-api)).
 
 ### The form block
 
@@ -177,9 +178,10 @@ Forms are drawn by Razor views a site can override one by one: `Form`, `Page`, `
 own field type ships its view as `fields/<type alias>.cshtml` the same way.
 
 **Start from the built-in view,** never from scratch. The package holds its views compiled, so copy the view from the
-repository's [`src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/Default/`](../src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/Default/),
-at the tag of the version you run (such as `v17.0.0`), and change what you need. The views carry the hooks the runtime and screen readers
-rely on, and leaving one out quietly drops a feature to its form without JavaScript.
+repository's
+[`src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/default/`](../src/Jiron.Umbraco.FormBuilder.Web/Views/JironFormBuilder/default/),
+at the tag of the version you run (such as `v17.0.0`), and change what you need. The views carry the hooks the runtime
+and screen readers rely on, and leaving one out quietly drops a feature to its form without JavaScript.
 
 Each view starts with a header that names its contract version:
 

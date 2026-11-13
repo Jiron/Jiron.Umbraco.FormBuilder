@@ -68,8 +68,9 @@ Each form in the tree, and the open form's header, has a **…** menu:
 | Trash | Moves it to the Recycle Bin. |
 
 **Trash** asks first only when a page's form picker or form block uses the form, and names those pages: they show
-nothing in its place until the form is restored. A form placed in a template by code is not known to it, so check
-your views before trashing one placed that way. Otherwise the form moves at once, and the message that follows offers **Undo** for 10 seconds.
+nothing in its place until the form is restored. A form placed in a template by code is not known to it, so check your
+views before trashing one placed that way. Otherwise the form moves at once, and the message that follows offers
+**Undo** for 10 seconds.
 
 A folder's own page lists its forms with their entries over the last 30 days; its name in the header is where you
 rename it. An empty folder can be deleted from its "…" menu.
@@ -221,10 +222,12 @@ Under **More options**:
 
 ### After sending
 
-What visitors get once they have sent the form is its **outcomes**: a message in place of the form, a redirect to a
-page or address, or a message and then a redirect. **Visitors get the first outcome whose rule matches,** so put the
-outcomes with rules first and leave the last without a rule; the list says for each one when it is used. Without any
-outcome, visitors get the standard message, "Thank you. We have received your message."
+What visitors get once they have sent the form is its **outcomes**: a message in place of the form, a redirect to a page
+or address, or a message and then a redirect. **Visitors get the first outcome whose rule matches,** so put the outcomes
+with rules first and leave the last without a rule; the list says for each one when it is used. A form placed with a
+form picker whose **Page after a send** is set goes to that page instead
+([multi-site.md](multi-site.md#the-form-picker)). Without any outcome, visitors get the standard message, "Thank you. We
+have received your message."
 
 An outcome's message can **show a copy of the answers** below it, with a print button. A redirect waits a few seconds
 first if it follows a message (5 by default). **Preview with a sample entry** shows the outcome with sample answers.
@@ -258,6 +261,7 @@ and a CSS class for the site's own styles ([themes.md](themes.md)).
 
 ### Developer
 
+The form's **alias**, with **Copy alias**: templates and code place the form by it, and renaming the form keeps it.
 **Headless access** lets a headless site read the form from the public API. **Query values** and **Context values**
 name the values from the page's address or the site's code that the form may read or store
 ([rendering.md](rendering.md), [headless.md](headless.md)).

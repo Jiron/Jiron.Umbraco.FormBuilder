@@ -73,7 +73,9 @@ a setting whose editor draws nothing for its kind, a theme whose stylesheet is n
 
 A field type declares what it is (`FieldTypeDeclaration`: its alias, name, icon, palette group, how its answers are
 stored, which messages and features it has), reads its settings from a class (section 3), and takes part in each step of
-an answer's life. Derive from `FormBuilderFieldTypeBase<TSettings>` and override what your type needs:
+an answer's life. Derive from `FormBuilderFieldTypeBase<TSettings>` and override what your type needs; the colour
+sample's [`ColourFieldType.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Colour/ColourFieldType.cs) is a complete type
+with its settings check, answer limits, validation and display:
 
 | Override | When it runs |
 | --- | --- |
@@ -216,6 +218,9 @@ A type's settings are a class whose properties carry `[FormBuilderSetting]`. The
 without any JavaScript, and the server checks every value against the schema before a form is saved or published:
 
 ```csharp
+using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+
 public sealed class ColourSettings
 {
     // A JSON list of { "name": "Blue", "value": "#1f6feb" }, drawn by an editor of the site's own.

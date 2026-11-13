@@ -38,7 +38,7 @@ field no label on the page).
 | Default value | The answer the field starts with ([below](#default-values-and-prefill)). |
 | Prefill | An answer taken from the page's address, the signed-in member or the site's code. |
 | Autocomplete | The browser's autofill token, such as `email` or `postal-code`, so browsers can fill in what visitors have typed before. |
-| Sensitive | The answer is shown masked in entries and emails, and only to users who may see sensitive data ([privacy.md](privacy.md)). |
+| Sensitive | The answer is masked in entries for users who may not see sensitive data, left out of the answers emails list and written as `•••` where a merge tag names it ([privacy.md](privacy.md)). |
 | Keep the answer | **As long as the entry**, or **Until the entry's actions have run**: then emails and webhooks still get the answer, after which it is removed from the entry and shows as "not kept". Sensitive only masks an answer; this removes it. |
 | Include in emails | Whether emails that list the answers list this one. On by default. |
 | CSS class | Added to the field for the site's own styles. |

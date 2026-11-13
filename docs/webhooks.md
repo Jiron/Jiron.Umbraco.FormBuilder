@@ -27,11 +27,19 @@ An address that resolves to a private, loopback or link-local address is refused
 **Testing on your own machine:** as `localhost` is refused too, point the action at a public tunnel to your local
 receiver, and list the tunnel's host in `AllowedHosts` in your development settings only.
 
-**Secrets stay in the configuration.** A setting names one as `$JironFormBuilder:Secrets:<Name>`, and the value is read when the call is made. A header that sends a secret is set up, changed and tested by someone who may manage settings, who decides where the site's secrets go; anyone who manages actions may use a reference as the address or the signing secret, which send no secret elsewhere. Name letters, digits and `_`, up to 64 characters. A value in these settings is refused wherever an action is saved new or changed (a draft, a restore from the History, a replace from a file, an import), and by publishing, and a test run of a draft does not send one:
+**Secrets stay in the configuration.** A setting names one as `$JironFormBuilder:Secrets:<Name>` (letters, digits and
+`_`, up to 64 characters), and the value is read when the call is made.
 
-- the signing secret;
-- the address of a Slack or Teams action, which holds its own key;
-- a header whose name mentions `auth`, `bearer`, `cookie`, `credential`, `key`, `passphrase`, `passwd`, `password`, `secret`, `session`, `signature` or `token`.
+- **Who may use one:** a header that sends a secret is set up, changed and tested by someone who may manage settings,
+  who decides where the site's secrets go. Anyone who manages actions may use a reference as the address or the signing
+  secret, which send no secret elsewhere.
+- **Where a reference is required:** a value typed as itself is refused wherever an action is saved new or changed (a
+  draft, a restore from the History, a replace from a file, an import) and by publishing, and a test run of a draft
+  sends none, in these settings:
+
+  - the signing secret;
+  - the address of a Slack or Teams action, which holds its own key;
+  - a header whose name mentions `auth`, `bearer`, `cookie`, `credential`, `key`, `passphrase`, `passwd`, `password`, `secret`, `session`, `signature` or `token`.
 
 A plain address is allowed as it is. If yours holds a key, in its path or query, name it as a reference too.
 

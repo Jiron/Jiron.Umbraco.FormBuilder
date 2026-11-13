@@ -55,8 +55,8 @@ next 7, 30 or 90 days. Nothing needs pressing: retention deletes by itself every
 files, notes, timeline and emails, and the audit log records it.
 
 **A form can differ:** its Settings view keeps entries for its own number of days per state (Privacy), for a fixed
-number of days from when each was sent, or stores none at all (Submission › **Store entries**: **Never** still runs the
-actions). Retention lists the forms that set their own.
+number of days from when each was sent, which is a ceiling over the days per state, or stores none at all (Submission ›
+**Store entries**: **Never** still runs the actions). Retention lists the forms that set their own.
 
 Other things the site keeps for a while: test entries 7 days, entries waiting for their address to be confirmed 14
 days, uploads no entry took 24 hours, sent mail 30 days, background exports 24 hours, the audit log a year and the

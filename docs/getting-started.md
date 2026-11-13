@@ -41,10 +41,6 @@ sending them. Create the folder first, then add this to `appsettings.Development
 }
 ```
 
-Links in emails, such as the one that confirms an address, need the site's address. A local site usually has no
-`https` domain set in Umbraco, so once Form Builder is open, enter the site's address in Settings › General ›
-**Base URL**, such as `https://localhost:44317` ([email.md](email.md#links-in-emails)).
-
 ## 2. Open Form Builder
 
 Start the site. Its database tables are created as it starts. Sign in to the backoffice (reload it if it was already
@@ -52,6 +48,10 @@ open) and choose **Form Builder** in the top bar.
 
 The section opens on its **Overview**, with a **Setup checklist** of five steps. Each step ticks itself off when it
 is done, whoever does it, so you can follow it in any order. This page follows it too.
+
+Links in emails, such as the one that confirms an address, need the site's address. A local site usually has no
+`https` domain set in Umbraco, so enter the address the site runs on, as your browser shows it, in Settings › General ›
+**Base URL** ([email.md](email.md#links-in-emails)).
 
 ## 3. Create a form from a template
 
@@ -88,9 +88,9 @@ editor, and add:
 **Settings** view shows it under **Developer**, with **Copy alias**. That is all: the script and stylesheet the form
 needs are added to the page by themselves.
 
-If editors should place forms themselves, use a block instead. In the checklist, **Create a form block type…** creates
-a "Form" block; you then add it to the Block List or Block Grid your pages use and write its view. [installation.md](installation.md#a-form-block-for-editors)
-shows how.
+If editors should place forms themselves, use a block instead. In the checklist, **Create a form block type…** creates a
+"Form" block; you then add it to the Block List or Block Grid your pages use and write its view.
+[installation.md](installation.md#a-form-block-for-editors) shows how.
 
 ## 7. Send an entry
 

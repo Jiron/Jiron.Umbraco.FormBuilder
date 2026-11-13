@@ -123,6 +123,9 @@ and only as **Before reCAPTCHA or hCaptcha loads** in Settings › Spam protecti
 | **Follow the site's consent manager** | once the site's consent manager calls `JironFormBuilder.consent.grant('captcha')` |
 | **Load without asking** | with the form, for sites that have consent another way; only with `JironFormBuilder:Privacy:AllowImplicitCaptchaConsent` in the configuration |
 
+Following a Cookiebot category leaves the decision to the site's consent banner, so it needs no configuration flag; the
+privacy health check warns only about **Load without asking**.
+
 The consent lasts as long as the page is open; nothing is stored. If the script can't load, or the visitor doesn't
 agree, the form can still be sent, and the entry goes to Spam for someone to look at.
 

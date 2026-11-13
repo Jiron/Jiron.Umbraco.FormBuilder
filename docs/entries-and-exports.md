@@ -49,9 +49,9 @@ the link longer.
 
 - **Search** looks in the answers, the entry's title, its number (`1042` or `#1042`) and its reference. Sensitive
   answers are never searched.
-- **Filter** narrows the list by form, state, when the entries arrived (in the time zone set for all sites), how their actions
-  went (failed, uncertain, all delivered) and by the form's fields, for example a choice that is one of a few options or
-  a date in a range. Each filter shows as a chip above the list.
+- **Filter** narrows the list by form, state, when the entries arrived (in the time zone set for all sites), how their
+  actions went (failed, uncertain, all delivered) and by the form's fields, for example a choice that is one of a few
+  options or a date in a range. Each filter shows as a chip above the list.
 - **Save as…** keeps the filters as a named set, under **Saved** in the Filter menu, for you alone.
 - **Choose columns** adds the form's fields as columns, up to 20. In the Inbox, filter by one form first.
 

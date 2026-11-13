@@ -103,8 +103,9 @@ the mail itself in light and dark, with sample answers made from the form's fiel
   sends at most 3 mails a day to one such address, and 200 an hour to all of them, so a form can't be used to send mail
   to strangers ([email.md](email.md#limits)). An empty answer means no mail, and the action still succeeds.
 
-In both, sensitive answers are masked, and fields whose **Include in emails** is off are left out of
-`{{ entry.answers }}` and `{{ entry.table }}`.
+In both, `{{ entry.answers }}` and `{{ entry.table }}` leave out sensitive answers and fields whose **Include in
+emails** is off, and a merge tag that names a sensitive field writes `•••`, unless the action names that field itself
+([merge-tags.md](merge-tags.md#sensitive-and-hidden-answers)).
 
 ## Webhooks, Slack and Microsoft Teams
 
