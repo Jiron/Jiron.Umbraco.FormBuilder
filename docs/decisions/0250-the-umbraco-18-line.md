@@ -1,6 +1,6 @@
 # 0250. The Umbraco 18 line
 
-- Status: accepted (refines D3, D16, ADR-0010 and ADR-0213)
+- Status: accepted (refines D3, D16, ADR-0010, ADR-0011 and ADR-0213)
 - Date: 2026-11-13
 - Roadmap step: 19.1 (19.1 and 19.2, the Umbraco 18 line and its phase review)
 
@@ -37,6 +37,10 @@ samples compile unchanged. What broke:
   tabs take their whole width first, and the header what is left, where Umbraco 17 folds tabs into its "..." and
   leaves the header its content's width. Beside all the form's views on a narrow window, the name and the state chip
   lay over the tabs. Umbraco offers no hook for that row.
+- **The browser tests' host on SQLite.** Umbraco 18 runs SQLite in write-ahead mode and takes the shared cache out
+  of the connection string at start-up (its template no longer names it). The stall ADR-0011 allows one rerun for,
+  overlapping writes in a transaction that reads before it writes, no longer hangs: the write fails as SQLite's
+  error 5, "database is locked". The first 18 gate met it once, in Umbraco's own audit write of a password reset.
 
 ## Options
 
@@ -76,6 +80,11 @@ Option 2.
 - **One test support for both lines:** the integration tests' assembly-wide action, which already released Umbraco's
   runtimes after every test, also disposes and forgets the file providers handed out during the test. It lands on
   `main`, where no host watches and nothing else changes, and `TestHostReleaseTests` fails without it on both lines.
+- **The SQLite stall on 18 (refines ADR-0011):** the browser tests' stall detector counts a write that found the
+  database locked as it counts a command that ran into its 30 s timeout: the run leaves the hang marker, and the gate
+  runs once more, never twice. Our own writes go through the database gate and begin as writes, so a locked
+  database is Umbraco's (or Umbraco.AI's) own contention. The 18 demo names Umbraco 18's connection string, without
+  the shared cache.
 - **The form's header (refines ADR-0213):** the header lives in the box Umbraco's row leaves it. Where that is less
   than the name's 6rem, it is cramped: the name takes what there is, the state under it is cut with an ellipsis, its
   words its title and read in full, and the header clips its parts to its box, so nothing of it lies over Umbraco's

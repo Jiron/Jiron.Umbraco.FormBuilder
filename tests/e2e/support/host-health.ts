@@ -3,13 +3,16 @@ import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 // What the host's log says about its start-up work and, after a run, about its database (ADR-0011, ADR-0031). Umbraco
-// 17 on SQLite can hang when several requests write at the same moment; the tests then time out one after the other,
-// far from the cause. The global set-up waits for the start-up work, and a run that ends with a hung database leaves
-// the hang marker, so the gate knows the one failure it may run again ("Flaky means broken").
+// on SQLite can stall when several requests write at the same moment: Umbraco 17 hangs, and Umbraco 18, which runs it
+// in write-ahead mode without the shared cache, fails the write as "database is locked" (ADR-0250); the tests then
+// time out one after the other, far from the cause. The global set-up waits for the start-up work, and a run that
+// ends with a stalled database leaves the hang marker, so the gate knows the one failure it may run again ("Flaky
+// means broken").
 
-/** The database commands that ran into their timeout, and when the first one was logged. */
+/** The commands that timed out, the writes that found the database locked, and when the first was logged. */
 export interface StalledDatabase {
   timedOut: number;
+  locked: number;
   firstAt: string;
 }
 
@@ -34,29 +37,42 @@ export const MARKER_NOT_LAST = 'Jiron Form Builder test host: the index marker i
 // "30.050ms". Umbraco's own warning about a hung connection counts too.
 const TIMED_OUT = /^\[(\d\d:\d\d:\d\d) ERR\] Failed executing DbCommand \(([\d,.]+)ms\)/;
 const STALLED = /^\[(\d\d:\d\d:\d\d) ERR\] .* may be stalled on a hung database connection/;
+// Umbraco 18's form of it: SQLite's error 5 on the line after an error's header, which gives its time. An inner
+// exception repeats it indented ("--->"), which is the same write and not counted again.
+const LOCKED = /^Microsoft\.Data\.Sqlite\.SqliteException \(0x[0-9A-Fa-f]+\): SQLite Error 5: 'database is locked'/;
+const ERROR = /^\[(\d\d:\d\d:\d\d) ERR\]/;
 const TIMEOUT_MS = 30_000;
 
-/** The hung database the log shows, or null when every failed command failed within half a minute. */
+/**
+ * The stalled database the log shows, or null when every failed command failed within half a minute and no write
+ * found the database locked.
+ */
 export function stalledDatabase(log: string): StalledDatabase | null {
   let timedOut = 0;
+  let locked = 0;
   let firstAt: string | null = null;
+  let errorAt: string | undefined;
   for (const line of log.split(/\r?\n/)) {
+    errorAt = ERROR.exec(line)?.[1] ?? errorAt;
     const command = TIMED_OUT.exec(line);
     const stalled = STALLED.exec(line);
     const hung = command !== null && Number((command[2] ?? '0').replace(/[,.]/g, '')) >= TIMEOUT_MS;
-    const at = hung ? command[1] : stalled?.[1];
+    const lockedAt = LOCKED.test(line) ? errorAt : undefined;
+    const at = hung ? command[1] : (stalled?.[1] ?? lockedAt);
     if (!at) continue;
     if (hung) timedOut++;
+    if (lockedAt) locked++;
     firstAt ??= at;
   }
-  return firstAt ? { timedOut, firstAt } : null;
+  return firstAt ? { timedOut, locked, firstAt } : null;
 }
 
 /** One line for the run's console. */
 export function describeStall(stall: StalledDatabase, logFile: string): string {
   return (
-    `e2e: the host's database hung from ${stall.firstAt} (${stall.timedOut} command(s) ran into their 30 s timeout); ` +
-    `the tests that failed after it did not fail on their own. This is Umbraco 17's SQLite limit (ADR-0011): run again. Log: ${logFile}`
+    `e2e: the host's database stalled from ${stall.firstAt} (${stall.timedOut} command(s) ran into their 30 s timeout, ` +
+    `${stall.locked} write(s) found it locked); the tests that failed after it did not fail on their own. This is ` +
+    `Umbraco's SQLite limit (ADR-0011, ADR-0250): run again. Log: ${logFile}`
   );
 }
 
@@ -69,7 +85,7 @@ export function recordStall(logFile: string): StalledDatabase | null {
   if (stall) {
     writeFileSync(
       join(dirname(logFile), HANG_MARKER),
-      `from ${stall.firstAt}, ${stall.timedOut} command(s) timed out\n`,
+      `from ${stall.firstAt}, ${stall.timedOut} command(s) timed out, ${stall.locked} write(s) found it locked\n`,
     );
   }
   return stall;

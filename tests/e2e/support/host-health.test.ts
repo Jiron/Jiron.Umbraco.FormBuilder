@@ -59,19 +59,19 @@ const DELIVERY_API_ON = [
 const quick = { settleMs: 0, pollMs: 10, timeoutMs: 300 };
 
 test('finds the commands that timed out and when the first one was logged', () => {
-  assert.deepEqual(stalledDatabase(HUNG), { timedOut: 2, firstAt: '06:00:24' });
+  assert.deepEqual(stalledDatabase(HUNG), { timedOut: 2, locked: 0, firstAt: '06:00:24' });
 });
 
 test("counts Umbraco's own warning about a hung connection", () => {
   const log =
     '[06:01:09 ERR] Touching the server registration did not complete within 00:01:00 and may be stalled on a hung database connection.';
-  assert.deepEqual(stalledDatabase(log), { timedOut: 0, firstAt: '06:01:09' });
+  assert.deepEqual(stalledDatabase(log), { timedOut: 0, locked: 0, firstAt: '06:01:09' });
 });
 
 test('reads the elapsed time with either thousands separator', () => {
   const log =
     "[07:10:02 ERR] Failed executing DbCommand (30.004ms) [Parameters=[], CommandType='Text', CommandTimeout='30']";
-  assert.deepEqual(stalledDatabase(log), { timedOut: 1, firstAt: '07:10:02' });
+  assert.deepEqual(stalledDatabase(log), { timedOut: 1, locked: 0, firstAt: '07:10:02' });
 });
 
 test('passes a log whose failed commands failed quickly', () => {
@@ -83,9 +83,29 @@ test('passes a log whose failed commands failed quickly', () => {
   assert.equal(stalledDatabase(log), null);
 });
 
+test("counts a write that found the database locked, Umbraco 18's form of the stall, at its error's time", () => {
+  const log = [
+    '[17:50:30 INF] The token request was successfully validated.',
+    '[17:50:39 ERR] Exception (1ed9d7e5).',
+    "Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 5: 'database is locked'.",
+    '   at Microsoft.Data.Sqlite.SqliteDataReader.NextResult()',
+    '[17:50:39 ERR] An unhandled exception has occurred while executing the request.',
+    "System.AggregateException: One or more errors occurred. (SQLite Error 5: 'database is locked'.)",
+    " ---> Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 5: 'database is locked'.",
+  ].join('\r\n');
+  assert.deepEqual(stalledDatabase(log), { timedOut: 0, locked: 1, firstAt: '17:50:39' });
+});
+
+test("passes Umbraco 18's notice that it took the shared cache out of the connection string", () => {
+  const log =
+    '[13:01:22 INF] Shared-cache mode was removed from the SQLite connection string, because it causes "database table is locked" errors on a write-ahead logging database.';
+  assert.equal(stalledDatabase(log), null);
+});
+
 test('names the time, the count, the reason and the log', () => {
-  const line = describeStall({ timedOut: 2, firstAt: '06:00:24' }, 'host.log');
+  const line = describeStall({ timedOut: 2, locked: 1, firstAt: '06:00:24' }, 'host.log');
   assert.match(line, /from 06:00:24 \(2 command/);
+  assert.match(line, /1 write\(s\) found it locked/);
   assert.match(line, /ADR-0011/);
   assert.match(line, /host\.log$/);
 });
@@ -95,8 +115,11 @@ test('a hung database writes the hang marker next to the log', () => {
 
   const stall = recordStall(file);
 
-  assert.deepEqual(stall, { timedOut: 2, firstAt: '06:00:24' });
-  assert.equal(readFileSync(join(file, '..', HANG_MARKER), 'utf8'), 'from 06:00:24, 2 command(s) timed out\n');
+  assert.deepEqual(stall, { timedOut: 2, locked: 0, firstAt: '06:00:24' });
+  assert.equal(
+    readFileSync(join(file, '..', HANG_MARKER), 'utf8'),
+    'from 06:00:24, 2 command(s) timed out, 0 write(s) found it locked\n',
+  );
 });
 
 test('a healthy log, or none, writes no hang marker', () => {
@@ -137,7 +160,7 @@ test('the start-up wait ends at once on a hung database or a misplaced marker', 
 
   assert.deepEqual(await waitForStartupWork(logFile(HUNG), { ...quick, timeoutMs: 60_000 }), {
     state: 'stalled',
-    stall: { timedOut: 2, firstAt: '06:00:24' },
+    stall: { timedOut: 2, locked: 0, firstAt: '06:00:24' },
   });
   const misplaced = `[18:31:22 ERR] ${MARKER_NOT_LAST}; the browser tests' start-up wait cannot rely on it`;
   assert.deepEqual(await waitForStartupWork(logFile(misplaced), { ...quick, timeoutMs: 60_000 }), {
