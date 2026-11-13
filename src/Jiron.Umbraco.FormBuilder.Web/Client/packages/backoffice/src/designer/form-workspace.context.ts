@@ -121,6 +121,8 @@ export class FormWorkspaceContext
   #wanted: string | null = null;
   /** Whether the field types were read, without which the model can check nothing. */
   #typesRead = false;
+  /** Whether the context has ended (destroy). */
+  #ended = false;
   // A record, not a Map: the state compares values as JSON, which writes every Map as {}.
   readonly #types = new UmbObjectState<Readonly<Record<string, FieldTypeResponseModel>>>({});
   readonly #groups = new UmbObjectState<readonly FieldGroupResponseModel[]>([]);
@@ -644,7 +646,11 @@ export class FormWorkspaceContext
   }
 
   override destroy() {
-    this.getHostElement().removeEventListener(SAVE_CONFLICT, this.#onConflict);
+    // Umbraco ends the context as its workspace closes, and the AI add-on's workspace registry ends it again, by when its
+    // host is gone: it ends once.
+    if (this.#ended) return;
+    this.#ended = true;
+    this.getHostElement()?.removeEventListener(SAVE_CONFLICT, this.#onConflict);
     this.#checker.stop();
     this.#editor.destroy();
     this.#types.destroy();

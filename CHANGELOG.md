@@ -7,6 +7,11 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+### Fixed
+
+- Leaving a form for another screen of the backoffice no longer raises an error in the browser's console when the AI
+  add-on is installed.
+
 ## [17.0.0-alpha.1] - 2026-11-13
 
 The first prerelease of Jiron Form Builder for Umbraco 17.6 or later (within 17), on .NET 10, with SQLite or SQL

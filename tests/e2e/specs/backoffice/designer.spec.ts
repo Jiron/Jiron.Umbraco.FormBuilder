@@ -339,6 +339,25 @@ test("a form trashed from its own header leaves its screen for its folder's", as
   await expect(treeRow(page, name)).toHaveCount(0);
 });
 
+test("leaving a form's workspace for another screen raises no error, though the AI add-on's registry ends it too", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  const name = unique('Left behind');
+  const key = await contactForm(await apiAs('designer'), name);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await loginAs('designer');
+  await page.goto(workspaceOf(key));
+  await expect(nameField(page)).toHaveValue(name);
+
+  await treeRow(page, 'Recycle Bin').click();
+  await expect(page).toHaveURL(/\/workspace\/jfb-recycle-bin(\/|$)/);
+  await expect(page.locator('jfb-form-workspace-editor')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("a field's result of the header search opens the form with that field selected", async ({
   page,
   loginAs,
