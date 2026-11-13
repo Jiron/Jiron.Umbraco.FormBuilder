@@ -17,13 +17,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEMO, demoUrl } from './demo-check.mjs';
 import { optimizePng } from './png.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 
-/** The demo's address (ROADMAP 4.11: Jiron Form Builder's ports are 5500 to 5599). */
-export const BASE = process.env.JFB_DEMO_URL ?? 'http://127.0.0.1:5500';
+/** The demo's address, from its appsettings.json as the demo script reads it (ROADMAP 4.11), unless JFB_DEMO_URL names another. */
+export const BASE = process.env.JFB_DEMO_URL ?? demoUrl(readFileSync(join(root, DEMO, 'appsettings.json'), 'utf8'));
 
 /** Where the pictures go. */
 export const OUT = join(root, 'docs', 'screenshots');
