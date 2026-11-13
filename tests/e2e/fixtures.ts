@@ -3,6 +3,7 @@ import { loginThroughApi } from './support/api-login.ts';
 import { fillForm, formOn, submitForm, type FieldValue, type SubmitResult } from './support/form.ts';
 import { waitForMailIn, type Mail } from './support/mail.ts';
 import { E2E_BASE_URL } from './support/paths.ts';
+import { signInOnceMore } from './support/sign-in-retry.ts';
 import { withUserLock } from './support/user-lock.ts';
 import { account, memberAccount, type Account, type Role } from './support/users.ts';
 
@@ -25,9 +26,33 @@ export interface Fixtures {
   submitForm: (form?: Locator) => Promise<SubmitResult>;
 }
 
-// Sign-ins and password resets update the user, so they run one at a time across workers (support/user-lock.ts).
+// Sign-ins and password resets update the user, so they run one at a time across workers (support/user-lock.ts), and
+// a sign-in that Umbraco's SQLite stalls is signed in once more (support/sign-in-retry.ts).
 
 async function loginThroughUi(page: Page, user: Account): Promise<void> {
+  await openLogin(page);
+  await withUserLock(() =>
+    signInOnceMore({
+      who: user.email,
+      attempt: async (timeoutMs) => {
+        await page.getByLabel(/email/i).first().fill(user.email);
+        await page
+          .getByLabel(/password/i)
+          .first()
+          .fill(user.password);
+        await page
+          .getByRole('button', { name: /^(login|log in|sign in)$/i })
+          .first()
+          .click();
+        await page.locator('umb-backoffice-header').waitFor({ timeout: timeoutMs });
+      },
+      again: () => openLogin(page),
+    }),
+  );
+}
+
+/** Opens the backoffice's sign-in page and waits for its form. */
+async function openLogin(page: Page): Promise<void> {
   await page.goto('/umbraco');
   const email = page.getByLabel(/email/i).first();
   // Under a full run's load the backoffice's first script can fail to load, which leaves the page blank for good. One
@@ -40,19 +65,8 @@ async function loginThroughUi(page: Page, user: Account): Promise<void> {
   ) {
     console.warn('e2e: the backoffice login did not appear within 45 s; reloading once.');
     await page.reload();
+    await email.waitFor({ timeout: 45_000 });
   }
-  await email.fill(user.email);
-  await page
-    .getByLabel(/password/i)
-    .first()
-    .fill(user.password);
-  await withUserLock(async () => {
-    await page
-      .getByRole('button', { name: /^(login|log in|sign in)$/i })
-      .first()
-      .click();
-    await page.locator('umb-backoffice-header').waitFor({ timeout: 60_000 });
-  });
 }
 
 export const test = base.extend<Fixtures>({
@@ -80,14 +94,21 @@ export const test = base.extend<Fixtures>({
   },
 
   requestPasswordReset: async ({ request }, use) => {
+    // It updates the user as a sign-in does, so Umbraco's SQLite can stall it the same way: it is asked once more.
     await use((role) =>
-      withUserLock(async () => {
-        const response = await request.post('/umbraco/management/api/v1/security/forgot-password', {
-          data: { email: account(role).email },
-        });
-        if (!response.ok())
-          throw new Error(`The password reset request for ${role} failed with HTTP ${response.status()}.`);
-      }),
+      withUserLock(() =>
+        signInOnceMore({
+          who: account(role).email,
+          attempt: async (timeoutMs) => {
+            const response = await request.post('/umbraco/management/api/v1/security/forgot-password', {
+              data: { email: account(role).email },
+              timeout: timeoutMs,
+            });
+            if (!response.ok())
+              throw new Error(`The password reset request for ${role} failed with HTTP ${response.status()}.`);
+          },
+        }),
+      ),
     );
   },
 

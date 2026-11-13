@@ -54,7 +54,8 @@ export function createUserLock(dir: string, times: UserLockTimes = DEFAULT_TIMES
  * Umbraco 17 on SQLite updates the signed-in user (BackOfficeUserStore.UpdateAsync) in a deferred transaction that
  * reads before it writes and takes no write lock first. When several sign-ins overlap, the transactions whose read
  * snapshot went stale retry the update indefinitely and the requests hang (the lessons file, ROADMAP section 3.3;
- * ADR-0011). One at a time costs well under a second each.
+ * ADR-0011). One at a time costs well under a second each. Umbraco 18 takes SQLite's shared cache out, so any other
+ * write can overtake the read too; such a sign-in is signed in once more (support/sign-in-retry.ts, ADR-0250).
  */
 export const withUserLock = createUserLock(LOCK_DIR);
 
