@@ -61,7 +61,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
 | `marked` | 18.1.1 | MIT | rendering Markdown as GitHub does, to check the READMEs in Edge (`scripts/`) |
 | `github-markdown-css` | 5.8.1 | MIT | GitHub's Markdown stylesheet for that check (`scripts/`) |
-| `ajv` | 8.20.0 | MIT | validating the Umbraco Marketplace listings against the Marketplace's own schema (`scripts/`, ADR-0246); its dependencies `fast-deep-equal`, `json-schema-traverse` and `require-from-string` are MIT and `fast-uri` is BSD-3-Clause |
+| `ajv` | 6.15.0, 8.20.0 | MIT | validating the Umbraco Marketplace listings against the Marketplace's own schema (`scripts/`, ADR-0246); its dependencies `fast-deep-equal`, `json-schema-traverse` and `require-from-string` are MIT and `fast-uri` is BSD-3-Clause; 6.15.0 comes with ESLint (`Client/`) |
 | `azurite` | 3.37.0 | MIT | the local storage emulator the blob store sample's contract tests start, in memory and without telemetry (`scripts/`, ADR-0234); its dependency `uri-templates` 0.2.0 is in the public domain (ADR-0027) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
