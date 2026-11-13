@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-  Installs Jiron Form Builder from packages into a fresh Umbraco site, or upgrades one from the released schema
-  (ROADMAP 16.5; 18.3 reuses it). ADR-0240.
+  Installs Jiron Form Builder from packages into a fresh Umbraco site, on the line's Umbraco or on the supported floor,
+  or upgrades one from the released schema (ROADMAP 16.5 and 18.3). ADR-0240, ADR-0248.
 
 .DESCRIPTION
   -Mode install  Packs the current build as <VersionPrefix>-dev.<yyyyMMddHHmm> (scripts\pack.mjs) into a local feed,
@@ -10,8 +10,19 @@
                  unattended install with the admin generated into .local\credentials.json) under
                  %TEMP%\jfb-install-<timestamp>, installs Jiron.Umbraco.FormBuilder from the local feed only (package
                  source mapping, through a fresh package cache %TEMP%\jfb-nuget-<timestamp>), and starts it on
-                 http://127.0.0.1:5530 with email to a pickup folder. The checks: the migration state the plan in the
-                 code ends at, then tests\e2e\install\check.ts: a form made, published, rendered, sent and read back.
+                 http://127.0.0.1:5530 with email to a pickup folder. After the build, the site's appsettings-schema.json
+                 must reference Jiron Form Builder's schema, which must lie next to it. The checks: the migration state
+                 the plan in the code ends at, then the smoke of tests\e2e\install\check.ts: a form made from the contact
+                 template with an email action and published, a page that shows it made through Umbraco's Management
+                 API, and in Edge the section for the admin, the form sent on the page, the team's mail in the pickup
+                 folder and the entry in the backoffice. Then the site is published (dotnet publish), started from the
+                 published folder on a fresh database, and the smoke runs again: the static files after publishing.
+  -Mode floor    The same smoke on a fresh site of the supported floor, the lower bound of the Umbraco range in
+                 Directory.Packages.props (17.6.0), from a template hive of its own. Then the packages are updated to a
+                 second build of a higher version (<version>.2), the site is built and started again, and the same
+                 browser profile, which kept its cache and sign-in, opens the section without a hard refresh: the
+                 backoffice must load the new build's start chunk, not the old one's.
+  -UmbracoVersion  The Umbraco version of the site for -Mode install or floor, instead of the line's or the floor.
   -Mode upgrade  Also checks out the tag baseline/schema-v1 (4.8) with git worktree into %TEMP%\jfb-baseline-<timestamp>
                  and packs it as 17.0.0-alpha.0.baseline. The site installs the baseline first, on the baseline's own
                  Umbraco; on its first start the baseline's migrations run and scripts\install-test\BaselineSeed writes
@@ -35,8 +46,11 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('install', 'upgrade')]
+    [ValidateSet('install', 'upgrade', 'floor')]
     [string] $Mode = 'install',
+
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
+    [string] $UmbracoVersion = '',
 
     [switch] $WriteFixture,
 
@@ -67,6 +81,7 @@ $Site = Join-Path $Root 'site'
 $Seed = Join-Path $Root 'seed'
 $Mail = Join-Path $Root 'mail'
 $Project = Join-Path $Site 'JfbInstall.csproj'
+$Published = Join-Path $Root 'published'
 $Database = [System.IO.Path]::Combine($Site, 'umbraco', 'Data', 'Umbraco.sqlite.db')
 # Section 4.11: the install-test site's port.
 $Port = 5530
@@ -102,6 +117,14 @@ function Get-PropsValue([string] $Checkout, [string] $Name) {
     $match = [regex]::Match([System.IO.File]::ReadAllText((Join-Path $Checkout 'Directory.Build.props')), "<$Name>([^<]+)</$Name>")
     if (-not $match.Success) { throw "Directory.Build.props has no $Name." }
     return $match.Groups[1].Value.Trim()
+}
+
+function Get-UmbracoFloor {
+    # The lower bound of the packages' Umbraco range in Directory.Packages.props, such as 17.6.0 of [17.6.0, 18.0.0) (D3).
+    $range = Get-PackageVersion $Repo 'Umbraco.Cms.Core'
+    $match = [regex]::Match($range, '^\[(\d+\.\d+\.\d+)\s*,')
+    if (-not $match.Success) { throw "Umbraco.Cms.Core's version $range in Directory.Packages.props is not a range with a lower bound." }
+    return $match.Groups[1].Value
 }
 
 function Get-PackageVersion([string] $Checkout, [string] $Id) {
@@ -224,10 +247,11 @@ function Set-SitePackage([string] $Id, [string] $PackageVersion) {
 }
 
 function Build-Site([string[]] $Extra = @()) {
-    Invoke-Native 'dotnet' (@('build', $Project, '-c', 'Release') + $BuildArguments + $Extra) $Site
+    # A version the feed lacks fails the build instead of being swapped for the next higher one (NuGet's NU1603).
+    Invoke-Native 'dotnet' (@('build', $Project, '-c', 'Release', '-warnaserror:NU1603') + $BuildArguments + $Extra) $Site
 }
 
-function Start-Site([string] $SeedOutput = '') {
+function Start-Site([string] $SeedOutput = '', [string] $Directory = $Site, [string] $Dll = ([System.IO.Path]::Combine($Site, 'bin', 'Release', 'net10.0', 'JfbInstall.dll'))) {
     if (Test-PortOpen) { throw "Port $Port is in use by a process this script did not start; it is left alone." }
     $admin = Get-Admin
     $log = Join-Path $Root "site-$(Get-Date -Format 'HHmmss').log"
@@ -250,8 +274,8 @@ function Start-Site([string] $SeedOutput = '') {
     try {
         # Set in this process only for the moment of the start; the site inherits them, nothing is printed or written.
         foreach ($name in $variables.Keys) { [Environment]::SetEnvironmentVariable($name, $variables[$name], 'Process') }
-        $script:SiteProcess = Start-Process -FilePath 'dotnet' -ArgumentList "`"$([System.IO.Path]::Combine($Site, 'bin', 'Release', 'net10.0', 'JfbInstall.dll'))`"" `
-            -WorkingDirectory $Site -WindowStyle Hidden -PassThru -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+        $script:SiteProcess = Start-Process -FilePath 'dotnet' -ArgumentList "`"$Dll`"" `
+            -WorkingDirectory $Directory -WindowStyle Hidden -PassThru -RedirectStandardOutput $log -RedirectStandardError "$log.err"
     } finally {
         foreach ($name in $variables.Keys) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
         $variables.Clear()
@@ -289,6 +313,21 @@ function Get-NodeLine([string[]] $Arguments) {
 function Assert-That([bool] $Condition, [string] $What) {
     if (-not $Condition) { throw "install-test: failed: $What" }
     Write-Host "  ok: $What"
+}
+
+function Assert-SchemaReference {
+    # Umbraco's build copies the Core package's schema into the site and references it from appsettings-schema.json
+    # (ADR-0008, the buildTransitive props of 18.1).
+    $ours = 'appsettings-schema.Jiron.Umbraco.FormBuilder.json'
+    $schema = Join-Path $Site 'appsettings-schema.json'
+    Assert-That ((Test-Path $schema) -and ([System.IO.File]::ReadAllText($schema).Contains($ours))) "the site's appsettings-schema.json references $ours"
+    Assert-That (Test-Path (Join-Path $Site $ours)) "and $ours lies next to it"
+}
+
+function Invoke-Smoke([string] $BrowserProfile, [string] $SiteDatabase = $Database) {
+    # The migration state, then the smoke through the APIs and in Edge, with a browser profile kept in the run's folder.
+    Invoke-Node @((Join-Path $Helper 'jfb-db.mjs'), 'check', $SiteDatabase)
+    Invoke-Node @((Join-Path 'install' 'check.ts'), '--url', $Url, '--mode', 'install', '--mail', $Mail, '--profile', $BrowserProfile) $E2E
 }
 
 function Remove-Folder([string] $Folder) {
@@ -343,6 +382,15 @@ try {
 
     Write-Host "install-test: packing the current build as $Version"
     Invoke-Node @((Join-Path $Repo (Join-Path 'scripts' 'pack.mjs')), '--output', $Feed, '--version', $Version)
+    $NextVersion = "$Version.2"
+    if ($Mode -eq 'floor') {
+        # The same sources as a second build of a higher version: every file carries its version, so the chunks differ.
+        Write-Host "install-test: packing the current build again as $NextVersion, for the update"
+        # In a folder of its own, then into the feed: pack.mjs empties its output folder of packages first.
+        $next = Join-Path $Root 'next'
+        Invoke-Node @((Join-Path $Repo (Join-Path 'scripts' 'pack.mjs')), '--output', $next, '--version', $NextVersion)
+        Get-ChildItem -Path $next -Filter '*.*nupkg' | Copy-Item -Destination $Feed
+    }
 
     if ($Mode -eq 'upgrade') {
         Write-Host "install-test: packing $BaselineTag as $BaselineVersion"
@@ -358,6 +406,8 @@ try {
     $umbraco = Get-PackageVersion $Repo 'Umbraco.Cms'
     $siteUmbraco = $umbraco
     if ($Mode -eq 'upgrade') { $siteUmbraco = Get-PackageVersion $Worktree 'Umbraco.Cms' }
+    if ($Mode -eq 'floor') { $siteUmbraco = Get-UmbracoFloor }
+    if ($UmbracoVersion -and $Mode -ne 'upgrade') { $siteUmbraco = $UmbracoVersion }
     Write-Host "install-test: creating a fresh Umbraco $siteUmbraco site in $Site"
     New-Site $siteUmbraco
     Write-NuGetConfig $Root
@@ -405,10 +455,32 @@ try {
     } else {
         foreach ($id in $Packages) { Set-SitePackage $id $Version }
         Build-Site
+        Assert-SchemaReference
         Start-Site
-        Write-Host 'install-test: checks'
-        Invoke-Node @((Join-Path $Helper 'jfb-db.mjs'), 'check', $Database)
-        Invoke-Node @((Join-Path 'install' 'check.ts'), '--url', $Url, '--mode', 'install') $E2E
+        Write-Host "install-test: the smoke on Umbraco $siteUmbraco"
+        $browser = Join-Path $Root 'browser'
+        Invoke-Smoke $browser
+        Stop-RecordedSite
+        if ($Mode -eq 'install') {
+            # The static files after publishing (section 3.2): the published folder alone, on a fresh database.
+            Write-Host "install-test: publishing the site to $Published"
+            Invoke-Native 'dotnet' (@('publish', $Project, '-c', 'Release', '-o', $Published) + $BuildArguments) $Site
+            Remove-Folder (Join-Path $Published (Join-Path 'umbraco' 'Data'))
+            Start-Site -Directory $Published -Dll (Join-Path $Published 'JfbInstall.dll')
+            Write-Host 'install-test: the smoke on the published site'
+            Invoke-Smoke (Join-Path $Root 'browser-published') ([System.IO.Path]::Combine($Published, 'umbraco', 'Data', 'Umbraco.sqlite.db'))
+            Stop-RecordedSite
+        } else {
+            $oldChunk = Get-NodeLine @((Join-Path $Helper 'start-chunk.mjs'), $Feed, $Version)
+            $newChunk = Get-NodeLine @((Join-Path $Helper 'start-chunk.mjs'), $Feed, $NextVersion)
+            Write-Host "install-test: updating the packages to $NextVersion"
+            foreach ($id in $Packages) { Set-SitePackage $id $NextVersion }
+            Build-Site
+            Start-Site
+            Write-Host 'install-test: the backoffice after the update, in the browser that kept its cache'
+            Invoke-Node @((Join-Path 'install' 'check.ts'), '--url', $Url, '--mode', 'cache', '--profile', $browser, '--chunk', $newChunk, '--old-chunk', $oldChunk) $E2E
+            Stop-RecordedSite
+        }
     }
     $passed = $true
 } catch {

@@ -18,8 +18,8 @@ Nobody can watch Actions from this machine, so the workflows must be right by co
 1. **Copy CI's steps into the release.** Two copies drift: a check added to CI would be missing from a release.
 2. **Run the release after CI (`workflow_run`).** A tag would still run CI on its own, and the release would have to
    find CI's run and its commit again.
-3. **Call CI from the release (`workflow_call`), and let tags run CI only that way.** One definition of CI; a tag runs it
-   once, and the pack starts only after all of it passed.
+3. **Call CI from the release (`workflow_call`), and let tags run CI only that way.** One definition of CI; a tag runs
+   it once, and the pack starts only after all of it passed.
 
 ## Decision
 

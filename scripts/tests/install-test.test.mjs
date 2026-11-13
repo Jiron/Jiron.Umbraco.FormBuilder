@@ -11,6 +11,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { normaliseFilter, schemaOf, SEEDED } from '../install-test/jfb-db.mjs';
 import { CONSTANTS, finalState, PLAN, planName, steps } from '../install-test/migration-plan.mjs';
+import { startChunkOf } from '../install-test/start-chunk.mjs';
 
 const PLAN_TEXT = `
     public const string StateCreateSchema = "jfb-001-create-schema";
@@ -113,4 +114,12 @@ test("the install test knows its own site by a record of digits, which no editio
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }
+});
+
+test("the upgrade check on the floor knows a build by its Web package's start chunk, which must be exactly one (18.3)", () => {
+  const chunks = 'staticwebassets/App_Plugins/JironFormBuilder/chunks/';
+  assert.equal(startChunkOf([`${chunks}section-4a_OWk5C.js`, `${chunks}start-C9Ke8sis.js`, 'README.md']), 'start-C9Ke8sis.js');
+  assert.throws(() => startChunkOf([`${chunks}section-4a_OWk5C.js`]), /holds 0 start chunks/);
+  assert.throws(() => startChunkOf([`${chunks}start-a.js`, `${chunks}start-b.js`]), /holds 2 start chunks/);
+  assert.throws(() => startChunkOf([`${chunks}nested/start-a.js`]), /holds 0 start chunks/);
 });

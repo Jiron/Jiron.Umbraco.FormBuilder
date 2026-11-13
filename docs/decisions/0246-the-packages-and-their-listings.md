@@ -53,15 +53,15 @@ For the check of the packed files: Tandem's allowlist (Tandem ADR-0077), ported,
   that name files it holds, every picture once at its raw GitHub address, no "open source" claim. It finds the listings
   from the packages' tags, so a package that gains the tag without a listing fails. It runs in the gate and in CI before
   the script tests, which read the same copy.
-- **`scripts/check-packages.mjs`** (Tandem's allowlist, ported): every entry of each `.nupkg` and `.snupkg` must be on its
-  package's list, and a source map, an appsettings file, a test, demo or sample assembly, a key file or anything from
-  `.local/`, `.private/` or `node_modules` is refused with its reason first. Each nuspec must carry the id, a semantic
-  version, the title, a description of at most 4,000 characters, the authors and copyright of `Directory.Build.props`,
-  the project and repository address, the licence file and its acceptance (never an expression, §3.5), the readme, the
-  icon and the tags; its siblings at exactly its own version, and every other dependency in the range
-  `Directory.Packages.props` gives it, with no dependency beyond those. The packed `LICENSE.md`, readme and icon must be
-  the repository's files byte for byte, so the owner's licence ships as placed (D2). `scripts/pack.mjs` runs it after
-  every pack, so the gate, CI and the release check alike.
+- **`scripts/check-packages.mjs`** (Tandem's allowlist, ported): every entry of each `.nupkg` and `.snupkg` must be on
+  its package's list, and a source map, an appsettings file, a test, demo or sample assembly, a key file or anything
+  from `.local/`, `.private/` or `node_modules` is refused with its reason first. Each nuspec must carry the id, a
+  semantic version, the title, a description of at most 4,000 characters, the authors and copyright of
+  `Directory.Build.props`, the project and repository address, the licence file and its acceptance (never an expression,
+  §3.5), the readme, the icon and the tags; its siblings at exactly its own version, and every other dependency in the
+  range `Directory.Packages.props` gives it, with no dependency beyond those. The packed `LICENSE.md`, readme and icon
+  must be the repository's files byte for byte, so the owner's licence ships as placed (D2). `scripts/pack.mjs` runs it
+  after every pack, so the gate, CI and the release check alike.
 
 ## Consequences
 
