@@ -3217,7 +3217,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 18: Packaging, CI/CD, Marketplace readiness
 
-- [ ] **18.1 Packaging, the release workflow, the install test and the first prerelease, and phase review** (18.1, 18.2, 18.3 and 18.4 in one, ADR-0197)
+- [x] **18.1 Packaging, the release workflow, the install test and the first prerelease, and phase review** (18.1, 18.2, 18.3 and 18.4 in one, ADR-0197) (2026-11-13, 73a35637)
   - **18.1 NuGet metadata and `umbraco-marketplace.json`**:
     - **On every package:**
       - `PackageId`, `Title`, `Description`, `Authors`, `Copyright`, `PackageProjectUrl`, `RepositoryUrl`;
