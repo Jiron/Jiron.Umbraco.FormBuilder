@@ -62,7 +62,7 @@ export default {
     general_baseUrlHelp: 'Links in E-Mails beginnen damit. Leer beginnen sie mit der Adresse, die das Feld zeigt.',
     general_timeZone: 'Zeitzone',
     general_timeZoneHelp:
-      'Daten in E-Mails und Exporten verwenden sie, ebenso die Zeiten, zu denen ein Formular öffnet und schließt. Tippen Sie die ersten Buchstaben einer Stadt, um sie zu finden.',
+      'Daten in E-Mails und Exporten verwenden sie. In der Zeitzone aller Websites öffnen und schließen auch die Formulare. Tippen Sie die ersten Buchstaben einer Stadt, um sie zu finden.',
     zonesWithoutArea: 'Universell',
     generalBox_newForms: 'Neue Formulare',
     generalBox_newFormsLead:
@@ -118,7 +118,8 @@ export default {
     email_defaultLayout_letter: 'Brief',
     emailBox_team: 'Das Team',
     email_teamRecipients: 'Systemhinweise gehen an',
-    email_teamRecipientsHelp: 'Sie erfahren, wenn eine Zustellung endgültig fehlschlägt, höchstens einmal pro Stunde und Formular.',
+    email_teamRecipientsHelp:
+      'Sie erfahren, wenn eine Zustellung endgültig fehlschlägt, höchstens einmal pro Stunde und Formular.',
     email_forwardAddresses: 'Adressen, an die Einträge weitergeleitet werden dürfen',
     email_forwardAddressesHelp:
       'Neben Backoffice-Benutzern bietet Weiterleiten nur diese an, damit Einträge die Website nur zu Personen verlassen, denen sie bereits vertraut.',

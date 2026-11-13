@@ -521,10 +521,12 @@ describe('the submission', () => {
 });
 
 describe('the availability', () => {
-  it("takes opening and closing on the site's clock, and refuses a closing before the opening", async () => {
+  it('takes opening and closing in the time zone of all sites, and refuses a closing before the opening', async () => {
     const { open, type, why, settings, root } = await viewOf();
     await open('availability');
-    expect(text(root.querySelector('#body-availability .note'))).toBe("Times are on the site's clock: Europe/Berlin.");
+    expect(text(root.querySelector('#body-availability .note'))).toBe(
+      'Times are in the time zone set for all sites: Europe/Berlin.',
+    );
     await type('opens-at', '2026-12-01T09:00');
     expect(settings('availability')['opensAt']).toBe('2026-12-01T08:00:00Z');
     await type('closes-at', '2026-11-30T18:00');

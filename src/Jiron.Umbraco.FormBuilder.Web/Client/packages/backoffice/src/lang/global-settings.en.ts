@@ -60,7 +60,7 @@ export default {
     general_baseUrlHelp: 'Links in emails start with it. Left empty, they start with the address shown in the box.',
     general_timeZone: 'Time zone',
     general_timeZoneHelp:
-      "Dates in emails and exports use it, and so do the times a form opens and closes. Type a city's first letters to find it.",
+      "Dates in emails and exports use it. The zone set for all sites is also the one forms open and close in. Type a city's first letters to find it.",
     zonesWithoutArea: 'Universal',
     generalBox_newForms: 'New forms',
     generalBox_newFormsLead:

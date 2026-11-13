@@ -148,7 +148,7 @@ export default {
     referenceDigits: 'Digits',
     referenceExample: 'Visitors get references like',
 
-    timeZone: (zone: string) => `Times are on the site's clock: ${zone}.`,
+    timeZone: (zone: string) => `Times are in the time zone set for all sites: ${zone}.`,
     opensAt: 'Opens',
     closesAt: 'Closes',
     openingHelp: 'Leave them empty to open at once and stay open.',

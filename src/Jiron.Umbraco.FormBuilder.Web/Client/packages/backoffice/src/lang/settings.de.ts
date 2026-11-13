@@ -152,7 +152,7 @@ export default {
     referenceDigits: 'Stellen',
     referenceExample: 'Besucher erhalten Referenzen wie',
 
-    timeZone: (zone: string) => `Die Zeiten folgen der Uhr der Website: ${zone}.`,
+    timeZone: (zone: string) => `Die Zeiten gelten in der Zeitzone aller Websites: ${zone}.`,
     opensAt: 'Öffnet',
     closesAt: 'Schließt',
     openingHelp: 'Leer lassen, um sofort zu öffnen und offen zu bleiben.',
