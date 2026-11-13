@@ -181,6 +181,8 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
 - [ ] **Screen readers:** test a few forms and the designer with NVDA and VoiceOver. The build checks
   accessibility names and keyboard paths automatically, but no real screen reader runs here.
 - [ ] **GitHub rendering:** once the repository is public, check that the README, docs and issue forms
-  render as intended on GitHub.
+  render as intended on GitHub, and once the first prerelease is on nuget.org, that `docs/README.nuget.md`
+  renders there with working links. The build checks both only through a local renderer
+  (`node scripts/render-markdown.mjs`).
 - [ ] **The first release run:** pushing the `v17.0.0-alpha.1` tag (ROADMAP 18.4) starts the release
   workflow once, even before CI is enabled; check its draft release.

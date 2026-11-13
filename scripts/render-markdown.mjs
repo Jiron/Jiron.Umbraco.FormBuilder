@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Renders Markdown as GitHub shows it (ROADMAP 17.2a), because the private repository can't be viewed from here: each
 // file is turned into HTML by a GitHub-flavoured renderer (marked) inside GitHub's own stylesheet
-// (github-markdown-css), with GitHub's heading anchors and the file's folder as the base for its images, then opened in
-// Edge (Chromium in CI), shot whole into .local/markdown/<name>.png and checked: every image loads, and no table or list
-// is left as text. Both are development tools, MIT, never shipped.
+// (github-markdown-css), with GitHub's heading anchors and the file's folder as the base for its images, written to
+// .local/markdown/<name>.html, opened in Edge (Chromium in CI), shot whole into .local/markdown/<name>.png and checked:
+// every image loads, and no table or list is left as text. Both are development tools, MIT, never shipped.
 // Usage: node scripts/render-markdown.mjs [files...]   (no files: README.md and docs/README.nuget.md)
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -58,7 +58,10 @@ async function main() {
       const name = basename(file, '.md');
       const view = await browser.newPage({ viewport: { width: 1012, height: 900 } });
       const base = pathToFileURL(`${dirname(file)}/`).href;
-      await view.setContent(page(readFileSync(file, 'utf8'), base), { waitUntil: 'load' });
+      // A page of its own on disk, not setContent: Chromium loads no file:// image into an about:blank page.
+      const html = join(out, `${name}.html`);
+      writeFileSync(html, page(readFileSync(file, 'utf8'), base));
+      await view.goto(pathToFileURL(html).href, { waitUntil: 'load' });
       const found = await view.evaluate(() => {
         const images = [...document.images];
         const left = [...document.querySelectorAll('.markdown-body p')]
