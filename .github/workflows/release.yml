@@ -1,0 +1,170 @@
+# Jiron Form Builder's release (ROADMAP 18.2, D16, D17, ADR-0247; docs/releasing.md). A version tag (for example
+# v17.0.0-alpha.1) checks the version and its CHANGELOG.md section in a minute, runs all of CI by calling ci.yml, packs
+# the four packages with the tag's version through scripts/pack.mjs (the pack step of CI and scripts/ci-local.ps1, with
+# the allowlist of every entry), and attaches them with their symbols to a draft GitHub Release whose notes are the
+# version's section of CHANGELOG.md.
+#
+# Publishing stays off: the publish job runs only once the owner has set the repository variable JFB_NUGET_PUBLISH to
+# 'true' and created nuget.org's trusted-publishing policy for this workflow. A manual run packs a given version as a
+# dry run: no release, nothing published.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to pack as a dry run, for example 17.0.0-alpha.1 (nothing is released or published)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  # First, in a minute: the version, and on a tag its changelog section, so a mistake costs no CI run.
+  prepare:
+    name: The version and its notes
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # The tag and the manual input reach the shell through the environment, never inline.
+      - name: The version (from the tag, or the manual run's input)
+        id: version
+        env:
+          REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: |
+          version="$(node scripts/release.mjs version "$REQUESTED")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Its notes in CHANGELOG.md (a tag only; a dry run needs none)
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/release.mjs notes "$VERSION" > /dev/null
+
+  # All of CI, once: a version tag runs ci.yml only through this call.
+  ci:
+    name: CI
+    needs: prepare
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  pack:
+    name: Pack the packages
+    needs: [prepare, ci]
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JFB_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Install the client's packages
+        working-directory: src/Jiron.Umbraco.FormBuilder.Web/Client
+        run: npm ci --no-audit --no-fund
+      # The client built and stamped with the version, the Release pack with package validation, then the allowlist of
+      # every entry and the nuspecs (scripts/check-packages.mjs).
+      - name: Pack
+        run: node scripts/pack.mjs --version "$JFB_VERSION" --output artifacts/packages
+      # Not "packages": CI, called above in this same run, keeps its own pack under that name.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-packages
+          path: artifacts/packages
+          if-no-files-found: error
+
+  release:
+    name: Draft GitHub Release
+    needs: [prepare, pack]
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # The write token stays with gh, not in the checkout's git config.
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-packages
+          path: packages
+      - name: Draft the release with the changelog's notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          node scripts/release.mjs notes "$VERSION" > notes.md
+          prerelease=()
+          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" packages/* --draft "${prerelease[@]}" --verify-tag --title "Jiron Form Builder $VERSION" --notes-file notes.md
+
+  publish:
+    name: Publish to nuget.org
+    needs: [pack, release]
+    if: startsWith(github.ref, 'refs/tags/v') && vars.JFB_NUGET_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # nuget.org's trusted-publishing policy names this environment, which the owner limits to v* tags (docs/releasing.md).
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-packages
+          path: packages
+      - name: Sign in to nuget.org (trusted publishing, a key valid for one hour)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.JFB_NUGET_USER }}
+      - name: Push the packages (each with its symbols)
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push "packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

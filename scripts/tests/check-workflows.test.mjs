@@ -119,6 +119,19 @@ describe('workflowRuleErrors', () => {
     doc.jobs.build.services = { db: { image: 'x', env: { PASSWORD: '${{ env.X }}' } } };
     assert.ok(workflowRuleErrors(doc).some((e) => e.includes('env context')));
   });
+
+  test("refuses a tag's name, an input or an event's text written into a script, and accepts it through env (ADR-0247)", async () => {
+    for (const inline of ['${{ github.ref_name }}', '${{ inputs.version }}', '${{ github.event.head_commit.message }}', '${{ github.head_ref }}']) {
+      const doc = await parse(GOOD);
+      doc.jobs.build.steps.push({ name: 'Use it', run: `node scripts/release.mjs version "${inline}"` });
+      assert.deepEqual(workflowRuleErrors(doc), [
+        'job build: step "Use it" writes a tag, an input or an event\'s text into its script; pass it through `env`',
+      ], inline);
+    }
+    const doc = await parse(GOOD);
+    doc.jobs.build.steps.push({ name: 'Use it', env: { REQUESTED: '${{ inputs.version || github.ref_name }}' }, run: 'node scripts/release.mjs version "$REQUESTED"' });
+    assert.deepEqual(workflowRuleErrors(doc), []);
+  });
 });
 
 describe('dependabotErrors', () => {

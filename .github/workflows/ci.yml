@@ -1,16 +1,17 @@
 # Jiron Form Builder's CI (ROADMAP 3.5, ADR-0011). scripts/ci-local.ps1 runs the same checks locally, without
 # SQL Server, which the development machine never connects to (CLAUDE.md rule 6).
 #
-# Gated to save the private repository's Actions minutes (D17): a run started by hand and a version tag always run.
-# Pushes to main and to v18/main (the Umbraco 18 line, Phase 19) run only when the owner sets the repository
-# variable JFB_CI to 'true'; until then every job's `if` is false and the push run ends at once, without a runner.
+# Gated to save the private repository's Actions minutes (D17): a run started by hand always runs, and so does the
+# release (release.yml), which calls this workflow for a version tag, so a tag runs CI once (ADR-0247). Pushes to main
+# and to v18/main (the Umbraco 18 line, Phase 19) run only when the owner sets the repository variable JFB_CI to
+# 'true'; until then every job's `if` is false and the push run ends at once, without a runner.
 name: CI
 
 on:
   push:
     branches: [main, v18/main]
-    # Until the release workflow of step 18.2 runs CI for its tags itself (through workflow_call).
-    tags: ['v*']
+  # The release calls it for a version tag; the jobs' conditions let a tag through.
+  workflow_call:
   workflow_dispatch:
 
 permissions:

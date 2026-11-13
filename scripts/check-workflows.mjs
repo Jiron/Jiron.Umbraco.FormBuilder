@@ -37,6 +37,9 @@ export const MANUAL = "github.event_name == 'workflow_dispatch'";
 /** A job whose `if` starts with this runs only for a version tag, which only a release pushes (18.2). */
 export const TAGS = "startsWith(github.ref, 'refs/tags/v')";
 
+/** Expressions whose text someone else chooses (a tag, a branch, an input, an event), which a script must not inline. */
+export const UNTRUSTED_INLINE = /\$\{\{[^}]*\b(inputs\.|github\.(ref_name|ref|head_ref|event\.))/;
+
 /** The branches a push trigger must name: the Umbraco 17 line and the Umbraco 18 line (D16). */
 export const PUSH_BRANCHES = Object.freeze(['main', 'v18/main']);
 
@@ -128,6 +131,11 @@ export function workflowRuleErrors(doc) {
       }
     }
     for (const step of job.steps ?? []) {
+      // A tag's name, a manual run's input or an event's text reach a script through `env`, never inline: GitHub
+      // pastes an inline expression into the script before the shell reads it (18.2, ADR-0247).
+      if (typeof step.run === 'string' && UNTRUSTED_INLINE.test(step.run)) {
+        errors.push(`job ${id}: step "${step.name ?? step.run.split('\n')[0]}" writes a tag, an input or an event's text into its script; pass it through \`env\``);
+      }
       const uses = step.uses;
       if (uses && !uses.startsWith('./') && !/@(v\d+|[0-9a-f]{40})$/.test(uses)) {
         errors.push(`job ${id}: \`${uses}\` must be pinned to a major version (@vN) or a commit`);

@@ -93,8 +93,10 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Publishing
 
-- [ ] **Create the nuget.org trusted-publishing policy** for this repository and the release workflow,
-  then set the repository variable `JFB_NUGET_PUBLISH` to `true` (ROADMAP D17, §3.5).
+- [ ] **Create the nuget.org trusted-publishing policy** for this repository, the workflow `release.yml` and the
+  environment `nuget`, then set the repository variables `JFB_NUGET_USER` (the nuget.org profile name) and
+  `JFB_NUGET_PUBLISH` (`true`) (ROADMAP D17, §3.5, ADR-0247). [Releasing](releasing.md#turning-on-publishing-owner)
+  walks through it.
 - [ ] **Publish to NuGet and list on the Umbraco Marketplace.** Run the validator at
   marketplace.umbraco.com/validate after the repository is public, for `Jiron.Umbraco.FormBuilder` and for
   `Jiron.Umbraco.FormBuilder.AI`; check that the add-on shows its own listing as a sub-package of the product, not the
