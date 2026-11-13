@@ -235,8 +235,9 @@ const TYPES: readonly TypeCase[] = [
   {
     type: 'file',
     name: 'File upload',
-    configure: (inspector) => typeIn(inspector.getByLabel('Largest file'), '1000000'),
-    holds: (field) => expect(settingsOf(field)['maxBytes']).toBe(1_000_000),
+    // The box takes megabytes; the field stores bytes.
+    configure: (inspector) => typeIn(inspector.getByLabel('Largest file'), '10'),
+    holds: (field) => expect(settingsOf(field)['maxBytes']).toBe(10 * 1024 * 1024),
   },
   {
     type: 'signature',

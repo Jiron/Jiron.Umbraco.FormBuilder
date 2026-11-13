@@ -144,7 +144,7 @@ test('the submission group and its More options set what they say, refuse what t
   await expect(title).toBeFocused();
 
   // More options: the buttons between pages, the summary page, the progress and the reference with its example.
-  const more = view.getByRole('button', { name: 'More options (4)' });
+  const more = view.getByRole('button', { name: 'More options (5)' });
   await more.click();
   await expect(view.getByRole('button', { name: 'Fewer options' })).toHaveAttribute('aria-expanded', 'true');
   await expect(view.getByLabel('Next page')).toHaveAttribute('placeholder', 'Next');
@@ -318,10 +318,11 @@ test('availability, spam protection, appearance and developer set what they say,
   await loginAs('designer');
   const view = await openSettings(page, key);
 
-  // Availability: the times on the site's clock, a closing before the opening refused, the limit, the message, members.
+  // Availability: the times in the time zone of all sites, a closing before the opening refused, the limit, the message,
+  // members.
   await openGroup(view, 'availability');
   await expect(view.locator('#body-availability .note').first()).toHaveText(
-    `Times are on the site's clock: ${timeZone}.`,
+    `Times are in the time zone set for all sites: ${timeZone}.`,
   );
   await enter(view.getByLabel('Opens'), '2026-12-01T09:00');
   await enter(view.getByLabel('Closes'), '2026-11-30T18:00');

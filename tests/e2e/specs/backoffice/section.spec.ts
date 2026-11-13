@@ -120,7 +120,7 @@ test("the checklist's button for the form block calls setup/form-block, and its 
   await dialog.getByRole('button', { name: 'Create', exact: true }).click();
   expect((await creating).status()).toBe(200);
   await expect(dialog).toContainText('One step is left');
-  await expect(dialog.getByRole('link', { name: 'Open document types' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Open data types' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).click();
 
   await expect(page.locator('jfb-overview ol li').nth(3).locator('.mark--done')).toBeVisible();
