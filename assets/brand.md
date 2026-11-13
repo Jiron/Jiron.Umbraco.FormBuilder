@@ -7,7 +7,7 @@ with what arrives. The mark says that in two moves, and nothing more.
 
 A form card with two fields, and in the place of its submit button a check mark:
 
-- **The card,** evergreen, is the form. Its corners are round, as a card on a page is.
+- **The card,** blue, is the form. Its corners are round, as a card on a page is.
 - **The two fields** are cut out of the card, not painted white, so the mark sits on any background, light or dark.
 - **The check mark,** marigold, stands where the form's button would be, at the start of the last row, as the default
   theme puts the primary button. It is the form sent, and the entry safely kept.
@@ -18,20 +18,21 @@ is no Umbraco logo and no "U" in it: Jiron Form Builder is an Umbraco package, n
 
 ## Colours
 
-Two brand colours and one neutral. The evergreen is the default theme's accent, the colour a visitor's form gives its
-button and its chosen answers, so the mark and the forms it makes share it. The ink is the one the owner's other
-Jiron package uses beside its mark, so the family reads as one.
+Two brand colours and one neutral. The blue is Ligata's, the colour of the owner's company site (its `--accent`), so
+the mark reads as part of that family; the owner chose it on 2026-11-13 (ADR-0245). The ink is the one the owner's
+other Jiron package uses beside its mark. The forms themselves keep their own colours: the default theme's accent stays
+evergreen (`--jfb-color-accent`, `#0F6E5C`), as a visitor's form belongs to the site that shows it, not to us.
 
 | Name | Hex | Use |
 | --- | --- | --- |
-| **Evergreen** | `#0F6E5C` | The card; the default theme's accent (`--jfb-color-accent`) |
+| **Blue** | `#2457F5` | The card: Ligata's blue |
 | **Marigold** | `#F5BF4F` | The check mark, and only the check mark |
 | **Ink** | `#16181D` | The one-colour mark, and the name next to the mark |
 
-On white, evergreen has a contrast of 6.2:1, enough for text (WCAG AA), and the ink 17.8:1. The marigold check sits on
-the evergreen card at 3.7:1, enough for graphics (WCAG 1.4.11 asks 3:1), and never on the page itself, where it would
-have 1.7:1. On a near-black background (`#15171C`) the card keeps 2.9:1; where the mark must stand out on a dark
-ground, use the one-colour mark in white.
+On white, the blue has a contrast of 5.6:1, enough for text (WCAG AA), and the ink 17.8:1. The marigold check sits on
+the blue card at 3.3:1, enough for graphics (WCAG 1.4.11 asks 3:1), and never on the page itself, where it would have
+1.7:1. On a near-black background (`#15171C`) the card keeps 3.2:1, enough for graphics; where the mark must stand out
+more on a dark ground, use the one-colour mark in white.
 
 ## Files
 

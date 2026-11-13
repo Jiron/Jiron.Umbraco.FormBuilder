@@ -59,10 +59,12 @@ test('the mark is rendered at 512, 256, 128 and 64 px, square, with its corners 
 test("the mark uses the brand's two colours, and the one-colour mark the ink", () => {
   const brand = asset('brand.md');
   const colour = (name) => brand.match(new RegExp(`\\| \\*\\*${name}\\*\\* \\| \`(#[0-9A-F]{6})\``))?.[1];
-  const [evergreen, marigold, ink] = [colour('Evergreen'), colour('Marigold'), colour('Ink')];
-  assert.ok(evergreen && marigold && ink, 'brand.md names the three colours');
-  assert.deepEqual(paints(asset('logo.svg')), [evergreen, marigold].sort());
-  assert.match(asset('logo.svg'), new RegExp(`fill="${evergreen}"`), 'the card is evergreen');
+  const [blue, marigold, ink] = [colour('Blue'), colour('Marigold'), colour('Ink')];
+  assert.ok(blue && marigold && ink, 'brand.md names the three colours');
+  // The owner's choice (2026-11-13, ADR-0245): the card in Ligata's blue, the --accent of ligata.ch.
+  assert.equal(blue, '#2457F5', "the card is Ligata's blue");
+  assert.deepEqual(paints(asset('logo.svg')), [blue, marigold].sort());
+  assert.match(asset('logo.svg'), new RegExp(`fill="${blue}"`), 'the card is blue');
   assert.match(asset('logo.svg'), new RegExp(`stroke="${marigold}"`), 'the check is marigold');
   assert.match(asset('logo-mono.svg'), new RegExp(`color="${ink}"`));
   assert.deepEqual(paints(asset('logo-mono.svg')), []);

@@ -3,7 +3,7 @@
   <!--
     Jiron Form Builder's mark (ROADMAP 17.1, assets/brand.md): a form card with two fields, and in the place of its
     submit button a check mark. The fields are cut out of the card, so the mark sits on any background; the check is
-    marigold on the evergreen card. Drawn on a 64 unit grid to stay legible at 32 px.
+    marigold on the card in Ligata's blue. Drawn on a 64 unit grid to stay legible at 32 px.
   -->
   <defs>
     <mask id="jfb-logo-fields" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
@@ -12,6 +12,6 @@
       <rect x="14" y="26" width="36" height="8" rx="4" fill="#000000" />
     </mask>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="#0F6E5C" mask="url(#jfb-logo-fields)" />
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#2457F5" mask="url(#jfb-logo-fields)" />
   <path d="M17 46l5 5 10-10" fill="none" stroke="#F5BF4F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

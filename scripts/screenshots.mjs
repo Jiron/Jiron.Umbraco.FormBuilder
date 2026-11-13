@@ -260,8 +260,8 @@ async function phonePicture(browser, shots) {
     await page.setContent(
       `<!doctype html><html><head><style>
         html, body { margin: 0; height: 100%; }
-        body { display: flex; align-items: center; justify-content: center; gap: 64px; background: #eef2f1; }
-        img { height: 780px; border-radius: 32px; border: 1px solid #c9d3d0; box-shadow: 0 12px 32px rgb(15 110 92 / 0.14); }
+        body { display: flex; align-items: center; justify-content: center; gap: 64px; background: #eef1f6; }
+        img { height: 780px; border-radius: 32px; border: 1px solid #ccd3e0; box-shadow: 0 12px 32px rgb(36 87 245 / 0.12); }
       </style></head><body>${images}</body></html>`,
       { waitUntil: 'load' },
     );
