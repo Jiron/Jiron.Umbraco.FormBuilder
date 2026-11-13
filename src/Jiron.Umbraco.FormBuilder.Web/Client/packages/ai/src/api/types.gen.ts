@@ -7,7 +7,7 @@ export type ClientOptions = {
 
 export type AiDraftRequestModel = {
     text: string;
-    folderKey?: string | null;
+    folderKey?: null | string;
 };
 
 export type AiDraftResponseModel = {
@@ -18,28 +18,28 @@ export type AiDraftResponseModel = {
 };
 
 export type AiMarkResponseModel = {
-    draftVersion?: number | null;
+    draftVersion?: null | number;
 };
 
 export type AiSettingsRequestModel = {
-    profileId?: string | null;
+    profileId?: null | string;
 };
 
 export type AiSettingsResponseModel = {
-    profileId?: string | null;
+    profileId?: null | string;
 };
 
 export type AiStatusResponseModel = {
     ready: boolean;
-    problem?: string | null;
-    profileName?: string | null;
+    problem?: null | string;
+    profileName?: null | string;
 };
 
 export type AiSuggestedTextResponseModel = {
     setting: string;
     path: string;
     text: string;
-    reason?: string | null;
+    reason?: null | string;
 };
 
 export type AiSuggestionRequestModel = {
@@ -48,7 +48,7 @@ export type AiSuggestionRequestModel = {
 
 export type AiSuggestionsResponseModel = {
     draftVersion: number;
-    help?: AiSuggestedTextResponseModel | null;
+    help?: null | AiSuggestedTextResponseModel;
     improvements: Array<AiSuggestedTextResponseModel>;
 };
 
@@ -72,16 +72,16 @@ export type AiTranslationResponseModel = {
 };
 
 export type ProblemDetails = {
-    type?: string | null;
-    title?: string | null;
-    status?: number | null;
-    detail?: string | null;
-    instance?: string | null;
+    type?: null | string;
+    title?: null | string;
+    status?: null | number;
+    detail?: null | string;
+    instance?: null | string;
     [key: string]: unknown;
 };
 
 export type AiDraftCreateData = {
-    body?: AiDraftRequestModel;
+    body: AiDraftRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/ai/draft';
@@ -105,7 +105,7 @@ export type AiDraftCreateErrors = {
      */
     409: ProblemDetails;
     /**
-     * Unprocessable Content
+     * Unprocessable Entity
      */
     422: ProblemDetails;
     /**
@@ -161,7 +161,7 @@ export type AiFormMarkResponses = {
 export type AiFormMarkResponse = AiFormMarkResponses[keyof AiFormMarkResponses];
 
 export type AiFormSuggestData = {
-    body?: AiSuggestionRequestModel;
+    body: AiSuggestionRequestModel;
     path: {
         key: string;
     };
@@ -187,7 +187,7 @@ export type AiFormSuggestErrors = {
      */
     409: ProblemDetails;
     /**
-     * Unprocessable Content
+     * Unprocessable Entity
      */
     422: ProblemDetails;
     /**
@@ -208,7 +208,7 @@ export type AiFormSuggestResponses = {
 export type AiFormSuggestResponse = AiFormSuggestResponses[keyof AiFormSuggestResponses];
 
 export type AiFormTranslateData = {
-    body?: AiTranslationRequestModel;
+    body: AiTranslationRequestModel;
     path: {
         key: string;
     };
@@ -238,7 +238,7 @@ export type AiFormTranslateErrors = {
      */
     409: ProblemDetails;
     /**
-     * Unprocessable Content
+     * Unprocessable Entity
      */
     422: ProblemDetails;
     /**
@@ -286,7 +286,7 @@ export type AiGetSettingsResponses = {
 export type AiGetSettingsResponse = AiGetSettingsResponses[keyof AiGetSettingsResponses];
 
 export type AiSaveSettingsData = {
-    body?: AiSettingsRequestModel;
+    body: AiSettingsRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/ai/settings';

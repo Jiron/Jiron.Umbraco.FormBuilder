@@ -63,6 +63,8 @@ describe("a folders-only picker's page", () => {
     expect(pageOf(page(['folder', 'folder'], 140), folders, 0)).toEqual({
       items: [item({ key: 'folder0', kind: 'folder' }), item({ key: 'folder1', kind: 'folder' })],
       total: 140,
+      totalBefore: 0,
+      totalAfter: 138,
     });
   });
 

@@ -19,7 +19,7 @@ export type AccessGrantResponseModel = {
 export type AccessGroupResponseModel = {
     key: string;
     name: string;
-    icon?: string | null;
+    icon?: null | string;
     isAdministrators: boolean;
     hasSection: boolean;
     permissions: Array<string>;
@@ -56,14 +56,14 @@ export type AccessResponseModel = {
     groups: Array<AccessGroupResponseModel>;
     parts: Array<AccessPartResponseModel>;
     needs: Array<AccessNeedResponseModel>;
-    lock?: AccessLockResponseModel | null;
+    lock?: null | AccessLockResponseModel;
     items: Array<AccessItemResponseModel>;
 };
 
 export type AccessTargetRequestModel = {
     grants: Array<AccessGrantRequestModel>;
     isRestricted: boolean;
-    version?: number | null;
+    version?: null | number;
 };
 
 export type AccessTargetResponseModel = {
@@ -71,11 +71,11 @@ export type AccessTargetResponseModel = {
     key: string;
     name: string;
     isRestricted: boolean;
-    version?: number | null;
+    version?: null | number;
     groups: Array<AccessGroupResponseModel>;
     permissions: Array<string>;
     needs: Array<AccessNeedResponseModel>;
-    lock?: AccessLockResponseModel | null;
+    lock?: null | AccessLockResponseModel;
 };
 
 export type ActionConfirmationRequestModel = {
@@ -86,12 +86,12 @@ export type ActionLastRunResponseModel = {
     actionKey: string;
     state: string;
     attempts: number;
-    firstAttemptUtc?: string | null;
-    lastAttemptUtc?: string | null;
-    nextAttemptUtc?: string | null;
-    finishedUtc?: string | null;
-    errorCode?: string | null;
-    errorMessage?: string | null;
+    firstAttemptUtc?: null | string;
+    lastAttemptUtc?: null | string;
+    nextAttemptUtc?: null | string;
+    finishedUtc?: null | string;
+    errorCode?: null | string;
+    errorMessage?: null | string;
 };
 
 export type ActionLastRunsResponseModel = {
@@ -110,17 +110,22 @@ export type ActionRunResponseModel = {
     trigger: string;
     state: string;
     attempts: number;
-    nextAttemptUtc?: string | null;
-    errorCode?: string | null;
-    errorMessage?: string | null;
+    nextAttemptUtc?: null | string;
+    errorCode?: null | string;
+    errorMessage?: null | string;
     createdUtc: string;
-    startedUtc?: string | null;
-    finishedUtc?: string | null;
+    startedUtc?: null | string;
+    finishedUtc?: null | string;
+};
+
+export type ActionsCopiedResponseModel = {
+    target: FormSavedResponseModel;
+    actions: Array<CopiedActionResponseModel>;
 };
 
 export type ActionTestLineResponseModel = {
     text: string;
-    code?: string | null;
+    code?: null | string;
     args: Array<string>;
 };
 
@@ -131,10 +136,10 @@ export type ActionTestRequestModel = {
 
 export type ActionTestResponseModel = {
     outcome: string;
-    code?: string | null;
+    code?: null | string;
     args: Array<string>;
-    message?: string | null;
-    recipient?: string | null;
+    message?: null | string;
+    recipient?: null | string;
     preview: Array<ActionTestLineResponseModel>;
 };
 
@@ -151,19 +156,14 @@ export type ActionTypesResponseModel = {
     types: Array<ActionTypeResponseModel>;
 };
 
-export type ActionsCopiedResponseModel = {
-    target: FormSavedResponseModel;
-    actions: Array<CopiedActionResponseModel>;
-};
-
 export type AuditEntryResponseModel = {
     id: number;
     occurredUtc: string;
-    userKey?: string | null;
-    userName?: string | null;
+    userKey?: null | string;
+    userName?: null | string;
     action: string;
     entityType: string;
-    entityKey?: string | null;
+    entityKey?: null | string;
     details: unknown;
 };
 
@@ -178,7 +178,7 @@ export type AuditListResponseModel = {
 export type AuditNameResponseModel = {
     kind: string;
     name: string;
-    number?: number | null;
+    number?: null | number;
 };
 
 export type CanvasLanguageResponseModel = {
@@ -223,11 +223,11 @@ export type ChecklistItemResponseModel = {
 export type ChecklistResponseModel = {
     items: Array<ChecklistItemResponseModel>;
     complete: boolean;
-    previewForm?: string | null;
+    previewForm?: null | string;
 };
 
 export type CommentVersionRequestModel = {
-    comment?: string | null;
+    comment?: null | string;
 };
 
 export type CompareDraftRequestModel = {
@@ -243,9 +243,9 @@ export type ContentDocumentTypeResponseModel = {
 export type ContentPropertyResponseModel = {
     alias: string;
     name: string;
-    group?: string | null;
+    group?: null | string;
     fieldTypes: Array<string>;
-    value?: string | null;
+    value?: null | string;
 };
 
 export type CopiedActionResponseModel = {
@@ -258,33 +258,33 @@ export type CopiedActionResponseModel = {
 export type CopyActionsRequestModel = {
     targetKey: string;
     concurrencyVersion: number;
-    actionKeys?: Array<string> | null;
+    actionKeys?: null | Array<string>;
 };
 
 export type CreateEmailLayoutRequestModel = {
-    key?: string | null;
+    key?: null | string;
     layout: EmailLayoutRequestModel;
 };
 
 export type CreateFolderRequestModel = {
     name: string;
-    parentKey?: string | null;
+    parentKey?: null | string;
 };
 
 export type CreateFormFromTemplateRequestModel = {
-    templateKey: string;
-    name?: string | null;
-    folderKey?: string | null;
+    templateKey: null | string;
+    name?: null | string;
+    folderKey?: null | string;
 };
 
 export type CreateFormRequestModel = {
     name: string;
-    alias?: string | null;
-    folderKey?: string | null;
+    alias?: null | string;
+    folderKey?: null | string;
 };
 
 export type CreateOptionListRequestModel = {
-    key?: string | null;
+    key?: null | string;
     list: OptionListRequestModel;
 };
 
@@ -294,15 +294,15 @@ export type CreateThemeRequestModel = {
 
 export type DefinitionChangeResponseModel = {
     kind: string;
-    key?: string | null;
-    settingsGroup?: string | null;
-    parentKey?: string | null;
-    previousParentKey?: string | null;
+    key?: null | string;
+    settingsGroup?: null | string;
+    parentKey?: null | string;
+    previousParentKey?: null | string;
     change: string;
     moved: boolean;
-    label?: string | null;
-    alias?: string | null;
-    type?: string | null;
+    label?: null | string;
+    alias?: null | string;
+    type?: null | string;
     before?: unknown;
     after?: unknown;
     properties: Array<DefinitionPropertyChangeResponseModel>;
@@ -310,13 +310,13 @@ export type DefinitionChangeResponseModel = {
 
 export type DefinitionChangeSummaryResponseModel = {
     kind: string;
-    key?: string | null;
-    settingsGroup?: string | null;
-    parentKey?: string | null;
+    key?: null | string;
+    settingsGroup?: null | string;
+    parentKey?: null | string;
     change: string;
     moved: boolean;
-    label?: string | null;
-    alias?: string | null;
+    label?: null | string;
+    alias?: null | string;
 };
 
 export type DefinitionCountsResponseModel = {
@@ -343,7 +343,7 @@ export type DeliveryDetailResponseModel = {
     delivery: DeliveryResponseModel;
     mayRetry: boolean;
     retryable: boolean;
-    limit?: DeliveryLimitResponseModel | null;
+    limit?: null | DeliveryLimitResponseModel;
 };
 
 export type DeliveryLimitResponseModel = {
@@ -362,30 +362,30 @@ export type DeliveryResponseModel = {
     kind: string;
     id: number;
     state: string;
-    emailKind?: string | null;
+    emailKind?: null | string;
     recipients: Array<string>;
     recipientsHidden: boolean;
-    actionType?: string | null;
-    actionName?: string | null;
-    typeName?: string | null;
-    target?: DeliveryTargetResponseModel | null;
-    formKey?: string | null;
-    formName?: string | null;
-    entryKey?: string | null;
-    entryNumber?: number | null;
+    actionType?: null | string;
+    actionName?: null | string;
+    typeName?: null | string;
+    target?: null | DeliveryTargetResponseModel;
+    formKey?: null | string;
+    formName?: null | string;
+    entryKey?: null | string;
+    entryNumber?: null | number;
     attempts: number;
-    nextAttemptUtc?: string | null;
-    errorCode?: string | null;
-    errorMessage?: string | null;
+    nextAttemptUtc?: null | string;
+    errorCode?: null | string;
+    errorMessage?: null | string;
     createdUtc: string;
-    firstAttemptUtc?: string | null;
-    lastAttemptUtc?: string | null;
-    finishedUtc?: string | null;
+    firstAttemptUtc?: null | string;
+    lastAttemptUtc?: null | string;
+    finishedUtc?: null | string;
 };
 
 export type DeliveryTargetResponseModel = {
     kind: string;
-    text?: string | null;
+    text?: null | string;
 };
 
 export type DictionaryTextResponseModel = {
@@ -430,21 +430,21 @@ export type DuplicateThemeRequestModel = {
 };
 
 export type EmailColoursRequestModel = {
-    accent?: string | null;
-    page?: string | null;
-    surface?: string | null;
-    text?: string | null;
-    muted?: string | null;
-    rule?: string | null;
+    accent?: null | string;
+    page?: null | string;
+    surface?: null | string;
+    text?: null | string;
+    muted?: null | string;
+    rule?: null | string;
 };
 
 export type EmailColoursResponseModel = {
-    accent?: string | null;
-    page?: string | null;
-    surface?: string | null;
-    text?: string | null;
-    muted?: string | null;
-    rule?: string | null;
+    accent?: null | string;
+    page?: null | string;
+    surface?: null | string;
+    text?: null | string;
+    muted?: null | string;
+    rule?: null | string;
 };
 
 export type EmailFactsResponseModel = {
@@ -456,43 +456,43 @@ export type EmailFactsResponseModel = {
 
 export type EmailLayoutDesignRequestModel = {
     look: string;
-    logoMedia?: string | null;
-    logoUrl?: string | null;
-    logoAlt?: {
+    logoMedia?: null | string;
+    logoUrl?: null | string;
+    logoAlt?: null | {
         [key: string]: string;
-    } | null;
-    light?: EmailColoursRequestModel | null;
-    dark?: EmailColoursRequestModel | null;
-    header?: {
+    };
+    light?: null | EmailColoursRequestModel;
+    dark?: null | EmailColoursRequestModel;
+    header?: null | {
         [key: string]: string;
-    } | null;
-    footer?: {
+    };
+    footer?: null | {
         [key: string]: string;
-    } | null;
+    };
 };
 
 export type EmailLayoutDesignResponseModel = {
     look: string;
-    logoMedia?: string | null;
-    logoUrl?: string | null;
-    logoAlt?: {
+    logoMedia?: null | string;
+    logoUrl?: null | string;
+    logoAlt?: null | {
         [key: string]: string;
-    } | null;
-    light?: EmailColoursResponseModel | null;
-    dark?: EmailColoursResponseModel | null;
-    header?: {
+    };
+    light?: null | EmailColoursResponseModel;
+    dark?: null | EmailColoursResponseModel;
+    header?: null | {
         [key: string]: string;
-    } | null;
-    footer?: {
+    };
+    footer?: null | {
         [key: string]: string;
-    } | null;
+    };
 };
 
 export type EmailLayoutEditorResponseModel = {
     languages: Array<OptionListLanguageResponseModel>;
     light: EmailColoursResponseModel;
     dark: EmailColoursResponseModel;
-    defaultLayout?: string | null;
+    defaultLayout?: null | string;
 };
 
 export type EmailLayoutPreviewResponseModel = {
@@ -534,18 +534,18 @@ export type EmailLayoutRowsResponseModel = {
 export type EmailPreviewRequestModel = {
     definition: unknown;
     action: string;
-    culture?: string | null;
+    culture?: null | string;
 };
 
 export type EmailPreviewResponseModel = {
     from: string;
     to: Array<string>;
-    visitor?: string | null;
+    visitor?: null | string;
     cc: Array<string>;
     bcc: Array<string>;
-    replyTo?: string | null;
+    replyTo?: null | string;
     subject: string;
-    html?: string | null;
+    html?: null | string;
     text: string;
     direction: string;
 };
@@ -593,12 +593,12 @@ export type EntryEditRequestModel = {
 
 export type EntryEditResponseModel = {
     changed: number;
-    asks: EntryMoveAsksResponseModel | null;
+    asks: null | EntryMoveAsksResponseModel;
 };
 
 export type EntryExportChoicesResponseModel = {
     format: string;
-    fields?: Array<string> | null;
+    fields?: null | Array<string>;
     sensitive: boolean;
     options: EntryExportOptionsResponseModel;
 };
@@ -633,11 +633,11 @@ export type EntryExportPlanResponseModel = {
 
 export type EntryExportRequestModel = {
     format: string;
-    filter?: EntryListFilterRequestModel | null;
-    entries?: Array<string> | null;
-    fields?: Array<string> | null;
+    filter?: null | EntryListFilterRequestModel;
+    entries?: null | Array<string>;
+    fields?: null | Array<string>;
     sensitive: boolean;
-    options?: EntryExportOptionsRequestModel | null;
+    options?: null | EntryExportOptionsRequestModel;
     remember: boolean;
 };
 
@@ -647,9 +647,9 @@ export type EntryExportStatusResponseModel = {
     total: number;
     more: boolean;
     done: number;
-    fileName?: string | null;
-    expiresUtc?: string | null;
-    problem?: string | null;
+    fileName?: null | string;
+    expiresUtc?: null | string;
+    problem?: null | string;
 };
 
 export type EntryExportTicketResponseModel = {
@@ -659,7 +659,7 @@ export type EntryExportTicketResponseModel = {
 
 export type EntryExportViewResponseModel = {
     formats: Array<EntryExportFormatResponseModel>;
-    choices?: EntryExportChoicesResponseModel | null;
+    choices?: null | EntryExportChoicesResponseModel;
     maySeeSensitive: boolean;
     exports: Array<EntryExportStatusResponseModel>;
 };
@@ -668,10 +668,10 @@ export type EntryFieldFilterRequestModel = {
     field: string;
     test: string;
     values: Array<string>;
-    min?: number | null;
-    max?: number | null;
-    from?: string | null;
-    to?: string | null;
+    min?: null | number;
+    max?: null | number;
+    from?: null | string;
+    to?: null | string;
 };
 
 export type EntryFilterSetDeleteResponseModel = {
@@ -680,14 +680,14 @@ export type EntryFilterSetDeleteResponseModel = {
 
 export type EntryFilterSetRequestModel = {
     name: string;
-    form?: string | null;
-    filter?: EntryListFilterRequestModel | null;
+    form?: null | string;
+    filter?: null | EntryListFilterRequestModel;
 };
 
 export type EntryFilterSetResponseModel = {
     key: string;
     name: string;
-    form?: string | null;
+    form?: null | string;
     filter: EntryListFilterRequestModel;
 };
 
@@ -697,9 +697,9 @@ export type EntryForwardRecipientsResponseModel = {
 };
 
 export type EntryForwardRequestModel = {
-    user?: string | null;
-    address?: string | null;
-    message?: string | null;
+    user?: null | string;
+    address?: null | string;
+    message?: null | string;
     includeSensitive: boolean;
 };
 
@@ -748,7 +748,7 @@ export type EntryListFieldResponseModel = {
     alias: string;
     type: string;
     kind: string;
-    parent?: string | null;
+    parent?: null | string;
     sensitive: boolean;
     removed: boolean;
     column: boolean;
@@ -759,12 +759,12 @@ export type EntryListFieldResponseModel = {
 
 export type EntryListFilterRequestModel = {
     states: Array<string>;
-    received?: EntryReceivedRequestModel | null;
-    actions?: string | null;
+    received?: null | EntryReceivedRequestModel;
+    actions?: null | string;
     fields: Array<EntryFieldFilterRequestModel>;
-    search?: string | null;
+    search?: null | string;
     forms: Array<string>;
-    sort?: EntryListSortRequestModel | null;
+    sort?: null | EntryListSortRequestModel;
 };
 
 export type EntryListFormResponseModel = {
@@ -780,23 +780,23 @@ export type EntryListOptionResponseModel = {
 
 export type EntryListPageResponseModel = {
     items: Array<EntryListRowResponseModel>;
-    next?: string | null;
-    total?: number | null;
+    next?: null | string;
+    total?: null | number;
     more: boolean;
     forms: Array<EntryListFormResponseModel>;
 };
 
 export type EntryListRequestModel = {
-    filter?: EntryListFilterRequestModel | null;
-    columns?: Array<string> | null;
-    after?: string | null;
+    filter?: null | EntryListFilterRequestModel;
+    columns?: null | Array<string>;
+    after?: null | string;
     count: boolean;
 };
 
 export type EntryListRowResponseModel = {
     key: string;
     number: number;
-    title?: string | null;
+    title?: null | string;
     state: string;
     received: string;
     unseen: boolean;
@@ -806,7 +806,7 @@ export type EntryListRowResponseModel = {
 };
 
 export type EntryListSortRequestModel = {
-    field?: string | null;
+    field?: null | string;
     descending: boolean;
 };
 
@@ -817,7 +817,7 @@ export type EntryListViewResponseModel = {
 };
 
 export type EntryLocationResponseModel = {
-    form: string | null;
+    form: null | string;
 };
 
 export type EntryMoveAsksResponseModel = {
@@ -835,7 +835,7 @@ export type EntryNoteResponseModel = {
     mine: boolean;
     body: string;
     created: string;
-    edited: string | null;
+    edited: null | string;
 };
 
 export type EntryPanelAnswerResponseModel = {
@@ -847,18 +847,18 @@ export type EntryPanelAnswerResponseModel = {
     notKept: boolean;
     texts: Array<string>;
     files: Array<EntryPanelFileResponseModel>;
-    consent: string | null;
-    signedName: string | null;
-    edit: EntryPanelEditResponseModel | null;
+    consent: null | string;
+    signedName: null | string;
+    edit: null | EntryPanelEditResponseModel;
 };
 
 export type EntryPanelDetailsResponseModel = {
-    page: string | null;
+    page: null | string;
     culture: string;
-    duration: number | null;
-    member: string | null;
-    memberName: string | null;
-    ipAddress: string | null;
+    duration: null | number;
+    member: null | string;
+    memberName: null | string;
+    ipAddress: null | string;
     spamReasons: Array<string>;
 };
 
@@ -880,13 +880,13 @@ export type EntryPanelFileResponseModel = {
 
 export type EntryPanelGroupResponseModel = {
     key: string;
-    title: string | null;
+    title: null | string;
     answers: Array<EntryPanelAnswerResponseModel>;
 };
 
 export type EntryPanelPageResponseModel = {
     key: string;
-    title: string | null;
+    title: null | string;
     groups: Array<EntryPanelGroupResponseModel>;
 };
 
@@ -895,7 +895,7 @@ export type EntryPanelResponseModel = {
     form: string;
     formName: string;
     number: number;
-    title: string | null;
+    title: null | string;
     state: string;
     received: string;
     manualApproval: boolean;
@@ -903,20 +903,20 @@ export type EntryPanelResponseModel = {
     details: EntryPanelDetailsResponseModel;
     pages: Array<EntryPanelPageResponseModel>;
     notes: number;
-    heldUntil?: string | null;
+    heldUntil?: null | string;
     permissions: Array<string>;
 };
 
 export type EntryReceivedRequestModel = {
-    preset?: string | null;
-    from?: string | null;
-    to?: string | null;
+    preset?: null | string;
+    from?: null | string;
+    to?: null | string;
 };
 
 export type EntryRerunActionResponseModel = {
     key: string;
     type: string;
-    name?: string | null;
+    name?: null | string;
     trigger: string;
 };
 
@@ -962,10 +962,10 @@ export type EntryStateRequestModel = {
 
 export type EntryStateResponseModel = {
     changeKey: string;
-    undoUntilUtc: string | null;
+    undoUntilUtc: null | string;
     moved: Array<EntryStateMovedResponseModel>;
     unmoved: Array<string>;
-    asks?: EntryMoveAsksResponseModel | null;
+    asks?: null | EntryMoveAsksResponseModel;
 };
 
 export type EntryStateUndoRequestModel = {
@@ -983,12 +983,12 @@ export type EntryTimelineEventResponseModel = {
     id: number;
     when: string;
     kind: string;
-    user: string | null;
-    from: string | null;
-    to: string | null;
-    count: number | null;
-    recipient: string | null;
-    until?: string | null;
+    user: null | string;
+    from: null | string;
+    to: null | string;
+    count: null | number;
+    recipient: null | string;
+    until?: null | string;
     changes: Array<EntryTimelineChangeResponseModel>;
 };
 
@@ -999,7 +999,7 @@ export type EntryTimelineMailResponseModel = {
     to: string;
     subject: string;
     state: string;
-    actionRun: number | null;
+    actionRun: null | number;
 };
 
 export type EntryTimelineResponseModel = {
@@ -1012,11 +1012,11 @@ export type EntryTimelineRunResponseModel = {
     id: number;
     when: string;
     action: string;
-    name: string | null;
+    name: null | string;
     type: string;
     state: string;
     attempts: number;
-    error: string | null;
+    error: null | string;
 };
 
 export type EntryUnseenResponseModel = {
@@ -1032,7 +1032,7 @@ export type FieldGroupResponseModel = {
 export type FieldMatchResponseModel = {
     formKey: string;
     formName: string;
-    folderName?: string | null;
+    folderName?: null | string;
     fieldKey: string;
     alias: string;
     label: string;
@@ -1053,39 +1053,39 @@ export type FieldSettingLockResponseModel = {
 export type FieldSettingResponseModel = {
     name: string;
     kind: string;
-    itemKind?: string | null;
+    itemKind?: null | string;
     choices: Array<FieldSettingChoiceResponseModel>;
     settings: Array<FieldSettingResponseModel>;
     default?: unknown;
     label: string;
-    description?: string | null;
+    description?: null | string;
     editor: string;
     group: string;
     supportsMergeTags: boolean;
     isPublic: boolean;
-    within?: string | null;
-    picks?: string | null;
+    within?: null | string;
+    picks?: null | string;
     rules: FieldSettingRulesResponseModel;
-    lock?: FieldSettingLockResponseModel | null;
-    unit?: string | null;
+    lock?: null | FieldSettingLockResponseModel;
+    unit?: null | string;
 };
 
 export type FieldSettingRulesResponseModel = {
     required: boolean;
-    minimum?: string | null;
+    minimum?: null | string;
     minimumIsExclusive: boolean;
-    maximum?: string | null;
+    maximum?: null | string;
     maximumIsExclusive: boolean;
-    minimumLength?: number | null;
-    maximumLength?: number | null;
-    minimumCount?: number | null;
-    maximumCount?: number | null;
+    minimumLength?: null | number;
+    maximumLength?: null | number;
+    minimumCount?: null | number;
+    maximumCount?: null | number;
     allowedValues: Array<string>;
 };
 
 export type FieldTypeAvailabilityResponseModel = {
     isAvailable: boolean;
-    reason?: string | null;
+    reason?: null | string;
 };
 
 export type FieldTypeChangeResponseModel = {
@@ -1115,7 +1115,7 @@ export type FieldTypeResponseModel = {
     paletteGroup: string;
     holdsValue: boolean;
     storage: string;
-    ruleKind?: string | null;
+    ruleKind?: null | string;
     multipleSetting: boolean;
     onePerForm: boolean;
     serverOnlyDefault: boolean;
@@ -1132,11 +1132,6 @@ export type FieldTypesResponseModel = {
     types: Array<FieldTypeResponseModel>;
 };
 
-export type FileTypeGroupResponseModel = {
-    value: string;
-    extensions: Array<string>;
-};
-
 export type FilesFactsResponseModel = {
     hostMaxFileBytes: number;
     maxFileBytesKey: string;
@@ -1148,12 +1143,17 @@ export type FilesFactsResponseModel = {
     rootKey: string;
 };
 
+export type FileTypeGroupResponseModel = {
+    value: string;
+    extensions: Array<string>;
+};
+
 export type FolderResponseModel = {
     key: string;
     name: string;
-    parentKey?: string | null;
+    parentKey?: null | string;
     isRestricted: boolean;
-    trashedUtc?: string | null;
+    trashedUtc?: null | string;
     createdUtc: string;
     updatedUtc: string;
     permissions: Array<string>;
@@ -1161,7 +1161,7 @@ export type FolderResponseModel = {
 
 export type FormBlockFactsResponseModel = {
     exists: boolean;
-    createdAt?: string | null;
+    createdAt?: null | string;
     canCreate: boolean;
 };
 
@@ -1204,22 +1204,22 @@ export type FormComparisonResponseModel = {
 export type FormDocumentReferenceResponseModel = {
     readonly $type: string;
     id: string;
-    name?: string | null;
-    published?: boolean | null;
+    name?: null | string;
+    published?: null | boolean;
     documentType: FormDocumentTypeReferenceResponseModel;
     variants: Array<FormDocumentVariantResponseModel>;
 };
 
 export type FormDocumentTypeReferenceResponseModel = {
     id: string;
-    icon?: string | null;
-    alias?: string | null;
-    name?: string | null;
+    icon?: null | string;
+    alias?: null | string;
+    name?: null | string;
 };
 
 export type FormDocumentVariantResponseModel = {
     name: string;
-    culture?: string | null;
+    culture?: null | string;
     state: string;
 };
 
@@ -1228,7 +1228,7 @@ export type FormDraftResponseModel = {
     definition?: unknown;
     problems: Array<DefinitionProblemResponseModel>;
     draftVersion: number;
-    publishedVersion?: number | null;
+    publishedVersion?: null | number;
     hasUnpublishedChanges: boolean;
     hasEntries: boolean;
 };
@@ -1264,7 +1264,7 @@ export type FormReferencesResponseModel = {
 
 export type FormReplacedResponseModel = {
     form: FormResponseModel;
-    version?: number | null;
+    version?: null | number;
     notes: Array<ImportNoteResponseModel>;
 };
 
@@ -1272,12 +1272,12 @@ export type FormResponseModel = {
     key: string;
     alias: string;
     name: string;
-    folderKey?: string | null;
+    folderKey?: null | string;
     concurrencyVersion: number;
     isPublished: boolean;
     publicRevision: number;
     isRestricted: boolean;
-    trashedUtc?: string | null;
+    trashedUtc?: null | string;
     createdUtc: string;
     updatedUtc: string;
     permissions: Array<string>;
@@ -1285,7 +1285,7 @@ export type FormResponseModel = {
 
 export type FormSavedResponseModel = {
     form: FormResponseModel;
-    version?: number | null;
+    version?: null | number;
 };
 
 export type FormSettingsChoicesResponseModel = {
@@ -1300,20 +1300,20 @@ export type FormSettingsChoicesResponseModel = {
 
 export type FormSettingsDefaultsResponseModel = {
     protection: string;
-    captchaProvider?: string | null;
+    captchaProvider?: null | string;
     contentRules: string;
     requiredMarker: string;
     theme: string;
     emailLayout: string;
-    submitLabel?: {
+    submitLabel?: null | {
         [key: string]: string;
-    } | null;
-    nextLabel?: {
+    };
+    nextLabel?: null | {
         [key: string]: string;
-    } | null;
-    backLabel?: {
+    };
+    backLabel?: null | {
         [key: string]: string;
-    } | null;
+    };
     insights: boolean;
     ip: string;
     retention: RetentionDaysResponseModel;
@@ -1358,26 +1358,26 @@ export type FormVersionDocumentResponseModel = {
 
 export type FormVersionEntryResponseModel = {
     version: FormVersionResponseModel;
-    changes?: Array<DefinitionChangeSummaryResponseModel> | null;
-    by?: string | null;
+    changes?: null | Array<DefinitionChangeSummaryResponseModel>;
+    by?: null | string;
 };
 
 export type FormVersionResponseModel = {
     number: number;
     kind: string;
-    publicRevision?: number | null;
-    comment?: string | null;
+    publicRevision?: null | number;
+    comment?: null | string;
     isPinned: boolean;
     createdUtc: string;
-    createdByUserKey?: string | null;
-    publishedUtc?: string | null;
-    publishedByUserKey?: string | null;
+    createdByUserKey?: null | string;
+    publishedUtc?: null | string;
+    publishedByUserKey?: null | string;
     isDraft: boolean;
     isLive: boolean;
 };
 
 export type GeneralFactsResponseModel = {
-    defaultBaseUrl?: string | null;
+    defaultBaseUrl?: null | string;
     defaultTheme: string;
     themes: Array<FieldSettingChoiceResponseModel>;
     formBlock: FormBlockFactsResponseModel;
@@ -1392,7 +1392,7 @@ export type GroupTemplateSavedResponseModel = {
 export type HealthFindingResponseModel = {
     code: string;
     message: string;
-    link?: string | null;
+    link?: null | string;
     coversEmail: boolean;
 };
 
@@ -1403,8 +1403,8 @@ export type HealthResponseModel = {
 export type HoldingsResponseModel = {
     folders: number;
     forms: number;
-    entries: number | null;
-    files: number | null;
+    entries: null | number;
+    files: null | number;
     left: number;
 };
 
@@ -1419,14 +1419,14 @@ export type ImportCheckResponseModel = {
 
 export type ImportFormRequestModel = {
     json: string;
-    name?: string | null;
-    folderKey?: string | null;
+    name?: null | string;
+    folderKey?: null | string;
 };
 
 export type ImportNoteResponseModel = {
     code: string;
     path: string;
-    alias?: string | null;
+    alias?: null | string;
 };
 
 export type ImportThemeRequestModel = {
@@ -1446,13 +1446,13 @@ export type InsightAnswerNumbersResponseModel = {
     median: number;
     lowest: number;
     highest: number;
-    groups?: InsightAnswerScaleResponseModel | null;
+    groups?: null | InsightAnswerScaleResponseModel;
 };
 
 export type InsightAnswerOptionResponseModel = {
     label: string;
     count: number;
-    position?: number | null;
+    position?: null | number;
     older: boolean;
     other: boolean;
 };
@@ -1462,16 +1462,16 @@ export type InsightAnswerResponseModel = {
     label: string;
     kind: string;
     answered: number;
-    parent?: string | null;
-    parentLabel?: string | null;
+    parent?: null | string;
+    parentLabel?: null | string;
     removed: boolean;
     several: boolean;
     options: Array<InsightAnswerOptionResponseModel>;
     rows: Array<InsightAnswerGridRowResponseModel>;
-    numbers?: InsightAnswerNumbersResponseModel | null;
+    numbers?: null | InsightAnswerNumbersResponseModel;
     ticked: number;
     texts: Array<InsightAnswerTextResponseModel>;
-    more?: string | null;
+    more?: null | string;
 };
 
 export type InsightAnswerScaleResponseModel = {
@@ -1481,28 +1481,10 @@ export type InsightAnswerScaleResponseModel = {
     score: number;
 };
 
-export type InsightAnswerTextResponseModel = {
-    entry: string;
-    received: string;
-    text: string;
-};
-
-export type InsightAnswerTextsRequestModel = {
-    from?: string | null;
-    to?: string | null;
-    filter?: EntryListFilterRequestModel | null;
-    after: string;
-};
-
-export type InsightAnswerTextsResponseModel = {
-    texts: Array<InsightAnswerTextResponseModel>;
-    more?: string | null;
-};
-
 export type InsightAnswersRequestModel = {
-    from?: string | null;
-    to?: string | null;
-    filter?: EntryListFilterRequestModel | null;
+    from?: null | string;
+    to?: null | string;
+    filter?: null | EntryListFilterRequestModel;
 };
 
 export type InsightAnswersResponseModel = {
@@ -1510,9 +1492,27 @@ export type InsightAnswersResponseModel = {
     fields: Array<InsightAnswerResponseModel>;
 };
 
+export type InsightAnswerTextResponseModel = {
+    entry: string;
+    received: string;
+    text: string;
+};
+
+export type InsightAnswerTextsRequestModel = {
+    from?: null | string;
+    to?: null | string;
+    filter?: null | EntryListFilterRequestModel;
+    after: string;
+};
+
+export type InsightAnswerTextsResponseModel = {
+    texts: Array<InsightAnswerTextResponseModel>;
+    more?: null | string;
+};
+
 export type InsightFieldResponseModel = {
     key: string;
-    label?: string | null;
+    label?: null | string;
     stops: number;
     kind: string;
 };
@@ -1530,42 +1530,42 @@ export type InsightGlanceResponseModel = {
 
 export type InsightOriginResponseModel = {
     key: string;
-    name?: string | null;
+    name?: null | string;
     entries: number;
 };
 
 export type InsightPageResponseModel = {
     key: string;
-    name?: string | null;
+    name?: null | string;
     reached: number;
 };
 
 export type InsightPeriodResponseModel = {
     start: string;
     entries: number;
-    before?: number | null;
+    before?: null | number;
 };
 
 export type InsightReportResponseModel = {
     siteOn: boolean;
     formOn: boolean;
     totals: InsightTotalsResponseModel;
-    before?: InsightTotalsResponseModel | null;
+    before?: null | InsightTotalsResponseModel;
     periods: Array<InsightPeriodResponseModel>;
     pages: Array<InsightPageResponseModel>;
-    medianCompletion?: string | null;
+    medianCompletion?: null | string;
     fields: Array<InsightFieldResponseModel>;
     origins: Array<InsightOriginResponseModel>;
     hours: Array<number>;
     members: number;
     memberEntries: number;
-    membersBefore?: number | null;
+    membersBefore?: null | number;
     timeZone: string;
     tables: Array<string>;
 };
 
 export type InsightTablesRequestModel = {
-    tables?: Array<string> | null;
+    tables?: null | Array<string>;
 };
 
 export type InsightTablesResponseModel = {
@@ -1577,7 +1577,7 @@ export type InsightTotalsResponseModel = {
     starts: number;
     entries: number;
     spam: number;
-    conversion?: number | null;
+    conversion?: null | number;
 };
 
 export type IntegrationsFactsResponseModel = {
@@ -1602,15 +1602,15 @@ export type LibraryItemResponseModel = {
     key: string;
     kind: string;
     name: string;
-    alias?: string | null;
-    parentKey?: string | null;
+    alias?: null | string;
+    parentKey?: null | string;
     isRestricted: boolean;
     isPublished: boolean;
     isTrashed: boolean;
     hasChildren: boolean;
     permissions: Array<string>;
     hasUnseenEntries: boolean;
-    folderName?: string | null;
+    folderName?: null | string;
 };
 
 export type LibraryProblemResponseModel = {
@@ -1622,9 +1622,9 @@ export type LibraryProblemResponseModel = {
 export type LibraryRowResponseModel = {
     item: LibraryItemResponseModel;
     updatedUtc: string;
-    updatedBy?: string | null;
-    trashedUtc?: string | null;
-    recentEntries?: number | null;
+    updatedBy?: null | string;
+    trashedUtc?: null | string;
+    recentEntries?: null | number;
 };
 
 export type LibraryUserResponseModel = {
@@ -1646,14 +1646,14 @@ export type MergeTagPathResponseModel = {
     path: string;
     source: string;
     isSiteSource: boolean;
-    label?: string | null;
+    label?: null | string;
 };
 
 export type MergeTagPathsRequestModel = {
     place: string;
     culture: string;
     definition: unknown;
-    owner?: string | null;
+    owner?: null | string;
 };
 
 export type MergeTagPathsResponseModel = {
@@ -1661,13 +1661,13 @@ export type MergeTagPathsResponseModel = {
 };
 
 export type MoveFolderRequestModel = {
-    parentKey?: string | null;
+    parentKey?: null | string;
     widenAccess: boolean;
 };
 
 export type MoveFormRequestModel = {
     concurrencyVersion: number;
-    folderKey?: string | null;
+    folderKey?: null | string;
     widenAccess: boolean;
 };
 
@@ -1695,7 +1695,7 @@ export type OptionListEditorResponseModel = {
 };
 
 export type OptionListFetchResponseModel = {
-    fetchedUtc?: string | null;
+    fetchedUtc?: null | string;
     count: number;
     failing: boolean;
 };
@@ -1704,8 +1704,8 @@ export type OptionListItemResponseModel = {
     key: string;
     alias: string;
     name: string;
-    kind?: string | null;
-    count?: number | null;
+    kind?: null | string;
+    count?: null | number;
 };
 
 export type OptionListKindResponseModel = {
@@ -1723,8 +1723,8 @@ export type OptionListLanguageResponseModel = {
 
 export type OptionListOptionResponseModel = {
     value: string;
-    label?: string | null;
-    description?: string | null;
+    label?: null | string;
+    description?: null | string;
 };
 
 export type OptionListPreviewResponseModel = {
@@ -1746,7 +1746,7 @@ export type OptionListResponseModel = {
     key: string;
     alias: string;
     name: string;
-    kind?: string | null;
+    kind?: null | string;
     config: unknown;
     items: unknown;
     cacheSeconds: number;
@@ -1758,8 +1758,8 @@ export type OptionListRowResponseModel = {
     key: string;
     alias: string;
     name: string;
-    kind?: string | null;
-    count?: number | null;
+    kind?: null | string;
+    count?: null | number;
     usedBy: number;
     updatedUtc: string;
 };
@@ -1786,12 +1786,12 @@ export type OptionSourcesResponseModel = {
 export type OutcomePreviewRequestModel = {
     definition: unknown;
     outcome: string;
-    culture?: string | null;
+    culture?: null | string;
 };
 
 export type OutcomePreviewResponseModel = {
-    html?: string | null;
-    address?: string | null;
+    html?: null | string;
+    address?: null | string;
     delaySeconds: number;
     direction: string;
 };
@@ -1827,8 +1827,8 @@ export type PagedTemplateResponseModel = {
 };
 
 export type PersonEntriesRequestModel = {
-    email?: string | null;
-    member?: string | null;
+    email?: null | string;
+    member?: null | string;
     entries: Array<string>;
 };
 
@@ -1841,7 +1841,17 @@ export type PersonEntryResponseModel = {
     received: string;
     files: number;
     emails: number;
-    heldUntil?: string | null;
+    heldUntil?: null | string;
+};
+
+export type PersonErasedResponseModel = {
+    mode: string;
+    entries: number;
+    drafts: number;
+    files: number;
+    emails: number;
+    held: number;
+    auditId: number;
 };
 
 export type PersonEraseFormResponseModel = {
@@ -1866,19 +1876,9 @@ export type PersonErasePreviewResponseModel = {
 };
 
 export type PersonEraseRequestModel = {
-    email?: string | null;
-    member?: string | null;
+    email?: null | string;
+    member?: null | string;
     mode: string;
-};
-
-export type PersonErasedResponseModel = {
-    mode: string;
-    entries: number;
-    drafts: number;
-    files: number;
-    emails: number;
-    held: number;
-    auditId: number;
 };
 
 export type PersonFormResponseModel = {
@@ -1898,23 +1898,23 @@ export type PersonHeldResponseModel = {
 };
 
 export type PersonHoldRequestModel = {
-    email?: string | null;
-    member?: string | null;
+    email?: null | string;
+    member?: null | string;
     entries: Array<string>;
     until: string;
-    reason?: string | null;
+    reason?: null | string;
 };
 
 export type PersonRequestModel = {
-    email?: string | null;
-    member?: string | null;
+    email?: null | string;
+    member?: null | string;
 };
 
 export type PickerItemResponseModel = {
     key: string;
     kind: string;
     name: string;
-    alias?: string | null;
+    alias?: null | string;
     hasChildren: boolean;
 };
 
@@ -1933,7 +1933,7 @@ export type PreviewEmailLayoutRequestModel = {
 };
 
 export type PreviewOptionListRequestModel = {
-    key?: string | null;
+    key?: null | string;
     kind: string;
     config?: unknown;
     items?: unknown;
@@ -1942,10 +1942,10 @@ export type PreviewOptionListRequestModel = {
 };
 
 export type PreviewThemeRequestModel = {
-    alias?: string | null;
+    alias?: null | string;
     baseTheme: string;
     tokens: ThemeTokensRequestModel;
-    customCss?: string | null;
+    customCss?: null | string;
 };
 
 export type PrivacyFactsResponseModel = {
@@ -1953,11 +1953,11 @@ export type PrivacyFactsResponseModel = {
 };
 
 export type ProblemDetails = {
-    type?: string | null;
-    title?: string | null;
-    status?: number | null;
-    detail?: string | null;
-    instance?: string | null;
+    type?: null | string;
+    title?: null | string;
+    status?: null | number;
+    detail?: null | string;
+    instance?: null | string;
     [key: string]: unknown;
 };
 
@@ -1968,7 +1968,7 @@ export type ProtectionFactsResponseModel = {
 
 export type PublishFormRequestModel = {
     concurrencyVersion: number;
-    comment?: string | null;
+    comment?: null | string;
 };
 
 export type ReadOptionFileRequestModel = {
@@ -1984,7 +1984,7 @@ export type RecentEntryResponseModel = {
     key: string;
     formKey: string;
     formName: string;
-    title?: string | null;
+    title?: null | string;
     number: number;
     submitted: string;
     unseen: boolean;
@@ -1997,7 +1997,7 @@ export type RenameFolderRequestModel = {
 export type RenameFormRequestModel = {
     concurrencyVersion: number;
     name: string;
-    alias?: string | null;
+    alias?: null | string;
 };
 
 export type ReplaceCheckRequestModel = {
@@ -2011,10 +2011,10 @@ export type ReplaceFormRequestModel = {
 
 export type ResolvedOptionResponseModel = {
     value: string;
-    label?: string | null;
-    description?: string | null;
-    image?: string | null;
-    places?: number | null;
+    label?: null | string;
+    description?: null | string;
+    image?: null | string;
+    places?: null | number;
     parentValues: Array<string>;
 };
 
@@ -2060,7 +2060,7 @@ export type RetentionDryRunFormResponseModel = {
 };
 
 export type RetentionDryRunRequestModel = {
-    days?: RetentionDaysRequestModel | null;
+    days?: null | RetentionDaysRequestModel;
     span: number;
 };
 
@@ -2076,11 +2076,11 @@ export type RetentionFormResponseModel = {
     key: string;
     name: string;
     trashed: boolean;
-    submitted?: number | null;
-    approved?: number | null;
-    rejected?: number | null;
-    spam?: number | null;
-    storeDays?: number | null;
+    submitted?: null | number;
+    approved?: null | number;
+    rejected?: null | number;
+    spam?: null | number;
+    storeDays?: null | number;
 };
 
 export type RetentionResponseModel = {
@@ -2088,30 +2088,30 @@ export type RetentionResponseModel = {
     version: number;
     keepForGood: boolean;
     keepForGoodKey: string;
-    lockedBy?: string | null;
+    lockedBy?: null | string;
     forms: Array<RetentionFormResponseModel>;
 };
 
 export type SaveFormDraftRequestModel = {
     concurrencyVersion: number;
     definition: unknown;
-    comment?: string | null;
+    comment?: null | string;
 };
 
 export type SaveGroupTemplateRequestModel = {
     name: string;
-    description?: string | null;
+    description?: null | string;
     group: unknown;
     validationRules?: unknown;
 };
 
 export type SettingsFactsResponseModel = {
-    general?: GeneralFactsResponseModel | null;
-    email?: EmailFactsResponseModel | null;
-    protection?: ProtectionFactsResponseModel | null;
-    files?: FilesFactsResponseModel | null;
-    integrations?: IntegrationsFactsResponseModel | null;
-    privacy?: PrivacyFactsResponseModel | null;
+    general?: null | GeneralFactsResponseModel;
+    email?: null | EmailFactsResponseModel;
+    protection?: null | ProtectionFactsResponseModel;
+    files?: null | FilesFactsResponseModel;
+    integrations?: null | IntegrationsFactsResponseModel;
+    privacy?: null | PrivacyFactsResponseModel;
 };
 
 export type SettingsLockResponseModel = {
@@ -2122,14 +2122,14 @@ export type SettingsLockResponseModel = {
 
 export type SettingsSectionRequestModel = {
     version: number;
-    site?: string | null;
+    site?: null | string;
     values: unknown;
-    overrides?: Array<string> | null;
+    overrides?: null | Array<string>;
 };
 
 export type SettingsSectionResponseModel = {
     section: string;
-    site?: string | null;
+    site?: null | string;
     version: number;
     values: unknown;
     globalValues?: unknown;
@@ -2149,27 +2149,27 @@ export type SettingsSiteResponseModel = {
 
 export type TemplateNameRequestModel = {
     name: string;
-    description?: string | null;
+    description?: null | string;
 };
 
 export type TemplateResponseModel = {
     key: string;
     builtIn: boolean;
-    alias?: string | null;
+    alias?: null | string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     holds: DefinitionCountsResponseModel;
     definition: unknown;
     kind: string;
 };
 
 export type TestEmailLayoutRequestModel = {
-    culture?: string | null;
+    culture?: null | string;
 };
 
 export type TestEmailRequestModel = {
-    site?: string | null;
-    layout?: string | null;
+    site?: null | string;
+    layout?: null | string;
 };
 
 export type TestEmailResponseModel = {
@@ -2187,7 +2187,7 @@ export type ThemeBaseResponseModel = {
     alias: string;
     label: string;
     darkScheme: boolean;
-    stylesheet?: string | null;
+    stylesheet?: null | string;
     tokens: Array<ThemeTokenResponseModel>;
 };
 
@@ -2220,7 +2220,7 @@ export type ThemeRequestModel = {
     name: string;
     baseTheme: string;
     tokens: ThemeTokensRequestModel;
-    customCss?: string | null;
+    customCss?: null | string;
 };
 
 export type ThemeResponseModel = {
@@ -2229,7 +2229,7 @@ export type ThemeResponseModel = {
     name: string;
     baseTheme: string;
     tokens: ThemeTokensResponseModel;
-    customCss?: string | null;
+    customCss?: null | string;
     concurrencyVersion: number;
     updatedUtc: string;
 };
@@ -2260,7 +2260,7 @@ export type ThemeSampleResponseModel = {
 export type ThemeTokenResponseModel = {
     name: string;
     default: string;
-    darkDefault?: string | null;
+    darkDefault?: null | string;
 };
 
 export type ThemeTokensRequestModel = {
@@ -2295,7 +2295,7 @@ export type UnmappedMergeTagResponseModel = {
 export type UnmappedReferenceResponseModel = {
     path: string;
     sourceKey: string;
-    alias?: string | null;
+    alias?: null | string;
 };
 
 export type UpdateEmailLayoutRequestModel = {
@@ -2331,8 +2331,8 @@ export type VisitorTextsResponseModel = {
 
 export type FormDocumentReferenceResponseModelWritable = {
     id: string;
-    name?: string | null;
-    published?: boolean | null;
+    name?: null | string;
+    published?: null | boolean;
     documentType: FormDocumentTypeReferenceResponseModel;
     variants: Array<FormDocumentVariantResponseModel>;
 };
@@ -2371,7 +2371,7 @@ export type AccessGetResponses = {
 export type AccessGetResponse = AccessGetResponses[keyof AccessGetResponses];
 
 export type AccessSaveData = {
-    body?: AccessRequestModel;
+    body: AccessRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/access';
@@ -2443,7 +2443,7 @@ export type AccessGetFolderResponses = {
 export type AccessGetFolderResponse = AccessGetFolderResponses[keyof AccessGetFolderResponses];
 
 export type AccessSaveFolderData = {
-    body?: AccessTargetRequestModel;
+    body: AccessTargetRequestModel;
     path: {
         key: string;
     };
@@ -2521,7 +2521,7 @@ export type AccessGetFormResponses = {
 export type AccessGetFormResponse = AccessGetFormResponses[keyof AccessGetFormResponses];
 
 export type AccessSaveFormData = {
-    body?: AccessTargetRequestModel;
+    body: AccessTargetRequestModel;
     path: {
         key: string;
     };
@@ -2709,7 +2709,7 @@ export type ActionLastRunListResponses = {
 export type ActionLastRunListResponse = ActionLastRunListResponses[keyof ActionLastRunListResponses];
 
 export type EmailPreviewRenderData = {
-    body?: EmailPreviewRequestModel;
+    body: EmailPreviewRequestModel;
     path: {
         key: string;
     };
@@ -3093,8 +3093,45 @@ export type DictionaryTextGetResponses = {
 
 export type DictionaryTextGetResponse = DictionaryTextGetResponses[keyof DictionaryTextGetResponses];
 
+export type TestEmailSendData = {
+    body?: TestEmailRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/email/test';
+};
+
+export type TestEmailSendErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+    /**
+     * Too Many Requests
+     */
+    429: ProblemDetails;
+};
+
+export type TestEmailSendError = TestEmailSendErrors[keyof TestEmailSendErrors];
+
+export type TestEmailSendResponses = {
+    /**
+     * Accepted
+     */
+    202: TestEmailResponseModel;
+};
+
+export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
+
 export type EmailLayoutLibraryCreateData = {
-    body?: CreateEmailLayoutRequestModel;
+    body: CreateEmailLayoutRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/email-layout';
@@ -3203,7 +3240,7 @@ export type EmailLayoutLibraryGetResponses = {
 export type EmailLayoutLibraryGetResponse = EmailLayoutLibraryGetResponses[keyof EmailLayoutLibraryGetResponses];
 
 export type EmailLayoutLibraryUpdateData = {
-    body?: UpdateEmailLayoutRequestModel;
+    body: UpdateEmailLayoutRequestModel;
     path: {
         key: string;
     };
@@ -3246,7 +3283,7 @@ export type EmailLayoutLibraryUpdateResponses = {
 export type EmailLayoutLibraryUpdateResponse = EmailLayoutLibraryUpdateResponses[keyof EmailLayoutLibraryUpdateResponses];
 
 export type EmailLayoutLibraryDuplicateData = {
-    body?: DuplicateEmailLayoutRequestModel;
+    body: DuplicateEmailLayoutRequestModel;
     path: {
         key: string;
     };
@@ -3426,7 +3463,7 @@ export type EmailLayoutLibraryRowsResponses = {
 export type EmailLayoutLibraryRowsResponse = EmailLayoutLibraryRowsResponses[keyof EmailLayoutLibraryRowsResponses];
 
 export type EmailLayoutLibraryPreviewData = {
-    body?: PreviewEmailLayoutRequestModel;
+    body: PreviewEmailLayoutRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/email-layout/preview';
@@ -3458,43 +3495,6 @@ export type EmailLayoutLibraryPreviewResponses = {
 
 export type EmailLayoutLibraryPreviewResponse = EmailLayoutLibraryPreviewResponses[keyof EmailLayoutLibraryPreviewResponses];
 
-export type TestEmailSendData = {
-    body?: TestEmailRequestModel;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/email/test';
-};
-
-export type TestEmailSendErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Conflict
-     */
-    409: ProblemDetails;
-    /**
-     * Too Many Requests
-     */
-    429: ProblemDetails;
-};
-
-export type TestEmailSendError = TestEmailSendErrors[keyof TestEmailSendErrors];
-
-export type TestEmailSendResponses = {
-    /**
-     * Accepted
-     */
-    202: TestEmailResponseModel;
-};
-
-export type TestEmailSendResponse = TestEmailSendResponses[keyof TestEmailSendResponses];
-
 export type EntryDigestGetData = {
     body?: never;
     path?: never;
@@ -3523,7 +3523,7 @@ export type EntryDigestGetResponses = {
 export type EntryDigestGetResponse = EntryDigestGetResponses[keyof EntryDigestGetResponses];
 
 export type EntryDigestSaveData = {
-    body?: EntryDigestRequestModel;
+    body: EntryDigestRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/entries/digest';
@@ -3591,7 +3591,7 @@ export type EntryDigestPreviewResponses = {
 export type EntryDigestPreviewResponse = EntryDigestPreviewResponses[keyof EntryDigestPreviewResponses];
 
 export type EntryDigestTestData = {
-    body?: EntryDigestRequestModel;
+    body: EntryDigestRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/entries/digest/test';
@@ -3657,7 +3657,7 @@ export type EntryInboxFormsResponses = {
 export type EntryInboxFormsResponse = EntryInboxFormsResponses[keyof EntryInboxFormsResponses];
 
 export type EntryInboxInboxData = {
-    body?: EntryListRequestModel;
+    body: EntryListRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/entries/inbox';
@@ -3694,7 +3694,7 @@ export type EntryInboxInboxResponses = {
 export type EntryInboxInboxResponse = EntryInboxInboxResponses[keyof EntryInboxInboxResponses];
 
 export type EntryInboxSpamData = {
-    body?: EntryListRequestModel;
+    body: EntryListRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/entries/spam';
@@ -3731,7 +3731,7 @@ export type EntryInboxSpamResponses = {
 export type EntryInboxSpamResponse = EntryInboxSpamResponses[keyof EntryInboxSpamResponses];
 
 export type EntryInboxEmptySpamData = {
-    body?: EntrySpamEmptyRequestModel;
+    body: EntrySpamEmptyRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/entries/spam/empty';
@@ -3870,7 +3870,7 @@ export type EntryFilterSetDeleteResponses = {
 export type EntryFilterSetDeleteResponse = EntryFilterSetDeleteResponses[keyof EntryFilterSetDeleteResponses];
 
 export type EntryFilterSetSaveData = {
-    body?: EntryFilterSetRequestModel;
+    body: EntryFilterSetRequestModel;
     path: {
         setKey: string;
     };
@@ -3936,7 +3936,7 @@ export type RecentEntryListResponses = {
 export type RecentEntryListResponse = RecentEntryListResponses[keyof RecentEntryListResponses];
 
 export type EntryListListData = {
-    body?: EntryListRequestModel;
+    body: EntryListRequestModel;
     path: {
         key: string;
     };
@@ -3975,7 +3975,7 @@ export type EntryListListResponses = {
 export type EntryListListResponse = EntryListListResponses[keyof EntryListListResponses];
 
 export type EntryListColumnsData = {
-    body?: EntryColumnsRequestModel;
+    body: EntryColumnsRequestModel;
     path: {
         key: string;
     };
@@ -4010,7 +4010,7 @@ export type EntryListColumnsResponses = {
 export type EntryListColumnsResponse = EntryListColumnsResponses[keyof EntryListColumnsResponses];
 
 export type EntryListDeleteData = {
-    body?: EntryDeleteRequestModel;
+    body: EntryDeleteRequestModel;
     path: {
         key: string;
     };
@@ -4045,7 +4045,7 @@ export type EntryListDeleteResponses = {
 export type EntryListDeleteResponse = EntryListDeleteResponses[keyof EntryListDeleteResponses];
 
 export type EntryListRunActionsData = {
-    body?: EntryRerunRequestModel;
+    body: EntryRerunRequestModel;
     path: {
         key: string;
     };
@@ -4151,7 +4151,7 @@ export type EntryPanelOpenResponses = {
 export type EntryPanelOpenResponse = EntryPanelOpenResponses[keyof EntryPanelOpenResponses];
 
 export type EntryPanelEditData = {
-    body?: EntryEditRequestModel;
+    body: EntryEditRequestModel;
     path: {
         key: string;
         entryKey: string;
@@ -4227,7 +4227,7 @@ export type EntryPanelRecipientsResponses = {
 export type EntryPanelRecipientsResponse = EntryPanelRecipientsResponses[keyof EntryPanelRecipientsResponses];
 
 export type EntryPanelForwardData = {
-    body?: EntryForwardRequestModel;
+    body: EntryForwardRequestModel;
     path: {
         key: string;
         entryKey: string;
@@ -4303,7 +4303,7 @@ export type EntryPanelNotesResponses = {
 export type EntryPanelNotesResponse = EntryPanelNotesResponses[keyof EntryPanelNotesResponses];
 
 export type EntryPanelAddNoteData = {
-    body?: EntryNoteRequestModel;
+    body: EntryNoteRequestModel;
     path: {
         key: string;
         entryKey: string;
@@ -4343,7 +4343,7 @@ export type EntryPanelAddNoteResponses = {
 export type EntryPanelAddNoteResponse = EntryPanelAddNoteResponses[keyof EntryPanelAddNoteResponses];
 
 export type EntryPanelChangeNoteData = {
-    body?: EntryNoteRequestModel;
+    body: EntryNoteRequestModel;
     path: {
         key: string;
         entryKey: string;
@@ -4384,7 +4384,7 @@ export type EntryPanelChangeNoteResponses = {
 export type EntryPanelChangeNoteResponse = EntryPanelChangeNoteResponses[keyof EntryPanelChangeNoteResponses];
 
 export type EntryPanelRevealData = {
-    body?: EntryRevealRequestModel;
+    body: EntryRevealRequestModel;
     path: {
         key: string;
         entryKey: string;
@@ -4609,7 +4609,7 @@ export type EntryExportViewResponses = {
 export type EntryExportViewResponse = EntryExportViewResponses[keyof EntryExportViewResponses];
 
 export type EntryExportWriteFileData = {
-    body?: EntryExportRequestModel;
+    body: EntryExportRequestModel;
     path: {
         key: string;
     };
@@ -4652,7 +4652,7 @@ export type EntryExportWriteFileResponses = {
 export type EntryExportWriteFileResponse = EntryExportWriteFileResponses[keyof EntryExportWriteFileResponses];
 
 export type EntryExportStartData = {
-    body?: EntryExportRequestModel;
+    body: EntryExportRequestModel;
     path: {
         key: string;
     };
@@ -4740,10 +4740,6 @@ export type EntryExportDownloadData = {
 
 export type EntryExportDownloadErrors = {
     /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -4797,7 +4793,7 @@ export type EntryExportTicketResponses = {
 export type EntryExportTicketResponse = EntryExportTicketResponses[keyof EntryExportTicketResponses];
 
 export type EntryExportPlanData = {
-    body?: EntryExportRequestModel;
+    body: EntryExportRequestModel;
     path: {
         key: string;
     };
@@ -4911,7 +4907,7 @@ export type EntryFileArchiveResponses = {
 export type EntryFileArchiveResponse = EntryFileArchiveResponses[keyof EntryFileArchiveResponses];
 
 export type EntryStateChangeData = {
-    body?: EntryStateRequestModel;
+    body: EntryStateRequestModel;
     path: {
         key: string;
     };
@@ -4946,7 +4942,7 @@ export type EntryStateChangeResponses = {
 export type EntryStateChangeResponse = EntryStateChangeResponses[keyof EntryStateChangeResponses];
 
 export type EntryStateUndoData = {
-    body?: EntryStateUndoRequestModel;
+    body: EntryStateUndoRequestModel;
     path: {
         key: string;
     };
@@ -5047,7 +5043,7 @@ export type FieldTypeChangesResponses = {
 export type FieldTypeChangesResponse = FieldTypeChangesResponses[keyof FieldTypeChangesResponses];
 
 export type FolderCreateData = {
-    body?: CreateFolderRequestModel;
+    body: CreateFolderRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/folder';
@@ -5162,7 +5158,7 @@ export type FolderGetResponses = {
 export type FolderGetResponse = FolderGetResponses[keyof FolderGetResponses];
 
 export type FolderRenameData = {
-    body?: RenameFolderRequestModel;
+    body: RenameFolderRequestModel;
     path: {
         key: string;
     };
@@ -5205,7 +5201,7 @@ export type FolderRenameResponses = {
 export type FolderRenameResponse = FolderRenameResponses[keyof FolderRenameResponses];
 
 export type FolderMoveData = {
-    body?: MoveFolderRequestModel;
+    body: MoveFolderRequestModel;
     path: {
         key: string;
     };
@@ -5325,303 +5321,8 @@ export type FolderTrashResponses = {
 
 export type FolderTrashResponse = FolderTrashResponses[keyof FolderTrashResponses];
 
-export type FormCheckCheckData = {
-    body?: FormCheckRequestModel;
-    path: {
-        key: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/check';
-};
-
-export type FormCheckCheckErrors = {
-    /**
-     * Bad Request
-     */
-    400: ProblemDetails;
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-};
-
-export type FormCheckCheckError = FormCheckCheckErrors[keyof FormCheckCheckErrors];
-
-export type FormCheckCheckResponses = {
-    /**
-     * OK
-     */
-    200: FormCheckResponseModel;
-};
-
-export type FormCheckCheckResponse = FormCheckCheckResponses[keyof FormCheckCheckResponses];
-
-export type FormPreviewRenderData = {
-    body?: never;
-    path: {
-        key: string;
-    };
-    query?: {
-        culture?: string;
-        dark?: boolean;
-        sample?: boolean;
-        actions?: boolean;
-    };
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview';
-};
-
-export type FormPreviewRenderErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-    /**
-     * Unprocessable Content
-     */
-    422: ProblemDetails;
-};
-
-export type FormPreviewRenderError = FormPreviewRenderErrors[keyof FormPreviewRenderErrors];
-
-export type FormPreviewRenderResponses = {
-    /**
-     * OK
-     */
-    200: FormPreviewResponseModel;
-};
-
-export type FormPreviewRenderResponse = FormPreviewRenderResponses[keyof FormPreviewRenderResponses];
-
-export type FormPreviewTestEntryData = {
-    body?: never;
-    path: {
-        key: string;
-        submissionId: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}';
-};
-
-export type FormPreviewTestEntryErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-};
-
-export type FormPreviewTestEntryError = FormPreviewTestEntryErrors[keyof FormPreviewTestEntryErrors];
-
-export type FormPreviewTestEntryResponses = {
-    /**
-     * OK
-     */
-    200: TestEntryResponseModel;
-};
-
-export type FormPreviewTestEntryResponse = FormPreviewTestEntryResponses[keyof FormPreviewTestEntryResponses];
-
-export type FormPreviewRunActionsData = {
-    body?: never;
-    path: {
-        key: string;
-        submissionId: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}/actions';
-};
-
-export type FormPreviewRunActionsErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-    /**
-     * Conflict
-     */
-    409: ProblemDetails;
-};
-
-export type FormPreviewRunActionsError = FormPreviewRunActionsErrors[keyof FormPreviewRunActionsErrors];
-
-export type FormPreviewRunActionsResponses = {
-    /**
-     * No Content
-     */
-    204: void;
-};
-
-export type FormPreviewRunActionsResponse = FormPreviewRunActionsResponses[keyof FormPreviewRunActionsResponses];
-
-export type FormPreviewTicketData = {
-    body?: FormPreviewTicketRequestModel;
-    path: {
-        key: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/ticket';
-};
-
-export type FormPreviewTicketErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-};
-
-export type FormPreviewTicketError = FormPreviewTicketErrors[keyof FormPreviewTicketErrors];
-
-export type FormPreviewTicketResponses = {
-    /**
-     * OK
-     */
-    200: FormPreviewTicketResponseModel;
-};
-
-export type FormPreviewTicketResponse = FormPreviewTicketResponses[keyof FormPreviewTicketResponses];
-
-export type CaptchaProviderListData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/captcha-provider';
-};
-
-export type CaptchaProviderListErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-};
-
-export type CaptchaProviderListResponses = {
-    /**
-     * OK
-     */
-    200: Array<CaptchaProviderResponseModel>;
-};
-
-export type CaptchaProviderListResponse = CaptchaProviderListResponses[keyof CaptchaProviderListResponses];
-
-export type OutcomePreviewRenderData = {
-    body?: OutcomePreviewRequestModel;
-    path: {
-        key: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/outcome-preview';
-};
-
-export type OutcomePreviewRenderErrors = {
-    /**
-     * Bad Request
-     */
-    400: ProblemDetails;
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-};
-
-export type OutcomePreviewRenderError = OutcomePreviewRenderErrors[keyof OutcomePreviewRenderErrors];
-
-export type OutcomePreviewRenderResponses = {
-    /**
-     * OK
-     */
-    200: OutcomePreviewResponseModel;
-};
-
-export type OutcomePreviewRenderResponse = OutcomePreviewRenderResponses[keyof OutcomePreviewRenderResponses];
-
-export type FormSettingsChoicesData = {
-    body?: never;
-    path: {
-        key: string;
-    };
-    query?: never;
-    url: '/umbraco/jfb/management/api/v1/form/{key}/setting-choices';
-};
-
-export type FormSettingsChoicesErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-};
-
-export type FormSettingsChoicesError = FormSettingsChoicesErrors[keyof FormSettingsChoicesErrors];
-
-export type FormSettingsChoicesResponses = {
-    /**
-     * OK
-     */
-    200: FormSettingsChoicesResponseModel;
-};
-
-export type FormSettingsChoicesResponse = FormSettingsChoicesResponses[keyof FormSettingsChoicesResponses];
-
 export type FormCreateData = {
-    body?: CreateFormRequestModel;
+    body: CreateFormRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/form';
@@ -5742,7 +5443,7 @@ export type FormGetResponses = {
 export type FormGetResponse = FormGetResponses[keyof FormGetResponses];
 
 export type FormRenameData = {
-    body?: RenameFormRequestModel;
+    body: RenameFormRequestModel;
     path: {
         key: string;
     };
@@ -5785,7 +5486,7 @@ export type FormRenameResponses = {
 export type FormRenameResponse = FormRenameResponses[keyof FormRenameResponses];
 
 export type FormExchangeCopyActionsData = {
-    body?: CopyActionsRequestModel;
+    body: CopyActionsRequestModel;
     path: {
         key: string;
     };
@@ -5863,7 +5564,7 @@ export type FormDraftResponses = {
 export type FormDraftResponse = FormDraftResponses[keyof FormDraftResponses];
 
 export type FormSaveDraftData = {
-    body?: SaveFormDraftRequestModel;
+    body: SaveFormDraftRequestModel;
     path: {
         key: string;
     };
@@ -5906,7 +5607,7 @@ export type FormSaveDraftResponses = {
 export type FormSaveDraftResponse = FormSaveDraftResponses[keyof FormSaveDraftResponses];
 
 export type FormExchangeDuplicateData = {
-    body?: DuplicateFormRequestModel;
+    body: DuplicateFormRequestModel;
     path: {
         key: string;
     };
@@ -6025,7 +5726,7 @@ export type FormHoldingsResponses = {
 export type FormHoldingsResponse = FormHoldingsResponses[keyof FormHoldingsResponses];
 
 export type FormMoveData = {
-    body?: MoveFormRequestModel;
+    body: MoveFormRequestModel;
     path: {
         key: string;
     };
@@ -6068,7 +5769,7 @@ export type FormMoveResponses = {
 export type FormMoveResponse = FormMoveResponses[keyof FormMoveResponses];
 
 export type FormPublishData = {
-    body?: PublishFormRequestModel;
+    body: PublishFormRequestModel;
     path: {
         key: string;
     };
@@ -6153,7 +5854,7 @@ export type FormReferenceListResponses = {
 export type FormReferenceListResponse = FormReferenceListResponses[keyof FormReferenceListResponses];
 
 export type FormExchangeReplaceData = {
-    body?: ReplaceFormRequestModel;
+    body: ReplaceFormRequestModel;
     path: {
         key: string;
     };
@@ -6196,7 +5897,7 @@ export type FormExchangeReplaceResponses = {
 export type FormExchangeReplaceResponse = FormExchangeReplaceResponses[keyof FormExchangeReplaceResponses];
 
 export type FormExchangeCheckReplaceData = {
-    body?: ReplaceCheckRequestModel;
+    body: ReplaceCheckRequestModel;
     path: {
         key: string;
     };
@@ -6235,7 +5936,7 @@ export type FormExchangeCheckReplaceResponses = {
 export type FormExchangeCheckReplaceResponse = FormExchangeCheckReplaceResponses[keyof FormExchangeCheckReplaceResponses];
 
 export type FormRestoreData = {
-    body?: RestoreFormRequestModel;
+    body: RestoreFormRequestModel;
     path: {
         key: string;
     };
@@ -6274,7 +5975,7 @@ export type FormRestoreResponses = {
 export type FormRestoreResponse = FormRestoreResponses[keyof FormRestoreResponses];
 
 export type FormTrashData = {
-    body?: FormChangeRequestModel;
+    body: FormChangeRequestModel;
     path: {
         key: string;
     };
@@ -6313,7 +6014,7 @@ export type FormTrashResponses = {
 export type FormTrashResponse = FormTrashResponses[keyof FormTrashResponses];
 
 export type FormUnpublishData = {
-    body?: FormChangeRequestModel;
+    body: FormChangeRequestModel;
     path: {
         key: string;
     };
@@ -6352,7 +6053,7 @@ export type FormUnpublishResponses = {
 export type FormUnpublishResponse = FormUnpublishResponses[keyof FormUnpublishResponses];
 
 export type FormExchangeFromTemplateData = {
-    body?: CreateFormFromTemplateRequestModel;
+    body: CreateFormFromTemplateRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/form/from-template';
@@ -6393,7 +6094,7 @@ export type FormExchangeFromTemplateResponses = {
 export type FormExchangeFromTemplateResponse = FormExchangeFromTemplateResponses[keyof FormExchangeFromTemplateResponses];
 
 export type FormExchangeImportData = {
-    body?: ImportFormRequestModel;
+    body: ImportFormRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/form/import';
@@ -6434,7 +6135,7 @@ export type FormExchangeImportResponses = {
 export type FormExchangeImportResponse = FormExchangeImportResponses[keyof FormExchangeImportResponses];
 
 export type FormExchangeCheckImportData = {
-    body?: ImportFormRequestModel;
+    body: ImportFormRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/form/import/check';
@@ -6544,6 +6245,301 @@ export type FormSearchFieldsResponses = {
 
 export type FormSearchFieldsResponse = FormSearchFieldsResponses[keyof FormSearchFieldsResponses];
 
+export type FormCheckCheckData = {
+    body: FormCheckRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/check';
+};
+
+export type FormCheckCheckErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormCheckCheckError = FormCheckCheckErrors[keyof FormCheckCheckErrors];
+
+export type FormCheckCheckResponses = {
+    /**
+     * OK
+     */
+    200: FormCheckResponseModel;
+};
+
+export type FormCheckCheckResponse = FormCheckCheckResponses[keyof FormCheckCheckResponses];
+
+export type FormPreviewRenderData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        culture?: string;
+        dark?: boolean;
+        sample?: boolean;
+        actions?: boolean;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview';
+};
+
+export type FormPreviewRenderErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Unprocessable Entity
+     */
+    422: ProblemDetails;
+};
+
+export type FormPreviewRenderError = FormPreviewRenderErrors[keyof FormPreviewRenderErrors];
+
+export type FormPreviewRenderResponses = {
+    /**
+     * OK
+     */
+    200: FormPreviewResponseModel;
+};
+
+export type FormPreviewRenderResponse = FormPreviewRenderResponses[keyof FormPreviewRenderResponses];
+
+export type FormPreviewTestEntryData = {
+    body?: never;
+    path: {
+        key: string;
+        submissionId: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}';
+};
+
+export type FormPreviewTestEntryErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormPreviewTestEntryError = FormPreviewTestEntryErrors[keyof FormPreviewTestEntryErrors];
+
+export type FormPreviewTestEntryResponses = {
+    /**
+     * OK
+     */
+    200: TestEntryResponseModel;
+};
+
+export type FormPreviewTestEntryResponse = FormPreviewTestEntryResponses[keyof FormPreviewTestEntryResponses];
+
+export type FormPreviewRunActionsData = {
+    body?: never;
+    path: {
+        key: string;
+        submissionId: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}/actions';
+};
+
+export type FormPreviewRunActionsErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type FormPreviewRunActionsError = FormPreviewRunActionsErrors[keyof FormPreviewRunActionsErrors];
+
+export type FormPreviewRunActionsResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type FormPreviewRunActionsResponse = FormPreviewRunActionsResponses[keyof FormPreviewRunActionsResponses];
+
+export type FormPreviewTicketData = {
+    body: FormPreviewTicketRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/ticket';
+};
+
+export type FormPreviewTicketErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormPreviewTicketError = FormPreviewTicketErrors[keyof FormPreviewTicketErrors];
+
+export type FormPreviewTicketResponses = {
+    /**
+     * OK
+     */
+    200: FormPreviewTicketResponseModel;
+};
+
+export type FormPreviewTicketResponse = FormPreviewTicketResponses[keyof FormPreviewTicketResponses];
+
+export type CaptchaProviderListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/captcha-provider';
+};
+
+export type CaptchaProviderListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type CaptchaProviderListResponses = {
+    /**
+     * OK
+     */
+    200: Array<CaptchaProviderResponseModel>;
+};
+
+export type CaptchaProviderListResponse = CaptchaProviderListResponses[keyof CaptchaProviderListResponses];
+
+export type OutcomePreviewRenderData = {
+    body: OutcomePreviewRequestModel;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/outcome-preview';
+};
+
+export type OutcomePreviewRenderErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type OutcomePreviewRenderError = OutcomePreviewRenderErrors[keyof OutcomePreviewRenderErrors];
+
+export type OutcomePreviewRenderResponses = {
+    /**
+     * OK
+     */
+    200: OutcomePreviewResponseModel;
+};
+
+export type OutcomePreviewRenderResponse = OutcomePreviewRenderResponses[keyof OutcomePreviewRenderResponses];
+
+export type FormSettingsChoicesData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/setting-choices';
+};
+
+export type FormSettingsChoicesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormSettingsChoicesError = FormSettingsChoicesErrors[keyof FormSettingsChoicesErrors];
+
+export type FormSettingsChoicesResponses = {
+    /**
+     * OK
+     */
+    200: FormSettingsChoicesResponseModel;
+};
+
+export type FormSettingsChoicesResponse = FormSettingsChoicesResponses[keyof FormSettingsChoicesResponses];
+
 export type InsightReportData = {
     body?: never;
     path: {
@@ -6590,7 +6586,7 @@ export type InsightReportResponses = {
 export type InsightReportResponse = InsightReportResponses[keyof InsightReportResponses];
 
 export type InsightAnswersData = {
-    body?: InsightAnswersRequestModel;
+    body: InsightAnswersRequestModel;
     path: {
         key: string;
     };
@@ -6629,7 +6625,7 @@ export type InsightAnswersResponses = {
 export type InsightAnswersResponse = InsightAnswersResponses[keyof InsightAnswersResponses];
 
 export type InsightAnswerTextsData = {
-    body?: InsightAnswerTextsRequestModel;
+    body: InsightAnswerTextsRequestModel;
     path: {
         key: string;
         field: string;
@@ -6707,7 +6703,7 @@ export type InsightGlanceResponses = {
 export type InsightGlanceResponse = InsightGlanceResponses[keyof InsightGlanceResponses];
 
 export type InsightTablesData = {
-    body?: InsightTablesRequestModel;
+    body: InsightTablesRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/insights/tables';
@@ -6817,7 +6813,7 @@ export type LibraryListTrashResponses = {
 export type LibraryListTrashResponse = LibraryListTrashResponses[keyof LibraryListTrashResponses];
 
 export type MergeTagPathListData = {
-    body?: MergeTagPathsRequestModel;
+    body: MergeTagPathsRequestModel;
     path: {
         key: string;
     };
@@ -6883,7 +6879,7 @@ export type OptionListListResponses = {
 export type OptionListListResponse = OptionListListResponses[keyof OptionListListResponses];
 
 export type OptionListLibraryCreateData = {
-    body?: CreateOptionListRequestModel;
+    body: CreateOptionListRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/option-list';
@@ -6992,7 +6988,7 @@ export type OptionListLibraryGetResponses = {
 export type OptionListLibraryGetResponse = OptionListLibraryGetResponses[keyof OptionListLibraryGetResponses];
 
 export type OptionListLibraryUpdateData = {
-    body?: UpdateOptionListRequestModel;
+    body: UpdateOptionListRequestModel;
     path: {
         key: string;
     };
@@ -7035,7 +7031,7 @@ export type OptionListLibraryUpdateResponses = {
 export type OptionListLibraryUpdateResponse = OptionListLibraryUpdateResponses[keyof OptionListLibraryUpdateResponses];
 
 export type OptionListLibraryDuplicateData = {
-    body?: DuplicateOptionListRequestModel;
+    body: DuplicateOptionListRequestModel;
     path: {
         key: string;
     };
@@ -7242,7 +7238,7 @@ export type OptionListLibraryRowsResponses = {
 export type OptionListLibraryRowsResponse = OptionListLibraryRowsResponses[keyof OptionListLibraryRowsResponses];
 
 export type OptionListLibraryPreviewData = {
-    body?: PreviewOptionListRequestModel;
+    body: PreviewOptionListRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/option-list/preview';
@@ -7275,7 +7271,7 @@ export type OptionListLibraryPreviewResponses = {
 export type OptionListLibraryPreviewResponse = OptionListLibraryPreviewResponses[keyof OptionListLibraryPreviewResponses];
 
 export type OptionListLibraryReadFileData = {
-    body?: ReadOptionFileRequestModel;
+    body: ReadOptionFileRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/option-list/read-file';
@@ -7308,7 +7304,7 @@ export type OptionListLibraryReadFileResponses = {
 export type OptionListLibraryReadFileResponse = OptionListLibraryReadFileResponses[keyof OptionListLibraryReadFileResponses];
 
 export type DraftOptionsResolveData = {
-    body?: DraftOptionsRequestModel;
+    body: DraftOptionsRequestModel;
     path: {
         key: string;
     };
@@ -7560,7 +7556,7 @@ export type PickerThemesResponses = {
 export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
 
 export type PeopleEraseData = {
-    body?: PersonEraseRequestModel;
+    body: PersonEraseRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/erase';
@@ -7593,7 +7589,7 @@ export type PeopleEraseResponses = {
 export type PeopleEraseResponse = PeopleEraseResponses[keyof PeopleEraseResponses];
 
 export type PeoplePreviewData = {
-    body?: PersonRequestModel;
+    body: PersonRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/erase/preview';
@@ -7626,7 +7622,7 @@ export type PeoplePreviewResponses = {
 export type PeoplePreviewResponse = PeoplePreviewResponses[keyof PeoplePreviewResponses];
 
 export type PeopleExportData = {
-    body?: PersonRequestModel;
+    body: PersonRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/export';
@@ -7706,10 +7702,6 @@ export type PeopleDownloadData = {
 
 export type PeopleDownloadErrors = {
     /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
-    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -7762,7 +7754,7 @@ export type PeopleTicketResponses = {
 export type PeopleTicketResponse = PeopleTicketResponses[keyof PeopleTicketResponses];
 
 export type PeopleFindData = {
-    body?: PersonRequestModel;
+    body: PersonRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/find';
@@ -7795,7 +7787,7 @@ export type PeopleFindResponses = {
 export type PeopleFindResponse = PeopleFindResponses[keyof PeopleFindResponses];
 
 export type PeopleHoldData = {
-    body?: PersonHoldRequestModel;
+    body: PersonHoldRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/hold';
@@ -7828,7 +7820,7 @@ export type PeopleHoldResponses = {
 export type PeopleHoldResponse = PeopleHoldResponses[keyof PeopleHoldResponses];
 
 export type PeopleReleaseData = {
-    body?: PersonEntriesRequestModel;
+    body: PersonEntriesRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/people/release';
@@ -7888,7 +7880,7 @@ export type RetentionGetResponses = {
 export type RetentionGetResponse = RetentionGetResponses[keyof RetentionGetResponses];
 
 export type RetentionDryRunData = {
-    body?: RetentionDryRunRequestModel;
+    body: RetentionDryRunRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/retention/dry-run';
@@ -7962,7 +7954,7 @@ export type SettingsGetResponses = {
 export type SettingsGetResponse = SettingsGetResponses[keyof SettingsGetResponses];
 
 export type SettingsSaveData = {
-    body?: SettingsSectionRequestModel;
+    body: SettingsSectionRequestModel;
     path: {
         section: string;
     };
@@ -8185,7 +8177,7 @@ export type TemplateDeleteResponses = {
 export type TemplateDeleteResponse = TemplateDeleteResponses[keyof TemplateDeleteResponses];
 
 export type TemplateRenameData = {
-    body?: TemplateNameRequestModel;
+    body: TemplateNameRequestModel;
     path: {
         key: string;
     };
@@ -8224,7 +8216,7 @@ export type TemplateRenameResponses = {
 export type TemplateRenameResponse = TemplateRenameResponses[keyof TemplateRenameResponses];
 
 export type TemplateSaveFormData = {
-    body?: TemplateNameRequestModel;
+    body: TemplateNameRequestModel;
     path: {
         formKey: string;
     };
@@ -8263,7 +8255,7 @@ export type TemplateSaveFormResponses = {
 export type TemplateSaveFormResponse = TemplateSaveFormResponses[keyof TemplateSaveFormResponses];
 
 export type TemplateSaveGroupData = {
-    body?: SaveGroupTemplateRequestModel;
+    body: SaveGroupTemplateRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/template/group';
@@ -8296,7 +8288,7 @@ export type TemplateSaveGroupResponses = {
 export type TemplateSaveGroupResponse = TemplateSaveGroupResponses[keyof TemplateSaveGroupResponses];
 
 export type ThemeLibraryCreateData = {
-    body?: CreateThemeRequestModel;
+    body: CreateThemeRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/theme';
@@ -8405,7 +8397,7 @@ export type ThemeLibraryGetResponses = {
 export type ThemeLibraryGetResponse = ThemeLibraryGetResponses[keyof ThemeLibraryGetResponses];
 
 export type ThemeLibraryUpdateData = {
-    body?: UpdateThemeRequestModel;
+    body: UpdateThemeRequestModel;
     path: {
         key: string;
     };
@@ -8448,7 +8440,7 @@ export type ThemeLibraryUpdateResponses = {
 export type ThemeLibraryUpdateResponse = ThemeLibraryUpdateResponses[keyof ThemeLibraryUpdateResponses];
 
 export type ThemeLibraryDuplicateData = {
-    body?: DuplicateThemeRequestModel;
+    body: DuplicateThemeRequestModel;
     path: {
         key: string;
     };
@@ -8584,7 +8576,7 @@ export type ThemeLibraryEditorResponses = {
 export type ThemeLibraryEditorResponse = ThemeLibraryEditorResponses[keyof ThemeLibraryEditorResponses];
 
 export type ThemeLibraryImportData = {
-    body?: ImportThemeRequestModel;
+    body: ImportThemeRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/theme/import';
@@ -8653,7 +8645,7 @@ export type ThemeLibraryRowsResponses = {
 export type ThemeLibraryRowsResponse = ThemeLibraryRowsResponses[keyof ThemeLibraryRowsResponses];
 
 export type ThemeLibraryPreviewData = {
-    body?: PreviewThemeRequestModel;
+    body: PreviewThemeRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/jfb/management/api/v1/theme/preview';
@@ -8968,7 +8960,7 @@ export type VersionGetResponses = {
 export type VersionGetResponse = VersionGetResponses[keyof VersionGetResponses];
 
 export type VersionCommentData = {
-    body?: CommentVersionRequestModel;
+    body: CommentVersionRequestModel;
     path: {
         key: string;
         number: number;
@@ -9012,7 +9004,7 @@ export type VersionCommentResponses = {
 export type VersionCommentResponse = VersionCommentResponses[keyof VersionCommentResponses];
 
 export type VersionCompareWithData = {
-    body?: CompareDraftRequestModel;
+    body: CompareDraftRequestModel;
     path: {
         key: string;
         number: number;
@@ -9052,7 +9044,7 @@ export type VersionCompareWithResponses = {
 export type VersionCompareWithResponse = VersionCompareWithResponses[keyof VersionCompareWithResponses];
 
 export type VersionPinData = {
-    body?: PinVersionRequestModel;
+    body: PinVersionRequestModel;
     path: {
         key: string;
         number: number;
@@ -9092,7 +9084,7 @@ export type VersionPinResponses = {
 export type VersionPinResponse = VersionPinResponses[keyof VersionPinResponses];
 
 export type VersionRestoreData = {
-    body?: RestoreVersionRequestModel;
+    body: RestoreVersionRequestModel;
     path: {
         key: string;
         number: number;

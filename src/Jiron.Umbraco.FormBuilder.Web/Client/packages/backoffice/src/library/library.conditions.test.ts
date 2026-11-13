@@ -1,7 +1,7 @@
 // The library's conditions (ADR-0166): Rename... only in the tree's "...", Delete... only for a folder that holds nothing,
 // and neither where its place says otherwise.
 import { UmbBasicState } from '@umbraco-cms/backoffice/observable-api';
-import { UMB_TREE_ITEM_CONTEXT } from '@umbraco-cms/backoffice/tree';
+import { UMB_TREE_ITEM_BASE_CONTEXT } from '@umbraco-cms/backoffice/tree';
 import { afterEach, describe, expect, it } from 'vitest';
 import { settle, testHost } from '../testing';
 import { FOLDER_SCREEN_CONTEXT } from './folder-screen.context';
@@ -27,7 +27,7 @@ async function heard(condition: Condition, provide: (host: ReturnType<typeof tes
 
 // Stand-ins for the contexts, which Umbraco asks for the element they belong to.
 const treeItem = (hasChildren: UmbBasicState<boolean | undefined>) => (host: ReturnType<typeof testHost>) =>
-  host.provideContext(UMB_TREE_ITEM_CONTEXT, {
+  host.provideContext(UMB_TREE_ITEM_BASE_CONTEXT, {
     hasChildren: hasChildren.asObservable(),
     getHostElement: () => host,
   } as never);

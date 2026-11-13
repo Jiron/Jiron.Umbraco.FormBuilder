@@ -12,23 +12,23 @@ import {
 } from '@umbraco-cms/backoffice/tree';
 import { trashList, treeChildren, type LibraryItemResponseModel } from '../api';
 import { RECYCLE_BIN_ENTITY_TYPE } from '../section/entity-types';
-import { readPage, treeItemOf, type LibraryTreeItem } from './library-tree.repository';
+import { readLevel, treeItemOf, type LibraryTreeItem, type TreePaging } from './library-tree.repository';
 
 // The trash's top items sit right under the bin, whatever folder outside the trash a form went there from.
 const underTheBin = (items: LibraryItemResponseModel[]) => items.map((item) => ({ ...item, parentKey: null }));
 
 class RecycleBinTreeDataSource extends UmbTreeServerDataSourceBase<LibraryItemResponseModel, LibraryTreeItem> {
   constructor(host: UmbControllerHost) {
-    const top = (skip = 0, take = 100) => readPage(host, trashList({ query: { skip, take } }), underTheBin);
+    const top = (paging: TreePaging) =>
+      readLevel(host, (skip, take) => trashList({ query: { skip, take } }), paging, underTheBin);
     super(host, {
-      getRootItems: (args: UmbTreeRootItemsRequestArgs) => top(args.skip, args.take),
-      getChildrenOf: (args: UmbTreeChildrenOfRequestArgs) =>
-        args.parent.unique === null
-          ? top(args.skip, args.take)
-          : readPage(
-              host,
-              treeChildren({ query: { parentKey: args.parent.unique, skip: args.skip ?? 0, take: args.take ?? 100 } }),
-            ),
+      getRootItems: (args: UmbTreeRootItemsRequestArgs) => top(args.paging),
+      getChildrenOf: (args: UmbTreeChildrenOfRequestArgs) => {
+        const parentKey = args.parent.unique;
+        return parentKey === null
+          ? top(args.paging)
+          : readLevel(host, (skip, take) => treeChildren({ query: { parentKey, skip, take } }), args.paging);
+      },
       getAncestorsOf: () => Promise.resolve({ data: [] }),
       mapper: treeItemOf,
     });

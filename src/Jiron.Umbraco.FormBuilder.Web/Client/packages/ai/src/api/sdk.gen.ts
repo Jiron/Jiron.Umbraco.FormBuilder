@@ -19,13 +19,13 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
-export const aiDraftCreate = <ThrowOnError extends boolean = false>(options?: Options<AiDraftCreateData, ThrowOnError>): RequestResult<AiDraftCreateResponses, AiDraftCreateErrors, ThrowOnError> => (options?.client ?? client).post<AiDraftCreateResponses, AiDraftCreateErrors, ThrowOnError>({
+export const aiDraftCreate = <ThrowOnError extends boolean = false>(options: Options<AiDraftCreateData, ThrowOnError>): RequestResult<AiDraftCreateResponses, AiDraftCreateErrors, ThrowOnError> => (options.client ?? client).post<AiDraftCreateResponses, AiDraftCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/ai/draft',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -61,13 +61,13 @@ export const aiGetSettings = <ThrowOnError extends boolean = false>(options?: Op
     ...options
 });
 
-export const aiSaveSettings = <ThrowOnError extends boolean = false>(options?: Options<AiSaveSettingsData, ThrowOnError>): RequestResult<AiSaveSettingsResponses, AiSaveSettingsErrors, ThrowOnError> => (options?.client ?? client).put<AiSaveSettingsResponses, AiSaveSettingsErrors, ThrowOnError>({
+export const aiSaveSettings = <ThrowOnError extends boolean = false>(options: Options<AiSaveSettingsData, ThrowOnError>): RequestResult<AiSaveSettingsResponses, AiSaveSettingsErrors, ThrowOnError> => (options.client ?? client).put<AiSaveSettingsResponses, AiSaveSettingsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/ai/settings',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 

@@ -7,7 +7,8 @@ import { readMemberGroups } from './rule-data';
 
 const asked = vi.hoisted(() => ({ count: 0 }));
 
-vi.mock('@umbraco-cms/backoffice/external/backend-api', () => ({
+vi.mock('@umbraco-cms/backoffice/external/backend-api', async (original) => ({
+  ...(await original<object>()),
   MemberGroupService: {
     getMemberGroup: () => {
       asked.count++;

@@ -8,13 +8,13 @@ import type {
   UmbExtensionCondition,
 } from '@umbraco-cms/backoffice/extension-api';
 import { UmbConditionBase } from '@umbraco-cms/backoffice/extension-registry';
-import { UMB_TREE_ITEM_CONTEXT } from '@umbraco-cms/backoffice/tree';
+import { UMB_TREE_ITEM_BASE_CONTEXT } from '@umbraco-cms/backoffice/tree';
 import { FOLDER_SCREEN_CONTEXT } from './folder-screen.context';
 
 export class InTreeCondition extends UmbConditionBase<UmbConditionConfigBase> implements UmbExtensionCondition {
   constructor(host: UmbControllerHost, args: UmbConditionControllerArguments<UmbConditionConfigBase>) {
     super(host, args);
-    this.consumeContext(UMB_TREE_ITEM_CONTEXT, (context) => {
+    this.consumeContext(UMB_TREE_ITEM_BASE_CONTEXT, (context) => {
       this.permitted = context !== undefined;
     });
   }
@@ -23,7 +23,7 @@ export class InTreeCondition extends UmbConditionBase<UmbConditionConfigBase> im
 export class EmptyFolderCondition extends UmbConditionBase<UmbConditionConfigBase> implements UmbExtensionCondition {
   constructor(host: UmbControllerHost, args: UmbConditionControllerArguments<UmbConditionConfigBase>) {
     super(host, args);
-    this.consumeContext(UMB_TREE_ITEM_CONTEXT, (context) => {
+    this.consumeContext(UMB_TREE_ITEM_BASE_CONTEXT, (context) => {
       this.observe(context?.hasChildren, (hasChildren) => (this.permitted = hasChildren === false), 'treeItem');
     });
     this.consumeContext(FOLDER_SCREEN_CONTEXT, (context) => {

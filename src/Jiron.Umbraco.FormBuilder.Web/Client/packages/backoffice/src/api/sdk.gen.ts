@@ -25,13 +25,13 @@ export const accessGet = <ThrowOnError extends boolean = false>(options?: Option
     ...options
 });
 
-export const accessSave = <ThrowOnError extends boolean = false>(options?: Options<AccessSaveData, ThrowOnError>): RequestResult<AccessSaveResponses, AccessSaveErrors, ThrowOnError> => (options?.client ?? client).put<AccessSaveResponses, AccessSaveErrors, ThrowOnError>({
+export const accessSave = <ThrowOnError extends boolean = false>(options: Options<AccessSaveData, ThrowOnError>): RequestResult<AccessSaveResponses, AccessSaveErrors, ThrowOnError> => (options.client ?? client).put<AccessSaveResponses, AccessSaveErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/access',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -167,13 +167,23 @@ export const dictionaryTextGet = <ThrowOnError extends boolean = false>(options?
     ...options
 });
 
-export const emailLayoutLibraryCreate = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryCreateData, ThrowOnError>): RequestResult<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError> => (options?.client ?? client).post<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError>({
+export const testEmailSend = <ThrowOnError extends boolean = false>(options?: Options<TestEmailSendData, ThrowOnError>): RequestResult<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError> => (options?.client ?? client).post<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/email/test',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const emailLayoutLibraryCreate = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryCreateData, ThrowOnError>): RequestResult<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError> => (options.client ?? client).post<EmailLayoutLibraryCreateResponses, EmailLayoutLibraryCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/email-layout',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -237,23 +247,13 @@ export const emailLayoutLibraryRows = <ThrowOnError extends boolean = false>(opt
     ...options
 });
 
-export const emailLayoutLibraryPreview = <ThrowOnError extends boolean = false>(options?: Options<EmailLayoutLibraryPreviewData, ThrowOnError>): RequestResult<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError> => (options?.client ?? client).post<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError>({
+export const emailLayoutLibraryPreview = <ThrowOnError extends boolean = false>(options: Options<EmailLayoutLibraryPreviewData, ThrowOnError>): RequestResult<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError> => (options.client ?? client).post<EmailLayoutLibraryPreviewResponses, EmailLayoutLibraryPreviewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/email-layout/preview',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
-    }
-});
-
-export const testEmailSend = <ThrowOnError extends boolean = false>(options?: Options<TestEmailSendData, ThrowOnError>): RequestResult<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError> => (options?.client ?? client).post<TestEmailSendResponses, TestEmailSendErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/email/test',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -263,13 +263,13 @@ export const entryDigestGet = <ThrowOnError extends boolean = false>(options?: O
     ...options
 });
 
-export const entryDigestSave = <ThrowOnError extends boolean = false>(options?: Options<EntryDigestSaveData, ThrowOnError>): RequestResult<EntryDigestSaveResponses, EntryDigestSaveErrors, ThrowOnError> => (options?.client ?? client).put<EntryDigestSaveResponses, EntryDigestSaveErrors, ThrowOnError>({
+export const entryDigestSave = <ThrowOnError extends boolean = false>(options: Options<EntryDigestSaveData, ThrowOnError>): RequestResult<EntryDigestSaveResponses, EntryDigestSaveErrors, ThrowOnError> => (options.client ?? client).put<EntryDigestSaveResponses, EntryDigestSaveErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entries/digest',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -279,13 +279,13 @@ export const entryDigestPreview = <ThrowOnError extends boolean = false>(options
     ...options
 });
 
-export const entryDigestTest = <ThrowOnError extends boolean = false>(options?: Options<EntryDigestTestData, ThrowOnError>): RequestResult<EntryDigestTestResponses, EntryDigestTestErrors, ThrowOnError> => (options?.client ?? client).post<EntryDigestTestResponses, EntryDigestTestErrors, ThrowOnError>({
+export const entryDigestTest = <ThrowOnError extends boolean = false>(options: Options<EntryDigestTestData, ThrowOnError>): RequestResult<EntryDigestTestResponses, EntryDigestTestErrors, ThrowOnError> => (options.client ?? client).post<EntryDigestTestResponses, EntryDigestTestErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entries/digest/test',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -295,33 +295,33 @@ export const entryInboxForms = <ThrowOnError extends boolean = false>(options?: 
     ...options
 });
 
-export const entryInboxInbox = <ThrowOnError extends boolean = false>(options?: Options<EntryInboxInboxData, ThrowOnError>): RequestResult<EntryInboxInboxResponses, EntryInboxInboxErrors, ThrowOnError> => (options?.client ?? client).post<EntryInboxInboxResponses, EntryInboxInboxErrors, ThrowOnError>({
+export const entryInboxInbox = <ThrowOnError extends boolean = false>(options: Options<EntryInboxInboxData, ThrowOnError>): RequestResult<EntryInboxInboxResponses, EntryInboxInboxErrors, ThrowOnError> => (options.client ?? client).post<EntryInboxInboxResponses, EntryInboxInboxErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entries/inbox',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const entryInboxSpam = <ThrowOnError extends boolean = false>(options?: Options<EntryInboxSpamData, ThrowOnError>): RequestResult<EntryInboxSpamResponses, EntryInboxSpamErrors, ThrowOnError> => (options?.client ?? client).post<EntryInboxSpamResponses, EntryInboxSpamErrors, ThrowOnError>({
+export const entryInboxSpam = <ThrowOnError extends boolean = false>(options: Options<EntryInboxSpamData, ThrowOnError>): RequestResult<EntryInboxSpamResponses, EntryInboxSpamErrors, ThrowOnError> => (options.client ?? client).post<EntryInboxSpamResponses, EntryInboxSpamErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entries/spam',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const entryInboxEmptySpam = <ThrowOnError extends boolean = false>(options?: Options<EntryInboxEmptySpamData, ThrowOnError>): RequestResult<EntryInboxEmptySpamResponses, EntryInboxEmptySpamErrors, ThrowOnError> => (options?.client ?? client).post<EntryInboxEmptySpamResponses, EntryInboxEmptySpamErrors, ThrowOnError>({
+export const entryInboxEmptySpam = <ThrowOnError extends boolean = false>(options: Options<EntryInboxEmptySpamData, ThrowOnError>): RequestResult<EntryInboxEmptySpamResponses, EntryInboxEmptySpamErrors, ThrowOnError> => (options.client ?? client).post<EntryInboxEmptySpamResponses, EntryInboxEmptySpamErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/entries/spam/empty',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -601,13 +601,13 @@ export const fieldTypeChanges = <ThrowOnError extends boolean = false>(options: 
     ...options
 });
 
-export const folderCreate = <ThrowOnError extends boolean = false>(options?: Options<FolderCreateData, ThrowOnError>): RequestResult<FolderCreateResponses, FolderCreateErrors, ThrowOnError> => (options?.client ?? client).post<FolderCreateResponses, FolderCreateErrors, ThrowOnError>({
+export const folderCreate = <ThrowOnError extends boolean = false>(options: Options<FolderCreateData, ThrowOnError>): RequestResult<FolderCreateResponses, FolderCreateErrors, ThrowOnError> => (options.client ?? client).post<FolderCreateResponses, FolderCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/folder',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -659,73 +659,13 @@ export const folderTrash = <ThrowOnError extends boolean = false>(options: Optio
     ...options
 });
 
-export const formCheckCheck = <ThrowOnError extends boolean = false>(options: Options<FormCheckCheckData, ThrowOnError>): RequestResult<FormCheckCheckResponses, FormCheckCheckErrors, ThrowOnError> => (options.client ?? client).post<FormCheckCheckResponses, FormCheckCheckErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/check',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-export const formPreviewRender = <ThrowOnError extends boolean = false>(options: Options<FormPreviewRenderData, ThrowOnError>): RequestResult<FormPreviewRenderResponses, FormPreviewRenderErrors, ThrowOnError> => (options.client ?? client).get<FormPreviewRenderResponses, FormPreviewRenderErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview',
-    ...options
-});
-
-export const formPreviewTestEntry = <ThrowOnError extends boolean = false>(options: Options<FormPreviewTestEntryData, ThrowOnError>): RequestResult<FormPreviewTestEntryResponses, FormPreviewTestEntryErrors, ThrowOnError> => (options.client ?? client).get<FormPreviewTestEntryResponses, FormPreviewTestEntryErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}',
-    ...options
-});
-
-export const formPreviewRunActions = <ThrowOnError extends boolean = false>(options: Options<FormPreviewRunActionsData, ThrowOnError>): RequestResult<FormPreviewRunActionsResponses, FormPreviewRunActionsErrors, ThrowOnError> => (options.client ?? client).post<FormPreviewRunActionsResponses, FormPreviewRunActionsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}/actions',
-    ...options
-});
-
-export const formPreviewTicket = <ThrowOnError extends boolean = false>(options: Options<FormPreviewTicketData, ThrowOnError>): RequestResult<FormPreviewTicketResponses, FormPreviewTicketErrors, ThrowOnError> => (options.client ?? client).post<FormPreviewTicketResponses, FormPreviewTicketErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/ticket',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-export const captchaProviderList = <ThrowOnError extends boolean = false>(options?: Options<CaptchaProviderListData, ThrowOnError>): RequestResult<CaptchaProviderListResponses, CaptchaProviderListErrors, ThrowOnError> => (options?.client ?? client).get<CaptchaProviderListResponses, CaptchaProviderListErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/captcha-provider',
-    ...options
-});
-
-export const outcomePreviewRender = <ThrowOnError extends boolean = false>(options: Options<OutcomePreviewRenderData, ThrowOnError>): RequestResult<OutcomePreviewRenderResponses, OutcomePreviewRenderErrors, ThrowOnError> => (options.client ?? client).post<OutcomePreviewRenderResponses, OutcomePreviewRenderErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/outcome-preview',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-export const formSettingsChoices = <ThrowOnError extends boolean = false>(options: Options<FormSettingsChoicesData, ThrowOnError>): RequestResult<FormSettingsChoicesResponses, FormSettingsChoicesErrors, ThrowOnError> => (options.client ?? client).get<FormSettingsChoicesResponses, FormSettingsChoicesErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/jfb/management/api/v1/form/{key}/setting-choices',
-    ...options
-});
-
-export const formCreate = <ThrowOnError extends boolean = false>(options?: Options<FormCreateData, ThrowOnError>): RequestResult<FormCreateResponses, FormCreateErrors, ThrowOnError> => (options?.client ?? client).post<FormCreateResponses, FormCreateErrors, ThrowOnError>({
+export const formCreate = <ThrowOnError extends boolean = false>(options: Options<FormCreateData, ThrowOnError>): RequestResult<FormCreateResponses, FormCreateErrors, ThrowOnError> => (options.client ?? client).post<FormCreateResponses, FormCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -875,33 +815,33 @@ export const formUnpublish = <ThrowOnError extends boolean = false>(options: Opt
     }
 });
 
-export const formExchangeFromTemplate = <ThrowOnError extends boolean = false>(options?: Options<FormExchangeFromTemplateData, ThrowOnError>): RequestResult<FormExchangeFromTemplateResponses, FormExchangeFromTemplateErrors, ThrowOnError> => (options?.client ?? client).post<FormExchangeFromTemplateResponses, FormExchangeFromTemplateErrors, ThrowOnError>({
+export const formExchangeFromTemplate = <ThrowOnError extends boolean = false>(options: Options<FormExchangeFromTemplateData, ThrowOnError>): RequestResult<FormExchangeFromTemplateResponses, FormExchangeFromTemplateErrors, ThrowOnError> => (options.client ?? client).post<FormExchangeFromTemplateResponses, FormExchangeFromTemplateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/from-template',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const formExchangeImport = <ThrowOnError extends boolean = false>(options?: Options<FormExchangeImportData, ThrowOnError>): RequestResult<FormExchangeImportResponses, FormExchangeImportErrors, ThrowOnError> => (options?.client ?? client).post<FormExchangeImportResponses, FormExchangeImportErrors, ThrowOnError>({
+export const formExchangeImport = <ThrowOnError extends boolean = false>(options: Options<FormExchangeImportData, ThrowOnError>): RequestResult<FormExchangeImportResponses, FormExchangeImportErrors, ThrowOnError> => (options.client ?? client).post<FormExchangeImportResponses, FormExchangeImportErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/import',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const formExchangeCheckImport = <ThrowOnError extends boolean = false>(options?: Options<FormExchangeCheckImportData, ThrowOnError>): RequestResult<FormExchangeCheckImportResponses, FormExchangeCheckImportErrors, ThrowOnError> => (options?.client ?? client).post<FormExchangeCheckImportResponses, FormExchangeCheckImportErrors, ThrowOnError>({
+export const formExchangeCheckImport = <ThrowOnError extends boolean = false>(options: Options<FormExchangeCheckImportData, ThrowOnError>): RequestResult<FormExchangeCheckImportResponses, FormExchangeCheckImportErrors, ThrowOnError> => (options.client ?? client).post<FormExchangeCheckImportResponses, FormExchangeCheckImportErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/import/check',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -914,6 +854,66 @@ export const formSearch = <ThrowOnError extends boolean = false>(options: Option
 export const formSearchFields = <ThrowOnError extends boolean = false>(options: Options<FormSearchFieldsData, ThrowOnError>): RequestResult<FormSearchFieldsResponses, FormSearchFieldsErrors, ThrowOnError> => (options.client ?? client).get<FormSearchFieldsResponses, FormSearchFieldsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/search/field',
+    ...options
+});
+
+export const formCheckCheck = <ThrowOnError extends boolean = false>(options: Options<FormCheckCheckData, ThrowOnError>): RequestResult<FormCheckCheckResponses, FormCheckCheckErrors, ThrowOnError> => (options.client ?? client).post<FormCheckCheckResponses, FormCheckCheckErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/check',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formPreviewRender = <ThrowOnError extends boolean = false>(options: Options<FormPreviewRenderData, ThrowOnError>): RequestResult<FormPreviewRenderResponses, FormPreviewRenderErrors, ThrowOnError> => (options.client ?? client).get<FormPreviewRenderResponses, FormPreviewRenderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview',
+    ...options
+});
+
+export const formPreviewTestEntry = <ThrowOnError extends boolean = false>(options: Options<FormPreviewTestEntryData, ThrowOnError>): RequestResult<FormPreviewTestEntryResponses, FormPreviewTestEntryErrors, ThrowOnError> => (options.client ?? client).get<FormPreviewTestEntryResponses, FormPreviewTestEntryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}',
+    ...options
+});
+
+export const formPreviewRunActions = <ThrowOnError extends boolean = false>(options: Options<FormPreviewRunActionsData, ThrowOnError>): RequestResult<FormPreviewRunActionsResponses, FormPreviewRunActionsErrors, ThrowOnError> => (options.client ?? client).post<FormPreviewRunActionsResponses, FormPreviewRunActionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/entries/{submissionId}/actions',
+    ...options
+});
+
+export const formPreviewTicket = <ThrowOnError extends boolean = false>(options: Options<FormPreviewTicketData, ThrowOnError>): RequestResult<FormPreviewTicketResponses, FormPreviewTicketErrors, ThrowOnError> => (options.client ?? client).post<FormPreviewTicketResponses, FormPreviewTicketErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/preview/ticket',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const captchaProviderList = <ThrowOnError extends boolean = false>(options?: Options<CaptchaProviderListData, ThrowOnError>): RequestResult<CaptchaProviderListResponses, CaptchaProviderListErrors, ThrowOnError> => (options?.client ?? client).get<CaptchaProviderListResponses, CaptchaProviderListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/captcha-provider',
+    ...options
+});
+
+export const outcomePreviewRender = <ThrowOnError extends boolean = false>(options: Options<OutcomePreviewRenderData, ThrowOnError>): RequestResult<OutcomePreviewRenderResponses, OutcomePreviewRenderErrors, ThrowOnError> => (options.client ?? client).post<OutcomePreviewRenderResponses, OutcomePreviewRenderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/outcome-preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formSettingsChoices = <ThrowOnError extends boolean = false>(options: Options<FormSettingsChoicesData, ThrowOnError>): RequestResult<FormSettingsChoicesResponses, FormSettingsChoicesErrors, ThrowOnError> => (options.client ?? client).get<FormSettingsChoicesResponses, FormSettingsChoicesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/setting-choices',
     ...options
 });
 
@@ -949,13 +949,13 @@ export const insightGlance = <ThrowOnError extends boolean = false>(options?: Op
     ...options
 });
 
-export const insightTables = <ThrowOnError extends boolean = false>(options?: Options<InsightTablesData, ThrowOnError>): RequestResult<InsightTablesResponses, InsightTablesErrors, ThrowOnError> => (options?.client ?? client).put<InsightTablesResponses, InsightTablesErrors, ThrowOnError>({
+export const insightTables = <ThrowOnError extends boolean = false>(options: Options<InsightTablesData, ThrowOnError>): RequestResult<InsightTablesResponses, InsightTablesErrors, ThrowOnError> => (options.client ?? client).put<InsightTablesResponses, InsightTablesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/insights/tables',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -987,13 +987,13 @@ export const optionListList = <ThrowOnError extends boolean = false>(options?: O
     ...options
 });
 
-export const optionListLibraryCreate = <ThrowOnError extends boolean = false>(options?: Options<OptionListLibraryCreateData, ThrowOnError>): RequestResult<OptionListLibraryCreateResponses, OptionListLibraryCreateErrors, ThrowOnError> => (options?.client ?? client).post<OptionListLibraryCreateResponses, OptionListLibraryCreateErrors, ThrowOnError>({
+export const optionListLibraryCreate = <ThrowOnError extends boolean = false>(options: Options<OptionListLibraryCreateData, ThrowOnError>): RequestResult<OptionListLibraryCreateResponses, OptionListLibraryCreateErrors, ThrowOnError> => (options.client ?? client).post<OptionListLibraryCreateResponses, OptionListLibraryCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/option-list',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1059,23 +1059,23 @@ export const optionListLibraryRows = <ThrowOnError extends boolean = false>(opti
     ...options
 });
 
-export const optionListLibraryPreview = <ThrowOnError extends boolean = false>(options?: Options<OptionListLibraryPreviewData, ThrowOnError>): RequestResult<OptionListLibraryPreviewResponses, OptionListLibraryPreviewErrors, ThrowOnError> => (options?.client ?? client).post<OptionListLibraryPreviewResponses, OptionListLibraryPreviewErrors, ThrowOnError>({
+export const optionListLibraryPreview = <ThrowOnError extends boolean = false>(options: Options<OptionListLibraryPreviewData, ThrowOnError>): RequestResult<OptionListLibraryPreviewResponses, OptionListLibraryPreviewErrors, ThrowOnError> => (options.client ?? client).post<OptionListLibraryPreviewResponses, OptionListLibraryPreviewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/option-list/preview',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const optionListLibraryReadFile = <ThrowOnError extends boolean = false>(options?: Options<OptionListLibraryReadFileData, ThrowOnError>): RequestResult<OptionListLibraryReadFileResponses, OptionListLibraryReadFileErrors, ThrowOnError> => (options?.client ?? client).post<OptionListLibraryReadFileResponses, OptionListLibraryReadFileErrors, ThrowOnError>({
+export const optionListLibraryReadFile = <ThrowOnError extends boolean = false>(options: Options<OptionListLibraryReadFileData, ThrowOnError>): RequestResult<OptionListLibraryReadFileResponses, OptionListLibraryReadFileErrors, ThrowOnError> => (options.client ?? client).post<OptionListLibraryReadFileResponses, OptionListLibraryReadFileErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/option-list/read-file',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1125,33 +1125,33 @@ export const pickerThemes = <ThrowOnError extends boolean = false>(options?: Opt
     ...options
 });
 
-export const peopleErase = <ThrowOnError extends boolean = false>(options?: Options<PeopleEraseData, ThrowOnError>): RequestResult<PeopleEraseResponses, PeopleEraseErrors, ThrowOnError> => (options?.client ?? client).post<PeopleEraseResponses, PeopleEraseErrors, ThrowOnError>({
+export const peopleErase = <ThrowOnError extends boolean = false>(options: Options<PeopleEraseData, ThrowOnError>): RequestResult<PeopleEraseResponses, PeopleEraseErrors, ThrowOnError> => (options.client ?? client).post<PeopleEraseResponses, PeopleEraseErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/erase',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const peoplePreview = <ThrowOnError extends boolean = false>(options?: Options<PeoplePreviewData, ThrowOnError>): RequestResult<PeoplePreviewResponses, PeoplePreviewErrors, ThrowOnError> => (options?.client ?? client).post<PeoplePreviewResponses, PeoplePreviewErrors, ThrowOnError>({
+export const peoplePreview = <ThrowOnError extends boolean = false>(options: Options<PeoplePreviewData, ThrowOnError>): RequestResult<PeoplePreviewResponses, PeoplePreviewErrors, ThrowOnError> => (options.client ?? client).post<PeoplePreviewResponses, PeoplePreviewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/erase/preview',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const peopleExport = <ThrowOnError extends boolean = false>(options?: Options<PeopleExportData, ThrowOnError>): RequestResult<PeopleExportResponses, PeopleExportErrors, ThrowOnError> => (options?.client ?? client).post<PeopleExportResponses, PeopleExportErrors, ThrowOnError>({
+export const peopleExport = <ThrowOnError extends boolean = false>(options: Options<PeopleExportData, ThrowOnError>): RequestResult<PeopleExportResponses, PeopleExportErrors, ThrowOnError> => (options.client ?? client).post<PeopleExportResponses, PeopleExportErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/export',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1169,33 +1169,33 @@ export const peopleTicket = <ThrowOnError extends boolean = false>(options: Opti
     ...options
 });
 
-export const peopleFind = <ThrowOnError extends boolean = false>(options?: Options<PeopleFindData, ThrowOnError>): RequestResult<PeopleFindResponses, PeopleFindErrors, ThrowOnError> => (options?.client ?? client).post<PeopleFindResponses, PeopleFindErrors, ThrowOnError>({
+export const peopleFind = <ThrowOnError extends boolean = false>(options: Options<PeopleFindData, ThrowOnError>): RequestResult<PeopleFindResponses, PeopleFindErrors, ThrowOnError> => (options.client ?? client).post<PeopleFindResponses, PeopleFindErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/find',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const peopleHold = <ThrowOnError extends boolean = false>(options?: Options<PeopleHoldData, ThrowOnError>): RequestResult<PeopleHoldResponses, PeopleHoldErrors, ThrowOnError> => (options?.client ?? client).post<PeopleHoldResponses, PeopleHoldErrors, ThrowOnError>({
+export const peopleHold = <ThrowOnError extends boolean = false>(options: Options<PeopleHoldData, ThrowOnError>): RequestResult<PeopleHoldResponses, PeopleHoldErrors, ThrowOnError> => (options.client ?? client).post<PeopleHoldResponses, PeopleHoldErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/hold',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const peopleRelease = <ThrowOnError extends boolean = false>(options?: Options<PeopleReleaseData, ThrowOnError>): RequestResult<PeopleReleaseResponses, PeopleReleaseErrors, ThrowOnError> => (options?.client ?? client).post<PeopleReleaseResponses, PeopleReleaseErrors, ThrowOnError>({
+export const peopleRelease = <ThrowOnError extends boolean = false>(options: Options<PeopleReleaseData, ThrowOnError>): RequestResult<PeopleReleaseResponses, PeopleReleaseErrors, ThrowOnError> => (options.client ?? client).post<PeopleReleaseResponses, PeopleReleaseErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/people/release',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1205,13 +1205,13 @@ export const retentionGet = <ThrowOnError extends boolean = false>(options?: Opt
     ...options
 });
 
-export const retentionDryRun = <ThrowOnError extends boolean = false>(options?: Options<RetentionDryRunData, ThrowOnError>): RequestResult<RetentionDryRunResponses, RetentionDryRunErrors, ThrowOnError> => (options?.client ?? client).post<RetentionDryRunResponses, RetentionDryRunErrors, ThrowOnError>({
+export const retentionDryRun = <ThrowOnError extends boolean = false>(options: Options<RetentionDryRunData, ThrowOnError>): RequestResult<RetentionDryRunResponses, RetentionDryRunErrors, ThrowOnError> => (options.client ?? client).post<RetentionDryRunResponses, RetentionDryRunErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/retention/dry-run',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1287,23 +1287,23 @@ export const templateSaveForm = <ThrowOnError extends boolean = false>(options: 
     }
 });
 
-export const templateSaveGroup = <ThrowOnError extends boolean = false>(options?: Options<TemplateSaveGroupData, ThrowOnError>): RequestResult<TemplateSaveGroupResponses, TemplateSaveGroupErrors, ThrowOnError> => (options?.client ?? client).post<TemplateSaveGroupResponses, TemplateSaveGroupErrors, ThrowOnError>({
+export const templateSaveGroup = <ThrowOnError extends boolean = false>(options: Options<TemplateSaveGroupData, ThrowOnError>): RequestResult<TemplateSaveGroupResponses, TemplateSaveGroupErrors, ThrowOnError> => (options.client ?? client).post<TemplateSaveGroupResponses, TemplateSaveGroupErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/template/group',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
-export const themeLibraryCreate = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryCreateData, ThrowOnError>): RequestResult<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError>({
+export const themeLibraryCreate = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryCreateData, ThrowOnError>): RequestResult<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError> => (options.client ?? client).post<ThemeLibraryCreateResponses, ThemeLibraryCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/theme',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1357,13 +1357,13 @@ export const themeLibraryEditor = <ThrowOnError extends boolean = false>(options
     ...options
 });
 
-export const themeLibraryImport = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryImportData, ThrowOnError>): RequestResult<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError>({
+export const themeLibraryImport = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryImportData, ThrowOnError>): RequestResult<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError> => (options.client ?? client).post<ThemeLibraryImportResponses, ThemeLibraryImportErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/theme/import',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
@@ -1373,13 +1373,13 @@ export const themeLibraryRows = <ThrowOnError extends boolean = false>(options?:
     ...options
 });
 
-export const themeLibraryPreview = <ThrowOnError extends boolean = false>(options?: Options<ThemeLibraryPreviewData, ThrowOnError>): RequestResult<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError> => (options?.client ?? client).post<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError>({
+export const themeLibraryPreview = <ThrowOnError extends boolean = false>(options: Options<ThemeLibraryPreviewData, ThrowOnError>): RequestResult<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError> => (options.client ?? client).post<ThemeLibraryPreviewResponses, ThemeLibraryPreviewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/theme/preview',
     ...options,
     headers: {
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...options.headers
     }
 });
 
