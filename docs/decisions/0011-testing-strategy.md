@@ -5,7 +5,8 @@
   5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md)); the coverage tool and where the coverage runs amended in 5.5f
   ([ADR-0079](0079-coverage-without-rewritten-assemblies.md)); where the gate may run amended by the owner on
   2026-10-30 ([ADR-0117](0117-long-checks-run-beside-the-next-step.md): on a commit in a throwaway clone, beside the
-  next step)
+  next step); the stall the gate reruns once includes Umbraco 18's locked database
+  ([ADR-0250](0250-the-umbraco-18-line.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
