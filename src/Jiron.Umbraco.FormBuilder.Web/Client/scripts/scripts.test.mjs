@@ -20,7 +20,7 @@ import {
   outputProblems,
   write,
 } from './stamp.mjs';
-import { buildVersion, versionFromProps } from './version.mjs';
+import { buildVersion, repositoryRoot, versionFromProps } from './version.mjs';
 import { lessTemplates, lessTemplateText } from './templates.mjs';
 import { sharedBuild, sharedPlugins, terserPass } from './vite-shared.mjs';
 
@@ -58,7 +58,11 @@ describe('version', () => {
   it('prefers JFB_VERSION and refuses one that is not a semantic version', () => {
     expect(buildVersion({ JFB_VERSION: '17.0.0-dev.202610231200' })).toBe('17.0.0-dev.202610231200');
     expect(() => buildVersion({ JFB_VERSION: '17.0' })).toThrow(/semantic version/);
-    expect(buildVersion({})).toMatch(/^17[.][0-9]+[.][0-9]+/);
+    // The package major follows the line's Umbraco major (D16), read where it lives rather than named here.
+    const packages = readFileSync(join(repositoryRoot, 'Directory.Packages.props'), 'utf8');
+    const umbraco = /Include="Umbraco[.]Cms[.]Core" Version="\[([0-9]+)[.]/.exec(packages)?.[1];
+    expect(umbraco).toMatch(/^[0-9]+$/);
+    expect(buildVersion({})).toMatch(new RegExp(`^${umbraco}[.][0-9]+[.][0-9]+`));
   });
 });
 

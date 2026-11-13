@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for scripts/check-packages.mjs. Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, test } from 'node:test';
 import { deflateRawSync } from 'node:zlib';
 import {
@@ -243,7 +244,10 @@ describe("a package's nuspec (section 3.5)", () => {
     const values = buildValues();
     assert.equal(values.authors, 'Jiron');
     assert.match(values.copyright, /^Copyright \(c\) \d{4} /);
-    assert.match(values.versions.get('Umbraco.Cms.Web.Website'), /^\[17\.\d+\.\d+, 18\.0\.0\)$/);
+    // The Umbraco range spans the one major the packages follow (D16), whichever line this is.
+    const props = readFileSync(fileURLToPath(new URL('../../Directory.Build.props', import.meta.url)), 'utf8');
+    const major = Number(/<VersionPrefix>(\d+)\./.exec(props)?.[1]);
+    assert.match(values.versions.get('Umbraco.Cms.Web.Website'), new RegExp(`^\\[${major}\\.\\d+\\.\\d+, ${major + 1}\\.0\\.0\\)$`));
   });
 });
 
