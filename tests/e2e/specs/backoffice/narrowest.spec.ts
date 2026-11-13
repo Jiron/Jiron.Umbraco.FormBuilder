@@ -102,15 +102,29 @@ for (const window of [
     await expect(inspector).toHaveAttribute('mode', 'overlay');
     await expect(inspector.locator('h2')).toBeVisible();
 
-    // The longest state goes under the name rather than squeeze it, and the name's box keeps 6rem at least.
+    // The longest state goes under the name rather than squeeze it, and the name's box keeps 6rem at least, where
+    // Umbraco's row leaves the header that room; where it does not (Umbraco 18.3), the header is cramped and clips its
+    // parts, the state cut with its words as its title (ADR-0250).
     const header = page.locator('jfb-form-workspace-editor');
-    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert');
-    const name = await header.locator('umb-workspace-header-name-editable uui-input').boundingBox();
-    expect(name?.width ?? 0, "the name's box").toBeGreaterThanOrEqual(96);
+    const state = 'Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert';
+    await expect(header.locator('uui-tag')).toHaveText(state);
+    const own = await header.locator('.header[slot="header"]').boundingBox();
+    const cramped = /\bcramped\b/.test((await header.locator('.header[slot="header"]').getAttribute('class')) ?? '');
+    expect(cramped, "cramped exactly where Umbraco leaves the header less than the name's 6rem").toBe(
+      (own?.width ?? 0) < 96,
+    );
+    if (cramped) await expect(header.locator('uui-tag')).toHaveAttribute('title', state);
+    else {
+      const name = await header.locator('umb-workspace-header-name-editable uui-input').boundingBox();
+      expect(name?.width ?? 0, "the name's box").toBeGreaterThanOrEqual(96);
+    }
 
     const found = await measure(page);
     expect(found.width, "the page's width, as Umbraco's own section has it").toBe(umbraco);
-    expect(found.cut, 'texts cut short inside the section').toEqual([]);
+    expect(
+      found.cut.filter((text) => !(cramped && text === state)),
+      'texts cut short inside the section',
+    ).toEqual([]);
     expect(found.scrolls, 'boxes that scroll sideways inside the section').toEqual([]);
 
     // Nothing of the section lies over Umbraco's header, its back button and the form's name: axe finds no target of
