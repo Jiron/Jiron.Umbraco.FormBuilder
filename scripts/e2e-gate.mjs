@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
  * Runs the browser projects for the gate (ROADMAP 3.5, "Flaky means broken"; ADR-0011): `npx playwright test` in
- * tests/e2e, and once more only when that run failed and a host left the hang marker during it. Umbraco 17 on
- * SQLite can stall in its start-up minute, and the harness's set-up or teardown then writes the marker into the
- * host's folder under .local/e2e/. Markers from an earlier run are removed first, so only this run's count. Any other
- * failure fails at once.
+ * tests/e2e, and once more only when that run failed and a host left the hang marker during it. Umbraco on SQLite
+ * can stall when writes overlap (Umbraco 17 hangs, Umbraco 18 finds the database locked; ADR-0250), and the
+ * harness's set-up or teardown then writes the marker into the host's folder under .local/e2e/. Markers from an
+ * earlier run are removed first, so only this run's count. Any other failure fails at once.
  *
  *   node scripts/e2e-gate.mjs [playwright test arguments]   (scripts/ci-local.ps1 runs it)
  *
