@@ -526,6 +526,26 @@ describe('the global settings screen', () => {
     expect(topics((await screenOf('privacy', privacy())).root)).toEqual(['ipAddresses', 'insights', 'memberDeletion']);
     document.body.replaceChildren();
     expect(topics((await screenOf('general', general())).root)).toEqual(['formBlock']);
+    // The content checks' box and the blocked ranges, which the plain fixture leaves out, link to theirs too.
+    document.body.replaceChildren();
+    const full = protection();
+    const withChecks: SettingsSectionResponseModel = {
+      ...full,
+      values: { ...(full.values as Record<string, unknown>), contentRules: 'normal', blockedRanges: [] },
+      fields: [
+        ...full.fields,
+        field('protection', 'contentRules', 'choice', 'content', {
+          choices: choices('protection', 'contentRules', ['relaxed', 'normal', 'strict']),
+        }),
+        field('protection', 'blockedRanges', 'list', 'ranges'),
+      ],
+    };
+    expect(topics((await screenOf('protection', withChecks)).root)).toEqual([
+      'protectionLevels',
+      'captchaConsent',
+      'contentChecks',
+      'blockedRanges',
+    ]);
   });
 
   it("says Email can't send yet with the key that sets it up, and offers no test mail until it can", async () => {

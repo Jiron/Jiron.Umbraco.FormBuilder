@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import de from '../lang/learn-more.de';
 import en from '../lang/learn-more.en';
+import { FIELD_TOPICS, LEAD_TOPICS } from '../settings/settings-screen.element';
 import { must, registerEnglish, shadow, text } from '../testing';
 import { LEARN_MORE_TOPICS, LearnMoreElement, learnMoreUrl, type LearnMoreTopic } from './learn-more.element';
 import map from './learn-more.json';
@@ -56,9 +57,12 @@ describe('the Learn more topics', () => {
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts') && !/^(docs|lang|api)[\\/]/.test(file))
       .map((file) => readFileSync(join(src, file), 'utf8'))
       .join(String.fromCharCode(10));
-    // A link is written learnMore('topic'), or names its topic in a screen's map of fields or boxes ("level: 'topic'").
+    // A link is written learnMore('topic'), or names its topic in the settings screen's maps of boxes and fields.
+    const mapped = new Set(
+      [...Object.values(LEAD_TOPICS), ...Object.values(FIELD_TOPICS)].flatMap((topics) => Object.values(topics)),
+    );
     for (const topic of LEARN_MORE_TOPICS)
-      expect(code.includes(`learnMore('${topic}')`) || code.includes(`: '${topic}'`), topic).toBe(true);
+      expect(code.includes(`learnMore('${topic}')`) || mapped.has(topic), topic).toBe(true);
   });
 });
 
