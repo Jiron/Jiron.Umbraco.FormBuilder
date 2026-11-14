@@ -57,7 +57,7 @@ Then:
 
 - **Name:** shown on its card and in the delivery log. It follows the choice until you type your own.
 - **When it runs:** its trigger, **Submitted** by default.
-- **Position in the list:** actions of the same trigger run in this order.
+- **Run order:** actions of the same trigger run in this order.
 - **The action's settings,** described below for each kind.
 - **Stop the rest if this fails:** off by default. On, if this action fails for good, the actions after it for the same
   entry don't run; retrying it brings them back.

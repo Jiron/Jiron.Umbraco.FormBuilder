@@ -34,9 +34,9 @@ any.
 | --- | --- | --- |
 | Design forms | see forms in the tree, create, edit, preview, publish, duplicate, move, trash and restore forms and folders | |
 | Manage actions | add, change, test and retry a form's actions | Design forms |
-| View entries | see entries, their notes, timelines and files, and the form's insights | |
+| View entries | see entries, their timelines and files, read and add notes, and see the form's insights | |
 | View sensitive data | reveal sensitive answers, download a sensitive field's files, include them in exports | View entries |
-| Edit entries | change entries' states and answers, add notes, forward entries | View entries |
+| Edit entries | change entries' states and answers, forward entries | View entries |
 | Delete entries | delete entries and empty Spam | View entries |
 | Export entries | export and print entries, download the ZIP of files | View entries |
 | Manage the library | option lists, themes, email layouts and templates | |

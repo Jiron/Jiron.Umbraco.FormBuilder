@@ -71,7 +71,7 @@ sending.
 ## Turning it off
 
 - **For the whole site:** Privacy › Data collection › **Count what visitors do with the forms**. On by default.
-- **For one form:** its Settings view › Privacy › **Count what visitors do with this form**. On by default.
+- **For one form:** its Settings view › Privacy › **Insights**. On by default.
 
 With either off, the form's page reports nothing; what was counted before stays until it is three years old.
 [privacy.md](privacy.md) covers what the site collects.

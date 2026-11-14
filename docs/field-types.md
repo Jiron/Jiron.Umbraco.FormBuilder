@@ -326,7 +326,7 @@ repeatable group. The form chooses its captcha in Settings › Spam protection (
 | An option list | A list from the library, which many forms can share. Changing the list changes every form at once, without publishing. |
 | A standard list | Months, days of the week, an agreement scale, a satisfaction scale, or "Yes, no, not sure"; developers can add more. |
 | Pages of the site | The pages below a start page, or below the page the form is on, optionally only of chosen document types. |
-| A data type | The values of a dropdown, checkbox list or radio button list data type. |
+| A data type | A dropdown, checkbox list or radio button list. |
 | The country list | Countries, or only those listed. |
 | A JSON address | A list fetched from an address on a host the site's configuration allows, with the paths of the list, the value and the label. |
 

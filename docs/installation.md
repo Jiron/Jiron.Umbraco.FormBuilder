@@ -84,7 +84,7 @@ Another user group needs two things:
    privacy. Folders and forms can be limited further.
 
 [permissions.md](permissions.md) explains the eleven permissions. Editors who only place forms on pages need neither:
-the form picker works for anyone with Umbraco's Content section.
+the form picker works for anyone with Umbraco's Content, Media, Members or Settings section.
 
 ## Email
 

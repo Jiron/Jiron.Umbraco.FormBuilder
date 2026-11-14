@@ -147,7 +147,7 @@ A site that loads them itself turns the automatic tags off, and a placement then
 **The files** are embedded in the package and served from `/jfb/assets/` with Brotli and gzip copies, so there is nothing
 to deploy as static files. Each tag carries the file's fingerprint (`?v=`), under which it is cached for a year as
 immutable; the runtime's chunks are named by their content. The runtime loads only the parts a page's forms use, each
-when first needed: the core is about 2.5 KB gzipped, and everything together about 60 KB
+when first needed: the core is about 2.6 KB gzipped, and everything together about 62 KB
 ([performance.md](performance.md)).
 
 ## Themes
