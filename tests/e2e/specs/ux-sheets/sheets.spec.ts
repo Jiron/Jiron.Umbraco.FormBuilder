@@ -1,14 +1,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test } from '../../fixtures.ts';
+import { expect, test } from '../../fixtures.ts';
 import {
   COMBOS,
   comboName,
   sheetHtml,
   walkDir,
+  wordChanges,
+  WORDS_NOISE,
   type Combo,
   type SheetCell,
   type ShotReport,
+  type WalkSummary,
 } from '../../support/ux-walk.ts';
 
 // The walk's contact sheets (ROADMAP 9.6a): after the ux project's walks and journeys (16.6), one sheet per screen with its twelve shots,
@@ -47,4 +50,19 @@ test("the walk's contact sheets", async ({ page }) => {
     await page.screenshot({ path: join(sheets, `${screen}.png`), fullPage: true });
   }
   writeFileSync(join(dir, 'summary.json'), JSON.stringify(summary, null, 2));
+
+  // With an earlier walk to compare with (JFB_UX_BEFORE names its folder), every screen's words in both: words.json
+  // holds them all, and no screen may have grown by more than the few words a time of day or a count changes.
+  const earlier = process.env.JFB_UX_BEFORE ? join(process.env.JFB_UX_BEFORE, 'summary.json') : null;
+  if (earlier && existsSync(earlier)) {
+    const changes = wordChanges(JSON.parse(readFileSync(earlier, 'utf8')) as WalkSummary, summary);
+    writeFileSync(join(dir, 'words.json'), JSON.stringify(changes, null, 2));
+    expect(changes.length, 'screens that both walks reached').toBeGreaterThan(0);
+    expect(
+      changes
+        .filter((change) => change.after - change.before > WORDS_NOISE)
+        .map((change) => `${change.screen} (${change.look}): ${change.before} to ${change.after}`),
+      'screens that show more words than before',
+    ).toEqual([]);
+  }
 });

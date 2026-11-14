@@ -70,8 +70,9 @@ export async function axeNodes(page: Page): Promise<AxeNode[]> {
 }
 
 /**
- * How the page lies at this width: its sideways scroll, the boxes that scroll inside it, and the texts cut short. The
- * forms tree's names end with Umbraco's ellipsis as its own trees' do (ADR-0221), so its rows are left out.
+ * How the page lies at this width: its sideways scroll, the boxes that scroll inside it, the texts cut short, and how
+ * many words the section's own elements show. The forms tree's names end with Umbraco's ellipsis as its own trees' do
+ * (ADR-0221), so its rows are left out.
  */
 export const measure = (page: Page) =>
   page.evaluate(() => {
@@ -103,10 +104,36 @@ export const measure = (page: Page) =>
         scrollers.push(`${element.tagName.toLowerCase()}${name} (${element.scrollWidth} > ${element.clientWidth})`);
       } else if (style.textOverflow === 'ellipsis' && text) clipped.push(text.slice(0, 60));
     }
+    // The words a person has to read: the text inside the section's own elements that is drawn, wherever the page is
+    // scrolled to. A subtree that is not drawn (display: none, hidden, a closed group) and a text heard but not seen
+    // (a box of a pixel) are left out, and so are the forms tree's rows.
+    const drawn = (element: HTMLElement): boolean => {
+      const style = getComputedStyle(element);
+      if (style.display === 'contents') return true;
+      if (!element.checkVisibility({ visibilityProperty: true, opacityProperty: true })) return false;
+      const box = element.getBoundingClientRect();
+      return style.display.startsWith('inline') || (box.width > 1 && box.height > 1);
+    };
+    const count = (node: Node, ours: boolean): number => {
+      let sum = 0;
+      for (const child of node.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          if (ours) sum += (child.textContent ?? '').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
+        } else if (child instanceof HTMLElement) {
+          if (['jfb-library-tree-item', 'style', 'script', 'template'].includes(child.localName) || !drawn(child))
+            continue;
+          const mine = ours || child.localName.startsWith('jfb-');
+          sum += count(child, mine);
+          if (child.shadowRoot) sum += count(child.shadowRoot, mine);
+        }
+      }
+      return sum;
+    };
     return {
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       scrollers: [...new Set(scrollers)].slice(0, 8),
       clipped: [...new Set(clipped)].slice(0, 12),
+      words: count(document.body, false),
     };
   });
 
@@ -144,6 +171,7 @@ export class Walk {
         overflowX: 0,
         scrollers: [],
         clipped: [],
+        words: 0,
       });
     }
   }
