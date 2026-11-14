@@ -2552,7 +2552,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resume that gives no file and no consent back, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
-- [ ] **8.6b The runtime's "Save and continue later"**
+- [x] **8.6b The runtime's "Save and continue later"** (2026-11-14, 83f1e768)
   - **Resumes (2026-11-14):** the owner raised the budget to 100 KB (ADR-0251); this step resumes from
     `wip/8.6b-resume-control` once 19.1 is ticked, before 20.1, with every check below.
   - **Retried at 9.6b (2026-11-05):** the branch with Phase 9 merged in measures 61.96 KB against 60 KB, and still waits.
