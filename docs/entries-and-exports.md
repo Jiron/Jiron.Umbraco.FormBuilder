@@ -155,8 +155,8 @@ column per place. Sensitive answers are left out unless you may see them and inc
 confirmation stay out unless you filter by that state or tick them.
 
 Up to 10,000 entries download at once. A larger export, and every ZIP, is prepared in the background while you go on
-working, and a notification links to the file when it is ready. Only you can download it, and it is deleted after 24
-hours. Every export is recorded in the audit log.
+working, and a notification links to the file when it is ready. Three can be under way for you at once. Only you can
+download the file, and it is deleted after 24 hours. Every export is recorded in the audit log.
 
 A cell that starts with `=`, `+`, `-` or `@` gets a `'` before it, so a spreadsheet program never runs a visitor's
 answer as a formula.

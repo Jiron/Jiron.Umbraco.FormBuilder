@@ -183,7 +183,7 @@ describe('a save someone else saved before', () => {
       {
         headline: "Your draft wasn't saved",
         content: expect.stringMatching(
-          /^Ana Novak saved this form at (14:02|2:02.PM), after you opened it\. Review both versions before you save\. Your changes are still here\.$/,
+          /^Ana Novak saved this form at (14:02|2:02.PM), after you opened it\. Your changes are still here\.$/,
         ) as unknown,
         confirmLabel: 'Review both versions',
         color: 'positive',
@@ -221,7 +221,7 @@ describe('a save someone else saved before', () => {
     const { workspace } = workspaceOf();
     await sayConflict(workspace as never);
     expect(fake.confirms[0]?.content).toBe(
-      'Someone changed this form after you opened it. Review both versions before you save. Your changes are still here.',
+      'Someone changed this form after you opened it. Your changes are still here.',
     );
   });
 

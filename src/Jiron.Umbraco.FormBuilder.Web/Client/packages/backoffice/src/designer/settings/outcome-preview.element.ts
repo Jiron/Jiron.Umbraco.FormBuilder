@@ -146,7 +146,6 @@ export class OutcomePreviewElement extends UmbLitElement {
     const busy = this.state.status === 'idle' || this.state.status === 'asking';
     return html`<section class="preview" aria-labelledby="preview-heading">
       <h4 id="preview-heading">${this.#term('outcome_preview')}</h4>
-      <p class="help">${this.#term('outcome_previewHelp')}</p>
       <div class="shown" aria-busy=${busy ? 'true' : 'false'}>${this.#shown()}</div>
     </section>`;
   }

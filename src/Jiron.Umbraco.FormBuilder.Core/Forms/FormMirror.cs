@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -146,12 +147,17 @@ internal sealed partial class FormMirror(
         var state = await StateAsync(cancellationToken);
         var live = await PublishedFormsAsync(cancellationToken);
         var seen = new HashSet<Guid>();
+
+        // The files this pass could not read: they may hold someone's work, a form's file with a slip of the hand in it, so
+        // nothing is written over them (ADR-0252).
+        var unread = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var path in Directory.EnumerateFiles(folder, "*.json").Order(StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var file = Path.GetFileName(path);
             if (await ReadAsync(path, cancellationToken) is not { } read)
             {
+                unread.Add(file);
                 await SetProblemAsync(MirrorProblemKind.Unreadable, NameKey(file), file, state, cancellationToken);
                 continue;
             }
@@ -168,8 +174,9 @@ internal sealed partial class FormMirror(
                 await SyncFileAsync(file, read.Json, read.Envelope, state, live, cancellationToken);
                 await ClearProblemAsync(MirrorProblemKind.Unreadable, NameKey(file), state, cancellationToken);
             }
-            catch (FormBuilderValidationException exception)
+            catch (Exception exception) when (exception is FormBuilderValidationException or FormBuilderSettingLockedException)
             {
+                // The site refuses what the file holds, a setting its host locks among it: this file waits, the pass goes on.
                 LogUnreadable(logger, file, exception.Message);
                 await SetProblemAsync(MirrorProblemKind.Unreadable, NameKey(file), file, state, cancellationToken);
             }
@@ -189,12 +196,13 @@ internal sealed partial class FormMirror(
             }
         }
 
-        // A published form without a file gets its file, as after the mirror was turned on.
+        // A published form without a file gets its file, as after the mirror was turned on; never over a file of its name
+        // that could not be read.
         foreach (var form in live.Values.Where(form => !seen.Contains(form.Key)))
         {
             if (form.PublishedVersionId is { } id && await forms.GetVersionByIdAsync(id, cancellationToken) is { } published)
             {
-                await WriteAsync(form.Key, published.Info.Number, state, keepChangedFile: false, cancellationToken);
+                await WriteAsync(form.Key, published.Info.Number, state, keepChangedFile: false, cancellationToken, unread);
             }
         }
     }
@@ -323,7 +331,7 @@ internal sealed partial class FormMirror(
     // A form's published version to its file, written to a temporary file and then moved, so a reader never sees half of it. With
     // keepChangedFile, a file someone changed since the mirror last saw it stays as it is, as a conflict, and one that holds this
     // version already is only remembered.
-    private async Task WriteAsync(Guid formKey, int version, MirrorState state, bool keepChangedFile, CancellationToken cancellationToken)
+    private async Task WriteAsync(Guid formKey, int version, MirrorState state, bool keepChangedFile, CancellationToken cancellationToken, HashSet<string>? unread = null)
     {
         if (await exchange.ExportAsync(formKey, version, cancellationToken) is not { } export
             || FormExportFormat.Read(export.Json, serializer).Envelope is not { } envelope)
@@ -334,6 +342,19 @@ internal sealed partial class FormMirror(
         var fileName = OnDiskName(export.FileName);
         var record = state.Record(formKey);
         var hash = HashOf(envelope.Definition, formKey);
+
+        // A file of the form's name, or of the name the mirror last saw it under, that cannot be read stays as it is: it may
+        // be this form's file with a slip of the hand in it, which a write would lose (ADR-0252). The pass says which files
+        // it could not read; a publish looks for itself.
+        var own = record is not null && IsOwnFile(record.File) ? record.File : fileName;
+        if (unread is null
+            ? keepChangedFile && File.Exists(Path.Combine(Folder, own)) && await ReadAsync(Path.Combine(Folder, own), cancellationToken) is null
+            : unread.Contains(own) || unread.Contains(fileName))
+        {
+            await SetProblemAsync(MirrorProblemKind.Unreadable, NameKey(own), own, state, cancellationToken);
+            return;
+        }
+
         if (keepChangedFile && await OnDiskAsync(formKey, record, fileName, cancellationToken) is { } onDisk)
         {
             if (onDisk.Hash == hash)
@@ -397,12 +418,15 @@ internal sealed partial class FormMirror(
         try
         {
             var json = await File.ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
-            if (FormExportFormat.Read(json, serializer).Envelope is { } envelope)
+            var result = FormExportFormat.Read(json, serializer);
+            if (result.Envelope is { } envelope)
             {
                 return (json, envelope);
             }
 
-            LogUnreadable(logger, file, "it is no export of a form");
+            // Where it goes wrong, by code and path, never a value of the file.
+            var problems = string.Join("; ", result.Problems.Take(5).Select(problem => $"{problem.Code} at {problem.Path}"));
+            LogUnreadable(logger, file, problems.Length == 0 ? "it is no export of a form" : "it is no export of a form (" + problems + ")");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

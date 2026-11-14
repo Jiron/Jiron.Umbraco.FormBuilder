@@ -56,7 +56,7 @@ describe('deleting a form for good', () => {
       'Dabei werden das Formular, sein Eintrag und eine hochgeladene Datei gelöscht.',
     );
     expect(DE.deleteFormText(5, 0)).toBe('Dabei werden das Formular und seine 5 Einträge gelöscht.');
-    expect(EN.deleteFormText(0, 0)).toBe('This deletes the form. It has no entries.');
+    expect(EN.deleteFormText(0, 0)).toBe('It has no entries.');
     expect(EN.deleteFormConfirm(0)).toBe('Delete form');
     expect(DE.deleteFormConfirm(1)).toBe('Formular und Eintrag löschen');
   });
@@ -74,10 +74,10 @@ describe('deleting a form for good', () => {
 describe('emptying the Recycle Bin', () => {
   it("says copy.md's example", () => {
     expect(EN.emptyText(3, 412, 12, 1)).toBe(
-      'This deletes 3 forms for good, with their 412 entries and 12 uploaded files.',
+      'This deletes 3 forms for good, with their 412 entries and 12 uploaded files. The folder in it goes too.',
     );
     expect(DE.emptyText(3, 412, 12, 1)).toBe(
-      'Dabei werden 3 Formulare mit ihren 412 Einträgen und 12 hochgeladenen Dateien endgültig gelöscht.',
+      'Dabei werden 3 Formulare mit ihren 412 Einträgen und 12 hochgeladenen Dateien endgültig gelöscht. Der Ordner darin wird mitgelöscht.',
     );
     expect(EN.emptyConfirm).toBe('Empty recycle bin');
     expect(DE.emptyConfirm).toBe('Papierkorb leeren');
@@ -88,7 +88,12 @@ describe('emptying the Recycle Bin', () => {
     expect(DE.emptyText(1, 1, 1, 0)).toBe(
       'Dabei wird 1 Formular mit seinem Eintrag und 1 hochgeladenen Datei endgültig gelöscht.',
     );
-    expect(EN.emptyText(2, 0, 0, 2)).toBe('This deletes 2 forms for good. They have no entries.');
+    expect(EN.emptyText(2, 0, 0, 2)).toBe(
+      'This deletes 2 forms for good. They have no entries. The 2 folders in it go too.',
+    );
+    expect(DE.emptyText(1, 0, 0, 3)).toBe(
+      'Dabei wird 1 Formular endgültig gelöscht. Es hat keine Einträge. Die 3 Ordner darin werden mitgelöscht.',
+    );
     expect(DE.emptyText(0, 0, 0, 2)).toBe('Dabei werden die 2 Ordner darin endgültig gelöscht.');
     expect(EN.emptyText(0, 0, 0, 1)).toBe('This deletes the folder in it for good.');
     expect(EN.emptyText(0, 0, 0, 3)).toBe('This deletes the 3 folders in it for good.');

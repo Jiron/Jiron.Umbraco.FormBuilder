@@ -3,7 +3,8 @@
  * writes the control in a template, in the theme's classes and the form's language, and the notices of a link taken up
  * with the form's other notices. A link's token comes from the address's fragment and leaves the address at once; it
  * stays in this tab's storage until the entry is stored, so a refresh finds it again: the only use of browser storage
- * (section 4.10), and a browser that refuses it only loses that. Files, consents and sensitive answers do not come back,
+ * (section 4.10), and a browser that refuses it only loses that. A saving's answer names its draft the same way, so the
+ * entry that follows in the same tab takes that draft away. Files, consents and sensitive answers do not come back,
  * and the form asks for them as it would.
  */
 import type { Captcha } from './protect-chunk';
@@ -20,6 +21,18 @@ export const EXPIRED = 'resume_expired';
 export const SAVED = 'resume_saved';
 
 const BUSY = 'data-jfb-busy';
+
+/** On a form the server wrote from a post, which holds the posted answers. */
+const POSTED = 'data-jfb-posted';
+
+/** The hidden input that names the draft to a post without the runtime's own sending. */
+const POST_NAME = 'jfb-resume';
+
+/** The name an "Other" text had, kept on it while its choice is not chosen (the fields chunk's mark). */
+const OTHER_NAME = 'data-jfb-name';
+
+/** How long an answer waits for the options its field asks for, in milliseconds. */
+const OPTIONS_WAIT = 10_000;
 
 type Answers = Readonly<Record<string, readonly string[] | readonly Readonly<Record<string, readonly string[]>>[]>>;
 
@@ -47,6 +60,8 @@ export interface ResumeOptions {
   readonly held: (token: string | null) => void;
   /** Shows a page of the form that has several. */
   readonly reveal?: (element: Element) => void;
+  /** A form put in another's place, which carries that one's answers: its draft's are not taken up again. */
+  readonly carried?: boolean;
 }
 
 const storage = (): Storage | null => {
@@ -114,12 +129,19 @@ function lookUp(api: string, token: string): Promise<Lookup> {
   return lookup;
 }
 
-/** Gives the controls of a name their answers; a text no choice holds goes to the field's "Other". */
-function fill(form: HTMLFormElement, name: string, texts: readonly string[]): void {
+type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+const named = (form: HTMLFormElement, name: string): Control[] => [
+  ...form.querySelectorAll<Control>(`[name="${CSS.escape(name)}"]`),
+];
+
+/**
+ * Gives the controls of a name their answers, and says which texts no control took. A text no choice holds goes to the
+ * field's "Other": its choice posts no value of its own, and its text has a name only while that choice is chosen.
+ */
+function fill(form: HTMLFormElement, name: string, texts: readonly string[]): string[] {
   const left = new Set(texts);
-  for (const control of form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-    `[name="${CSS.escape(name)}"]`,
-  )) {
+  for (const control of named(form, name)) {
     if (control instanceof HTMLSelectElement) {
       for (const option of control.options) {
         option.selected = texts.includes(option.value);
@@ -137,28 +159,110 @@ function fill(form: HTMLFormElement, name: string, texts: readonly string[]): vo
     control.dispatchEvent(new Event('change', { bubbles: true }));
   }
   const [other] = left;
-  if (other !== undefined && !name.endsWith('.other')) fill(form, `${name}.other`, [other]);
+  if (other === undefined || name.endsWith('.other')) return [...left];
+  const choice = named(form, name).find(
+    (control): control is HTMLInputElement =>
+      control instanceof HTMLInputElement &&
+      (control.type === 'checkbox' || control.type === 'radio') &&
+      control.value === '',
+  );
+  if (choice === undefined) return [...left];
+  choice.checked = true;
+  choice.dispatchEvent(new Event('change', { bubbles: true }));
+  const text = form.querySelector<HTMLInputElement>(`input[${OTHER_NAME}="${CSS.escape(`${name}.other`)}"]`);
+  if (text !== null && !text.hasAttribute('name')) text.name = `${name}.other`;
+  fill(form, `${name}.other`, [other]);
+  return [];
 }
 
-/** Gives a form a draft's answers, with the rows its repeatable groups need. */
+/**
+ * An answer to a field whose options follow other answers: the options come a moment after those answers do, so what
+ * no control took yet is given again as they are written, until every text is taken or the wait is over.
+ */
+function fillAsOptionsCome(form: HTMLFormElement, field: Element, name: string, texts: readonly string[]): void {
+  if (field.querySelector('template[data-jfb-cascade]') === null) return;
+  const watch = new MutationObserver(() => {
+    if (fill(form, name, texts).length === 0) stop();
+  });
+  const timer = setTimeout(() => stop(), OPTIONS_WAIT);
+  const stop = (): void => {
+    watch.disconnect();
+    clearTimeout(timer);
+  };
+  watch.observe(field, { childList: true, subtree: true });
+}
+
+/** Empties the controls of a field the draft holds no answer of, unless the rules have turned them off. */
+function clear(form: HTMLFormElement, name: string): void {
+  const prefix = `${name}.`;
+  for (const control of form.querySelectorAll<Control>('input[name], select[name], textarea[name]')) {
+    if ((control.name !== name && !control.name.startsWith(prefix)) || control.disabled) continue;
+    if (control instanceof HTMLSelectElement) {
+      const chosen = [...control.options].filter((option) => option.selected && option.value !== '');
+      if (chosen.length === 0) continue;
+      for (const option of control.options) option.selected = !control.multiple && option.value === '';
+    } else if (control instanceof HTMLInputElement && (control.type === 'checkbox' || control.type === 'radio')) {
+      if (!control.checked) continue;
+      control.checked = false;
+    } else if (control.type !== 'hidden' && control.type !== 'file') {
+      if (control.value === '') continue;
+      control.value = '';
+      control.dispatchEvent(new Event('input', { bubbles: true }));
+    } else continue;
+    control.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+/**
+ * Gives a form a draft's answers, with the rows its repeatable groups need. A field the draft names without an answer
+ * was left empty when it was saved: once the rules have followed the answers, what the page starts it with (a default,
+ * a prefill) goes too, unless they turned the field off.
+ */
 export function restore(form: HTMLFormElement, model: FormModel, values: Answers): void {
+  const fields = allFieldsOf(model);
+  const elementOf = (alias: string, row?: number): Element | null => {
+    const key = fields.find((field) => field.alias === alias)?.key ?? '';
+    const found = [...form.querySelectorAll(`[data-jfb-field="${CSS.escape(key)}"]`)];
+    return (
+      (row === undefined
+        ? found[0]
+        : found.find((each) => each.closest<HTMLElement>('[data-jfb-row]')?.dataset['jfbRow'] === String(row))) ?? null
+    );
+  };
+  const give = (name: string, texts: readonly string[], element: Element | null): void => {
+    const left = fill(form, name, texts);
+    if (left.length > 0 && element !== null) fillAsOptionsCome(form, element, name, texts);
+  };
+  const empty: string[] = [];
   for (const [name, answer] of Object.entries(values)) {
-    if (typeof answer[0] === 'string') {
-      fill(form, name, answer as readonly string[]);
+    if (answer.length === 0) {
+      empty.push(name);
       continue;
     }
-    const key = allFieldsOf(model).find((field) => field.alias === name)?.key ?? '';
-    const box = form.querySelector(`[data-jfb-field="${CSS.escape(key)}"] .jfb-repeater`);
+    if (typeof answer[0] === 'string') {
+      give(name, answer as readonly string[], elementOf(name.split('.')[0] ?? name));
+      continue;
+    }
+    const box = elementOf(name)?.querySelector('.jfb-repeater') ?? null;
     (answer as readonly Readonly<Record<string, readonly string[]>>[]).forEach((row, at) => {
       if (box !== null && box.querySelectorAll(':scope > [data-jfb-row]').length <= at)
         box.querySelector<HTMLButtonElement>(':scope > button[value^="add"]')?.click();
-      for (const [child, texts] of Object.entries(row)) fill(form, `${name}[${String(at)}].${child}`, texts);
+      for (const [child, texts] of Object.entries(row))
+        give(`${name}[${String(at)}].${child}`, texts, elementOf(child.split('.')[0] ?? child, at));
     });
   }
   form.dispatchEvent(new Event('input', { bubbles: true }));
+  if (empty.length === 0) return;
+  setTimeout(() => {
+    for (const name of empty) clear(form, name);
+    form.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 }
 
-/** Shows a notice of the form's templates above its pages, as the form's other notices show, and puts the focus on it. */
+/**
+ * Shows a notice of the form's templates above its pages, as the form's other notices show, and puts the focus on it:
+ * a moment later, after the focus a row added for the answers takes for itself.
+ */
 function showNotice(form: HTMLFormElement, code: string): void {
   const notice = form
     .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
@@ -167,6 +271,9 @@ function showNotice(form: HTMLFormElement, code: string): void {
   if (!(notice instanceof HTMLElement)) return;
   form.insertBefore(notice, form.querySelector(':scope > [data-jfb-page]'));
   notice.focus();
+  setTimeout(() => {
+    if (notice.isConnected) notice.focus();
+  });
 }
 
 /** The last day a link works, in the form's language; the server's instant as it is where the language is unknown. */
@@ -268,17 +375,19 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
         await options.challenges.renew();
         response = await ask();
       }
+      // The server has checked the captcha's token, which counts once: the form's send asks for a new one.
+      guard?.spent();
       if (!response.ok) {
-        guard?.spent();
         say('');
         if (response.status === 422) return refuse();
         tell(words['jfbFailed']);
         return say(words['jfbFailed']);
       }
-      const answer = (await response.json()) as { expiresUtc?: string };
-      // The new draft takes the old one's place, whose link no longer works.
-      keep(key, null);
-      held.set(null);
+      const answer = (await response.json()) as { expiresUtc?: string; resume?: string };
+      // The new draft takes the old one's place, whose link no longer works: the tab names the new one from now on, so
+      // the entry sent from it takes the draft away, and a saving after it takes its place.
+      keep(key, answer.resume ?? null);
+      held.set(answer.resume ?? null);
       say('');
       panel.hidden = true;
       nav.hidden = false;
@@ -333,6 +442,13 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
   const own = stored(key);
   const token = address.token ?? own;
   if (token === null) return;
+  // A form the server wrote from a post, or one that came in another's place, holds its answers already: the draft is
+  // only named, so the entry takes it away, and nothing is written over what the visitor gave since.
+  if (form.hasAttribute(POSTED) || options.carried === true) {
+    keep(key, token);
+    held.set(token);
+    return;
+  }
   const found = await lookUp(options.api, token);
   if (found === null) {
     // No answer: the tab keeps the token, so a refresh asks again.
@@ -340,8 +456,9 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
     return;
   }
   if (found === 'gone') {
-    // The form whose tab held it says so; a link's goes to the first form that asked.
-    const told = token === own || (address.token === token && !address.claimed);
+    // A link says so, to the first form that asked. What the tab held goes quietly: its entry was sent, or its time
+    // is over, and the visitor followed no link just now.
+    const told = address.token === token && !address.claimed;
     if (address.token === token) address.claimed = true;
     if (token === own) keep(key, null);
     if (told) showNotice(form, EXPIRED);
@@ -354,9 +471,6 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
   }
   keep(key, token);
   held.set(token);
-  form.addEventListener('jfb:submitted', () => {
-    keep(key, null);
-  });
   restore(form, model, found.values);
   const page =
     found.pageKey === undefined ? null : form.querySelector(`[data-jfb-page="${CSS.escape(found.pageKey)}"]`);
@@ -369,14 +483,27 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
  * while its answers are on their way.
  */
 export function enhanceResume(form: HTMLFormElement, model: FormModel, options: ResumeOptions): void {
+  const key = form.dataset['jfbForm'] ?? '';
   let token: string | null = null;
   const held: Held = {
     get: () => token,
     set: (next) => {
       token = next;
       options.held(next);
+      // A send that posts the form names the draft too, in a hidden input of the form's own.
+      const named = form.querySelector<HTMLInputElement>(`:scope > input[type="hidden"][name="${POST_NAME}"]`);
+      if (next === null) return named?.remove();
+      const input = named ?? form.ownerDocument.createElement('input');
+      input.type = 'hidden';
+      input.name = POST_NAME;
+      input.value = next;
+      if (named === null) form.append(input);
     },
   };
+  // The entry is stored: the tab forgets its draft, which went with it.
+  form.addEventListener('jfb:submitted', () => {
+    keep(key, null);
+  });
   offer(form, model, options, held);
   void takeUp(form, model, options, held);
 }

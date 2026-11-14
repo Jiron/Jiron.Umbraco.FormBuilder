@@ -17,9 +17,8 @@ export default {
     // A save someone else's save refused, from any view (ADR-0200); Review both versions has its words with the History's.
     conflict_headline: "Your draft wasn't saved",
     conflict_text: (who: string, when: string) =>
-      `${who} saved this form ${when}, after you opened it. Review both versions before you save. Your changes are still here.`,
-    conflict_textUnknown:
-      'Someone changed this form after you opened it. Review both versions before you save. Your changes are still here.',
+      `${who} saved this form ${when}, after you opened it. Your changes are still here.`,
+    conflict_textUnknown: 'Someone changed this form after you opened it. Your changes are still here.',
     conflict_at: (time: string) => `at ${time}`,
     conflict_on: (day: string, time: string) => `on ${day} at ${time}`,
     conflict_review: 'Review both versions',
@@ -41,7 +40,7 @@ export default {
     saveDraft: 'Save draft',
     publish: 'Publish…',
     publishHeadline: (name: string) => `Publish ${name}?`,
-    publishText: 'Visitors get this version of the form from now on.',
+    publishText: 'Visitors get this version from now on.',
     comment: 'Comment for this version (optional)',
     publishConfirm: 'Publish',
     published: (name: string) => `${name} is published.`,
@@ -97,7 +96,7 @@ export default {
     moveToLead: 'To the end of',
     moveToHere: (name: string) => `${name} (where it is now)`,
     moveToInside: (name: string, group: string) => `${name}, inside ${group}`,
-    moveToHelp: 'To move it one place at a time, press Alt+Up or Alt+Down on it.',
+    moveToHelp: 'Alt+Up or Alt+Down moves it one place.',
     moveToConfirm: 'Move',
     changeType: 'Change type…',
     changeTypeHeadline: (name: string) => `Change the type of ${name}`,
@@ -143,8 +142,8 @@ export default {
     shortcutRedo: 'Redo what was undone',
     shortcutsLead: 'They act on the field, group or page you are on.',
     shortcutDuplicate: 'Duplicate it',
-    shortcutDelete: 'Delete it; the message that follows offers Undo',
-    shortcutStep: 'Move it one place up or down, at the end into the next group or page',
+    shortcutDelete: 'Delete it',
+    shortcutStep: 'Move it one place up or down',
     shortcutArrows: 'Go up or down the page',
     shortcutRename: "Edit a field's label in place",
     shortcutEscape: 'Clear the selection, close the palette, or stop a drag',
@@ -155,10 +154,10 @@ export default {
     keyOr: 'or',
     keyUp: '↑',
     keyDown: '↓',
-    emptyFormBefore: 'Add your first field with Add field below, or',
+    emptyFormBefore: 'Add your first field, or',
     emptyFormLink: 'paste your questions',
     emptyFormAfter: '.',
-    emptyPage: 'No fields on this page yet. To split a page instead, use New page in the palette.',
+    emptyPage: 'No fields on this page yet.',
     unseenHidden: (type: string) => `${type}: visitors don't see it`,
     unseenOff: (type: string) => `${type}: not shown to visitors`,
     unseenCaptcha: (type: string) => `${type}: shows once the form chooses a captcha in Settings`,
@@ -184,8 +183,7 @@ export default {
     pasteQuestions: 'Paste questions…',
     pasteHeadline: 'Paste questions',
     pasteLabel: 'Your questions',
-    pasteHelp:
-      'One question per line. Each becomes a field, with a type guessed from its words; you can change it afterwards.',
+    pasteHelp: 'One question per line. You can change each type afterwards.',
     pasteFields: 'Fields to add',
     pasteFieldLabel: 'Label',
     pasteFieldType: 'Type',
@@ -199,8 +197,7 @@ export default {
     saidGroupAdded: 'Added a group',
     saidSavedGroupAdded: (name: string) => `Added ${name}`,
     saveGroupHeadline: (name: string) => `Save ${name} as a template`,
-    saveGroupNote:
-      'The template holds the group as you see it, with the validation rules of its fields. Rules and validation rules that depend on fields outside the group are left out.',
+    saveGroupNote: 'Rules and validation rules that depend on fields outside the group are left out.',
     savedGroup: (name: string) => `${name} was saved. Any form can insert it from the palette.`,
     savedGroupLeftOut: (name: string, rules: number, checks: number) => {
       const parts = [

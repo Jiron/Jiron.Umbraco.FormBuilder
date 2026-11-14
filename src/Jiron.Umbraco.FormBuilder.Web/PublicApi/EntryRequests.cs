@@ -81,7 +81,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
-    /// <summary>Reads a draft of a form and saves it (ADR-0163): when its link stops working, never the link itself.</summary>
+    /// <summary>Reads a draft of a form and saves it (ADR-0163, ADR-0252): when its link stops working, and the token that names it to the page.</summary>
     /// <param name="http">The request.</param>
     /// <param name="formKey">The form's key, from the route.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
@@ -100,8 +100,8 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
         }
 
         var result = await submissions.SaveDraftAsync(submission with { Tokens = tokens, Challenges = challenges, Address = http.Connection.RemoteIpAddress, Member = await MemberAsync(http), Members = MembersOf(http), ServerKey = ServerKeyRequest.NameOf(http), Host = http.Request.Host.Value }, page, cancellationToken);
-        return result.DraftExpires is { } expires
-            ? new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(new DraftResponseModel { ExpiresUtc = expires.UtcDateTime }, Json), "application/json; charset=utf-8")
+        return result is { DraftExpires: { } expires, DraftToken: { } token }
+            ? new FileContentResult(JsonSerializer.SerializeToUtf8Bytes(new DraftResponseModel { ExpiresUtc = expires.UtcDateTime, Resume = token }, Json), "application/json; charset=utf-8")
             : Answer(result);
     }
 
@@ -285,11 +285,17 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
     public readonly record struct Body(byte[] Bytes, IActionResult? Refusal);
 }
 
-/// <summary>What saving a draft answers (ADR-0163): never the link, which only the mail holds.</summary>
+/// <summary>What saving a draft answers (ADR-0163, ADR-0252): never the link's address, which only the mail holds.</summary>
 internal sealed record DraftResponseModel
 {
     /// <summary>When the link stops working.</summary>
     public required DateTime ExpiresUtc { get; init; }
+
+    /// <summary>
+    /// The token that names the draft, for the page that saved it: the entry sent with it as <c>resume</c> takes the draft away,
+    /// and a later saving takes its place. It names nothing where no draft was stored, which the answer does not tell apart.
+    /// </summary>
+    public required string Resume { get; init; }
 }
 
 /// <summary>A draft to save (ADR-0163), as the document describes it. Every member but <c>revision</c> and <c>email</c> may be left out.</summary>

@@ -438,7 +438,7 @@ export class ThemeViewElement extends UmbLitElement {
   #check(check: ColourCheck, scheme: Scheme, name: string, id: string): TemplateResult {
     switch (check.state) {
       case 'decoration':
-        return html`<p class="help" id=${id}>${this.#term('checkDecoration')}</p>`;
+        return html`<span id=${id} hidden></span>`;
       case 'unchecked':
         return html`<p class="help" id=${id}>${this.#term('checkUnchecked')}</p>`;
       case 'pass':

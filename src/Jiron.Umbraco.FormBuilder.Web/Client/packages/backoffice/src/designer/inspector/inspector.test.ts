@@ -82,7 +82,7 @@ describe('the inspector', () => {
     const none = (await inspectorOf(null)).root;
     expect([text(none.querySelector('h2')), text(none.querySelector('.empty')), none.querySelector('.body')]).toEqual([
       'Nothing selected',
-      'Select a field, group or page in the form to change its settings here.',
+      'Select a field, group or page to change its settings.',
       null,
     ]);
     // Its fold stays, so the column can give the canvas its room.
@@ -101,9 +101,9 @@ describe('the inspector', () => {
     const buttons = all(must(root.host, 'the host'), '.section-head button');
     expect(buttons.map((button) => [text(button), button.getAttribute('aria-expanded')])).toEqual([
       ['Essentials', 'true'],
-      ['Validation Nothing changed', 'false'],
+      ['Validation Defaults', 'false'],
       ['Rules Always shown', 'false'],
-      ['Appearance Nothing changed', 'false'],
+      ['Appearance Defaults', 'false'],
       ['Advanced Alias: name', 'false'],
     ]);
     expect(buttons.every((button) => root.getElementById(button.getAttribute('aria-controls') ?? ''))).toBe(true);
@@ -129,7 +129,7 @@ describe('the inspector', () => {
       'Required when Arrival is not empty Off',
     ]);
     expect(text(ruled.root.querySelector('[data-section="rules"] .section-body > .help:last-child'))).toBe(
-      'A rule sits on the element it shows, hides or requires, or on the field it shows a message on.',
+      'Rules sit on the element they affect.',
     );
     // A show rule and a require rule leave the field's own rules no effect: it may still show a message.
     expect(ruled.root.querySelector('.add-rule')).not.toBeNull();
@@ -241,7 +241,7 @@ describe('the inspector', () => {
     expect(applied(requests[2], NAME)['span']).toBe(2);
     // Keep the answer follows Sensitive, and says what it removes where Sensitive only masks.
     expect(text(root.querySelector('#prop-keep-help'))).toBe(
-      'Until the actions have run: emails and webhooks still get the answer, then it is removed from the entry, which shows "not kept", and from its emails. Sensitive only masks an answer; this removes it.',
+      'Until the actions have run: emails and webhooks still get the answer, then it is removed from the entry and its emails.',
     );
     choose(must(root.querySelector<HTMLSelectElement>('#prop-keep'), 'keep'), 'untilActionsRun');
     expect(
@@ -355,9 +355,7 @@ describe('the inspector', () => {
   it('edits the texts of the language the canvas shows, and says where visitors see the default instead', async () => {
     const field = { ...NAME, label: { '': 'Your name' }, placeholder: { '': 'Ada', 'de-DE': 'Ada' } };
     const { root, requests } = await inspectorOf('name', { culture: 'de-DE' }, field);
-    expect(text(root.querySelector('.note'))).toBe(
-      'Editing the German texts. Where one is empty, visitors see the English text.',
-    );
+    expect(text(root.querySelector('.note'))).toBe('Where a German text is empty, visitors see the English one.');
     const label = must(root.querySelector<HTMLInputElement>('#prop-label'), 'the label');
     expect([label.value, label.placeholder, label.lang]).toEqual(['', 'Your name', 'de-DE']);
     expect(must(root.querySelector<HTMLInputElement>('#prop-placeholder'), 'the placeholder').value).toBe('Ada');
@@ -889,7 +887,7 @@ describe("a field's pattern in the inspector (ADR-0173)", () => {
       'prop-pattern-result',
       'status',
     ]);
-    expect(text(result())).toBe('Type an answer to see whether the pattern takes it. It is not saved.');
+    expect(text(result())).toBe("Type a sample answer. It isn't saved.");
     type(sample, 'AB1234');
     await settle(element);
     expect([text(result()), result().dataset['result']]).toEqual(['The pattern takes this answer.', 'match']);

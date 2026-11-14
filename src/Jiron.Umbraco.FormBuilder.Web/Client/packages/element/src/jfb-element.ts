@@ -152,11 +152,59 @@ export class JfbFormElement extends HTMLElement {
   // The instance id the element took on its first render and keeps, so its ids stay as they are on each render.
   #instance: string | undefined;
 
+  // The runtime's module while it could not be loaded, and how often it was asked for again.
+  #lame: URL | undefined;
+  #retries = 0;
+
   constructor() {
     super();
     // The form has no address to post to, which only a post without JavaScript uses (ADR-0128): it never posts as a
     // page would, the visitor's answers to the page's own address. It is sent through the runtime (6.4i).
-    this.addEventListener('submit', (event) => event.preventDefault());
+    this.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (this.#lame !== undefined && event.target instanceof HTMLFormElement) this.#sayLame(event.target, this.#lame);
+    });
+  }
+
+  /**
+   * A press on a form whose runtime could not be loaded, which nothing would answer: the form says in its own words
+   * that it was not sent, the page hears `jfb:error`, and the module is asked for again, under an address of its own,
+   * as a document keeps a module that failed.
+   */
+  #sayLame(form: HTMLFormElement, script: URL): void {
+    const notice = form
+      .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
+      ?.content.querySelector('[data-jfb-notice="server_error"]')
+      ?.cloneNode(true);
+    if (notice instanceof HTMLElement) {
+      form.querySelector(':scope > [data-jfb-notice]')?.remove();
+      (form.querySelector(':scope > .jfb-navigation') ?? form.lastElementChild)?.before(notice);
+      notice.focus();
+    }
+    let alias = '';
+    try {
+      const model = JSON.parse(form.querySelector('script[data-jfb-model]')?.textContent ?? '{}') as {
+        alias?: unknown;
+      };
+      if (typeof model.alias === 'string') alias = model.alias;
+    } catch {
+      // The model is the runtime's to read; the form's key names it.
+    }
+    form.dispatchEvent(
+      new CustomEvent('jfb:error', {
+        bubbles: true,
+        detail: { key: form.dataset['jfbForm'] ?? '', alias, code: 'server_error' },
+      }),
+    );
+    const again = new URL(script);
+    again.searchParams.set('jfb-retry', String(++this.#retries));
+    void runtimeOf(this.ownerDocument, again)
+      .then((runtime) => {
+        if (runtime === undefined || this.#lame === undefined) return;
+        this.#lame = undefined;
+        runtime.init(this);
+      })
+      .catch(() => undefined);
   }
 
   /** Renders the form when the element first joins a document; moved to another place, it keeps its form. */
@@ -195,7 +243,8 @@ export class JfbFormElement extends HTMLElement {
     }
 
     const origin = new URL(base, document.baseURI).origin;
-    const runtime = runtimeOf(document, new URL(answer.assets.script, origin)).catch(() => {
+    const script = new URL(answer.assets.script, origin);
+    const runtime = runtimeOf(document, script).catch(() => {
       console.warn('jfb-form: the website runtime could not be loaded; the form shows without it.');
       return undefined;
     });
@@ -203,7 +252,9 @@ export class JfbFormElement extends HTMLElement {
     if (render !== this.#render) return;
     this.replaceChildren(this.#write(answer, base));
     try {
-      (await runtime)?.init(this);
+      const loaded = await runtime;
+      this.#lame = loaded === undefined ? script : undefined;
+      loaded?.init(this);
     } catch (error) {
       console.error('jfb-form: the website runtime failed on the form.', error);
     }

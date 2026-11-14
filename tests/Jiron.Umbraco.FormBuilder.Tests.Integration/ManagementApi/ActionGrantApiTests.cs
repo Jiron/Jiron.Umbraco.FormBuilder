@@ -210,6 +210,30 @@ public sealed class ActionGrantApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AFileWhoseActionSendsASecret_IsImportedOnlyByWhoManagesSettings()
+    {
+        // The file's actions are new to the site, and an imported draft's action can be tested as it is stored: so a file
+        // that names one of the site's secrets beside an address of its writer's choosing is not the designer's to bring in.
+        var form = await FormAsync("Leads");
+        await FillAsync(form);
+        var forms = GetRequiredService<IFormBuilderFormService>();
+        var draft = (await forms.GetDraftAsync(form))!;
+        await forms.SaveDraftAsync(form, draft.Form.ConcurrencyVersion, draft.Definition! with { Actions = [Webhook("https://elsewhere.example.com/hook")] }, null, null);
+        var file = (await GetRequiredService<IFormBuilderFormExchangeService>().ExportAsync(form))!.Json;
+
+        var checkedByDesigner = await CallAsync("designer", HttpMethod.Post, "form/import/check", new { json = file });
+        var byDesigner = await CallAsync("designer", HttpMethod.Post, "form/import", new { json = file });
+        var byAdmin = await CallAsync("admin", HttpMethod.Post, "form/import", new { json = file });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((byDesigner.Outcome, byDesigner.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "manageSettings")), byDesigner.ToString());
+            Assert.That((checkedByDesigner.Outcome, checkedByDesigner.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "manageSettings")), "the check says so before the import does");
+            Assert.That((int)byAdmin.Status, Is.InRange(200, 299), byAdmin.ToString());
+        });
+    }
+
+    [Test]
     public async Task ASecretAsItself_IsRefusedAtItsSetting_WhereAnActionIsSavedRestoredReplacedOrImported()
     {
         var form = await FormAsync("Leads");

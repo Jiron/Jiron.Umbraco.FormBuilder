@@ -46,7 +46,7 @@ describe('the form block dialog', () => {
     const element = await open();
 
     expect(text(must(shadow(element).querySelector('p'), 'the text'))).toContain(
-      'It never changes types that exist already.',
+      'Types that exist already stay as they are.',
     );
     expect(api.create).not.toHaveBeenCalled();
   });

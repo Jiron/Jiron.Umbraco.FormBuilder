@@ -19,7 +19,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 /// <param name="Fields">The fields of a nested object, in their order.</param>
 /// <param name="Default">The value without one stored, as the JSON writes it; null when there is none.</param>
 /// <param name="Label">The label's key, <c>#jfbGlobalSettings_&lt;section&gt;_&lt;field&gt;</c>.</param>
-/// <param name="Description">The help's key, the label's with <c>Help</c>.</param>
+/// <param name="Description">The help's key, the label's with <c>Help</c>; null for a field without help.</param>
 /// <param name="Editor">The editor that draws it.</param>
 /// <param name="Box">The box on the screen; a nested field's is its object's.</param>
 /// <param name="Unit">The key of the word after a number; null for none.</param>
@@ -32,7 +32,7 @@ internal sealed record SettingsFieldDescriptor(
     IReadOnlyList<SettingsFieldDescriptor> Fields,
     JsonElement? Default,
     string Label,
-    string Description,
+    string? Description,
     string Editor,
     string Box,
     string? Unit,
@@ -160,7 +160,7 @@ internal static class SettingsSchema
             fields,
             defaultValue is null ? null : JsonSerializer.SerializeToElement(defaultValue),
             key,
-            key + "Help",
+            attribute.Help ? key + "Help" : null,
             editor,
             nested ? string.Empty : attribute.Box,
             attribute.Unit ? key + "Unit" : null,

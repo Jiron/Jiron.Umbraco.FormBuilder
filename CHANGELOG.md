@@ -13,17 +13,44 @@ follows the Umbraco major).
   the form is on. The link brings the answers back on the page they were saved on, and the form asks again for files,
   consents and sensitive answers, which are never saved. Editors turn it on under the form's Settings › Submission ›
   More options, with the days the link works.
+- The form check has a new error: a field that takes its options from an option list this site lacks. Such a form
+  could be published before and offered its visitors no choices.
+- The Access, Settings and Retention screens ask before unsaved changes are left.
 
 ### Changed
 
 - The website runtime's budget with every feature is 100 KB gzip at most (was 60 KB); what every page with a form
   loads first stays within 16 KB.
+- **The screens say less.** About 350 texts of the backoffice are shorter or gone, in English and German: help lines
+  that repeated their label, leads that explained the box below them, second sentences that said the first again.
+  Nothing a screen does has changed.
+- The visitor's texts are shorter in the save panel, the "welcome back" and "not sent" notices and on the page that
+  confirms an address, in all seven languages, with corrections to the Danish, Spanish, French, Italian and Dutch
+  wording.
+- A number field takes a decimal comma on pages whose language writes one, such as 12,5 on a German page.
+- A form that stores no entries shows its thank-you message on the post itself when the visitor's browser runs no
+  JavaScript.
+- Saving a form for later answers with a `resume` value in the public API, which the next save and the entry send
+  back.
+- The address a form's email verification confirms can't be edited in an entry, and a field marked sensitive is
+  masked in the entries sent before it was marked too.
 
 ### Fixed
 
 - The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.
 - Leaving a form for another screen of the backoffice no longer raises an error in the browser's console when the AI
   add-on is installed.
+- Save and continue later: a form with a summary page can be sent after its answers came back; "Other" answers and
+  dependent options come back; a save the mail limits hold back keeps the earlier one; files attached before a save are
+  still taken at Send; Privacy > People finds saved answers for as long as they are kept.
+- Mail no longer carries an `Expires` header, which could make a receiver drop a mail that was delivered late.
+- A slow webhook receiver no longer delays mail; a form's own file on disk that can't be read is never written over; a
+  theme or email layout that is one site's default can't be deleted.
+- A file whose action sends a secret is imported only by a user who manages settings.
+- A half-typed date or number is refused instead of being sent as empty, and a form whose scripts can't load says so
+  at Send.
+- The entries list reads on when every loaded row was deleted; the tree shows a form as published right after
+  Publish; Ctrl+S saves what is still being typed.
 
 ## [17.0.0-alpha.1] - 2026-11-13
 

@@ -77,7 +77,7 @@ test('Deliveries lists problems first, says once that sending is paused, names a
     .filter({ has: page.locator('uui-tag', { hasText: 'Limited' }) })
     .getByRole('button')
     .click();
-  await expect(sidebar).toContainText(`to ${visitor} that day, the most one address gets in a day.`);
+  await expect(sidebar).toContainText(`to ${visitor} that day, the most one address gets.`);
   await expect(sidebar.locator('code')).toHaveText('JironFormBuilder:Limits:Mail:PerRecipientPerDay');
   await expect(sidebar.locator('uui-button[label^="Retry"]')).toHaveCount(0);
   await axeInside(page, 'jfb-delivery-modal');

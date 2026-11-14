@@ -101,7 +101,7 @@ describe('the form check', () => {
         ['Email address', 'A merge tag in "Label" names nothing, so it shows nothing.'],
         ['The form', 'Its rules or calculations depend on each other in a circle.'],
       ],
-      [['Email address', expect.stringContaining('This rule makes the field required')]],
+      [['Email address', expect.stringContaining('This rule requires the field')]],
       [['Email address', expect.stringContaining('has no consent field')]],
     ]);
     element.remove();

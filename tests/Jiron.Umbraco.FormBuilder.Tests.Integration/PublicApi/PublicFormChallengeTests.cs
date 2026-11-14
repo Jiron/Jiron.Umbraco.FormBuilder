@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
@@ -161,14 +162,20 @@ public sealed class PublicFormChallengeTests : PublicApiTestBase
     [Test]
     public async Task TheEndpoint_StillGivesAChallenge_WhenAListIsMissing()
     {
+        // The form check refuses to publish a form whose list the site lacks (ADR-0252), and the library refuses to delete a
+        // list a form uses, so the row goes from the table itself, as a table restored from an older backup can leave it.
+        var lists = GetRequiredService<IOptionListRepository>();
+        var list = await lists.CreateAsync(new NewOptionList(Guid.Parse("71b00000-0000-4000-8000-000000000034"), "sizes", "Sizes", OptionListKind.Manual));
         var key = await PublishAsync(fields: new FormField
         {
             Key = Guid.Parse("71b00000-0000-4000-8000-000000000033"),
             Type = "dropdown",
             Alias = "size",
             Label = new LocalizedText("Size"),
-            Options = new FieldOptions { Source = OptionSource.List, OptionList = Guid.Parse("71b00000-0000-4000-8000-000000000034") },
+            Options = new FieldOptions { Source = OptionSource.List, OptionList = list.Key },
         });
+        await GetRequiredService<FormBuilderDatabase>().WriteAsync(db => db.ExecuteAsync($"DELETE FROM {FormBuilderTables.OptionList} WHERE id = {list.Id}"));
+        Assert.That(await lists.GetAsync(list.Key), Is.Null);
 
         using var answer = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge");
         var body = await JsonAsync(answer);

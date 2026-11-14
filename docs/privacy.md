@@ -105,8 +105,9 @@ included:
 
 ![Privacy › People: a person's entries found by their email address, ready to export or erase](screenshots/privacy.png)
 
-1. **Find** by email address, or by member. It finds entries whose email field holds the address and entries the
-   member sent while signed in. An address typed into a plain text field isn't found; search the entries lists for
+1. **Find** by email address, or by member. It finds entries whose email field holds the address, entries the
+   member sent while signed in, and answers saved for later whose link went to the address. It shows the newest 500
+   entries at a time; after an erase, find again for the rest. An address typed into a plain text field isn't found; search the entries lists for
    those too. Every search is recorded in the audit log, without the address.
 2. **Export everything** prepares a ZIP in the background, with a folder per entry holding its answers (sensitive ones
    in full), consent wordings, timeline, notes, files and the mails sent to the person.

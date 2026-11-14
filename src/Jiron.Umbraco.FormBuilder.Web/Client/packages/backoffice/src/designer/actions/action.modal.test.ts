@@ -595,10 +595,7 @@ describe("an action's sidebar", () => {
     builder.answer = { target: 'a1', rule: RULE };
     const { root, keep, kept } = await sidebarOf();
     const add = must(root.querySelector<HTMLElement>('#rule'), 'Add a rule');
-    expect([text(add), text(root.querySelector('#rule-words'))]).toEqual([
-      'Add a rule',
-      'Runs for every entry its trigger brings.',
-    ]);
+    expect([text(add), text(root.querySelector('#rule-words'))]).toEqual(['Add a rule', 'Runs for every entry.']);
     expect(add.getAttribute('aria-describedby')).toBe('rule-words');
     add.click();
     await vi.advanceTimersByTimeAsync(0);
@@ -1525,9 +1522,11 @@ describe("a webhook's sidebar", () => {
     must(root.querySelector<HTMLButtonElement>('.more'), 'More options').click();
     await settle(element);
     expect(text(root.getElementById('setting-headers-help'))).toBe(
-      'Sent with each request. A header whose name has auth, key, token, secret, password or cookie in it takes a reference.',
+      'A header whose name has auth, key, token, secret, password or cookie in it takes a reference.',
     );
-    expect(text(root.getElementById('setting-secret-help'))).toContain('X-Jfb-Signature');
+    expect(text(root.getElementById('setting-secret-help'))).toContain(
+      "A reference to the secret that signs each request, so the receiver can tell it came from this site. Empty uses the site's own.",
+    );
     press(root, 'Add header');
     await settle(element);
     await type('setting-headers-name-1', 'Authorization');
@@ -1874,7 +1873,7 @@ describe("a content action's sidebar", () => {
     const { root, box } = await open({});
     // None chosen stands first while nothing is; the form check asks for a type.
     expect(options(box<HTMLSelectElement>('setting-documentType'))).toEqual(['None chosen', 'Story', 'Note']);
-    expect(text(root.getElementById('setting-documentType-help'))).toBe('Each entry becomes an item of this type.');
+    expect(root.getElementById('setting-documentType-help'), 'its label says it all').toBeNull();
     expect(text(root.getElementById('setting-mapping'))).toBe('Choose a document type, and its properties come here.');
     expect(read).toEqual([]);
   });

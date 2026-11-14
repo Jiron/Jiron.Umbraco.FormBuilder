@@ -146,7 +146,7 @@ test('rules show as chips, and the overview lists them by page, warns of a confl
     /^\s*Attachment\s/,
   ]);
   await expect(overview.locator(`button.row[data-key="${keys.attachment}"] .conflict`)).toHaveText(
-    'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required, so visitors can send without it.',
+    'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required.',
   );
   await axeInside(page, 'jfb-rules-overview-modal');
 
@@ -202,7 +202,7 @@ test('a form without rules says in one sentence what most rules do', async ({ pa
   const design = page.locator('jfb-form-design-view');
   const overview = await openOverview(page, design);
   await expect(overview.locator('.empty')).toHaveText(
-    'No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question.',
+    'No rules yet. Most rules show a question only when another answer calls for it.',
   );
   await expect(overview.locator('uui-box')).toHaveCount(0);
   await axeInside(page, 'jfb-rules-overview-modal');

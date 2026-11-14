@@ -320,9 +320,27 @@ internal sealed class FormExchangeController(
             return refusal;
         }
 
-        return envelope is not null && grants.LiteralSecrets(null, envelope.Definition) is { Count: > 0 } literal
-            ? throw new FormBuilderValidationException(literal)
-            : null;
+        if (envelope is null)
+        {
+            return null;
+        }
+
+        if (grants.LiteralSecrets(null, envelope.Definition) is { Count: > 0 } literal)
+        {
+            throw new FormBuilderValidationException(literal);
+        }
+
+        // Every action of a file is new to the site: one that sends a secret of the site is whose manages settings to bring in,
+        // as it is theirs to set up (ADR-0235). An import ran nothing, but its draft's actions can be tested (ADR-0252).
+        foreach (var action in envelope.Definition.Actions)
+        {
+            if (await grants.SecretRefusalAsync(RequestAccess.User, action, cancellationToken) is { } secret)
+            {
+                return secret;
+            }
+        }
+
+        return null;
     }
 
     // A replace that changes the draft's actions needs manageActions on the form, as a draft save does; compared with the

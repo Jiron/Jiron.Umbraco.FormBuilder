@@ -43,7 +43,7 @@ internal sealed record PrivacySettings : ISettingsSection
     /// What a member's deletion in Umbraco does to their entries (ADR-0231): anonymised by default, or deleted; for every
     /// site at once, since a member belongs to no site. Entries a legal hold keeps stay as they are.
     /// </summary>
-    [SettingsField("members", Editor = "choiceLines")]
+    [SettingsField("members", Editor = "choiceLines", Help = false)]
     public MemberDeletion MemberDeleted { get; init; } = MemberDeletion.Anonymise;
 }
 
@@ -89,12 +89,12 @@ internal sealed record SiteRetention
     public int Approved { get; init; } = 365;
 
     /// <summary>Rejected entries: 90 days by default.</summary>
-    [SettingsField("", Order = 2, Unit = true)]
+    [SettingsField("", Order = 2, Unit = true, Help = false)]
     [Range(ForGood, MaxDays)]
     public int Rejected { get; init; } = 90;
 
     /// <summary>Entries in Spam: 30 days by default.</summary>
-    [SettingsField("", Order = 3, Unit = true)]
+    [SettingsField("", Order = 3, Unit = true, Help = false)]
     [Range(ForGood, MaxDays)]
     public int Spam { get; init; } = 30;
 }

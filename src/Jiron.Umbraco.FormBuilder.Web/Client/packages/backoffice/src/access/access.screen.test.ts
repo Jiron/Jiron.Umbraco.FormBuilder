@@ -10,6 +10,8 @@ import type { AccessResponseModel, AccessTargetResponseModel } from '../api';
 import { must, registerEnglish, settle, shadow, testHost } from '../testing';
 
 const api = vi.hoisted(() => ({
+  /** What a sidebar the screen opens answers. */
+  modal: undefined as { saved: boolean } | undefined,
   reads: [] as unknown[],
   saves: [] as unknown[],
   sent: [] as unknown[],
@@ -35,9 +37,21 @@ vi.mock('../api', async (original) => ({
   },
 }));
 
+vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
+  ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
+  umbOpenModal: async () => api.modal ?? Promise.reject(new Error('closed')),
+}));
+
 vi.mock('../ui/confirm', () => ({
   confirmText: async () => (api.confirm ? undefined : Promise.reject(new Error('cancelled'))),
 }));
+
+/** The router's event before the address changes; whether the screen stopped it to ask first. */
+const stopsLeaving = (): boolean => {
+  const event = new CustomEvent('willchangestate', { detail: { url: '/umbraco/section/content' }, cancelable: true });
+  window.dispatchEvent(event);
+  return event.defaultPrevented;
+};
 
 const { AccessScreenElement } = await import('./access.screen');
 const { PermissionsModalElement } = await import('./permissions.modal.element');
@@ -153,6 +167,9 @@ async function open<T extends HTMLElement>(element: T, ...reads: unknown[]) {
 
 beforeAll(registerEnglish);
 
+// The screen's own address, which a leaving is told from.
+beforeAll(() => history.replaceState({}, '', '/umbraco/section/jfb-forms/settings/access'));
+
 afterEach(() => {
   document.body.replaceChildren();
   api.confirm = true;
@@ -221,6 +238,49 @@ describe('Settings > Access', () => {
     expect(button('Save')).toBeUndefined();
     expect(said(root)).toContain('JironFormBuilder:Access:Grants');
     expect(button('Add folder or form\u2026')).toBeDefined();
+  });
+
+  it("keeps the ticks not saved yet when a folder's sidebar saved and the screen reads again, so Save sends them", async () => {
+    const { root, box, button } = await open(new AccessScreenElement(), access());
+    box('Edit entries, Editors').click();
+    await settle();
+
+    api.modal = { saved: true };
+    api.reads = [{ data: access() }];
+    must(root.querySelector<HTMLElement>('.items .item-name'), 'a folder').click();
+    await vi.waitFor(() => expect(api.reads).toHaveLength(0));
+    await settle();
+    expect(box('Edit entries, Editors').checked, 'the tick stays').toBe(true);
+
+    api.saves = [{ data: access() }];
+    must(button('Save'), 'Save').click();
+    await vi.waitFor(() => expect(api.sent).toHaveLength(1));
+    expect(api.sent).toEqual([
+      { grants: [{ group: 'editors', expected: ['design'], permissions: ['design', 'viewEntries', 'editEntries'] }] },
+    ]);
+    api.modal = undefined;
+  });
+
+  it('asks before the backoffice leaves it with ticks not saved, and not once they are saved', async () => {
+    const { box, button } = await open(new AccessScreenElement(), access());
+    expect(stopsLeaving(), 'nothing changed').toBe(false);
+    box('Edit entries, Editors').click();
+    await settle();
+    expect(stopsLeaving(), 'a tick waits to be saved').toBe(true);
+
+    api.saves = [
+      {
+        data: access({
+          groups: access().groups.map((group) =>
+            group.key === 'editors' ? { ...group, permissions: ['design', 'viewEntries', 'editEntries'] } : group,
+          ),
+        }),
+      },
+    ];
+    must(button('Save'), 'Save').click();
+    await vi.waitFor(() => expect(api.sent).toHaveLength(1));
+    await settle();
+    expect(stopsLeaving(), 'saved').toBe(false);
   });
 
   it('says of each folder or form who alone sees it, or who may also', async () => {

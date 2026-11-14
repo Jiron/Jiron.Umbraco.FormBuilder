@@ -6,6 +6,8 @@ import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observabl
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
+import { UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import {
   UmbEntityNamedDetailWorkspaceContextBase,
@@ -48,6 +50,7 @@ import {
 import { oneAtATime, restoreDraft, type RestoredDraft } from './history/restore-draft';
 import { previewAnswer, type EmailPreview } from './actions/email-preview';
 import { FORM_ENTITY_TYPE } from '../section/entity-types';
+import { commitTyping } from '../ui/commit-typing';
 import { issuesOf, type FixTarget } from './check/form-check';
 import { FormChecker, UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_DETAIL_REPOSITORY_ALIAS, FORM_WORKSPACE_ALIAS } from './constants';
@@ -386,6 +389,12 @@ export class FormWorkspaceContext
     return this.#history.state;
   }
 
+  /** Saves the draft with the text still being typed in a box that tells of it only once it is left, as at Ctrl+S. */
+  override async requestSubmit(): Promise<void> {
+    commitTyping();
+    return super.requestSubmit();
+  }
+
   /**
    * Publishes the form, saving its draft first when it has unsaved changes. True once it is published; a refusal is
    * said, the form check's problems among them.
@@ -412,6 +421,10 @@ export class FormWorkspaceContext
     }
 
     await this.reload();
+    // The form's row in the tree says whether it is published: it reads the form again, as after a save.
+    (await this.getContext(UMB_ACTION_EVENT_CONTEXT))?.dispatchEvent(
+      new UmbRequestReloadStructureForEntityEvent({ unique: form.key, entityType: FORM_ENTITY_TYPE }),
+    );
     const localize = new UmbLocalizationController(this);
     (await this.getContext(UMB_NOTIFICATION_CONTEXT))?.peek('positive', {
       data: { message: localize.term('jfbDesigner_published', data.form.name) },

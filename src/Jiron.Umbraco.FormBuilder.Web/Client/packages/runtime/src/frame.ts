@@ -152,10 +152,41 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       if (sessions.has(form)) return;
       for (const type of TOUCHES) form.removeEventListener(type, touched);
       chunk ??= load().catch(() => null);
-      sessions.set(
-        form,
-        chunk.then((loaded) => loaded?.attach(form, model)),
-      );
+      const session = chunk.then((loaded) => loaded?.attach(form, model));
+      sessions.set(form, session);
+      // A form with no address to post to (the element's) has nothing to answer a press once its logic cannot load:
+      // the next press says so in the form's own words, tells the site, and loads the logic again.
+      if (form.hasAttribute('action')) return;
+      const lame = (): void => {
+        chunk = undefined;
+        sessions.delete(form);
+        form.addEventListener(
+          'submit',
+          (event) => {
+            event.preventDefault();
+            const notice = form
+              .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
+              ?.content.querySelector('[data-jfb-notice="server_error"]')
+              ?.cloneNode(true);
+            if (notice instanceof HTMLElement) {
+              form.querySelector(':scope > [data-jfb-notice]')?.remove();
+              (form.querySelector(':scope > .jfb-navigation') ?? form.lastElementChild)?.before(notice);
+              notice.focus();
+            }
+            form.dispatchEvent(
+              new CustomEvent('jfb:error', {
+                bubbles: true,
+                detail: { key: form.dataset['jfbForm'] ?? '', alias: model.alias, code: 'server_error' },
+              }),
+            );
+            touched();
+          },
+          { once: true },
+        );
+      };
+      void session.then((woken) => {
+        if (woken === null || woken === undefined) lame();
+      }, lame);
     };
     wakes.set(form, touched);
     // Counting is the site's, not the visitor's: a form that cannot count works all the same.

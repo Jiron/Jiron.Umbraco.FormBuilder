@@ -130,7 +130,8 @@ Mail to an address a visitor typed could go to anyone, so the site limits it:
 - **200 mails an hour** to all such addresses together.
 
 A mail over a limit is stored as **Limited** and never sent; Deliveries says which limit held it back. Mail to the team's
-own addresses doesn't count. Files attached to one mail may total 20 MB; a larger file is left out and the mail goes
+own addresses doesn't count. The mail with a link to saved answers (Save and continue later) counts like any other
+mail to a visitor: over a limit, the answers are not saved and the visitor is told to try again later. Files attached to one mail may total 20 MB; a larger file is left out and the mail goes
 without it.
 
 A developer can change the limits in `JironFormBuilder:Limits:Mail` ([configuration.md](configuration.md#limits)).

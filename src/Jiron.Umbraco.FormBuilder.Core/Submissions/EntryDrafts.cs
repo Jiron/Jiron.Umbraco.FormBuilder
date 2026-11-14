@@ -51,7 +51,7 @@ internal sealed record DraftAnswer(DraftStatus Status, Guid Form = default, int 
 /// <param name="Page">The page the form was on, which the link goes back to.</param>
 /// <param name="Email">The address the link goes to, which only the mail keeps.</param>
 /// <param name="CurrentPage">The form's page the visitor was on, as the form knows it; null for the first.</param>
-/// <param name="ChallengeId">The id of the challenge that made it; null for a request without one.</param>
+/// <param name="ChallengeId">The id of the challenge that saves it, which saves one draft; null for a request without one.</param>
 /// <param name="Replaces">The draft it takes the place of, whose link stops working; null for none.</param>
 /// <param name="Member">The member signed in who saved it, whom a form for members gives it back to alone (ADR-0231); null for none.</param>
 internal sealed record NewDraft(
@@ -72,10 +72,12 @@ internal sealed record NewDraft(
 }
 
 /// <summary>
-/// Save and resume (section 4.4, ROADMAP 8.6, ADR-0163). A draft is an entry in the state <see cref="EntryState.Draft"/>: it holds
-/// its answers but takes no place, no unique answer and no count, and runs nothing. Only the hash of its token is stored, and the token
-/// itself goes to the address in the mail. Submitting makes an ordinary entry through the whole pipeline and takes the draft away
-/// in that entry's unit. What cannot wait is left out: files, consents and sensitive answers are asked for again.
+/// Save and resume (section 4.4, ROADMAP 8.6, ADR-0163, ADR-0252). A draft is an entry in the state <see cref="EntryState.Draft"/>: it holds
+/// its answers but takes no place, no unique answer and no count, and runs nothing. Only the hash of its token is stored; the token
+/// itself goes to the address in the mail, and to the page that saved, which names the draft to the entry that follows. Submitting
+/// makes an ordinary entry through the whole pipeline and takes the draft away in that entry's unit. What cannot wait is left out:
+/// files, consents and sensitive answers are asked for again. A challenge saves one draft and still makes its one entry, so what
+/// the page holds by that challenge, its uploads, stays good after a saving.
 /// </summary>
 internal sealed class EntryDrafts(
     FormBuilderDatabase database,
@@ -120,31 +122,37 @@ internal sealed class EntryDrafts(
     public async Task<bool> HasWayBackAsync(RequestPage page, string culture, CancellationToken cancellationToken = default) =>
         await submissions.PathAsync(page, culture, cancellationToken) is not null && await baseUrls.GetAsync(page.Site, cancellationToken) is not null;
 
-    /// <summary>Whether a challenge was spent by a request that stored nothing.</summary>
+    /// <summary>Whether a challenge can save no draft any more: it saved one, or it made an entry that is gone since.</summary>
     /// <param name="challengeId">The challenge's stored id.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    public Task<bool> ChallengeSpentAsync(string challengeId, CancellationToken cancellationToken = default) => settlement.ChallengeUsedAsync(challengeId, cancellationToken);
+    public async Task<bool> ChallengeSpentAsync(string challengeId, CancellationToken cancellationToken = default) =>
+        await settlement.ChallengeUsedAsync(challengeId, cancellationToken) || await settlement.DraftChallengeUsedAsync(challengeId, cancellationToken);
 
-    /// <summary>Spends the challenge of a request that stores nothing but is answered as if it had.</summary>
+    /// <summary>Spends the challenge's one draft for a request that stores nothing but is answered as if it had.</summary>
     /// <param name="challengeId">The challenge's stored id; null for a request without one.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     public Task DropAsync(string? challengeId, CancellationToken cancellationToken = default) =>
-        challengeId is null ? Task.CompletedTask : settlement.SpendChallengeAsync(challengeId, cancellationToken);
+        challengeId is null ? Task.CompletedTask : settlement.SpendDraftChallengeAsync(challengeId, cancellationToken);
+
+    /// <summary>A token as a saved draft's, which names nothing: the answer of a request that stored none.</summary>
+    public static string NewToken() => Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(TokenBytes));
 
     /// <summary>
-    /// Stores a draft, and queues the mail with its link in that unit. A mail the limits hold back takes the draft with it, as nothing
-    /// would ever bring those answers back; the answer is the same.
+    /// Stores a draft, and queues the mail with its link in that unit; its token, which the page that saved names it by. A mail the
+    /// limits hold back takes the draft with it, as nothing would ever bring those answers back, and leaves the draft it was to
+    /// replace, whose link still works; the answer is the same, with a token that names nothing.
     /// </summary>
     /// <param name="draft">The draft.</param>
     /// <param name="cancellationToken">Cancels the unit of work.</param>
-    public async Task SaveAsync(NewDraft draft, CancellationToken cancellationToken = default)
+    public async Task<string> SaveAsync(NewDraft draft, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
         var definition = draft.Form.Definition;
         var path = (await submissions.PathAsync(draft.Page, draft.Culture, cancellationToken))!;
         var baseUrl = (await baseUrls.GetAsync(draft.Page.Site, cancellationToken))!;
         var days = definition.Settings.Submission.Resume!.Days;
-        var token = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(TokenBytes));
+        var token = NewToken();
+        var kept = true;
         var words = ResumeWords.Of(draft.Culture);
         var link = $"{baseUrl.TrimEnd('/')}{path}#{FragmentName}={token}";
         var prepared = await outbox.PrepareAsync(
@@ -160,8 +168,8 @@ internal sealed class EntryDrafts(
             },
             cancellationToken);
         var errors = draft.Answers.Errors.Select(error => error.Field).ToHashSet();
-        var kept = KeptFields(definition);
-        var answers = draft.Answers.Answers.Where(answer => !errors.Contains(answer.Field) && kept.Contains(answer.Field)).ToList();
+        var keeps = KeptFields(definition);
+        var answers = draft.Answers.Answers.Where(answer => !errors.Contains(answer.Field) && keeps.Contains(answer.Field)).ToList();
         await store.CreateAsync(
             new NewEntry
             {
@@ -170,7 +178,6 @@ internal sealed class EntryDrafts(
                 FormVersionId = draft.FormVersionId,
                 State = EntryState.Draft,
                 SubmissionId = Guid.NewGuid(),
-                ChallengeId = draft.ChallengeId,
                 SubmissionHash = HashOf(token),
                 Culture = draft.Culture,
                 ContentKey = draft.Page.Content,
@@ -186,26 +193,33 @@ internal sealed class EntryDrafts(
             FrozenDictionary<Guid, ConsentWording>.Empty,
             async created =>
             {
-                if (created.ChallengeId is { } challenge && await settlement.ChallengeUsedAsync(challenge, cancellationToken))
+                // The unit holds the form's row, so of two savings with one challenge the second sees the first's mark.
+                if (draft.ChallengeId is { } challenge)
                 {
-                    throw new FormBuilderConflictException(FormBuilderConflict.ChallengeUsed, "The challenge was spent a moment ago.");
-                }
+                    if (await ChallengeSpentAsync(challenge, cancellationToken))
+                    {
+                        throw new FormBuilderConflictException(FormBuilderConflict.ChallengeUsed, "The challenge was spent a moment ago.");
+                    }
 
-                if (draft.Replaces is { } replaced)
-                {
-                    await emails.DeleteUnsentAsync(replaced, cancellationToken);
-                    await entries.DeleteAsync(replaced, cancellationToken);
+                    await settlement.SpendDraftChallengeAsync(challenge, cancellationToken);
                 }
 
                 await events.AddAsync(new NewEntryEvent(created.Id, ExpiresEvent, DueIn: TimeSpan.FromDays(days)), cancellationToken);
                 if (prepared is null || await outbox.QueueAsync(prepared with { EntryId = created.Id }, cancellationToken) is { State: EmailState.Limited })
                 {
-                    await DropAsync(created.ChallengeId, cancellationToken);
+                    kept = false;
                     await entries.DeleteAsync(created.Id, cancellationToken);
+                }
+                else if (draft.Replaces is { } replaced)
+                {
+                    // Only once the new link is on its way does the old one stop working.
+                    await emails.DeleteUnsentAsync(replaced, cancellationToken);
+                    await entries.DeleteAsync(replaced, cancellationToken);
                 }
             },
             cancellationToken);
         wake.Wake();
+        return kept ? token : NewToken();
     }
 
     /// <summary>What a link gives back: the answers by the form the site serves now, as a later version may have changed its aliases.</summary>
@@ -246,7 +260,8 @@ internal sealed class EntryDrafts(
         }
 
         var page = definition.Pages.Any(each => each.Key == draft.CurrentPageKey) ? draft.CurrentPageKey : null;
-        return new DraftAnswer(DraftStatus.Found, row.Key, served.Published.Form.PublicRevision, page, expires, ValuesOf(answers, definition));
+        // Saved with the version the site serves, what it holds no answer of was left empty then, and is said so.
+        return new DraftAnswer(DraftStatus.Found, row.Key, served.Published.Form.PublicRevision, page, expires, ValuesOf(answers, definition, withEmpty: draft.FormVersionId == row.PublishedVersionId));
     }
 
     /// <summary>The draft a submission names, if it is one of this form that has not gone yet; a link that says nothing more never stops a submission.</summary>
@@ -275,10 +290,16 @@ internal sealed class EntryDrafts(
             },
             cancellationToken);
 
-    /// <summary>The answers as a submission's body names them, for the fields the form still has by the alias it has now.</summary>
+    /// <summary>
+    /// The answers as a submission's body names them, for the fields the form still has by the alias it has now. With
+    /// <paramref name="withEmpty"/>, a field the draft keeps but holds no answer of is named with no value, so the page empties what
+    /// it starts that field with (a default, a prefill): the visitor had left it empty (ADR-0252). A repeatable group is not, as
+    /// its rows are the page's to keep.
+    /// </summary>
     /// <param name="answers">The draft's answers.</param>
     /// <param name="definition">The form the site serves.</param>
-    internal static Dictionary<string, object> ValuesOf(EntryAnswers answers, FormDefinition definition)
+    /// <param name="withEmpty">Whether the fields without an answer are named.</param>
+    internal static Dictionary<string, object> ValuesOf(EntryAnswers answers, FormDefinition definition, bool withEmpty = false)
     {
         ArgumentNullException.ThrowIfNull(answers);
         ArgumentNullException.ThrowIfNull(definition);
@@ -310,6 +331,23 @@ internal sealed class EntryDrafts(
         foreach (var (name, row) in rows)
         {
             values[name] = row.Values.ToList();
+        }
+
+        if (withEmpty)
+        {
+            foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
+            {
+                if (field.Fields.Count > 0 || !kept.Contains(field.Key) || field.Alias is not { Length: > 0 } alias)
+                {
+                    continue;
+                }
+
+                var parts = alias + ".";
+                if (!values.Keys.Any(name => name == alias || name.StartsWith(parts, StringComparison.Ordinal)))
+                {
+                    values[alias] = new List<string>();
+                }
+            }
         }
 
         return values;

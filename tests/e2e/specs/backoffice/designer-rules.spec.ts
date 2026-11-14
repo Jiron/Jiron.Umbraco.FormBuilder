@@ -292,7 +292,7 @@ test('a required-when rule compares two fields and a query value, is tried, and 
   await builder.locator('uui-toggle').click();
   // A rule that is off does nothing; the switch's help says why.
   await expect(verdict).toHaveText('Guests is not required.');
-  await expect(builder.getByText('The field is then never required.')).toBeVisible();
+  await expect(builder.getByText('Off, the rule is kept and the field is never required.')).toBeVisible();
   await builder.locator('uui-toggle').click();
   await axeInside(page, 'jfb-rule-builder-modal');
 

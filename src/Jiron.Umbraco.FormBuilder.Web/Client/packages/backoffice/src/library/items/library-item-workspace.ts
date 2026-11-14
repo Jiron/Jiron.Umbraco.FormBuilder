@@ -17,6 +17,7 @@ import {
 import type { LibraryUsersResponseModel } from '../../api';
 import { SAVE_PROBLEMS, SaveProblemsEvent } from './library-item-data-source';
 import type { LibraryItemModel, LibraryKind, LibraryProblem } from './library-items';
+import { commitTyping } from '../../ui/commit-typing';
 
 /** What a kind's workspace says of itself. */
 export interface LibraryWorkspaceArgs<T extends LibraryItemModel> {
@@ -91,6 +92,12 @@ export class LibraryItemWorkspaceContext<T extends LibraryItemModel>
       },
     ]);
     this.getHostElement().addEventListener(SAVE_PROBLEMS, this.#onProblems);
+  }
+
+  /** Saves the item with the text still being typed in a box that tells of it only once it is left, as at Ctrl+S. */
+  override async requestSubmit(): Promise<void> {
+    commitTyping();
+    return super.requestSubmit();
   }
 
   protected override async _processIncomingData(data: T): Promise<T> {

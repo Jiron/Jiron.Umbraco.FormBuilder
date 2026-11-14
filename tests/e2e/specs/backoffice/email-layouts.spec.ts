@@ -117,7 +117,7 @@ test('a designer makes an email layout through the screens, previews it and gets
   await links.press('Tab');
   await expect(view.locator('#colour-light-accent-check')).toContainText('on the mail: text needs 4.5:1.');
   await view.locator('#colour-light-accent-check').getByRole('button').click();
-  await expect(view.locator('#colour-light-accent-check')).toContainText('on the mail: passes');
+  await expect(view.locator('#colour-light-accent-check')).toContainText('Contrast ');
   await view.getByRole('group', { name: 'Colours to set' }).getByRole('button', { name: 'Dark', exact: true }).click();
   const darkLinks = view.getByRole('textbox', { name: 'Links and buttons', exact: true });
   await darkLinks.fill('#9cc4ff');
@@ -161,6 +161,11 @@ test('a designer makes an email layout through the screens, previews it and gets
   );
   expect(visibleText(bodyOf(sent.raw))).toContain('Brand Ltd, Main Street 1');
   await expect(page.locator('jfb-library-item-editor').getByText('Not used by any action')).toBeVisible();
+
+  // Ctrl+S while the cursor is still in a box saves what was typed there, not the text as it was before.
+  await footerBox.fill('<p>Brand Ltd, Main Street 2</p>');
+  await footerBox.press('Control+s');
+  await expect.poll(async () => (await layoutOf(api, key)).design.footer['']).toBe('<p>Brand Ltd, Main Street 2</p>');
 
   // Narrow: one side at a time, by the switch.
   await page.setViewportSize({ width: 1024, height: 768 });

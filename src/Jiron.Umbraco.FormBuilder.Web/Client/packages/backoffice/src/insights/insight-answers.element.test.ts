@@ -232,9 +232,7 @@ describe('the Answers', () => {
     expect(widths[3]).toBeCloseTo(8, 0);
     expect(box('Topic').querySelector('.note')).toBeNull();
     expect(said(bars('Extras'))).toEqual(['Coffee: 80% (80)', 'Tea: 60% (60)', 'Other, in their own words: 5% (5)']);
-    expect(text(box('Extras').querySelector('.note'))).toBe(
-      'More than one could be chosen, so the shares add up to more than 100%.',
-    );
+    expect(text(box('Extras').querySelector('.note'))).toBe('Several could be chosen, so shares total over 100%.');
   });
 
   it("ranks a ranking's options by their average position, the first the longest bar", async () => {
@@ -252,7 +250,7 @@ describe('the Answers', () => {
       'Delivery: average position no data',
     ]);
     expect(text(box('What matters most').querySelector('.note'))).toBe(
-      'The higher an option ranks on average, the longer its bar.',
+      'Average position: the higher an option ranks, the longer its bar.',
     );
   });
 

@@ -259,7 +259,7 @@ test("IP addresses: the Privacy group chooses what the form's entries keep, and 
   // The host doesn't allow full addresses, and the help names the key that would.
   await expect(ip.locator('option[value="full"]')).toBeDisabled();
   await expect(view.locator('#ip-help')).toHaveText(
-    "What each entry keeps of the address it was sent from. Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
+    "Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
   );
   await ip.selectOption('anonymised');
   await axeInside(page, 'jfb-form-settings-view');
@@ -346,7 +346,7 @@ test('availability, spam protection, appearance and developer set what they say,
   await expect(choices.first().locator('.choice-name')).toHaveText(/^Site default \(.+\)$/);
   const scored = choices.filter({ hasText: 'reCAPTCHA v3' });
   await expect(scored).toHaveAttribute('data-dimmed', '');
-  await expect(scored.locator('.choice-line')).toContainText('no keys for it yet');
+  await expect(scored.locator('.choice-line')).toContainText('No keys yet.');
   await scored.locator('input').check();
   const threshold = view.getByLabel('Lowest score');
   await enter(threshold, '2');
@@ -463,9 +463,7 @@ test("the form check's problems in the settings show under their setting, and Fi
   // From the publish dialog, while the view is shown: Fix it on the verification's field opens Submission on it.
   await page.getByRole('button', { name: `Publish${ELLIPSIS}` }).click();
   const dialog = page.locator('jfb-publish-modal');
-  await expect(dialog.locator('[role="alert"] .lead')).toHaveText(
-    "This form can't be published yet: 2 errors need fixing.",
-  );
+  await expect(dialog.locator('[role="alert"] .lead')).toHaveText('2 errors block publishing.');
   await dialog
     .locator('li[data-code="invalid_reference"]')
     .getByRole('button', { name: 'Fix it: Form settings' })

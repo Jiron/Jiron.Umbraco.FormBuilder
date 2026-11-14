@@ -145,7 +145,6 @@ export default {
     columnsFailed: 'Die Spalten konnten nicht für das nächste Mal gespeichert werden.',
 
     chooser_headline: 'Spalten',
-    chooser_details: 'Jeder Eintrag zeigt seinen Status, wann er eingegangen ist, und seine Aktionen.',
     chooser_fields: 'Die Felder des Formulars',
     chooser_removed: 'aus dem Formular entfernt',
     chooser_sensitive: 'Vertrauliche Felder erscheinen nur im Eintrag.',
@@ -247,7 +246,7 @@ export default {
     emptied: (number: number) => `${entries(number)} aus dem Spam gelöscht.`,
     emptiedMore: 'Der Spam enthält noch mehr. „Spam leeren…“ löscht den Rest.',
     emptyFailed: 'Der Spam konnte nicht geleert werden. Versuchen Sie es erneut.',
-    noResults: 'Keine Einträge passen zu diesen Filtern. Entfernen Sie oben einen davon, oder setzen Sie alle zurück.',
+    noResults: 'Keine Einträge passen zu den Filtern oben.',
     noSearch: (term: string) => `Keine Einträge passen zu „${term}“.`,
     noSearchSensitive: (term: string) =>
       `Keine Einträge passen zu „${term}“. Vertrauliche Felder werden nicht durchsucht.`,
@@ -259,12 +258,11 @@ export default {
     digest_daily: 'Täglich',
     digest_weekly: 'Wöchentlich, montags',
     digest_when: (time: string, place: string) =>
-      `Die Zusammenfassung geht um ${time} Uhr Ortszeit ${place}, der Zeitzone für alle Websites, raus und umfasst den Tag oder die Woche davor.`,
-    digest_whenUtc: (time: string) =>
-      `Die Zusammenfassung geht um ${time} Uhr UTC, der Zeitzone für alle Websites, raus und umfasst den Tag oder die Woche davor.`,
+      `Versand um ${time} Uhr Ortszeit ${place}, für den Tag oder die Woche davor.`,
+    digest_whenUtc: (time: string) => `Versand um ${time} Uhr UTC, für den Tag oder die Woche davor.`,
     digest_preview: 'So sieht sie aus',
     digest_note: (address: string) =>
-      `Enthalten sind Zahlen und Links, nie Antworten, und nur die Formulare, die Sie sehen dürfen. Die E-Mail geht an Ihre eigene Adresse, ${address}.`,
+      `Nur Zahlen und Links, nie Antworten, zu den Formularen, die Sie sehen dürfen. Geht an ${address}.`,
     digest_noAddress: 'Ihr Benutzer hat noch keine E-Mail-Adresse, deshalb kann keine Zusammenfassung rausgehen.',
     digest_test: 'Test-E-Mail senden',
     digest_testSent: (address: string) => `Test-E-Mail an ${address} gesendet.`,
@@ -301,8 +299,8 @@ export default {
     tab_notesCount: (number: number) => `Notizen (${number})`,
     details_test: 'Testeintrag, aus der Vorschau gesendet',
     details_sentFrom: (page: string) => `Gesendet von ${page}`,
-    details_quick: 'In unter einer Minute ausgefüllt',
-    details_minutes: (minutes: number) => `In ${minutes} Min. ausgefüllt`,
+    details_quick: 'Dauer: unter 1 Min.',
+    details_minutes: (minutes: number) => `Dauer: ${minutes} Min.`,
     details_more: 'Weitere Angaben',
     details_fewer: 'Weniger Angaben',
     details_member: 'Mitglied',
@@ -334,7 +332,7 @@ export default {
     file_download: 'Herunterladen',
     file_failed: 'Die Datei konnte nicht heruntergeladen werden. Versuchen Sie es erneut.',
     edit_answers: 'Antworten bearbeiten',
-    edit_note: 'Ihre Änderungen werden mit den alten Werten protokolliert.',
+    edit_note: 'Änderungen werden mit den alten Werten protokolliert.',
     edit_save: 'Speichern',
     edit_saved: 'Die Antworten sind gespeichert.',
     edit_failed: 'Die Antworten konnten nicht gespeichert werden. Versuchen Sie es erneut.',
@@ -417,7 +415,7 @@ export default {
     mail_limited: 'durch eine Grenze zurückgehalten',
     timeline_failed: 'Die Chronik konnte nicht gelesen werden. Versuchen Sie es erneut.',
     notes_new: 'Neue Notiz',
-    notes_help: 'Wer das Formular sendet, sieht Notizen nie. Alle, die diesen Eintrag öffnen dürfen, können sie lesen.',
+    notes_help: 'Notizen sieht nur, wer diesen Eintrag öffnen darf.',
     notes_add: 'Notiz hinzufügen',
     notes_edit: 'Bearbeiten',
     notes_editFor: (author: string) => `Bearbeiten: Notiz von ${author}`,
@@ -429,7 +427,7 @@ export default {
     notes_none: 'Noch keine Notizen.',
     forward_headline: (number: number) => `Eintrag #${number} weiterleiten`,
     forward_to: 'An',
-    forward_toHelp: 'Eine Person im Backoffice oder eine der Team-Adressen unter Einstellungen › E-Mail.',
+    forward_toHelp: 'Team-Adressen stehen unter Einstellungen › E-Mail.',
     forward_message: 'Nachricht (optional)',
     forward_sensitive: 'Vertrauliche Werte mitsenden',
     forward_sensitiveHidden: (name: string) =>
@@ -491,9 +489,9 @@ export default {
         ? `Der Export wird vorbereitet: bisher ${entries(done)}.`
         : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${ofEntries(total)}.`,
     export_preparingToast: (number: number, more: boolean) =>
-      `${more ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.' : `Der Export von ${ofEntries(number)} wird vorbereitet.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+      `${more ? 'Der Export von mehr als 1.000 Einträgen wird vorbereitet.' : `Der Export von ${ofEntries(number)} wird vorbereitet.`} Eine Benachrichtigung verlinkt die Datei.`,
     export_progressToast: (done: number, total: number, more: boolean) =>
-      `${more ? `Der Export wird vorbereitet: bisher ${entries(done)}.` : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${ofEntries(total)}.`} Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+      `${more ? `Der Export wird vorbereitet: bisher ${entries(done)}.` : `Der Export wird vorbereitet: ${done.toLocaleString('de')} von ${ofEntries(total)}.`} Eine Benachrichtigung verlinkt die Datei.`,
     export_readyToast: (number: number) => `Ihr Export von ${ofEntries(number)} ist fertig.`,
     export_failedToast: (number: number, more: boolean) =>
       `Der Export von ${more ? 'mehr als 1.000 Einträgen' : ofEntries(number)} konnte nicht vorbereitet werden. Versuchen Sie es erneut; scheitert er wieder, findet jemand aus der Entwicklung den Grund im Protokoll der Website.`,

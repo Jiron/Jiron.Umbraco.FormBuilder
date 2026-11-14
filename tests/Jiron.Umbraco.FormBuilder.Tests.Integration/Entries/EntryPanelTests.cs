@@ -125,6 +125,44 @@ public sealed class EntryPanelTests : ActionTestBase
     }
 
     [Test]
+    public async Task TheAddressAVisitorConfirms_IsNotEdited_AsTheEntryWouldSayConfirmedOfAnother()
+    {
+        var mail = new FormField { Key = Guid.Parse("c4000000-0000-4000-8000-000000000209"), Type = "email", Alias = "mail", Label = new LocalizedText("Email") };
+        var form = await PublishAsync(
+            name: $"Newsletter {Guid.NewGuid():N}",
+            change: definition => definition with { Settings = definition.Settings with { Submission = definition.Settings.Submission with { Verification = new EmailVerification { EmailField = mail.Key } } } },
+            fields: [NameField, mail]);
+        var entry = await SubmitAsync(form, """{"name":"Ada","mail":"ada@example.com"}""");
+
+        var panel = await Panels.OpenAsync(form, entry.Key, Editor, mayEdit: true);
+        var result = await Edits.EditAsync(form, entry.Key, Editor, [new EntryEditValue(mail.Key, ["eve@example.com"])], maySeeSensitive: true, overbook: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Answer(panel, mail).Edit, Is.Null, "the panel offers no edit of the address the link went to");
+            Assert.That(Answer(panel, NameField).Edit, Is.Not.Null);
+            Assert.That(result.Problems.Select(problem => problem.Code), Is.EqualTo(new[] { "not_editable" }));
+        });
+    }
+
+    [Test]
+    public async Task AFieldMadeSensitiveLater_IsMaskedInTheEntriesSentBeforeToo()
+    {
+        var form = await FormAsync();
+        var entry = await SubmitAsync(form, """{"name":"Ada","age":"36"}""");
+        await SaveAndPublishAsync(form, definition => WithFields(definition, NameField, Age with { Sensitive = true }, Salary, Seat, Code));
+
+        var answer = Answer(await Panels.OpenAsync(form, entry.Key, Editor, mayEdit: true), Age);
+        var revealed = await Panels.RevealAsync(form, entry.Key, Age.Key, Editor, mayEdit: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((answer.Masked, answer.Sensitive, answer.Texts), Is.EqualTo((true, true, Array.Empty<string>())), "the entry's own version did not mark it; the form does now, as its list and exports have it");
+            Assert.That(revealed!.Texts, Is.EqualTo(new[] { "36" }), "a reveal still shows it");
+        });
+    }
+
+    [Test]
     public async Task Notes_AreReadNewestFirst_AndOnlyTheirAuthorChangesThem()
     {
         var form = await FormAsync();

@@ -254,8 +254,8 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
             Assert.That(notices[3].ClassList, Does.Not.Contain("jfb-notice-error"), "nothing went wrong: the form changed");
             Assert.That(notices[3].QuerySelector("h2")!.TextContent, Is.EqualTo("This form was updated while you filled it in"));
             Assert.That(notices[3].QuerySelector("p")!.TextContent, Is.EqualTo("Your answers are kept."));
-            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-one"), Does.StartWith("An agreement has new wording"));
-            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-other"), Does.StartWith("Some agreements have new wording"));
+            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-one"), Does.StartWith("A consent has new wording"));
+            Assert.That(notices[3].QuerySelector("p")!.GetAttribute("data-jfb-other"), Does.StartWith("Some consents have new wording"));
 
             Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-seconds"), Does.Contain("{0} seconds"));
             Assert.That(notices[0].QuerySelector("p")!.GetAttribute("data-jfb-minutes"), Does.Contain("{0} minutes"));

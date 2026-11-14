@@ -16,9 +16,9 @@ export default {
     // Ein Speichern, das ein zwischendurch gespeicherter Stand verhindert hat (ADR-0200).
     conflict_headline: 'Ihr Entwurf wurde nicht gespeichert',
     conflict_text: (who: string, when: string) =>
-      `${who} hat dieses Formular ${when} gespeichert, nachdem Sie es geöffnet haben. Prüfen Sie beide Versionen, bevor Sie speichern. Ihre Änderungen sind noch da.`,
+      `${who} hat dieses Formular ${when} gespeichert, nachdem Sie es geöffnet haben. Ihre Änderungen sind noch da.`,
     conflict_textUnknown:
-      'Jemand hat dieses Formular geändert, nachdem Sie es geöffnet haben. Prüfen Sie beide Versionen, bevor Sie speichern. Ihre Änderungen sind noch da.',
+      'Jemand hat dieses Formular geändert, nachdem Sie es geöffnet haben. Ihre Änderungen sind noch da.',
     conflict_at: (time: string) => `um ${time}`,
     conflict_on: (day: string, time: string) => `am ${day} um ${time}`,
     conflict_review: 'Beide Versionen prüfen',
@@ -33,14 +33,14 @@ export default {
     formName: 'Name des Formulars',
     state_draft: 'Entwurf',
     state_published: 'Veröffentlicht',
-    state_pending: 'Veröffentlicht, Entwurf geändert',
+    state_pending: 'Veröffentlicht (geändert)',
     state_unpublished: 'Nicht veröffentlicht',
 
     preview: 'Vorschau',
     saveDraft: 'Entwurf speichern',
     publish: 'Veröffentlichen…',
     publishHeadline: (name: string) => `${name} veröffentlichen?`,
-    publishText: 'Besucher erhalten ab jetzt diese Version des Formulars.',
+    publishText: 'Besucher erhalten ab jetzt diese Version.',
     comment: 'Kommentar zu dieser Version (optional)',
     publishConfirm: 'Veröffentlichen',
     published: (name: string) => `${name} ist veröffentlicht.`,
@@ -96,8 +96,7 @@ export default {
     moveToLead: 'An das Ende von',
     moveToHere: (name: string) => `${name} (hier ist es jetzt)`,
     moveToInside: (name: string, group: string) => `${name}, in ${group}`,
-    moveToHelp:
-      'Um es um je eine Stelle zu verschieben, drücken Sie darauf Alt+Pfeil nach oben oder Alt+Pfeil nach unten.',
+    moveToHelp: 'Alt+Pfeil nach oben oder unten verschiebt es um eine Stelle.',
     moveToConfirm: 'Verschieben',
     changeType: 'Typ ändern…',
     changeTypeHeadline: (name: string) => `Typ von „${name}“ ändern`,
@@ -144,8 +143,8 @@ export default {
     shortcutRedo: 'Zurückgenommenes erneut anwenden',
     shortcutsLead: 'Die Kürzel wirken auf das gewählte Feld, die Gruppe oder die Seite.',
     shortcutDuplicate: 'Es duplizieren',
-    shortcutDelete: `Es löschen; die Meldung danach bietet „Zurücknehmen“ an`,
-    shortcutStep: 'Es um eine Stelle nach oben oder unten verschieben, am Ende in die nächste Gruppe oder Seite',
+    shortcutDelete: 'Es löschen',
+    shortcutStep: 'Es um eine Stelle nach oben oder unten verschieben',
     shortcutArrows: 'Auf der Seite nach oben oder unten gehen',
     shortcutRename: 'Die Beschriftung eines Felds direkt bearbeiten',
     shortcutEscape: 'Die Auswahl aufheben, die Palette schließen oder ein Ziehen abbrechen',
@@ -156,11 +155,10 @@ export default {
     keyOr: 'oder',
     keyUp: '↑',
     keyDown: '↓',
-    emptyFormBefore: 'Fügen Sie das erste Feld mit „Feld hinzufügen“ unten hinzu, oder',
+    emptyFormBefore: 'Fügen Sie das erste Feld hinzu, oder',
     emptyFormLink: 'fügen Sie Ihre Fragen ein',
     emptyFormAfter: '.',
-    emptyPage:
-      'Noch keine Felder auf dieser Seite. Um stattdessen eine Seite zu teilen, verwenden Sie „Neue Seite“ in der Palette.',
+    emptyPage: 'Noch keine Felder auf dieser Seite.',
     unseenHidden: (type: string) => `${type}: für Besucher nicht sichtbar`,
     unseenOff: (type: string) => `${type}: wird Besuchern nicht angezeigt`,
     unseenCaptcha: (type: string) => `${type}: erscheint, sobald das Formular in den Einstellungen ein Captcha wählt`,
@@ -186,8 +184,7 @@ export default {
     pasteQuestions: 'Fragen einfügen…',
     pasteHeadline: 'Fragen einfügen',
     pasteLabel: 'Ihre Fragen',
-    pasteHelp:
-      'Eine Frage pro Zeile. Jede wird ein Feld, mit einem aus ihren Wörtern erratenen Typ; Sie können ihn danach ändern.',
+    pasteHelp: 'Eine Frage pro Zeile. Den Typ können Sie danach ändern.',
     pasteFields: 'Diese Felder kommen hinzu',
     pasteFieldLabel: 'Beschriftung',
     pasteFieldType: 'Typ',
@@ -202,8 +199,7 @@ export default {
     saidGroupAdded: 'Gruppe hinzugefügt',
     saidSavedGroupAdded: (name: string) => `${name} hinzugefügt`,
     saveGroupHeadline: (name: string) => `${name} als Vorlage speichern`,
-    saveGroupNote:
-      'Die Vorlage enthält die Gruppe, wie Sie sie sehen, mit den Prüfregeln ihrer Felder. Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor.',
+    saveGroupNote: 'Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor.',
     savedGroup: (name: string) => `${name} wurde gespeichert. Jedes Formular kann die Gruppe aus der Palette einfügen.`,
     savedGroupLeftOut: (name: string, rules: number, checks: number) => {
       const parts = [

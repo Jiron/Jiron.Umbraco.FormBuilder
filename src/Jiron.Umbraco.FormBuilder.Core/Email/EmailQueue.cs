@@ -99,7 +99,11 @@ internal sealed partial class EmailAttempts(
     /// <summary>The code of an attempt that found no mail server; its message is the exception's type.</summary>
     public const string NoConnection = "no_connection";
 
-    /// <summary>How long Umbraco's sender gets (ADR-0007).</summary>
+    /// <summary>
+    /// How long an attempt waits for Umbraco's sender (ADR-0007, ADR-0252). It is the wait's own limit and is never handed to the sender
+    /// as <c>expires</c>: Umbraco writes that into the mail as its <c>Expires</c> header, the moment mail clients treat it as out of date,
+    /// which is the site's to set (<c>Umbraco:CMS:Global:Smtp:EmailExpiration</c>).
+    /// </summary>
     public static readonly TimeSpan Expires = TimeSpan.FromSeconds(45);
 
     private readonly bool _scanned = scanners.Any();
@@ -124,7 +128,7 @@ internal sealed partial class EmailAttempts(
             return;
         }
 
-        var attempt = Task.Run(() => sender.SendAsync(message, EmailType, enableNotification: true, Expires), CancellationToken.None);
+        var attempt = Task.Run(() => sender.SendAsync(message, EmailType, enableNotification: true, expires: null), CancellationToken.None);
         _ = attempt.ContinueWith(_ => CloseAsync(opened), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         try
         {

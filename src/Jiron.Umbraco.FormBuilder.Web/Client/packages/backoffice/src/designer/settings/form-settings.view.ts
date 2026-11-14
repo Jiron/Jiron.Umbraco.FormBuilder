@@ -1037,7 +1037,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     return html`
       <fieldset class="item">
         <legend class="label">${this.#term('pageButtons')}</legend>
-        <p class="help">${this.#term('pageButtonsHelp')}</p>
         <div class="pair">
           ${this.#buttonLabel('next-label', 'nextLabel', this.#term('nextLabel'), null, word(look, 'next'))}
           ${this.#buttonLabel('back-label', 'backLabel', this.#term('backLabel'), null, word(look, 'back'))}
@@ -1347,7 +1346,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     const choose = this.#select(
       'access',
       label,
-      this.#term('accessHelp'),
+      access === 'anyone' ? null : this.#term('accessHelp'),
       access,
       ['anyone', 'members', 'groups'].map((value) => ({ value, label: this.#term(`access_${value}`) })),
       (value) =>
@@ -1590,7 +1589,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       ${this.#select(
         'theme',
         theme,
-        this.#term('themeHelp'),
+        null,
         own,
         [
           { value: '', label: this.#term('siteDefault', themeName(choices, choices.defaults.theme)) },
@@ -1605,7 +1604,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       ${this.#select(
         'required-marker',
         marker,
-        this.#term('requiredMarkerHelp'),
+        null,
         wordIn(appearance, 'requiredMarker', 'inherit'),
         [
           {
@@ -1681,7 +1680,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       ${this.#select(
         'ip',
         ipLabel,
-        fullIp ? this.#term('ipHelp') : this.#term('ipHelpNoFull', choices.host.fullIpKey),
+        fullIp ? null : this.#term('ipHelpNoFull', choices.host.fullIpKey),
         ip,
         [
           { value: 'inherit', label: this.#term('siteDefault', this.#term(`summary_ip_${choices.defaults.ip}`)) },
@@ -1810,9 +1809,10 @@ export class FormSettingsViewElement extends UmbLitElement {
 
   #after(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel, look: CanvasLook): TemplateResult {
     const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
-    return html`<p class="note">${this.#term('outcome_listHelp')}</p>
+    const outcomes = outcomesOf(definition);
+    return html`${outcomes.length > 1 ? html`<p class="note">${this.#term('outcome_listHelp')}</p>` : nothing}
       <jfb-outcome-list
-        .outcomes=${outcomesOf(definition)}
+        .outcomes=${outcomes}
         .culture=${look.culture}
         .untranslated=${this.#untranslated()}
         .defaultMessage=${word(look, 'thankYou')}

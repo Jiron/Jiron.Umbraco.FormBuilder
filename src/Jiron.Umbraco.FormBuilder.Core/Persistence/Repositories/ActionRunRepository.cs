@@ -156,6 +156,20 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     }
 
     /// <inheritdoc />
+    public Task<bool> ReleaseAsync(long runId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default)
+    {
+        Outbox.CheckToken(token);
+        Outbox.CheckDelay(delay);
+        Outbox.CheckError(error);
+        return OutcomeAsync(
+            runId,
+            token,
+            (n, now) => ($"{n.C("state")} = '{Pending}', {n.C("attempts")} = {n.C("attempts")} - 1, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastErrorCode")} = @3, {n.C("lastErrorMessage")} = @4", [now + delay, error.Code, Message(error)]),
+            stopsTheRest: false,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<bool> FailAsync(long runId, string token, DeliveryError error, CancellationToken cancellationToken = default)
     {
         Outbox.CheckToken(token);

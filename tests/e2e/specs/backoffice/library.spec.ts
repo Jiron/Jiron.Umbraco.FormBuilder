@@ -314,7 +314,7 @@ test("a restricted form's Duplicate dialog says that the copy takes its folder's
   const dialog = page.locator('jfb-duplicate-modal');
   // The headline names the form; the sentence below says "this form".
   await expect(dialog).toContainText(
-    "This form has access settings of its own, which the copy doesn't take: it lands in the top level of Forms and gets the access set there.",
+    "The copy doesn't take this form's own access settings: it gets the access set in the top level of Forms.",
   );
   expect((await dialog.locator('uui-dialog-layout').boundingBox())?.width ?? 0).toBeLessThanOrEqual(520);
   await expect(dialog.getByRole('textbox', { name: 'Name of the copy' })).toHaveValue(`${name} (copy)`);

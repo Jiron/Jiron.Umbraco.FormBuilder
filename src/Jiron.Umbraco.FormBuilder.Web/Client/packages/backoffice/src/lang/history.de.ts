@@ -13,8 +13,7 @@ export default {
     showDrafts: 'Gespeicherte Entwürfe zeigen',
     compare: 'Vergleichen',
     showMore: 'Mehr anzeigen',
-    empty:
-      'Noch ist nichts veröffentlicht. Beim Veröffentlichen wird hier die erste Version festgehalten; bis dahin listet „Gespeicherte Entwürfe zeigen“ die Speicherungen.',
+    empty: 'Noch keine veröffentlichte Version. „Gespeicherte Entwürfe zeigen“ listet die Speicherungen des Entwurfs.',
     moreFailed: 'Weitere Versionen konnten nicht gelesen werden. Versuchen Sie „Mehr anzeigen“ erneut.',
     kept: 'Veröffentlichte und angeheftete Versionen bleiben dauerhaft erhalten.',
 
@@ -55,8 +54,7 @@ export default {
     unread: 'Der neue Entwurf konnte hier nicht gelesen werden. Laden Sie die Seite neu, um ihn zu sehen.',
     pick_headline: 'Frühere Version wiederherstellen',
     pick_empty: 'Es gibt noch keine frühere Version.',
-    pick_lead:
-      'Wählen Sie eine Version, um sie mit dem aktuellen Entwurf zu vergleichen, und stellen Sie sie dort wieder her.',
+    pick_lead: 'Wählen Sie eine Version, um sie zuerst mit dem aktuellen Entwurf zu vergleichen.',
 
     // Beide Versionen prüfen (ADR-0200), nach einem Speichern, das ein zwischendurch gespeicherter Stand verhindert hat.
     review_headline: 'Beide Versionen prüfen',
@@ -208,11 +206,11 @@ export default {
     property_storeDays: 'Tage, die Einträge behalten werden',
     property_progress: 'Fortschritt',
     property_resume: 'Später fortsetzen',
-    property_resumeDays: 'Gespeicherte Antworten behalten (Tage)',
+    property_resumeDays: 'Link gültig für (Tage)',
     property_captcha: 'Captcha',
     property_captchaProvider: 'Anbieter',
     property_captchaSettings: 'Einstellungen des Anbieters',
-    property_retentionDays: 'Einträge löschen nach',
+    property_retentionDays: 'Aufbewahrung je Status (Tage)',
     property_retention_submitted: 'Neue Einträge (Tage)',
     property_retention_approved: 'Genehmigte Einträge (Tage)',
     property_retention_rejected: 'Abgelehnte Einträge (Tage)',

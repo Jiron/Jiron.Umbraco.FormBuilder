@@ -13,8 +13,7 @@ export default {
     showDrafts: 'Show draft saves',
     compare: 'Compare',
     showMore: 'Show more',
-    empty:
-      'Nothing is published yet. Publishing keeps the first version here; until then, Show draft saves lists the saves.',
+    empty: 'No published version yet. "Show draft saves" lists the draft\'s saves.',
     moreFailed: "More versions couldn't be read. Try Show more again.",
     kept: 'Published and pinned versions are kept for good.',
 
@@ -54,7 +53,7 @@ export default {
     unread: "The new draft couldn't be read here. Reload the page to see it.",
     pick_headline: 'Restore an earlier version',
     pick_empty: 'There is no earlier version yet.',
-    pick_lead: 'Choose a version to compare it with the current draft, then restore it from there.',
+    pick_lead: 'Choose a version to compare it with the current draft first.',
 
     // Review both versions (ADR-0200), after a save someone else's save refused.
     review_headline: 'Review both versions',
@@ -207,11 +206,11 @@ export default {
     property_storeDays: 'Days entries are kept',
     property_progress: 'Progress',
     property_resume: 'Save and continue later',
-    property_resumeDays: 'Saved answers kept for (days)',
+    property_resumeDays: 'Link valid for (days)',
     property_captcha: 'Captcha',
     property_captchaProvider: 'Provider',
     property_captchaSettings: 'Provider settings',
-    property_retentionDays: 'Delete entries after',
+    property_retentionDays: 'Days kept in each state',
     property_retention_submitted: 'New entries (days)',
     property_retention_approved: 'Approved entries (days)',
     property_retention_rejected: 'Rejected entries (days)',

@@ -97,6 +97,9 @@ async function screenOf(read: RetentionResponseModel = model(), ...counts: Reten
 
 beforeAll(registerEnglish);
 
+// The screen's own address, which a leaving is told from.
+beforeAll(() => history.replaceState({}, '', '/umbraco/section/jfb-forms/privacy/retention'));
+
 afterEach(() => {
   api.global = ['manageSettings', 'privacyTools'];
   api.anywhere = ['design', 'viewEntries'];
@@ -133,7 +136,7 @@ describe('the retention screen', () => {
     expect([...root.querySelectorAll('tbody tr')].map((row) => said(row))).toEqual(['Contact 2 3', 'Survey 1 none']);
     expect(root.querySelector('tbody a')?.getAttribute('href')).toContain('/view/entries');
     expect(said(root.querySelector('.footnote'))).toBe(
-      '1 more is on legal hold and stays until the hold ends. Nothing needs to be pressed: retention deletes by itself every hour.',
+      '1 more is on legal hold and stays until the hold ends. Retention deletes by itself, every hour.',
     );
     expect(api.asked).toEqual([{ days: { submitted: 365, approved: 365, rejected: 90, spam: 30 }, span: 30 }]);
   });
@@ -156,8 +159,23 @@ describe('the retention screen', () => {
 
     expect(api.asked[1]).toEqual({ days: { submitted: 365, approved: 365, rejected: 90, spam: 7 }, span: 30 });
     expect(said(root.querySelector('.footnote'))).toBe(
-      'Counted with the days above, before you save. Entries on legal hold stay. Nothing needs to be pressed: retention deletes by itself every hour.',
+      'Counted with the days above, before you save. Entries on legal hold stay. Retention deletes by itself, every hour.',
     );
+  });
+
+  it('asks before the backoffice leaves it with days not saved', async () => {
+    const leaving = (): boolean => {
+      const event = new CustomEvent('willchangestate', {
+        detail: { url: '/umbraco/section/content' },
+        cancelable: true,
+      });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    const { type } = await screenOf(model(), COUNTED, COUNTED);
+    expect(leaving(), 'nothing changed').toBe(false);
+    await type('days-spam', '7');
+    expect(leaving(), 'days wait to be saved').toBe(true);
   });
 
   it('counts at once for another span, which this browser keeps', async () => {

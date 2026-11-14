@@ -323,9 +323,11 @@ internal sealed partial class EntryPanels(
     private static FormField Plain(FormField field) =>
         field with { Sensitive = false, Fields = [.. field.Fields.Select(child => child with { Sensitive = false })] };
 
-    // An answer with how the panel edits it, for a user who may edit: never a masked one, whose values stay on the server.
+    // An answer with how the panel edits it, for a user who may edit: never a masked one, whose values stay on the server,
+    // never one kept only until the actions ran and gone since, which an edit would bring back, and never the address the
+    // form's email verification confirms (ADR-0252).
     private EntryPanelAnswer Editable(EntryPanelAnswer answer, FormField field, EntryRead read, bool mayEdit, bool revealed = false) =>
-        mayEdit && !answer.Masked
+        mayEdit && !answer.Masked && !answer.NotKept && !EntryEdits.IsConfirmedAddress(read.Scope.Form, field)
             ? answer with { Edit = edits.EditOf(field, revealed || !field.Sensitive, [.. read.Answers?.Find(field.Key)?.Values.Select(value => value.Value.Text) ?? []]) }
             : answer;
 

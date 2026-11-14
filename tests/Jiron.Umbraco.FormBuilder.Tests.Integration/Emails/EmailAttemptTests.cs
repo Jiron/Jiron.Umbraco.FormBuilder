@@ -100,7 +100,7 @@ public sealed class EmailAttemptTests : EmailTestBase
         {
             Assert.That(call.Type, Is.EqualTo("JironFormBuilder"));
             Assert.That(call.Notifies, Is.True);
-            Assert.That(call.Expires, Is.EqualTo(TimeSpan.FromSeconds(45)));
+            Assert.That(call.Expires, Is.Null, "Umbraco writes it into the mail as the time it expires at, which is the site's to set, not a limit on the sending");
             Assert.That(call.Message.IsBodyHtml, Is.True);
             Assert.That(call.Message.From, Is.EqualTo(HostSender));
             Assert.That(call.Message.To, Is.EqualTo(new[] { "anna@jfb.test" }));

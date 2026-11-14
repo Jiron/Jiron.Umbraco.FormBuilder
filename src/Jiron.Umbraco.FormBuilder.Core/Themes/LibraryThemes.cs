@@ -119,7 +119,8 @@ internal sealed class LibraryThemes(IThemeRepository themes, FormBuilderThemes r
             appCaches.RuntimeCache,
             ThemeCacheKeys.Of(alias),
             ThemeCacheKeys.Loading(alias),
-            async () => new Found(await themes.GetByAliasAsync(alias, cancellationToken) is { } stored && registry.Find(stored.BaseTheme) is { } baseTheme ? new LibraryTheme(stored, baseTheme) : null),
+            // The load is shared by every request that waits for it: it is no one request's to cancel.
+            async () => new Found(await themes.GetByAliasAsync(alias, CancellationToken.None) is { } stored && registry.Find(stored.BaseTheme) is { } baseTheme ? new LibraryTheme(stored, baseTheme) : null),
             Kept,
             cancellationToken);
         return found.Theme;

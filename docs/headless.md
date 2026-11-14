@@ -68,7 +68,8 @@ merge tags. `culture` is one of the site's languages, such as `de-DE`; otherwise
 
 The API also has the endpoints for saving a form to finish later ([ADR-0163](decisions/0163-save-and-resume.md)):
 `POST forms/{key}/drafts` saves the answers so far and mails the link, and `POST drafts/resume` brings them back for
-the link's token. The element offers it below the form's buttons, as the Razor views do, for a form with "Save and
+the link's token. The save answers `{ expiresUtc, resume }`: send `resume` with the next save, which then replaces
+the draft, and with the entry, which takes the draft along. The element offers it below the form's buttons, as the Razor views do, for a form with "Save and
 continue later" on and a page given by `contentKey`, which the link comes back to.
 
 ## Sending an entry
@@ -178,6 +179,8 @@ developers.
 | 409 | `form_changed` | the form was published again: read it again |
 | 409 | `duplicate_submission` | the submission id was used for other answers |
 | 409 | `already_submitted` | the member has sent this form already |
+| 409 | `resume_unavailable` | the form does not offer saving for later, or the request names no page for the link to come back to |
+| 410 | `resume_expired` | the link to saved answers is too old, or its entry was sent |
 | 413 | `payload_too_large` | the body or the file is too large |
 | 415 | `unsupported_media_type` | not JSON, or a file type the field refuses |
 | 422 | `validation_failed` | answers that fail their checks |

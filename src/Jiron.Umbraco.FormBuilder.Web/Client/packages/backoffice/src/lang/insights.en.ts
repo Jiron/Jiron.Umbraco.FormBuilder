@@ -111,7 +111,7 @@ export default {
     col_websitePage: 'Website page',
 
     hours: 'Entries by hour of day',
-    hoursZone: (zone: string) => `In ${zone} time, the time zone set for all sites`,
+    hoursZone: (zone: string) => `Time zone: ${zone}`,
     col_hour: 'Hour',
     hoursChart: (heading: string, most: string) => `${heading}: the most at ${most}. Show as table reads each hour.`,
 
@@ -121,7 +121,7 @@ export default {
       `${members} members sent ${entries} entries, up from ${before} members.`,
     membersLineDown: (members: string, entries: string, before: string) =>
       `${members} members sent ${entries} entries, down from ${before} members.`,
-    membersOther: (entries: string) => `The other ${entries} entries came from visitors who weren't signed in.`,
+    membersOther: (entries: string) => `The other ${entries} came from visitors not signed in.`,
 
     mode: 'View',
     mode_overview: 'Overview',
@@ -142,9 +142,9 @@ export default {
     optionLine: (share: string, count: string) => `${share} (${count})`,
     optionOlder: (label: string) => `${label} (no longer an option)`,
     optionOther: 'Other, in their own words',
-    optionSeveral: 'More than one could be chosen, so the shares add up to more than 100%.',
+    optionSeveral: 'Several could be chosen, so shares total over 100%.',
     positionLine: (position: string) => `average position ${position}`,
-    rankingNote: 'The higher an option ranks on average, the longer its bar.',
+    rankingNote: 'Average position: the higher an option ranks, the longer its bar.',
     figure_average: 'Average',
     figure_median: 'Median',
     figure_lowest: 'Lowest',

@@ -63,7 +63,7 @@ test('the Answers summarise each kind of answer, filter by an answer, list the f
 
   // Several choices add up past the whole, which the box says.
   await expect(box('Which sessions did you join?').locator('.note')).toHaveText(
-    'More than one could be chosen, so the shares add up to more than 100%.',
+    'Several could be chosen, so shares total over 100%.',
   );
 
   // A ranking by its average position: content first in three of five orders, second in the others.

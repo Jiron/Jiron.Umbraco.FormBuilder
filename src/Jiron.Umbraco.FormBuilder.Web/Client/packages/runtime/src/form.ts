@@ -203,6 +203,7 @@ async function wake(
             draft = token;
           },
           ...(pages === undefined ? {} : { reveal: pages.reveal }),
+          ...(carried === undefined ? {} : { carried: true }),
         }),
       )
       .catch(() => undefined);

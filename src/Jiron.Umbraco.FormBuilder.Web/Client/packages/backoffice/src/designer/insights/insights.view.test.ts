@@ -197,9 +197,7 @@ describe('the Insights view', () => {
       'A field no longer on the form: 25, 1.9% of starts, mostly left empty',
     ]);
     expect(box('Top website pages').querySelector('jfb-insight-bars')?.values[0]?.said).toBe('214 entries');
-    expect(text(box('Entries by hour of day').querySelector('.note'))).toBe(
-      'In Europe/Berlin time, the time zone set for all sites',
-    );
+    expect(text(box('Entries by hour of day').querySelector('.note'))).toBe('Time zone: Europe/Berlin');
     expect(all(root.host, 'uui-box').some((each) => each.getAttribute('headline') === 'Members')).toBe(false);
   });
 
@@ -228,7 +226,7 @@ describe('the Insights view', () => {
       'members',
     );
     expect(text(members)).toBe(
-      "41 members sent 58 entries, up from 36 members. The other 331 entries came from visitors who weren't signed in.",
+      '41 members sent 58 entries, up from 36 members. The other 331 came from visitors not signed in.',
     );
   });
 

@@ -114,9 +114,7 @@ test('a blank form opens on Design with its empty group, though its draft leaves
   await page.goto(workspaceOf(key));
 
   await expect(nameField(page)).toHaveValue(name);
-  await expect(page.locator('jfb-form-design-view')).toContainText(
-    'Add your first field with Add field below, or paste your questions.',
-  );
+  await expect(page.locator('jfb-form-design-view')).toContainText('Add your first field, or paste your questions.');
   await axeInside(page, 'jfb-form-design-view');
 });
 

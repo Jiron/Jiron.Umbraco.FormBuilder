@@ -20,7 +20,7 @@ internal sealed record EmailSettings : ISettingsSection
     public static bool PerSite => true;
 
     /// <summary>The name mail comes from, or null for the address alone.</summary>
-    [SettingsField("sender")]
+    [SettingsField("sender", Help = false)]
     [MaxLength(EmailSettingsValidator.MaxNameLength)]
     public string? SenderName { get; init; }
 
@@ -29,7 +29,7 @@ internal sealed record EmailSettings : ISettingsSection
     public string? SenderAddress { get; init; }
 
     /// <summary>The key of the layout a mail uses unless it names one; null for the built-in card.</summary>
-    [SettingsField("sender", Order = 2, Editor = "emailLayout")]
+    [SettingsField("sender", Order = 2, Editor = "emailLayout", Help = false)]
     public Guid? DefaultLayout { get; init; }
 
     /// <summary>Who hears of failed deliveries.</summary>

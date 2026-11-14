@@ -14,6 +14,8 @@ personal data in check with the privacy tools.
 
 > **Status:** in development. The first prerelease is being prepared.
 
+New here? [Getting started](docs/getting-started.md) takes about ten minutes.
+
 ![The designer: a contact form on the canvas, the palette of field types on the left, and the selected field's inspector on the right](docs/screenshots/designer.png)
 
 ## Features
@@ -26,7 +28,8 @@ personal data in check with the privacy tools.
   groups and file uploads.
 - **Rules** that show, hide, skip and require, choose the outcome and decide which actions run. The server always
   checks the answers; the browser repeats each check at once.
-- **Multi-page forms** with progress, a check per page, a summary page and prefilled answers.
+- **Multi-page forms** with progress, a check per page, a summary page, save and continue later, and prefilled
+  answers.
 - **Drafts, publishing and history:** edits stay a draft until published, a form check finds problems before visitors
   do, and every version is kept, compared in words and can be restored.
 - **Nine templates** to start from, folders, search, and forms as JSON to import and export.
@@ -36,7 +39,8 @@ personal data in check with the privacy tools.
 **After a form is sent**
 
 - **Actions:** emails to the team and to the visitor, signed and retried webhooks, Slack and Microsoft Teams, Umbraco
-  content and email verification, each with its own rule, a delivery log and a test run.
+  content and a change of the entry's state, each with its own rule, a delivery log and a test run. Email verification
+  is a setting of the form.
 - **Entries:** an Inbox across forms with Spam, filters, search, bulk actions, and an entry panel with its timeline,
   notes, approval and audited edits.
 - **Exports** to CSV, Excel, JSON, a printable view and a ZIP of the uploaded files.

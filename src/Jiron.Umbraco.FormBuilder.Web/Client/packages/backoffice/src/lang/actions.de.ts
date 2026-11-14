@@ -13,8 +13,7 @@ const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 export default {
   jfbActions: {
-    empty:
-      'Noch keine Aktionen. Die meisten Formulare benachrichtigen das Team per E-Mail, wenn ein Eintrag eingeht, und „Aktion hinzufügen“ beginnt damit.',
+    empty: 'Noch keine Aktionen. „Aktion hinzufügen“ beginnt mit einer E-Mail an das Team.',
     readOnly:
       'Zum Ändern dieser Aktionen ist die Berechtigung „Aktionen verwalten“ für dieses Formular nötig. Wer Administratorrechte hat, kann sie erteilen.',
     addAction: 'Aktion hinzufügen',
@@ -30,8 +29,8 @@ export default {
     when_approvedEach: 'bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat',
     when_rejected: 'wenn jemand einen Eintrag ablehnt',
     when_verified: 'wenn jemand die eigene Adresse bestätigt',
-    needs_approval: 'Läuft, wenn jemand einen Eintrag ablehnt. Dafür ist die manuelle Genehmigung nötig:',
-    needs_verification: 'Läuft, wenn jemand die eigene Adresse bestätigt. Dafür ist die E-Mail-Bestätigung nötig:',
+    needs_approval: 'Braucht die manuelle Genehmigung:',
+    needs_verification: 'Braucht die E-Mail-Bestätigung:',
     held_approval: 'Diese laufen erst, wenn das Formular die manuelle Genehmigung hat:',
     held_verification: 'Diese laufen erst, wenn das Formular die E-Mail-Bestätigung hat:',
     turnOn: 'in den Einstellungen einschalten',
@@ -88,16 +87,14 @@ export default {
     whatHappensKept:
       'Die Art einer Aktion lässt sich nicht ändern. Für etwas anderes fügen Sie eine weitere Aktion hinzu.',
     name: 'Name',
-    nameHelp: 'Steht auf ihrer Karte und im Zustellprotokoll.',
     trigger: 'Wann sie läuft',
-    place: 'Position in der Liste',
-    placeHelp: 'Aktionen desselben Auslösers laufen in dieser Reihenfolge.',
+    place: 'Reihenfolge',
     placeOf: (place: number, count: number) => `${place} von ${count}`,
     stopOnFailure: 'Die übrigen anhalten, wenn diese fehlschlägt',
     stopOnFailureHelp:
       'Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück.',
     rule: 'Regel',
-    noRule: 'Läuft für jeden Eintrag, den ihr Auslöser bringt.',
+    noRule: 'Läuft für jeden Eintrag.',
     addRule: 'Regel hinzufügen',
     changeRule: 'Regel ändern',
     add: 'Hinzufügen',
@@ -140,8 +137,7 @@ export default {
     removeCreator: 'Die Person, die das Formular erstellt hat, entfernen',
     removePrivacyTeam: 'Alle, die die Datenschutzwerkzeuge verwenden dürfen, entfernen',
     removeMap: (field: string) => `Die Adressen je nach „${field}“ entfernen`,
-    routesHelp:
-      'Die Adressen, an die jede Antwort geht, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu.',
+    routesHelp: 'Adressen je Antwort, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu.',
     optionsReading: 'Die Optionen des Feldes werden gelesen …',
     optionsNone: 'Dieses Feld hat noch keine Optionen.',
     optionGone: (value: string) => `${value} (keine Option mehr)`,
@@ -150,9 +146,9 @@ export default {
     addressHelp_url:
       'Eine https-Adresse auf einem Host, den die Website erlaubt. Enthält die Adresse einen Schlüssel, nennen Sie sie als Verweis, etwa $JironFormBuilder:Secrets:CrmHook.',
     addressHelp_slack:
-      'Leer sendet an die Slack-Adresse der Website. Für eine andere nennen Sie die Adresse als Verweis, etwa $JironFormBuilder:Secrets:SalesSlack, da sie ihren Schlüssel enthält.',
+      'Leer sendet an die Slack-Adresse der Website. Für eine andere geben Sie einen Verweis an, etwa $JironFormBuilder:Secrets:SalesSlack.',
     addressHelp_teams:
-      'Leer sendet an die Microsoft-Teams-Adresse der Website. Für eine andere nennen Sie die Adresse als Verweis, etwa $JironFormBuilder:Secrets:SalesTeams, da sie ihren Schlüssel enthält.',
+      'Leer sendet an die Microsoft-Teams-Adresse der Website. Für eine andere geben Sie einen Verweis an, etwa $JironFormBuilder:Secrets:SalesTeams.',
     addressReference_slack:
       'Eine Slack-Adresse enthält ihren Schlüssel und bleibt daher in der Konfiguration der Website: Nennen Sie sie als Verweis.',
     addressReference_teams:
@@ -172,7 +168,7 @@ export default {
     modeLine_message_teams: 'In der Formatierung von Teams, etwa **fett**, mit Platzhaltern.',
     messageHelp: 'Leer sendet den Namen des Formulars und die Antworten.',
     bodyEmpty: 'Schreiben Sie den Inhalt, oder wählen Sie oben eine andere Art zu senden.',
-    metadataHelp: 'Was geschah, die Zustellung, das Formular und der Eintrag, neben den Antworten.',
+    metadataHelp: 'Was geschah, die Zustellung, das Formular und der Eintrag.',
     pairName: 'Name',
     pairValue: 'Wert',
     pairNameOf: (row: number) => `Name ${row}`,
@@ -246,9 +242,6 @@ export default {
     mapRead_value: (property: string, value: string) => `${property}: ${value}`,
 
     preview: 'Vorschau mit einem Beispieleintrag',
-    previewHelp: 'So bekommt das Team sie, mit Beispielantworten aus den Feldern des Formulars.',
-    previewHelpVisitor:
-      'So bekommt die Person, die das Formular sendet, die E-Mail, mit Beispielantworten aus den Feldern des Formulars.',
     previewFailed: 'Die Vorschau konnte nicht angezeigt werden.',
     previewRetry: 'Erneut versuchen',
     previewViewMissing: (view: string) =>
@@ -278,7 +271,7 @@ export default {
     testFailed_webhook_not_allowed:
       'Diese Adresse ruft die Website nicht auf. Webhooks gehen an https-Adressen auf den Hosts in JironFormBuilder:Webhooks:AllowedHosts, nie ins eigene Netz der Website.',
     testFailed_webhook_secret_missing: (key: string) =>
-      `In der Konfiguration der Website fehlt noch ${key}, daher kann der Test nicht hinaus. Ein Entwickler trägt es ein.`,
+      `In der Konfiguration der Website fehlt noch ${key}, daher kann der Test nicht hinaus. Eine Entwicklerin oder ein Entwickler trägt es ein.`,
     testFailed_webhook_secret_literal:
       'Diese Aktion enthält ein Geheimnis im Klartext. Geben Sie es als Verweis an, dann testen Sie erneut.',
     testFailed_webhook_header_invalid:
@@ -386,7 +379,7 @@ export default {
     runTestHelp_webhook: 'Testen sendet einen Beispieleintrag, so sehen Sie, ob der Server wieder antwortet.',
     runTestHelp: 'Testen führt die Aktion mit einem Beispieleintrag aus, so sehen Sie, ob sie jetzt funktioniert.',
     runRetryWho:
-      'Wer die Einträge dieses Formulars sieht und seine Aktionen ändern darf, findet den Eintrag unter „Einträge“ mit dem Filter „Aktionen“ und kann den Lauf dort wiederholen. Wer Administratorrechte hat, kann ihn auch unter Aktivität › Zustellungen wiederholen.',
+      'Mit „Einträge ansehen“ und „Aktionen verwalten“ wiederholen Sie den Lauf an seinem Eintrag: „Einträge“, Filter „Aktionen“. Wer Administratorrechte hat, kann das auch unter Aktivität › Zustellungen.',
     runError_http: (status: string) => `Der Server antwortete mit ${status}.`,
     runError_timed_out: 'Der Server hat nicht rechtzeitig geantwortet.',
     runError_no_connection: 'Der Server war nicht erreichbar.',
@@ -394,8 +387,8 @@ export default {
     runError_no_address: 'Die Aktion hatte keine Adresse, an die sie senden konnte.',
     runError_secret_missing: 'Der Konfiguration der Website fehlt ein Geheimnis, das die Aktion nennt.',
     runError_secret_literal: 'Die Aktion enthält ein Geheimnis im Klartext, das nie gesendet wird.',
-    runError_header_invalid: 'Ein Header enthielt Zeichen, die ein Header nicht tragen kann.',
-    runError_too_long: 'Der Text war zu lang zum Senden.',
+    runError_header_invalid: 'Eine Kopfzeile enthielt Zeichen, die eine Kopfzeile nicht tragen kann.',
+    runError_too_long: 'Der Inhalt war zu lang zum Senden.',
     runError_view_missing:
       'Die Website hat keine Razor-Ansicht, die die E-Mail nennt, und die E-Mail hat keinen eigenen Text.',
     runError_target_missing: 'Der Dokumenttyp oder das Element, unter das das neue Element kommt, ist nicht mehr da.',
@@ -406,11 +399,12 @@ export default {
     runError_attempt_timed_out: 'Der Versuch hat länger gedauert, als ein Versuch darf.',
     runError_host_stopped: 'Die Website wurde beendet, während der Versuch lief.',
     runError_lease_expired: 'Der Server, der ihn ausführte, wurde beendet, bevor er das Ergebnis meldete.',
-    runError_exception: 'Er brach mit einem Fehler ab. Den Grund findet jemand aus der Entwicklung im Log der Website.',
+    runError_exception:
+      'Er brach mit einem Fehler ab. Den Grund findet jemand aus der Entwicklung im Protokoll der Website.',
     runError_unknown_type: 'Diese Website hat den Typ der Aktion nicht mehr.',
     runError_unknown_action: 'Die Version, mit der der Eintrag gesendet wurde, hat diese Aktion nicht.',
     runError_unknown:
-      'Er ist fehlgeschlagen, ohne zu sagen, warum. Den Grund findet jemand aus der Entwicklung im Log der Website.',
+      'Er ist fehlgeschlagen, ohne zu sagen, warum. Den Grund findet jemand aus der Entwicklung im Protokoll der Website.',
   },
   jfbEmailLayouts: {
     card: 'Karte',

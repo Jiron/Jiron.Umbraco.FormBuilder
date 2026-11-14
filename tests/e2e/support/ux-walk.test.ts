@@ -1,7 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { COMBOS, comboName, sheetHtml, splitAxe, walkDir, wantedCombo, wantedScreen, WINDOWS } from './ux-walk.ts';
+import {
+  COMBOS,
+  comboName,
+  sheetHtml,
+  splitAxe,
+  walkDir,
+  wantedCombo,
+  wantedScreen,
+  WINDOWS,
+  wordChanges,
+} from './ux-walk.ts';
 
 test('the walk looks at every screen in twelve ways: three widths, two themes, two languages', () => {
   assert.equal(COMBOS.length, 12);
@@ -74,4 +84,28 @@ test('a sheet has a cell for each of the twelve ways, saying why one has no shot
   // Rows are widths: the phone's four looks come first.
   const captions = [...html.matchAll(/<figcaption>([^<]+)<\/figcaption>/g)].map((match) => match[1]);
   assert.deepEqual(captions.slice(0, 4), ['375-light-en', '375-dark-en', '375-light-de', '375-dark-de']);
+});
+
+test('two walks are compared screen by screen in the looks both have, what grew most first', () => {
+  const before = {
+    settings: { '1440-light-en': { words: 120 }, '1440-light-de': { words: 130 }, '375-light-en': { words: 120 } },
+    access: { '1440-light-en': { words: 80 } },
+    inbox: { '1440-light-en': { words: 40 } },
+    people: { '1440-light-en': { error: 'not reached' } },
+    old: { '1440-light-en': {} },
+  };
+  const after = {
+    settings: { '1440-light-en': { words: 90 }, '1440-light-de': { words: 101 } },
+    access: { '1440-light-en': { words: 86 } },
+    inbox: { '1440-light-en': { words: 40 } },
+    people: { '1440-light-en': { words: 12 } },
+    old: { '1440-light-en': { words: 7 } },
+    fresh: { '1440-light-en': { words: 5 } },
+  };
+  assert.deepEqual(wordChanges(before, after), [
+    { screen: 'access', look: '1440-light-en', before: 80, after: 86 },
+    { screen: 'inbox', look: '1440-light-en', before: 40, after: 40 },
+    { screen: 'settings', look: '1440-light-de', before: 130, after: 101 },
+    { screen: 'settings', look: '1440-light-en', before: 120, after: 90 },
+  ]);
 });

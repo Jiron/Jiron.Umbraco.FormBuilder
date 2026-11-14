@@ -2061,13 +2061,17 @@
       },
       "DraftResponseModel": {
         "required": [
-          "expiresUtc"
+          "expiresUtc",
+          "resume"
         ],
         "type": "object",
         "properties": {
           "expiresUtc": {
             "type": "string",
             "format": "date-time"
+          },
+          "resume": {
+            "type": "string"
           }
         }
       },

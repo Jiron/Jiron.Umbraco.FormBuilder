@@ -618,8 +618,10 @@ describe('the spam protection', () => {
     // Each named by its name alone and described by its line, so a screen reader says each once.
     const standard = must(rows[1]?.querySelector('input'), 'Standard');
     expect(text(root.getElementById(standard.getAttribute('aria-labelledby') ?? ''))).toBe('Standard');
-    expect(text(root.getElementById(standard.getAttribute('aria-describedby') ?? ''))).toContain('A hidden field');
-    expect(text(rows[4]?.querySelector('.choice-line'))).toContain('no keys for it yet');
+    expect(text(root.getElementById(standard.getAttribute('aria-describedby') ?? ''))).toContain(
+      'Checks visitors never see. Nothing loads from elsewhere.',
+    );
+    expect(text(rows[4]?.querySelector('.choice-line'))).toContain('No keys yet.');
     await click(must(rows[4]?.querySelector<HTMLInputElement>('input'), 'reCAPTCHA v3'));
     expect(settings('protection')).toMatchObject({ level: 'captcha', captcha: { provider: 'recaptchaV3' } });
     await type('setting-captcha-threshold', '2');
@@ -736,7 +738,7 @@ describe('privacy', () => {
       ['Full addresses', true],
     ]);
     expect(text(root.getElementById('ip-help'))).toBe(
-      "What each entry keeps of the address it was sent from. Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
+      "Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
     );
     await choose('ip', 'anonymised');
     expect(settings('privacy')['ip']).toBe('anonymised');
@@ -756,7 +758,7 @@ describe('privacy', () => {
     const select = allowed.box<HTMLSelectElement>('ip');
     expect(text(select.options[0])).toBe('Site default (Anonymised IP addresses)');
     expect(select.options[3]?.disabled).toBe(false);
-    expect(text(allowed.root.getElementById('ip-help'))).toBe('What each entry keeps of the address it was sent from.');
+    expect(allowed.root.getElementById('ip-help'), 'the label says it').toBeNull();
     document.body.replaceChildren();
 
     server.choices = CHOICES;
@@ -999,7 +1001,9 @@ describe('the language', () => {
     const { workspace, view, root, box, type, settings } = await viewOf(DEFINITION, 'de-DE');
     expect(reading.cultures).toEqual(['de-DE']);
     expect(box('submit-label').placeholder).toBe('Senden');
-    expect(text(root.querySelector('.toolbar .note'))).toContain('Editing the German texts');
+    expect(text(root.querySelector('.toolbar .note'))).toContain(
+      'Where a German text is empty, visitors see the English one.',
+    );
     await type('submit-label', 'Abschicken');
     expect(settings('submission')['submitLabel']).toEqual({ '': '', 'de-DE': 'Abschicken' });
     const language = must(root.querySelector<HTMLSelectElement>('.language select'), 'the language');

@@ -137,7 +137,7 @@ export default {
     consentText: 'Einwilligungstext',
     consentLoadsCaptcha: 'Das Ankreuzen lädt das Captcha',
     consentLoadsCaptchaHelp:
-      'Wo das Captcha des Formulars auf eine Einwilligung wartet, lädt es erst, wenn hier ein Haken gesetzt wird, und nicht vorher.',
+      'Wo das Captcha des Formulars auf eine Einwilligung wartet, lädt es erst, wenn hier ein Haken gesetzt wird.',
     countryAllowed: 'Erlaubte Länder',
     countryTop: 'Zuerst angezeigte Länder',
     countryDefault: 'Vorausgewähltes Land',
@@ -230,7 +230,6 @@ export default {
   },
   jfbActionSettings: {
     contentDocumentType: 'Dokumenttyp',
-    contentDocumentTypeHelp: 'Jeder Eintrag wird zu einem Inhalt dieses Typs.',
     contentParentSource: 'Ablageort',
     contentParent: 'Übergeordneter Inhalt oder Bereich, in dem es bleiben muss',
     contentName: 'Name des Inhalts',
@@ -257,9 +256,9 @@ export default {
     webhookIncludeSensitive: 'Vertrauliche Felder senden',
     webhookMessage: 'Nachricht',
     webhookSecretHelp:
-      'Signiert jede Anfrage in ihrer Kopfzeile X-Jfb-Signature, damit der Empfänger erkennt, dass sie von dieser Website kommt. Ein Verweis auf die Konfiguration der Website; leer nimmt das eigene der Website.',
+      'Ein Verweis auf das Geheimnis, das jede Anfrage signiert, damit der Empfänger erkennt, dass sie von dieser Website kommt. Leer nimmt das eigene der Website.',
     webhookHeadersHelp:
-      'Gehen mit jeder Anfrage mit. Eine Kopfzeile, deren Name auth, key, token, secret, password oder cookie enthält, nimmt einen Verweis.',
+      'Eine Kopfzeile, deren Name auth, key, token, secret, password oder cookie enthält, nimmt einen Verweis.',
     emailTo: 'An',
     emailToField: 'An die Adresse aus einem Feld',
     emailToCreator: 'An die Person, die das Formular erstellt hat',

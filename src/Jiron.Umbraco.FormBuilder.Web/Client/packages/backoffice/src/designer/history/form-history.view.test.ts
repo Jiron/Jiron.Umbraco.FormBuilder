@@ -448,7 +448,7 @@ describe("a form's History", () => {
     must(root.querySelector<HTMLElement>('[role="alert"] uui-button'), 'Try again').click();
     await vi.waitFor(() =>
       expect(text(root.querySelector('.empty'))).toBe(
-        'Nothing is published yet. Publishing keeps the first version here; until then, Show draft saves lists the saves.',
+        'No published version yet. "Show draft saves" lists the draft\'s saves.',
       ),
     );
     expect(rows()).toHaveLength(0);

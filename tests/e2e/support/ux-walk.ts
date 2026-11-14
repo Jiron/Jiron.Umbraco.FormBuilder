@@ -86,6 +86,47 @@ export interface ShotReport {
   readonly scrollers: readonly string[];
   /** Texts cut short with an ellipsis. */
   readonly clipped: readonly string[];
+  /**
+   * How many words the section's own elements show, below the fold included: what a person has to read. The forms
+   * tree's rows are left out, as they are a site's own names (ROADMAP 21.1).
+   */
+  readonly words: number;
+}
+
+/** The words two walks of the same build can differ by on a screen: a time of day, a count, a date's month. */
+export const WORDS_NOISE = 3;
+
+/** A screen's words in one look of two walks. */
+export interface WordChange {
+  readonly screen: string;
+  readonly look: string;
+  readonly before: number;
+  readonly after: number;
+}
+
+/** What each shot of a walk found, screen by screen and look by look: a walk's summary.json. */
+export type WalkSummary = Readonly<
+  Record<string, Readonly<Record<string, { readonly words?: number; readonly error?: string }>>>
+>;
+
+/**
+ * The words of every screen both walks reached, in the looks both have, the screens that grew most first, then by
+ * name: a pass that calms the screens shows no growth here (ROADMAP 21.1). A shot without a count (an earlier walk's,
+ * or a screen not reached) is left out.
+ */
+export function wordChanges(before: WalkSummary, after: WalkSummary): WordChange[] {
+  const changes: WordChange[] = [];
+  for (const [screen, looks] of Object.entries(after)) {
+    for (const [look, found] of Object.entries(looks)) {
+      const earlier = before[screen]?.[look];
+      if (earlier?.words === undefined || found.words === undefined || earlier.error || found.error) continue;
+      changes.push({ screen, look, before: earlier.words, after: found.words });
+    }
+  }
+  return changes.sort(
+    (a, b) =>
+      b.after - b.before - (a.after - a.before) || a.screen.localeCompare(b.screen) || a.look.localeCompare(b.look),
+  );
 }
 
 /** An axe finding with the ancestry axe gives when asked: the selectors from the document down to the node. */

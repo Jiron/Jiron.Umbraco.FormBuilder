@@ -1080,3 +1080,5 @@ its reason, and a handover block at the end of every phase.
   - **The term guard skips without its list:** `.private/terms.txt` is not on this machine, so the guard passes with 0
     patterns; the name scan in `.local/` is the check here.
 - **Open owner items added:** none; the term guard's item now names `.private/terms.txt`.
+
+- 2026-11-14 · owner message · after 20.1 the owner asked for one last pass ("Feinschliff"): go through every function roughly again, clear what is found, and keep the screens plain and simple, with no feature dropped. Added as Phase 21 with the single step 21.1 (ADR-0197: one step, as many commits as it needs); nothing was weakened, and the How-to-use line now says Phase 0 to Phase 21. The session had its orchestration mode switched on; CLAUDE.md rule 11 stands, so the readers are ordinary subagents.

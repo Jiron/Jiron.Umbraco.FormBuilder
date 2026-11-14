@@ -126,7 +126,7 @@ describe("an email layout's view", () => {
     const { view, root, context } = await viewOf();
     const accent = field(root, 'colour-light-accent');
     expect([accent.value, accent.placeholder]).toEqual(['', '#0b5cad']);
-    expect(text(root.querySelector('#colour-light-accent-check'))).toBe('6.6:1 on the mail: passes');
+    expect(text(root.querySelector('#colour-light-accent-check'))).toBe('Contrast 6.6:1');
     await change(view, accent, '#7FB3FF');
     expect(context.setDesign).toHaveBeenLastCalledWith({ ...NEW_DESIGN, light: { accent: '#7fb3ff' } });
     const check = must(root.querySelector('#colour-light-accent-check'), 'the check');
@@ -135,7 +135,7 @@ describe("an email layout's view", () => {
     await settle(view);
     const used = context.setDesign.mock.lastCall?.[0].light.accent;
     expect(used).toMatch(/^#[0-9a-f]{6}$/);
-    expect(text(root.querySelector('#colour-light-accent-check'))).toMatch(/on the mail: passes$/);
+    expect(text(root.querySelector('#colour-light-accent-check'))).toMatch(/^Contrast /);
     // A colour mail draws no text in has no check.
     expect(root.querySelector('#colour-light-page-check')?.hasAttribute('hidden')).toBe(true);
   });
@@ -145,7 +145,7 @@ describe("an email layout's view", () => {
     expect(root.querySelector('#colour-dark-accent')).toBeNull();
     await scheme(root, view, 'Colours to set', 'Dark');
     expect(text(root.querySelector('.group[aria-labelledby="colours-heading"] .help'))).toBe(
-      "Mail apps in a dark scheme use these. Leave a colour empty for mail's own dark colour.",
+      'For mail apps in a dark scheme. An empty colour keeps the default.',
     );
     const accent = field(root, 'colour-dark-accent');
     expect(accent.placeholder).toBe('#8ab4ff');

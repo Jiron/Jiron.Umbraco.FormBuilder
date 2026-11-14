@@ -106,7 +106,7 @@ for (const window of [
     // Umbraco's row leaves the header that room; where it does not (Umbraco 18.3), the name and the state wait out of
     // sight and reach until it does (ADR-0250).
     const header = page.locator('jfb-form-workspace-editor');
-    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert');
+    await expect(header.locator('uui-tag')).toHaveText('Ver\u00f6ffentlicht (ge\u00e4ndert)');
     const own = await header.locator('.header[slot="header"]').boundingBox();
     const waiting = /\bwaiting\b/.test((await header.locator('.header[slot="header"]').getAttribute('class')) ?? '');
     expect(waiting, "waiting exactly where Umbraco leaves the header less than the name's 6rem").toBe(
@@ -295,7 +295,7 @@ for (const width of [375, 768, 1024, 1440]) {
     // Phase 11's two views, which only a user with all six has.
     for (const [key, state, view] of [
       [published, 'Ver\u00f6ffentlicht', 'entries'],
-      [pending, 'Ver\u00f6ffentlicht, Entwurf ge\u00e4ndert', 'insights'],
+      [pending, 'Ver\u00f6ffentlicht (ge\u00e4ndert)', 'insights'],
     ] as const) {
       await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/${view}`);
       await expect(editor.locator(view === 'entries' ? 'jfb-entries-view' : 'jfb-form-insights-view')).toBeVisible();

@@ -107,9 +107,7 @@ describe('the Overview', () => {
     const steps = [...root.querySelectorAll('ol li')];
 
     expect(steps[2]?.querySelector('a, button.link'), 'the preview waits for a form').toBeNull();
-    expect(text(must(steps[2]?.querySelector('.step__help'), 'its help'))).toBe(
-      'Once there is a form, see it as visitors will and check what arrives.',
-    );
+    expect(text(must(steps[2]?.querySelector('.step__help'), 'its help'))).toBe('Needs a form first.');
     expect(steps[3]?.querySelector('button.link')?.textContent).toBe('Put the form on a page');
     expect(steps[4]?.querySelector('a')?.getAttribute('href')).toBe('section/jfb-forms/workspace/jfb-settings-access');
   });
@@ -257,7 +255,7 @@ describe('the Overview', () => {
   it('says so when there are no entries yet', async () => {
     const root = shadow(await open());
     expect(text(must(root.querySelector('uui-box p.muted'), 'the empty state'))).toBe(
-      'No entries yet. They arrive here from every form you may view.',
+      'No entries yet in the forms you may view.',
     );
   });
 

@@ -119,9 +119,7 @@ describe('the summary email', () => {
       'Weekly, on Mondays',
     ]);
     expect(text(root.querySelector('legend'))).toBe('How often');
-    expect(text(root.querySelector('#when'))).toBe(
-      'It goes out at 07:00 Berlin time, the time zone set for all sites, and covers the day or week before.',
-    );
+    expect(text(root.querySelector('#when'))).toBe('Sent at 07:00 Berlin time, for the day or week before.');
     expect(root.querySelector('fieldset')?.getAttribute('aria-describedby')).toBe('when');
     expect(server.previews, 'off shows what turning it on would send').toEqual(['daily']);
     const preview = must(root.querySelector('jfb-email-preview'), 'the preview');
@@ -131,7 +129,7 @@ describe('the summary email', () => {
       expect([...shadow(preview).querySelectorAll('.meta dt')].map((term) => text(term))).toEqual(['From', 'Subject']),
     );
     expect(text(root.querySelector('.note'))).toBe(
-      'It holds counts and links, never answers, and only the forms you may view. It goes to your own address, ana@jfb.test.',
+      'Counts and links only, never answers, for the forms you may view. Sent to ana@jfb.test.',
     );
   });
 
@@ -180,9 +178,7 @@ describe('the summary email', () => {
   it('names a site on UTC as UTC, and offers no test to a user without an address', async () => {
     server.choice = { frequency: 'daily', sendsAt: '07:00', timeZone: 'Etc/UTC', address: '' };
     const { root, button } = await open();
-    expect(text(root.querySelector('#when'))).toBe(
-      'It goes out at 07:00 UTC, the time zone set for all sites, and covers the day or week before.',
-    );
+    expect(text(root.querySelector('#when'))).toBe('Sent at 07:00 UTC, for the day or week before.');
     expect(text(root.querySelector('.note'))).toBe('Your user has no email address yet, so no summary can go out.');
     expect(button('Send test email')).toBeNull();
     expect(button('Save')).not.toBeNull();

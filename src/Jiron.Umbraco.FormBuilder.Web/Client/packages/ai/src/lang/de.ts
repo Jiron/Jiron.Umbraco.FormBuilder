@@ -6,7 +6,7 @@ const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : 
 export default {
   jfbAI: {
     draftOption: 'Formular mit KI entwerfen…',
-    draftOptionDescription: 'Aus einer Beschreibung oder dem eingefügten Text eines Fragebogens.',
+    draftOptionDescription: 'Aus einer Beschreibung oder eingefügten Fragen.',
     draftHeadline: 'Formular mit KI entwerfen',
     draftLabel: 'Beschreiben Sie das Formular, oder fügen Sie den Text eines Fragebogens ein',
     draftHelp:

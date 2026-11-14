@@ -83,7 +83,7 @@ describe('the Move to... dialog', () => {
       'true',
     );
     expect(radios[0]?.hasAttribute('aria-describedby')).toBe(false);
-    expect(text(root.querySelector('.help'))).toBe('To move it one place at a time, press Alt+Up or Alt+Down on it.');
+    expect(text(root.querySelector('.help'))).toBe('Alt+Up or Alt+Down moves it one place.');
   });
 
   it('gives the focus to the first place that can be chosen once it is open', async () => {
@@ -157,8 +157,8 @@ describe('the Keyboard shortcuts dialog', () => {
       'Undo the last change',
       'Redo what was undone',
       'Duplicate it',
-      'Delete it; the message that follows offers Undo',
-      'Move it one place up or down, at the end into the next group or page',
+      'Delete it',
+      'Move it one place up or down',
       'Go up or down the page',
       "Edit a field's label in place",
       'Clear the selection, close the palette, or stop a drag',

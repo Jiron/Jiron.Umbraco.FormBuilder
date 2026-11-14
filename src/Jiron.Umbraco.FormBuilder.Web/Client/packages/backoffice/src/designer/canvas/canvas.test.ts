@@ -726,17 +726,13 @@ describe('the canvas', () => {
   it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
     const blank: DesignDefinition = { pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     const first = await canvasOf(blank);
-    expect(text(first.root.querySelector('.bo-empty'))).toBe(
-      'Add your first field with Add field below, or paste your questions.',
-    );
+    expect(text(first.root.querySelector('.bo-empty'))).toBe('Add your first field, or paste your questions.');
     first.root.querySelector<HTMLButtonElement>('.bo-empty .bo-link')?.click();
     expect(first.requests).toEqual([{ kind: 'paste' }]);
     expect(text(first.root.querySelector('.jfb-navigation'))).toBe('Send');
 
     const later = await canvasOf(DEFINITION, { shown: 1 });
-    expect(text(later.root.querySelector('.bo-empty'))).toBe(
-      'No fields on this page yet. To split a page instead, use New page in the palette.',
-    );
+    expect(text(later.root.querySelector('.bo-empty'))).toBe('No fields on this page yet.');
     expect([...later.root.querySelectorAll('.jfb-navigation button')].map((button) => text(button))).toEqual([
       'Send',
       'Back',

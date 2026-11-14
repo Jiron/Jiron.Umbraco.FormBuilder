@@ -492,6 +492,14 @@ export class EntryPanelElement extends UmbLitElement {
       }
 
       .failed {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--uui-size-space-3);
+      }
+
+      .failed span {
+        flex: 1 1 100%;
         color: var(--jfb-bo-color-danger-text);
       }
     `,
@@ -594,9 +602,30 @@ export class EntryPanelElement extends UmbLitElement {
     return this._panel?.permissions ?? [];
   }
 
-  /** Moves the focus to the panel's heading, as opening an entry does. */
+  // Whether the focus was asked for and not given yet: while the entry is read the panel has nothing to give it to.
+  #focusWanted = false;
+
+  /**
+   * Moves the focus to the panel's heading, as opening an entry does. Asked while the entry is still read, it is given
+   * once it is: to the heading, or to Try again where the entry could not be shown, so a panel that covers its list
+   * never leaves the focus on the page behind it.
+   */
   focusHeading() {
-    void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLElement>('h2')?.focus());
+    this.#focusWanted = true;
+    void this.updateComplete.then(() => this.#giveFocus());
+  }
+
+  #giveFocus() {
+    if (!this.#focusWanted) return;
+    const target = this.shadowRoot?.querySelector<HTMLElement>('h2, .failed uui-button');
+    if (!target) return;
+    this.#focusWanted = false;
+    target.focus();
+  }
+
+  protected override updated(changed: PropertyValues<this>) {
+    super.updated(changed);
+    this.#giveFocus();
   }
 
   /** Runs an action of the bar, as its key does: nothing when the entry's bar has no such action. */
@@ -721,10 +750,13 @@ export class EntryPanelElement extends UmbLitElement {
   }
 
   async #move(panel: EntryPanelResponseModel, state: string) {
-    let change = await changeState(this, this.form, [panel.key], state);
+    // The entry's form, held from the press on: the Inbox's panel goes on to entries of other forms while a move is
+    // on its way and while its Undo waits in a toast.
+    const form = this.form;
+    let change = await changeState(this, form, [panel.key], state);
     if (change?.asks) {
       if (!(await this.#agrees(change.asks, false))) return;
-      change = await changeState(this, this.form, [panel.key], state, true);
+      change = await changeState(this, form, [panel.key], state, true);
     }
 
     const moved = change?.moved[0];
@@ -734,10 +766,14 @@ export class EntryPanelElement extends UmbLitElement {
     }
 
     const before = panel.state;
-    this._panel = { ...panel, state: moved.state };
     this.#tell('jfb-entry-moved', { key: panel.key, state: moved.state });
-    this._timeline = undefined;
-    if (this._tab === 'timeline') void this.#readTimeline();
+    // Only the panel that still shows the entry takes its new state: it may show another by now.
+    if (this._panel?.key === panel.key) {
+      this._panel = { ...this._panel, state: moved.state };
+      this._timeline = undefined;
+      if (this._tab === 'timeline') void this.#readTimeline();
+    }
+
     const name = state === 'spam' ? 'spam' : before === 'spam' ? 'notSpam' : moved.state;
     const message = this.#term(`movedOne_${name}`, panel.number);
     const until = change.undoUntilUtc ? new Date(change.undoUntilUtc).getTime() : 0;
@@ -753,7 +789,7 @@ export class EntryPanelElement extends UmbLitElement {
       until,
       tooLate: this.#term('undoTooLate'),
       undo: async () => {
-        const undone = await undoChange(this, this.form, change.changeKey);
+        const undone = await undoChange(this, form, change.changeKey);
         if (undone === 'done') {
           this.#tell('jfb-entry-moved', { key: panel.key, state: before });
           if (this._panel?.key === panel.key) {
@@ -1531,8 +1567,21 @@ export class EntryPanelElement extends UmbLitElement {
   override render() {
     if (!this._words || this._state === 'loading' || !this._panel) {
       if (this._words && this._state === 'failed') {
+        // With a way on: the read again, and back to the list the panel stands beside or over.
         return html`<div class="body">
-          <p class="failed" role="alert">${this.#term('panel_failed')}</p>
+          <div class="failed" role="alert">
+            <span>${this.#term('panel_failed')}</span>
+            <uui-button look="outline" label=${this.#term('retry')} @click=${() => void this.#open()}></uui-button>
+            ${
+              this.place === 'alone'
+                ? nothing
+                : html`<uui-button
+                    look="outline"
+                    label=${this.#term('panel_close')}
+                    @click=${() => this.#tell('jfb-entry-close', { key: this.entry, state: '' })}
+                  ></uui-button>`
+            }
+          </div>
         </div>`;
       }
 

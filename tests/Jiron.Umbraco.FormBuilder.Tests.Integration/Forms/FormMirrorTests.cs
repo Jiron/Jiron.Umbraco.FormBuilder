@@ -279,6 +279,35 @@ public sealed class FormMirrorTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AFormsOwnFileThatCannotBeRead_IsNeverWrittenOver_ByAPassOrAPublish_AndIsNamedUntilItReads()
+    {
+        // A developer's edit with a slip of the hand in it, as after a merge: the work in the file must not be lost.
+        var form = await PublishedAsync();
+        var broken = (await File.ReadAllTextAsync(FileOf(form))).Replace("\"definition\"", "<<<<<<< HEAD\n\"definition\"", StringComparison.Ordinal);
+        await File.WriteAllTextAsync(FileOf(form), broken);
+
+        await Mirror.SyncAsync();
+        var afterAPass = await File.ReadAllTextAsync(FileOf(form));
+        var found = await Health.FindAsync(English);
+        await Mirror.SyncAsync();
+        var afterASecondPass = await File.ReadAllTextAsync(FileOf(form));
+
+        // Published again from the backoffice meanwhile: the file still stays.
+        Clock.Advance(TimeSpan.FromMinutes(1));
+        await PublishChangeAsync(form, "Changed in the backoffice");
+        var afterAPublish = await File.ReadAllTextAsync(FileOf(form));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(afterAPass, Is.EqualTo(broken), "the pass leaves it");
+            Assert.That(afterASecondPass, Is.EqualTo(broken), "and the next one too");
+            Assert.That(afterAPublish, Is.EqualTo(broken), "a publish does not write over it either");
+            Assert.That(found.Select(finding => finding.Code), Is.EqualTo(new[] { "mirrorUnreadable" }));
+            Assert.That((await Health.FindAsync(English)).Select(finding => finding.Code), Does.Contain("mirrorUnreadable"), "named until it reads");
+        });
+    }
+
+    [Test]
     public async Task AFileThatIsNoForm_IsNamedByTheHealthCheck_UntilItIsGone_AndAFormWithoutAFileGetsOne()
     {
         var form = await PublishedAsync();

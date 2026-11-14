@@ -16,30 +16,11 @@ From installing the package to the first entry in your Inbox, in about ten minut
 In the site's project folder:
 
 ```
-dotnet add package Jiron.Umbraco.FormBuilder
+dotnet add package Jiron.Umbraco.FormBuilder --prerelease
 ```
 
-While only prereleases are published, add `--prerelease`. Then build. No change to `Program.cs` is needed: Umbraco finds
-the package by itself.
-
-If you want to see the emails forms send while you try things out, let Umbraco write them to a folder instead of
-sending them. Create the folder first, then add this to `appsettings.Development.json`:
-
-```json
-{
-  "Umbraco": {
-    "CMS": {
-      "Global": {
-        "Smtp": {
-          "From": "noreply@example.com",
-          "DeliveryMethod": "SpecifiedPickupDirectory",
-          "PickupDirectoryLocation": "C:/temp/mail-pickup"
-        }
-      }
-    }
-  }
-}
-```
+`--prerelease` is needed while only prereleases are published. Then build. No change to `Program.cs` is needed: Umbraco
+finds the package by itself.
 
 ## 2. Open Form Builder
 
@@ -49,11 +30,8 @@ open) and choose **Form Builder** in the top bar.
 ![The Overview of the Form Builder section, with the setup checklist, recent entries and the health of the site](screenshots/overview.png)
 
 The section opens on its **Overview**, with a **Setup checklist** of five steps. Each step ticks itself off when it
-is done, whoever does it, so you can follow it in any order. This page follows it too.
-
-Links in emails, such as the one that confirms an address, need the site's address. A local site usually has no
-`https` domain set in Umbraco, so enter the address the site runs on, as your browser shows it, in Settings › General ›
-**Base URL** ([email.md](email.md#links-in-emails)).
+is done, whoever does it, so you can follow it in any order. This page starts at its second step; the first, email,
+comes under [What next](#what-next).
 
 ## 3. Create a form from a template
 
@@ -117,6 +95,28 @@ The checklist has up to three more steps:
 
 - **Check email sending:** Settings › Email › **Send test email** sends a message to your own address. Without a mail
   server, entries are still kept, and their emails go out once sending works ([email.md](email.md)).
+  - **To read the mails on a local site,** let Umbraco write them to a folder instead of sending them. Create the
+    folder first, then add this to `appsettings.Development.json`:
+
+    ```json
+    {
+      "Umbraco": {
+        "CMS": {
+          "Global": {
+            "Smtp": {
+              "From": "noreply@example.com",
+              "DeliveryMethod": "SpecifiedPickupDirectory",
+              "PickupDirectoryLocation": "C:/temp/mail-pickup"
+            }
+          }
+        }
+      }
+    }
+    ```
+
+  - **Links in emails,** such as the one that confirms an address, need the site's address. A local site usually has
+    no `https` domain set in Umbraco, so enter the address the site runs on, as your browser shows it, in Settings ›
+    General › **Base URL** ([email.md](email.md#links-in-emails)).
 - **Choose who sees entries:** only administrators can open Form Builder at first. Another user group needs the
   section, added in Umbraco's Users section, and its permissions, set in Settings › Access, which also lists the groups
   that lack the section ([permissions.md](permissions.md)).

@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -117,6 +118,19 @@ internal sealed class EntryEdits(
         return new EntryPanelEdit(kind, values, options, field.Required);
     }
 
+    /// <summary>
+    /// Whether the field holds the address the form's email verification confirms (ADR-0252): the panel never edits it,
+    /// as the entry would go on saying "confirmed" of an address nobody confirmed.
+    /// </summary>
+    /// <param name="definition">The entry's version.</param>
+    /// <param name="field">One of its fields.</param>
+    public static bool IsConfirmedAddress(FormDefinition definition, FormField field)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(field);
+        return definition.Settings.Submission.Verification?.EmailField == field.Key;
+    }
+
     /// <summary>Whether the panel edits a field's answer: what this service edits, for a user who may see it.</summary>
     /// <param name="field">A field of a group of the entry's version.</param>
     /// <param name="maySeeSensitive">Whether the user may see sensitive values.</param>
@@ -160,12 +174,14 @@ internal sealed class EntryEdits(
         var definition = read.Scope.Form;
         var fields = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).ToDictionary(field => field.Key);
         var current = fields.Keys.ToDictionary(key => key, key => (IReadOnlyList<string>)[.. read.Answers?.Find(key)?.Values.Select(value => value.Value.Text) ?? []]);
+        // What the form keeps only until its actions ran is gone once they did: an edit never brings it back (ADR-0252).
+        var removed = read.Timeline.Any(entryEvent => entryEvent.Kind == ActionSettlement.ValuesRemovedEvent);
         var problems = new List<DefinitionProblem>();
         var changes = new List<(FormField Field, int Index, IReadOnlyList<string> Values)>();
         foreach (var (answer, index) in edited.Select((answer, index) => (answer, index)))
         {
             var path = $"answers[{index}]";
-            if (!fields.TryGetValue(answer.Field, out var field) || !Edits(field, maySeeSensitive))
+            if (!fields.TryGetValue(answer.Field, out var field) || !Edits(field, maySeeSensitive) || IsConfirmedAddress(definition, field) || (removed && ActionSettlement.KeptUntilActions(definition, field.Key)))
             {
                 problems.Add(new DefinitionProblem("not_editable", path + ".field", "This answer can't be edited here."));
                 continue;

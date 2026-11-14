@@ -81,6 +81,8 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     [Test]
     public async Task ADuplicate_RemapsRuleReferences_ToItsOwnElements_AndCopiesTheDraft()
     {
+        // The list the draft's last field names is on the site, so the copy can be published (ADR-0252).
+        _ = await GetRequiredService<IOptionListRepository>().CreateAsync(new NewOptionList(ListKey, "sessions", "Sessions", OptionListKind.Manual));
         var folder = await CreateFolderAsync();
         var (source, designed) = await DesignedAsync();
         Clock.Advance(TimeSpan.FromMinutes(1));

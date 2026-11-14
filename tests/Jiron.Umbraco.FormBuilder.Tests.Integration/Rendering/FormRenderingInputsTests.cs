@@ -243,7 +243,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             var row = plan.QuerySelector("template[data-jfb-file]")!;
             Assert.That(
                 new[] { "list", "uploading", "uploaded", "remove", "stop", "again", "stopped", "later" }.Select(word => row.GetAttribute("data-jfb-" + word)),
-                Is.EqualTo(new[] { "Your files", "{0}% uploaded", "{0} is uploaded.", "Remove {0}", "Stop uploading {0}", " to upload {0}", "The upload stopped before it finished.", "This form can't take files right now. Try again later. Your answers are kept." }),
+                Is.EqualTo(new[] { "Your files", "{0}% uploaded", "{0} is uploaded.", "Remove {0}", "Stop uploading {0}", " to upload {0}", "The upload stopped.", "This form can't take files right now. Try again later. Your answers are kept." }),
                 "what the runtime says of a file comes with the page, in its language");
             Assert.That(plan.QuerySelector("label.jfb-label")!.GetAttribute("for"), Is.EqualTo("jfb-1-plan"));
 
@@ -254,7 +254,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             Assert.That(signature.QuerySelector("[data-jfb-clear]")!.GetAttribute("data-jfb-undo"), Is.EqualTo("Undo clear"));
             Assert.That(signature.QuerySelector("[data-jfb-to-typed]")!.TextContent, Is.EqualTo("Type your name instead"));
             Assert.That(signature.QuerySelector("[data-jfb-to-drawn]")!.TextContent, Is.EqualTo("Sign by hand instead"));
-            Assert.That(Text(signature, "[data-jfb-drawn] > p"), Is.EqualTo("Sign with your finger or the mouse, or type your name instead."));
+            Assert.That(Text(signature, "[data-jfb-drawn] > p"), Is.EqualTo("Sign with your finger or the mouse."));
             Assert.That(Compact(signature.QuerySelector("[data-jfb-typed]")!.InnerHtml), Does.StartWith(
                 """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" maxlength="100" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" data-jfb-requires="" aria-describedby="jfb-1-signature-typed-help">"""),
                 "without JavaScript, the name typed instead; the legend is the only label that shows");

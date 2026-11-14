@@ -69,7 +69,9 @@ Every colour is checked as you choose it, so forms stay readable for everyone (W
 | Control borders, focus ring | 3:1 |
 | Accent | 3:1 on the surface |
 | Text on accent | 4.5:1 on the accent |
-| Button and its text | 4.5:1 against each other |
+| Button | 3:1 on the surface |
+| Text on the button | 4.5:1 on the button |
+| Button on hover | 4.5:1 against the button's text |
 | Dividers | no minimum, as they only decorate |
 
 A colour that falls short says by how much, and offers the nearest colour of the same hue that passes, with **Use**.

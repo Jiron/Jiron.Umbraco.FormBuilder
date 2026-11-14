@@ -597,6 +597,26 @@ describe("a form's Entries view", () => {
     });
   });
 
+  it('says the new state on a row that moved out of a filter for one state, whose column is hidden', async () => {
+    server.sets = [
+      { key: 's1', name: 'Waiting', form: 'form1', filter: { states: ['submitted'], forms: [], fields: [] } },
+    ];
+    // As the server answers a filter for one state: with the rows in it.
+    server.rows = server.rows.map((row) => ({ ...row, state: 'submitted' }));
+    const { rows, root, tick, button, view } = await viewOf();
+    button('Waiting').click();
+    await settle(view);
+    expect([...root.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('State');
+    expect(root.querySelector('.moved-state'), 'every row is in the state the filter names').toBeNull();
+
+    await tick(0);
+    button('Approve').click();
+    await settle(view);
+    const moved = rows().find((one) => one.dataset['key'] === server.moves.at(-1)?.entries[0]);
+    expect(text(moved?.querySelector('.moved-state'))).toBe('Approved');
+    expect(root.querySelectorAll('.moved-state')).toHaveLength(1);
+  });
+
   it('asks before deleting, with the files that go too, and takes the rows away', async () => {
     const { rows, root, tick, view, peek } = await viewOf();
     await tick(0);
@@ -614,6 +634,22 @@ describe("a form's Entries view", () => {
     expect(rows().map((one) => one.dataset['key'])).toEqual(['e2']);
     expect(text(root.querySelector('.count'))).toBe('1 entry');
     expect(peek).toHaveBeenLastCalledWith('positive', { data: { message: '2 entries deleted.' } });
+  });
+
+  it('reads the list again when every row it had loaded is deleted while the form holds more', async () => {
+    server.page = 2;
+    const { rows, tick, root, view } = await viewOf();
+    expect(rows().map((one) => one.dataset['key'])).toEqual(['e1', 'e2']);
+    await tick(0);
+    await tick(1);
+    const reads = server.requests.length;
+    must(root.querySelector<HTMLElement>('#bulk-more button'), 'Delete...').click();
+    await settle(view);
+    await settle(view);
+
+    expect(server.requests.length, 'the first page is asked for again').toBeGreaterThan(reads);
+    expect(server.requests.at(-1)?.after ?? null, 'from its start').toBeNull();
+    expect(rows().length, 'rows, not the sentence of a form without entries').toBeGreaterThan(0);
   });
 
   it('says the entries a legal hold keeps, before and after, and reads the list again', async () => {

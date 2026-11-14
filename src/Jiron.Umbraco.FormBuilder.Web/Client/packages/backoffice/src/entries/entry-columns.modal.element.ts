@@ -88,7 +88,6 @@ export class EntryColumnsModalElement extends UmbModalBaseElement<EntryColumnsMo
     const full = this._columns.length >= MOST_COLUMNS;
     return html`<umb-body-layout headline=${this.#term('chooser_headline')}>
       <uui-box>
-        <p>${this.#term('chooser_details')}</p>
         ${
           fields.length === 0
             ? html`<p>${this.#term(this.data?.noForm ? 'chooser_noForm' : 'chooser_none')}</p>`

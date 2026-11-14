@@ -475,6 +475,9 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
         status = response.status;
         retryAfter = response.headers.get('Retry-After');
         answer = ((await response.json().catch(() => null)) as Answer | null) ?? {};
+        // A stored entry answers with its receipt. A 200 without one is what stands between the page and the site (a
+        // proxy's page, a worker's answer): nothing was stored, so it counts as an answer that went wrong on the way.
+        if (status === 200 && (typeof answer.receipt !== 'object' || answer.receipt === null)) status = 502;
         // Published again meanwhile: the form as it is now comes in this one's place.
         if (status === 409 && answer.code === 'form_changed' && comesAnew && api !== undefined) {
           swapped = await swapForm(form, model, api);

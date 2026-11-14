@@ -223,7 +223,10 @@ export class PeopleEraseModalElement extends UmbModalBaseElement<PeopleEraseModa
               slot="actions"
               look="primary"
               color="danger"
-              label=${this.#term('people_eraseConfirm', this.#count('people_entries', taken))}
+              label=${this.#term(
+                this._mode === 'anonymise' ? 'people_eraseConfirmAnonymise' : 'people_eraseConfirm',
+                this.#count('people_entries', taken),
+              )}
               .state=${this._erasing ? 'waiting' : undefined}
               @click=${() => void this.#erase()}
             ></uui-button>`

@@ -40,7 +40,8 @@ label or alias; choosing a field opens its form with that field selected.
 **+** beside the Forms heading, or on a folder, opens the create menu. The new form lands in that folder.
 
 - **Form** creates an empty form named "Untitled form", with the name ready to type. Its canvas suggests a first
-  field, or pasting a list of questions.
+  field, or pasting a list of questions. Settings › General › **New forms** can start every such form with a consent
+  field and with an email of each entry to its creator.
 - **Form from a template…** opens the template gallery: nine built-in templates (contact, callback, newsletter, event
   registration, job application, feedback, quote request, support request and privacy request), and any your site has
   saved. The chosen template's preview stands beside the list. **Use template** creates the form.
@@ -155,8 +156,8 @@ They act on the field, group or page you are on. **?** shows them in the designe
 | Ctrl+Z | Undo the last change |
 | Ctrl+Y or Ctrl+Shift+Z | Redo what was undone |
 | Ctrl+D | Duplicate it |
-| Delete | Delete it; the message that follows offers Undo |
-| Alt+↑ / Alt+↓ | Move it one place up or down, at the end into the next group or page |
+| Delete | Delete it |
+| Alt+↑ / Alt+↓ | Move it one place up or down |
 | ↑ / ↓ | Go up or down the page |
 | F2 | Edit a field's label in place (a double click does too) |
 | Esc | Clear the selection, close the palette, or stop a drag |
@@ -192,7 +193,8 @@ need. Answers already sent keep their values.
 The badge in the canvas's toolbar shows how many problems the form check finds, and opens its list. **Errors** block
 publishing; **warnings** and **suggestions** don't. Each problem names the element and what is wrong, and **Fix it**
 selects the element and opens the setting. Typical ones: a field without a label, personal data asked for without a
-consent field, a card number asked for, or outcomes that leave some visitors without one.
+consent field, a card number asked for, a field whose option list this site lacks (an error, since it would offer no
+choices), or outcomes that leave some visitors without one.
 
 ## The Settings view
 

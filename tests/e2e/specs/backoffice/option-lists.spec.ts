@@ -184,7 +184,7 @@ test('a designer makes an option list of every kind through the screens, each pr
   await page.goto(LISTS);
   view = await create(page, 'An upload', 'file');
   await name(page, `${prefix} branches`);
-  await expect(view.getByText('Upload a file to give the list its options.')).toBeVisible();
+  await expect(view.getByText('No file yet.')).toBeVisible();
   await view.locator('#option-file').setInputFiles({
     name: 'branches.csv',
     mimeType: 'text/csv',

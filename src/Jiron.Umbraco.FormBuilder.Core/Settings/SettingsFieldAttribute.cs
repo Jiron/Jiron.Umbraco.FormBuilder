@@ -2,7 +2,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
 /// A field of a settings section as its screen shows it (ADR-0218): the box it sits in, its place there and its editor.
-/// Its label and help are the backoffice's keys <c>jfbGlobalSettings_&lt;section&gt;_&lt;field&gt;</c> and <c>...Help</c>, its limits
+/// Its label and, unless it has none, its help are the backoffice's keys <c>jfbGlobalSettings_&lt;section&gt;_&lt;field&gt;</c> and <c>...Help</c>, its limits
 /// the property's <see cref="System.ComponentModel.DataAnnotations.RangeAttribute"/> and
 /// <see cref="System.ComponentModel.DataAnnotations.MaxLengthAttribute"/>.
 /// </summary>
@@ -35,6 +35,12 @@ internal sealed class SettingsFieldAttribute(string box) : Attribute
     /// false for none.
     /// </summary>
     public bool Unit { get; set; }
+
+    /// <summary>
+    /// Whether a help line sits under the label, as the key <c>jfbGlobalSettings_&lt;section&gt;_&lt;field&gt;Help</c>; false for a
+    /// field whose label says it all.
+    /// </summary>
+    public bool Help { get; set; } = true;
 }
 
 /// <summary>

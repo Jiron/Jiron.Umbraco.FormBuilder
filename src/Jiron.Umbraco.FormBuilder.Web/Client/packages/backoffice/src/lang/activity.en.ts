@@ -11,7 +11,7 @@ const entry = (f: AuditFacts) => (f.entry ? `entry ${f.entry}` : 'an entry');
 export default {
   jfbActivity: {
     retry: 'Try again',
-    loadMore: 'Load more',
+    loadMore: 'Show more',
     close: 'Close',
     tooLong: 'The list took too long to load. Narrow it down with the search or the filters.',
     filterWhen: 'When',
@@ -77,14 +77,14 @@ export default {
     headlineWebhook: (to: string) => `Webhook to ${to}`,
     uncertainEmail: 'Sending stopped before the mail server answered, so it may have arrived.',
     uncertainRun: 'The attempt stopped before the server answered, so it may have arrived.',
-    tryingAgain: (next: string) => `It is tried again ${next}.`,
-    tryingAgainSoon: 'It is tried again as soon as sending goes on.',
+    tryingAgain: (next: string) => `Next try ${next}.`,
+    tryingAgainSoon: 'Next try as soon as sending goes on.',
     limitedRecipient: (n: number, to: string) =>
-      `Not sent: this site's forms had already sent ${count(n, 'email', 'emails')} to ${to} that day, the most one address gets in a day.`,
+      `Not sent: this site's forms had already sent ${count(n, 'email', 'emails')} to ${to} that day, the most one address gets.`,
     limitedSite: (n: number) =>
-      `Not sent: this site's forms had already sent ${count(n, 'email', 'emails')} to visitor addresses that hour, the most the site sends to visitors in an hour.`,
+      `Not sent: this site's forms had already sent ${count(n, 'email', 'emails')} to visitor addresses that hour, the most the site sends them.`,
     limitedWhy: (key: string) =>
-      `The limit keeps the forms from being used to send mail to strangers. A limited email is never sent later, so it can't be retried. Host configuration sets the limit: ${key}.`,
+      `A limited email is never sent later, so it can't be retried. Host configuration sets the limit: ${key}.`,
     skipped_stopped: 'An earlier action of the entry failed and stopped the rest.',
     skipped_undone: 'The change that started it was undone.',
     skipped_superseded: 'A later move of the entry replaced the change that started it.',

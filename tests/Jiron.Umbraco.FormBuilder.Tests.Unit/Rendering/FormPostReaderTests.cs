@@ -417,6 +417,48 @@ public sealed class FormPostReaderTests
         });
     }
 
+    [Test]
+    public void ANumbersDecimalComma_IsReadAsThePoint_WhereThePagesLanguageWritesOne_AndNowhereElse()
+    {
+        var price = Field(K(40), "price", "number");
+        var note = Field(K(41), "note", "text");
+        var weight = Field(K(43), "weight", "number");
+        var parcels = Field(K(42), "parcels", "repeater") with { Fields = [weight] };
+        var definition = new FormDefinition
+        {
+            Key = K(44),
+            Pages = [new FormPage { Key = K(45), Groups = [new FormGroup { Key = K(46), Fields = [price, note, parcels] }] }],
+        };
+        FormPostReader Posted(string priceText) => FormPostReader.Read(
+            new FormCollection(new Dictionary<string, StringValues>(StringComparer.Ordinal)
+            {
+                ["price"] = priceText,
+                ["note"] = "12,5",
+                ["jfb-rows-parcels"] = "1",
+                ["parcels[0].weight"] = " -0,75 ",
+            }),
+            definition,
+            TestFieldTypes.Registry);
+
+        var (german, germanRows) = Posted("12,5").Posted("de-DE");
+        var (english, englishRows) = Posted("12,5").Posted("en-US");
+        var (thousands, _) = Posted("1.234,5").Posted("de-DE");
+        var (twice, _) = Posted("1,2,3").Posted("de-DE");
+        var (unknown, _) = Posted("12,5").Posted(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(german["price"].Values, Is.EqualTo(new[] { "12.5" }), "the wire form, as the runtime's page reader posts it");
+            Assert.That(german["note"].Values, Is.EqualTo(new[] { "12,5" }), "a text keeps its comma");
+            Assert.That(germanRows["parcels"][0]["weight"].Values, Is.EqualTo(new[] { "-0.75" }), "a row's number too");
+            Assert.That(english["price"].Values, Is.EqualTo(new[] { "12,5" }), "a language that writes a point refuses the comma, as before");
+            Assert.That(englishRows["parcels"][0]["weight"].Values, Is.EqualTo(new[] { " -0,75 " }));
+            Assert.That(thousands["price"].Values, Is.EqualTo(new[] { "1.234,5" }), "no thousands are guessed: the reading stage refuses it");
+            Assert.That(twice["price"].Values, Is.EqualTo(new[] { "1,2,3" }));
+            Assert.That(unknown["price"].Values, Is.EqualTo(new[] { "12,5" }));
+        });
+    }
+
     private static FormPostReader Read(params (string Name, string[] Values)[] posted) =>
         FormPostReader.Read(new FormCollection(posted.ToDictionary(pair => pair.Name, pair => new StringValues(pair.Values), StringComparer.Ordinal)), Definition, TestFieldTypes.Registry);
 

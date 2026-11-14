@@ -70,10 +70,10 @@ describe('what the panel says', () => {
         'en',
         term,
       ),
-    ).toEqual(['Sent from /careers/apply?x=1', 'Swiss High German', '6 min to complete']);
+    ).toEqual(['Sent from /careers/apply?x=1', 'Swiss High German', 'Took 6 min']);
     expect(detailsLine({ ...none, page: null, culture: 'en', duration: 20 }, 'en', term)).toEqual([
       'English',
-      'Under a minute to complete',
+      'Took under a minute',
     ]);
     expect(detailsLine({ ...none, page: null, culture: 'en', duration: null }, 'en', term, true)).toEqual([
       'Test entry, sent from the preview',

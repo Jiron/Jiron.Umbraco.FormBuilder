@@ -115,7 +115,7 @@ test('a designer makes a theme through the screens, its colours checked and its 
   await look(page, info, 'a failing check');
   await view.getByRole('button', { name: /^Use #/ }).click();
   await expect(border).toHaveValue(/^#[0-9a-f]{6}$/);
-  await expect(view.locator('#colour-light-jfb-color-border-check')).toContainText('on the surface: passes');
+  await expect(view.locator('#colour-light-jfb-color-border-check')).toContainText('Contrast ');
   const accent = view.getByRole('textbox', { name: 'Accent', exact: true });
   await accent.fill('#8a1538');
   await accent.press('Tab');

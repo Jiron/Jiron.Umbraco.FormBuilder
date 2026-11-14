@@ -253,7 +253,7 @@ public sealed class RenderingPartsTests
                 Assert.That(Format(words.Row, 2), Does.Contain("2"), culture);
                 Assert.That(Format(words.KeepFile, "cv.pdf", "2 KB"), Does.Contain("cv.pdf (2 KB)"), culture);
                 // French writes sizes in Ko and Mo after a no-break space.
-                Assert.That((Format(words.Kilobytes, 2), Format(words.Megabytes, 2)), Is.EqualTo(culture switch { "fr" => ("2\u00a0Ko", "2\u00a0Mo"), "de" => ("2\u00a0KB", "2\u00a0MB"), _ => ("2 KB", "2 MB") }), culture);
+                Assert.That((Format(words.Kilobytes, 2), Format(words.Megabytes, 2)), Is.EqualTo(culture switch { "fr" => ("2\u00a0Ko", "2\u00a0Mo"), "en" => ("2 KB", "2 MB"), _ => ("2\u00a0KB", "2\u00a0MB") }), culture);
             });
         }
     }

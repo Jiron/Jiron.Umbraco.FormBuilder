@@ -54,7 +54,7 @@ internal sealed record ProtectionSettings : ISettingsSection
     public string? CaptchaProvider { get; init; }
 
     /// <summary>When a page may load a captcha's script (section 4.10, ADR-0157): <c>explicit</c> by default.</summary>
-    [SettingsField("consent", Editor = "captchaConsent")]
+    [SettingsField("consent", Editor = "captchaConsent", Help = false)]
     public CaptchaConsentMode CaptchaConsent { get; init; } = CaptchaConsentMode.Explicit;
 
     /// <summary>
@@ -70,7 +70,7 @@ internal sealed record ProtectionSettings : ISettingsSection
     public int ProofBits { get; init; } = 16;
 
     /// <summary>How strictly the site's forms that inherit it judge their entries; never <c>inherit</c>, which is how a form takes this one.</summary>
-    [SettingsField("content", Except = ["inherit"])]
+    [SettingsField("content", Except = ["inherit"], Help = false)]
     public ContentRuleLevel ContentRules { get; init; } = ContentRuleLevel.Normal;
 
     /// <summary>The words and phrases that count against a submission, compared as rules compare texts (ADR-0005), each as words of their own.</summary>

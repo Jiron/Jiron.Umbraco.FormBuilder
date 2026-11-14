@@ -190,20 +190,13 @@ export default {
     cycle: (name: string) =>
       `Mit dieser Regel hinge es von ${name} selbst ab, ob ${name} sichtbar ist. Wählen Sie eine andere Frage oder ein anderes Element.`,
     useRule: 'Diese Regel verwenden',
-    offHelpShows_field:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Das Feld wird dann immer angezeigt.',
-    offHelpShows_group:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Gruppe wird dann immer angezeigt.',
-    offHelpShows_page:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Seite wird dann immer angezeigt.',
-    offHelpRequired:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Das Feld ist dann nie Pflicht.',
-    offHelpMessage:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Meldung erscheint dann nie.',
-    offHelpUse:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Besucher erhalten dann diesen Abschluss, sofern kein früherer gilt.',
-    offHelpRun:
-      'Schalten Sie sie aus, um die Regel zu behalten, ohne sie zu verwenden. Die Aktion läuft dann für jeden Eintrag, den ihr Auslöser bringt.',
+    offHelpShows_field: 'Aus: Die Regel bleibt erhalten, und das Feld wird immer angezeigt.',
+    offHelpShows_group: 'Aus: Die Regel bleibt erhalten, und die Gruppe wird immer angezeigt.',
+    offHelpShows_page: 'Aus: Die Regel bleibt erhalten, und die Seite wird immer angezeigt.',
+    offHelpRequired: 'Aus: Die Regel bleibt erhalten, und das Feld ist nie Pflicht.',
+    offHelpMessage: 'Aus: Die Regel bleibt erhalten, und die Meldung erscheint nie.',
+    offHelpUse: 'Aus: Die Regel bleibt erhalten, und Besucher erhalten diesen Abschluss, sofern kein früherer gilt.',
+    offHelpRun: 'Aus: Die Regel bleibt erhalten, und die Aktion läuft für jeden Eintrag, den ihr Auslöser bringt.',
     deleteRule: 'Regel löschen',
     add: 'Hinzufügen',
     update: 'Aktualisieren',
@@ -212,7 +205,7 @@ export default {
     saidChanged: (name: string) => `Regel von ${name} geändert`,
     saidDeleted: (name: string) => `Regel von ${name} gelöscht`,
     try: 'Ausprobieren',
-    tryHelp: 'Geben Sie Antworten an, um zu sehen, was die Regel tut. Nichts davon wird gespeichert.',
+    tryHelp: 'Was Sie hier angeben, wird nicht gespeichert.',
     tryIncomplete: 'Vervollständigen Sie jede Bedingung, um die Regel auszuprobieren.',
     tryShows: (name: string) => `${name} wird angezeigt.`,
     tryHidden: (name: string) => `${name} bleibt verborgen.`,
@@ -234,20 +227,18 @@ export default {
     overviewHeadline: 'Regeln',
     overviewAdd: 'Regel hinzufügen',
     overviewEmpty:
-      'Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt, und „Regel hinzufügen“ fragt zuerst, um welche Frage es geht.',
+      'Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt.',
     overviewPage: (number: number) => `Seite ${number}`,
     overviewPageNamed: (number: number, name: string) => `Seite ${number}: ${name}`,
     overviewAfter: 'Nach dem Absenden',
     overviewOff: 'Aus',
     overviewConflict: (words: string) =>
-      `Widerspruch: Wenn ${words}, verbirgt eine Regel das Feld und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht, Besucher können also ohne es absenden.`,
+      `Widerspruch: Wenn ${words}, verbirgt eine Regel das Feld und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht.`,
     overviewConflictAlways:
-      'Widerspruch: Eine Regel verbirgt das Feld bei jeder Antwort, und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht, Besucher können also ohne es absenden.',
+      'Widerspruch: Eine Regel verbirgt das Feld bei jeder Antwort, und die andere macht es zur Pflicht. Ein verborgenes Feld ist nie Pflicht.',
     overviewConflictFiles: (name: string, count: number) =>
       `${name} hat ${count === 1 ? '1 Datei' : `${count} Dateien`}`,
     overviewAffects: 'Worauf soll die Regel wirken?',
-    overviewAffectsHelp:
-      'Wählen Sie die Frage, Gruppe oder Seite, die die Regel zeigt, verbirgt oder zur Pflicht macht, oder das Feld, bei dem sie eine Meldung zeigt.',
     overviewChoose: 'Element wählen',
     overviewContinue: 'Weiter',
     overviewChooseFirst: 'Wählen Sie, worauf die Regel wirkt.',

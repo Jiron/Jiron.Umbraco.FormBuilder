@@ -49,7 +49,7 @@ internal sealed record ContentMapping(string Property, Guid? Field, string? Valu
 internal sealed class ContentActionSettings
 {
     /// <summary>The alias of the document type it creates.</summary>
-    [FormBuilderSetting("#jfbActionSettings_contentDocumentType", Description = "#jfbActionSettings_contentDocumentTypeHelp", Order = 1, Editor = "documentTypePicker")]
+    [FormBuilderSetting("#jfbActionSettings_contentDocumentType", Order = 1, Editor = "documentTypePicker")]
     public string? DocumentType { get; init; }
 
     /// <summary>Where the parent comes from; its editor draws the item picked within it (ADR-0192).</summary>

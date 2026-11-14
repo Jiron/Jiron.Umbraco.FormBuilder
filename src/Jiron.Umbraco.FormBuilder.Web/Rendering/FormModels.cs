@@ -412,6 +412,7 @@ internal sealed partial class FormModels(
         return root.Model(
             insights: !render.Preview && await insights.IsOnAsync(definition, cancellationToken),
             insightsContinued: post is not null,
+            posted: post is not null,
             insightsReached: post is { Move: FormPostMove.Next, ErrorPage: null } && current is { } reached && reached.Key != post.Page ? reached.Key : null,
             asksAtOnce: build.TellsPlaces || FormMemberConditions.Of(definition).Any || await submissionProtection.ShowsCaptchaAsync(render.Form.Published.Form.Key, definition, () => requestPages.PageAsync(render.Content), cancellationToken),
             pages: pages,
@@ -1034,11 +1035,14 @@ internal sealed partial class FormModels(
 
     private static string Classes(params string?[] classes) => string.Join(' ', classes.Where(name => !string.IsNullOrWhiteSpace(name)));
 
-    // A text of the package's words with markup where it says {0}; the rest encoded.
+    // A text of the package's words with markup where it says {0}; the rest encoded. A site's own wording may leave the value
+    // out (VisitorTextKeys.Problem): it then shows as it is, without the markup.
     private static HtmlString WithMarkup(string template, string markup)
     {
         var at = template.IndexOf("{0}", StringComparison.Ordinal);
-        return new HtmlString(WebUtility.HtmlEncode(template[..at]) + markup + WebUtility.HtmlEncode(template[(at + 3)..]));
+        return at < 0
+            ? new HtmlString(WebUtility.HtmlEncode(template))
+            : new HtmlString(WebUtility.HtmlEncode(template[..at]) + markup + WebUtility.HtmlEncode(template[(at + 3)..]));
     }
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "A page gives the context value '{Name}', which the form '{Form}' does not list (settings.developer.contextValues); it is left out.")]
@@ -1086,6 +1090,7 @@ internal sealed partial class FormModels(
             FormSendingModel? sending = null,
             FormResumeModel? resume = null,
             bool asksAtOnce = false,
+            bool posted = false,
             bool insights = false,
             bool insightsContinued = false,
             Guid? insightsReached = null) => new()
@@ -1125,6 +1130,7 @@ internal sealed partial class FormModels(
                 Sending = sending,
                 Resume = resume,
                 AsksAtOnce = asksAtOnce,
+                IsPosted = posted,
                 Insights = insights,
                 InsightsContinued = insightsContinued,
                 InsightsReached = insightsReached,

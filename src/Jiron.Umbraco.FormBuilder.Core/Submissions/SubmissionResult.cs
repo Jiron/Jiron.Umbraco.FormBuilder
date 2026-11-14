@@ -134,6 +134,9 @@ internal sealed record SubmissionResult
     /// <summary>When the link of a draft this request saved stops working; null for anything else.</summary>
     public DateTimeOffset? DraftExpires { get; private init; }
 
+    /// <summary>The token that names the saved draft to the page that saved it (ADR-0252); one that names nothing where none was stored.</summary>
+    public string? DraftToken { get; private init; }
+
     /// <summary>The entry's receipt; null for a refusal.</summary>
     public SubmissionReceipt? Receipt { get; private init; }
 
@@ -159,7 +162,8 @@ internal sealed record SubmissionResult
 
     /// <summary>A draft that was saved, or one the protection dropped, which is told nothing different (ADR-0163).</summary>
     /// <param name="expires">When its link's time is over.</param>
-    public static SubmissionResult Saved(DateTimeOffset expires) => new() { DraftExpires = expires };
+    /// <param name="token">The draft's token, or one that names nothing.</param>
+    public static SubmissionResult Saved(DateTimeOffset expires, string token) => new() { DraftExpires = expires, DraftToken = token ?? throw new ArgumentNullException(nameof(token)) };
 
     /// <summary>A refusal without problems.</summary>
     /// <exception cref="ArgumentException">The refusal is one that has problems.</exception>
