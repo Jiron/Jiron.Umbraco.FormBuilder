@@ -114,7 +114,7 @@ test("the checklist's button for the form block calls setup/form-block, and its 
 
   await step.getByRole('button', { name: 'Create a form block type\u2026' }).click();
   const dialog = page.locator('jfb-form-block-modal');
-  await expect(dialog).toContainText('It never changes types that exist already.');
+  await expect(dialog).toContainText('Types that exist already stay as they are.');
   const creating = page.waitForResponse(`**${API}/setup/form-block`);
   pressed = true;
   await dialog.getByRole('button', { name: 'Create', exact: true }).click();

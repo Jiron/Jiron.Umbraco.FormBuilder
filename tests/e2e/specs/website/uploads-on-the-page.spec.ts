@@ -150,7 +150,7 @@ test('an upload cut off by the server is a failed upload with a retry', async ({
 
   const row = documents(form).locator('.jfb-file');
   await expect(row).toHaveAttribute('data-jfb-failed', '');
-  await expect(row.locator('.jfb-error')).toHaveText('The upload stopped before it finished.');
+  await expect(row.locator('.jfb-error')).toHaveText('The upload stopped.');
   await expect(form.locator('[data-jfb-live]')).toContainText('The upload stopped');
   await axe(page, 'a stopped upload');
 
