@@ -79,6 +79,12 @@ public sealed class FormViewModel
     /// </summary>
     public bool AsksAtOnce { get; init; }
 
+    /// <summary>
+    /// Whether a post wrote the form (<c>data-jfb-posted</c>, ADR-0252): it holds the posted answers, so the runtime writes no
+    /// saved draft's answers over them and only names the draft to the entry.
+    /// </summary>
+    public bool IsPosted { get; init; }
+
     /// <summary>Whether the form counts what visitors do with it (ADR-0211): its insights are on, and the preview does not render it.</summary>
     public bool Insights { get; init; }
 

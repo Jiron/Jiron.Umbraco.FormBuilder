@@ -252,15 +252,14 @@ internal sealed class FormSubmissions(
         {
             // Answered as a draft is, its challenge spent as a draft's is, so nothing tells a bot what tripped.
             await drafts.DropAsync(challenge, cancellationToken);
-            return SubmissionResult.Saved(expires);
+            return SubmissionResult.Saved(expires, EntryDrafts.NewToken());
         }
 
         var current = pageKey is { } key && served.Form.Definition.Pages.Any(each => each.Key == key) ? pageKey : null;
         var replaces = await drafts.FindAsync(request.ResumeToken, served.Row.Id, cancellationToken);
         try
         {
-            await drafts.SaveAsync(new NewDraft(served.Row.Id, version.Info.Id, served.Form, read, scope.Culture, page, request.DraftEmail!, current, challenge, replaces, scope.Member), cancellationToken);
-            return SubmissionResult.Saved(expires);
+            return SubmissionResult.Saved(expires, await drafts.SaveAsync(new NewDraft(served.Row.Id, version.Info.Id, served.Form, read, scope.Culture, page, request.DraftEmail!, current, challenge, replaces, scope.Member), cancellationToken));
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.ChallengeUsed)
         {
@@ -565,8 +564,9 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.AlreadySubmitted));
         }
 
-        // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072).
-        if (pageKey is null && IsEmpty(request))
+        // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072). A draft of
+        // nothing yet is a draft: its link comes back to the page the visitor was on (ADR-0252).
+        if (pageKey is null && !draft && IsEmpty(request))
         {
             return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }

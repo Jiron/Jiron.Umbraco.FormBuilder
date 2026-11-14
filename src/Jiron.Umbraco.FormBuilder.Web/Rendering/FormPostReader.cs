@@ -81,10 +81,18 @@ internal sealed class FormPostReader
     /// <summary>
     /// The answers as the pipeline takes them (ADR-0088), by the names the post gave them: each field's outside
     /// repeatable groups, and each group's rows of its children's. A signature's typed name is the page's, which the
-    /// surface action draws (ADR-0103), and is left out.
+    /// surface action draws (ADR-0103), and is left out. A number field's text is read as the page's language writes it
+    /// (ADR-0252): where that language writes decimals with a comma, digits with one comma are the number with a point,
+    /// as the runtime's page reader posts it and as the type's own message shows it; anything else stays as typed, for
+    /// the reading stage to refuse.
     /// </summary>
-    public (IReadOnlyDictionary<string, PostedAnswer> Fields, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>> Rows) Posted()
+    /// <param name="culture">The page's culture, or null for none, which reads no comma.</param>
+    public (IReadOnlyDictionary<string, PostedAnswer> Fields, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>> Rows) Posted(string? culture = null)
     {
+        var comma = WritesComma(culture);
+        PostedAnswer AsWritten(FormField field, PostedAnswer answer) => comma && _types.FindType(field.Type) is NumberFieldType
+            ? answer with { Values = [.. answer.Values.Select(value => value is not null && HasDecimalComma(value.Trim()) ? value.Trim().Replace(',', '.') : value)] }
+            : answer;
         var fields = new Dictionary<string, PostedAnswer>(StringComparer.Ordinal);
         var rows = new Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>>(StringComparer.Ordinal);
         foreach (var field in _order)
@@ -94,19 +102,46 @@ internal sealed class FormPostReader
                 if (RowsOf(field.Key) is { Count: > 0 } posted)
                 {
                     var signed = field.Fields.Where(IsSignature).Select(child => child.Key).ToHashSet();
+                    var children = field.Fields.ToDictionary(child => child.Key);
                     rows[_aliases[field.Key]] = [.. posted.Select(row => (IReadOnlyDictionary<string, PostedAnswer>)row
                         .Select(pair => (pair.Key, Posted: pair.Value.Posted(signed.Contains(pair.Key))))
                         .Where(pair => pair.Posted is not null)
-                        .ToDictionary(pair => _aliases[pair.Key], pair => pair.Posted!, StringComparer.Ordinal))];
+                        .ToDictionary(pair => _aliases[pair.Key], pair => children.TryGetValue(pair.Key, out var child) ? AsWritten(child, pair.Posted!) : pair.Posted!, StringComparer.Ordinal))];
                 }
             }
             else if (_fields.TryGetValue(field.Key, out var answer) && answer.Posted(IsSignature(field)) is { } given)
             {
-                fields[_aliases[field.Key]] = given;
+                fields[_aliases[field.Key]] = AsWritten(field, given);
             }
         }
 
         return (fields, rows);
+    }
+
+    // Whether the culture writes decimals with a comma; an unknown or missing culture writes none.
+    private static bool WritesComma(string? culture)
+    {
+        try
+        {
+            return culture is { Length: > 0 } && CultureInfo.GetCultureInfo(culture).NumberFormat.NumberDecimalSeparator == ",";
+        }
+        catch (CultureNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    // Digits with one comma that has digits after it, and at most a minus before them: no thousands are guessed.
+    private static bool HasDecimalComma(string text)
+    {
+        var at = text.IndexOf(',', StringComparison.Ordinal);
+        if (at < 0 || at != text.LastIndexOf(',') || at == text.Length - 1)
+        {
+            return false;
+        }
+
+        var digits = (text.StartsWith('-') ? text[1..] : text).Replace(",", string.Empty, StringComparison.Ordinal);
+        return digits.Length > 0 && digits.All(char.IsAsciiDigit);
     }
 
     /// <summary>

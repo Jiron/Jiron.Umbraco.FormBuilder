@@ -215,6 +215,7 @@ export type FormViewModel = {
   contentKey?: string;
   placement?: string;
   asksAtOnce: boolean;
+  isPosted: boolean;
   insights: boolean;
   modelData: string;
   pages: PageViewModel[];

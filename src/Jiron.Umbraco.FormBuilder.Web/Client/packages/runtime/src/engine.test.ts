@@ -198,6 +198,29 @@ describe('the form chunk', () => {
     expect(document.getElementById('total')?.textContent).toBe('8.00');
   });
 
+  it("tells save and continue later of a form that came in another's place, which holds that one's answers", async () => {
+    const enhanceResume = vi.fn();
+    vi.doMock('./resume-chunk', () => ({ enhanceResume }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('{}', { status: 200 }))),
+    );
+    const { attach } = await import('./form');
+    const model = modelOf([COUNT]);
+    const offering = { ...model, form: { ...model.form, settings: { resume: true } } };
+    const woken = async (carried?: { id: string; challenge: string | null }): Promise<unknown> => {
+      document.body.innerHTML = FORM.replace('data-jfb-form="f"', 'data-jfb-form="f" data-jfb-api="/jfb/api/v1"');
+      const form = document.querySelector('form');
+      if (form === null) throw new Error('no form');
+      enhanceResume.mockClear();
+      expect(await attach(form, offering, undefined, carried)).not.toBeNull();
+      return (enhanceResume.mock.calls[0]?.[2] as { carried?: boolean } | undefined)?.carried;
+    };
+    expect([await woken(), await woken({ id: 'id-1', challenge: null })]).toEqual([undefined, true]);
+    vi.doUnmock('./resume-chunk');
+    vi.unstubAllGlobals();
+  });
+
   it("keeps a slider's value with its thumb, on a form without a calculation too", async () => {
     document.body.innerHTML =
       '<form id="jfb-1" data-jfb-form="f" data-jfb-contract="1"><section data-jfb-page="p1"><div data-jfb-group="g1">' +

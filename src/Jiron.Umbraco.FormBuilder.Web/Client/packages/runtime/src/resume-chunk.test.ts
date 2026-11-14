@@ -24,6 +24,7 @@ const fields: ModelField[] = [
     settings: { minRows: 1, maxRows: 3 },
     fields: [field('k-kid', 'text', 'kid')],
   }),
+  field('k-district', 'dropdown', 'district'),
 ];
 const model: FormModel = {
   alias: 'apply',
@@ -59,7 +60,11 @@ function formOf(key = FORM, id = 'jfb-1'): string {
     '<div class="jfb-navigation"><button type="button" data-jfb-save-send>Send the link</button><button type="button" data-jfb-save-close>Cancel</button></div>' +
     '</div></template>' +
     '<section data-jfb-page="p1"><input name="name"><input type="radio" name="colour" value="red"><input type="radio" name="colour" value="blue">' +
-    '<input type="radio" name="colour" value="jfb-other"><input name="colour.other"><select name="size"><option value="s">S</option><option value="m">M</option></select>' +
+    '<input type="radio" name="colour" value=""><div class="jfb-other"><input data-jfb-name="colour.other"></div>' +
+    '<select name="size"><option value="s">S</option><option value="m">M</option></select>' +
+    '<div data-jfb-field="k-district"><select name="district"><option value="">Choose a town first</option></select><template data-jfb-cascade></template></div>' +
+    '<input name="nick" value="Addy"><input type="checkbox" name="news" value="yes" checked><input name="code" value="X1" disabled>' +
+    '<input name="who.first" value="Ada"><input name="who.last" value="L">' +
     '<input type="file" name="cv"><input type="checkbox" name="terms" value="true">' +
     '<div data-jfb-field="k-kids"><div class="jfb-repeater"><div data-jfb-row><input name="kids[0].kid"></div><button type="button" value="add">Add</button></div></div></section>' +
     `<section data-jfb-page="${PAGE_2}" hidden><input name="town"></section>` +
@@ -97,7 +102,9 @@ const settled = async (): Promise<void> => {
 };
 
 /** Wakes the chunk afresh, as a page load does: what it read of the address and its lookups go with the page. */
-async function wake(options: { captcha?: Captcha; challenges?: Challenges; form?: HTMLFormElement } = {}) {
+async function wake(
+  options: { captcha?: Captcha; challenges?: Challenges; form?: HTMLFormElement; carried?: boolean } = {},
+) {
   vi.resetModules();
   const chunk = await import('./resume-chunk');
   const form = options.form ?? (document.querySelector('form') as HTMLFormElement);
@@ -115,6 +122,7 @@ async function wake(options: { captcha?: Captcha; challenges?: Challenges; form?
     captcha: () => (options.captcha === undefined ? undefined : Promise.resolve(options.captcha)),
     held,
     reveal,
+    ...(options.carried === undefined ? {} : { carried: options.carried }),
   });
   return { form, held, reveal, challenges };
 }
@@ -272,6 +280,25 @@ describe('the control', () => {
     expect(spent).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps the draft a saving's answer names: in the tab, for the form's send, and in a post, until the entry is stored", async () => {
+    answering(json(200, { expiresUtc: '2026-12-14T09:00:00Z', resume: 'tok-9' }));
+    const spent = vi.fn();
+    const { form, held } = await wake({ captcha: { token: () => Promise.resolve('t'), ask: () => true, spent } });
+    $<HTMLButtonElement>('[data-jfb-save-open]').click();
+    $<HTMLInputElement>('#jfb-1-save').value = 'ada@example.com';
+    $<HTMLButtonElement>('[data-jfb-save-send]').click();
+    await settled();
+    expect(spent, "the server checked the captcha's token, which counts once").toHaveBeenCalledTimes(1);
+    expect([
+      held.mock.calls.at(-1),
+      sessionStorage.getItem(`jfb-resume:${FORM}`),
+      form.querySelector<HTMLInputElement>(':scope > input[type="hidden"][name="jfb-resume"]')?.value,
+    ]).toEqual([['tok-9'], 'tok-9', 'tok-9']);
+
+    form.dispatchEvent(new CustomEvent('jfb:submitted'));
+    expect(sessionStorage.getItem(`jfb-resume:${FORM}`)).toBeNull();
+  });
+
   it('lets the captcha ask the visitor first, without saving', async () => {
     answering();
     const ask = vi.fn(() => true);
@@ -303,6 +330,8 @@ describe('a link', () => {
         'beforebegin',
         `<div data-jfb-row><input name="kids[${String(rows)}].kid"></div>`,
       );
+      // A new row takes the focus a moment later, as the fields chunk gives it.
+      setTimeout(() => $<HTMLInputElement>(`[name="kids[${String(rows)}].kid"]`).focus());
     });
     const typed: string[] = [];
     form.addEventListener('input', (event) => typed.push((event.target as HTMLInputElement).name ?? ''));
@@ -313,7 +342,10 @@ describe('a link', () => {
     expect(fetched).toEqual([{ url: '/jfb/api/v1/drafts/resume', body: { token: 'tok-1' } }]);
     expect($<HTMLInputElement>('[name="name"]').value).toBe('Ada');
     expect(typed, 'a text that comes back is typed, for what follows it').toContain('name');
-    expect($<HTMLInputElement>('[value="jfb-other"]').checked).toBe(false);
+    expect($<HTMLInputElement>('[name="colour"][value=""]').checked, 'the Other choice, which posts no value').toBe(
+      true,
+    );
+    expect($<HTMLInputElement>('.jfb-other input').name, 'its text has a name again').toBe('colour.other');
     expect($<HTMLInputElement>('[name="colour.other"]').value).toBe('green');
     expect($<HTMLSelectElement>('[name="size"]').value).toBe('m');
     expect([...form.querySelectorAll<HTMLInputElement>('[name^="kids["]')].map((input) => input.value)).toEqual([
@@ -346,14 +378,90 @@ describe('a link', () => {
     expect([held.mock.calls.at(-1), sessionStorage.getItem(`jfb-resume:${FORM}`)]).toEqual([[null], null]);
   });
 
-  it.each([404, 410])('answered %i says the link no longer works, and the tab forgets it', async (status) => {
-    sessionStorage.setItem(`jfb-resume:${FORM}`, 'tok-1');
+  it.each([404, 410])('answered %i says the link no longer works, and nothing stays in the tab', async (status) => {
+    history.replaceState(null, '', '/apply#jfb-resume=tok-1');
     answering(json(status));
     const { form, held } = await wake();
     await settled();
     expect(document.activeElement).toBe($(':scope > [data-jfb-notice="resume_expired"]', form));
     expect([held.mock.calls.length, sessionStorage.getItem(`jfb-resume:${FORM}`)]).toEqual([0, null]);
     expect($<HTMLInputElement>('[name="name"]').value).toBe('');
+  });
+
+  it('whose draft is gone while only the tab named it is forgotten without a word: its entry was sent, or its time is over', async () => {
+    sessionStorage.setItem(`jfb-resume:${FORM}`, 'tok-1');
+    answering(json(404));
+    const { form, held } = await wake();
+    await settled();
+    expect([
+      form.querySelector(':scope > [data-jfb-notice]'),
+      held.mock.calls.length,
+      sessionStorage.getItem(`jfb-resume:${FORM}`),
+    ]).toEqual([null, 0, null]);
+  });
+
+  it.each([
+    ['the server wrote from a post', (form: HTMLFormElement) => form.setAttribute('data-jfb-posted', ''), {}],
+    ["came in another's place", () => undefined, { carried: true }],
+  ] as const)(
+    'is only named by a form that %s: the answers it holds stay, and the entry takes the draft away',
+    async (_, mark, options) => {
+      sessionStorage.setItem(`jfb-resume:${FORM}`, 'tok-1');
+      answering(json(200, draft));
+      const form = $<HTMLFormElement>('form');
+      mark(form);
+      $<HTMLInputElement>('[name="name"]').value = 'Typed since';
+      const { held, reveal } = await wake(options);
+      await settled();
+      expect(fetched, 'no lookup: nothing is taken up').toEqual([]);
+      expect([
+        $<HTMLInputElement>('[name="name"]').value,
+        form.querySelector(':scope > [data-jfb-notice]'),
+        reveal.mock.calls.length,
+      ]).toEqual(['Typed since', null, 0]);
+      expect([
+        held.mock.calls,
+        sessionStorage.getItem(`jfb-resume:${FORM}`),
+        form.querySelector<HTMLInputElement>(':scope > input[type="hidden"][name="jfb-resume"]')?.value,
+      ]).toEqual([[['tok-1']], 'tok-1', 'tok-1']);
+    },
+  );
+
+  it('empties what the visitor had left empty, a default or a prefill, but nothing the rules turned off', async () => {
+    history.replaceState(null, '', '/apply#jfb-resume=tok-1');
+    answering(json(200, { ...draft, values: { name: ['Ada'], nick: [], news: [], code: [], who: [] } }));
+    const changed: string[] = [];
+    $<HTMLFormElement>('form').addEventListener('change', (event) =>
+      changed.push((event.target as HTMLInputElement).name),
+    );
+    await wake();
+    await settled();
+    expect([
+      $<HTMLInputElement>('[name="nick"]').value,
+      $<HTMLInputElement>('[name="news"]').checked,
+      $<HTMLInputElement>('[name="who.first"]').value,
+      $<HTMLInputElement>('[name="who.last"]').value,
+    ]).toEqual(['', false, '', '']);
+    expect($<HTMLInputElement>('[name="code"]').value, 'turned off: left as the page wrote it').toBe('X1');
+    expect(changed, 'the rules hear of each').toEqual(expect.arrayContaining(['nick', 'news', 'who.first']));
+    expect($<HTMLInputElement>('[name="name"]').value).toBe('Ada');
+  });
+
+  it('gives an answer to a field whose options are still on their way once they are written', async () => {
+    history.replaceState(null, '', '/apply#jfb-resume=tok-1');
+    answering(json(200, { ...draft, values: { district: ['west'] } }));
+    await wake();
+    await settled();
+    const select = $<HTMLSelectElement>('[name="district"]');
+    expect(select.value, 'not offered yet').toBe('');
+    // The fields chunk writes the options its parents' answers brought.
+    select.replaceChildren(
+      ...['', 'east', 'west'].map((value) =>
+        Object.assign(document.createElement('option'), { value, textContent: value }),
+      ),
+    );
+    await settled();
+    expect(select.value).toBe('west');
   });
 
   it('without an answer stays in the tab for a refresh, and says nothing', async () => {

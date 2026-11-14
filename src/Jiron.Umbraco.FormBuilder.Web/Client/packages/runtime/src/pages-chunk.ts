@@ -139,6 +139,13 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
 
   /** Shows a page the visitor moved to: its title takes the focus, and the form's top comes into view with its progress. */
   const land = (page: HTMLElement): void => {
+    // The way the visitor moved, which the theme brings the page in from (ADR-0022); a page as it loads has none.
+    const pages = all();
+    const from = current() ?? was;
+    form.setAttribute(
+      'data-jfb-direction',
+      from !== null && pages.indexOf(page) < pages.indexOf(from) ? 'back' : 'next',
+    );
     show(page);
     const title = page.querySelector<HTMLElement>('.jfb-title:not([hidden])') ?? page;
     title.tabIndex = -1;

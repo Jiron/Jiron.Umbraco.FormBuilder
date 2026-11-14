@@ -58,11 +58,72 @@ export interface PageReading {
   readonly answers: FormAnswers;
 }
 
-/** The page's names and texts as the browser posts them; a file is the upload's to read (6.4m). */
+/** What stands for a text the browser kept to itself: no number, date or time reads it, so its type says how to write one. */
+const NOT_TAKEN = '?';
+
+/**
+ * The page's names and texts as the browser posts them; a file is the upload's to read (6.4m). A number, date or time
+ * input answers a text it cannot take (letters, a date half typed) with no value at all and says so in its validity
+ * alone: such an answer is read as one its type cannot read, never as none, so it is not sent as an empty one in
+ * silence.
+ */
 export function entriesOf(form: HTMLFormElement): [string, string][] {
   const entries: [string, string][] = [];
   for (const [name, value] of new FormData(form)) if (typeof value === 'string') entries.push([name, value]);
+  for (const control of form.elements) {
+    if (!(control instanceof HTMLInputElement) || control.disabled || control.validity?.badInput !== true) continue;
+    const entry = entries.find(([name, value]) => name === control.name && value === '');
+    if (entry !== undefined) entry[1] = NOT_TAKEN;
+  }
   return entries;
+}
+
+/** Whether a language writes its decimals with a comma, as German and French do. */
+function writesComma(culture: string): boolean {
+  try {
+    return new Intl.NumberFormat(culture)
+      .formatToParts(1.5)
+      .some((part) => part.type === 'decimal' && part.value === ',');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A number field's text as the page's language writes it (ADR-0093, ADR-0252): where that language writes decimals
+ * with a comma, digits with one comma are the number with a point, as the wire form has it and as the type's own
+ * message shows it ("12,5"). Anything else stays as typed, for the reading stage to refuse: no thousands are guessed.
+ */
+function pointed(entries: [string, string][], model: FormModel): [string, string][] {
+  if (!writesComma(model.culture)) return entries;
+  // The number fields by the names their controls post: an alias, or a repeatable group's row and its child's alias.
+  const alone = new Set<string>();
+  const inRows = new Map<string, Set<string>>();
+  for (const field of fieldsOf(model)) {
+    if (typeof field.alias !== 'string') continue;
+    if (field.type === 'number') alone.add(field.alias);
+    const children = (field.fields ?? []).flatMap((child) =>
+      child.type === 'number' && typeof child.alias === 'string' ? [child.alias] : [],
+    );
+    if (children.length > 0) inRows.set(field.alias, new Set(children));
+  }
+  const isNumber = (name: string): boolean => {
+    if (alone.has(name)) return true;
+    const open = name.indexOf('[');
+    const close = name.indexOf('].', open);
+    return open > 0 && close > open && inRows.get(name.slice(0, open))?.has(name.slice(close + 2)) === true;
+  };
+  /** Digits with one comma that has digits after it, and at most a minus before them. */
+  const hasDecimalComma = (text: string): boolean => {
+    const at = text.indexOf(',');
+    if (at < 0 || at !== text.lastIndexOf(',') || at === text.length - 1) return false;
+    const digits = (text.startsWith('-') ? text.slice(1) : text).replace(',', '');
+    return digits.length > 0 && [...digits].every((char) => char >= '0' && char <= '9');
+  };
+  return entries.map(([name, value]): [string, string] => {
+    const text = value.trim();
+    return isNumber(name) && hasDecimalComma(text) ? [name, text.replace(',', '.')] : [name, value];
+  });
 }
 
 /** Reads the form's answers from its controls. */
@@ -70,7 +131,7 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
   const fields = fieldsOf(model);
   const post = readPost(
     fields.map((field) => postField(model, field)),
-    entriesOf(form),
+    pointed(entriesOf(form), model),
   );
   const read = new Map<string, FieldRead>();
   const groups = new Map<string, GroupRead>();

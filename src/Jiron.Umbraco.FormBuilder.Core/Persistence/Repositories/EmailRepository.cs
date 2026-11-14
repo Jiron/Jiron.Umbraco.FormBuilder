@@ -386,10 +386,16 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
             {
                 var n = new SqlNames(db);
                 var emails = n.T(FormBuilderTables.Email);
+
+                // The mail that carried a saved draft's link stays while its draft does (ADR-0252): the draft keeps no address
+                // of its own, so this row is how Privacy > People finds it by the address, however long its link works. It goes
+                // at the first purge after the draft went.
+                var kept = $"(o.{n.C("kind")} = '{StoredNames.Of(EmailKind.Resume)}' AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} d{n.LockingRead} WHERE d.{n.C("id")} = o.{n.C("entryId")} AND d.{n.C("state")} = '{StoredNames.Of(EntryState.Draft)}'))";
+
                 // The delete names the purge time again for the row itself: under read-committed snapshot the subquery may
                 // read an older version of a mail that a retry has just put back.
                 return db.ExecAsync(
-                    $"DELETE FROM {emails} WHERE {n.C("purgeAfterUtc")} <= @0 AND {n.C("id")} IN (SELECT o.{n.C("id")} FROM {emails} o WHERE o.{n.C("purgeAfterUtc")} <= @0 ORDER BY o.{n.C("purgeAfterUtc")}, o.{n.C("id")} {n.Page(0, take)})",
+                    $"DELETE FROM {emails} WHERE {n.C("purgeAfterUtc")} <= @0 AND {n.C("id")} IN (SELECT o.{n.C("id")} FROM {emails} o WHERE o.{n.C("purgeAfterUtc")} <= @0 AND NOT {kept} ORDER BY o.{n.C("purgeAfterUtc")}, o.{n.C("id")} {n.Page(0, take)})",
                     database.UtcNow);
             },
             cancellationToken);

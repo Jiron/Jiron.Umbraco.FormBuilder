@@ -806,6 +806,9 @@
         "asksAtOnce": {
           "type": "boolean"
         },
+        "isPosted": {
+          "type": "boolean"
+        },
         "insights": {
           "type": "boolean"
         },
@@ -876,6 +879,7 @@
         "display",
         "apiBase",
         "asksAtOnce",
+        "isPosted",
         "insights",
         "modelData",
         "pages",

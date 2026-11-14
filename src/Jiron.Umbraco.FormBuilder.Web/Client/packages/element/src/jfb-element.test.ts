@@ -550,6 +550,40 @@ describe('<jfb-form>', () => {
     expect(warn).toHaveBeenCalledWith('jfb-form: the website runtime could not be loaded; the form shows without it.');
   });
 
+  it('says at a press that it could not be sent while the runtime is missing, tells the page, and loads it again', async () => {
+    serve((url) =>
+      json(
+        answerFor(
+          instanceOf(url),
+          (answer) => (answer.assets.script = 'data:text/javascript,throw new Error("no runtime")'),
+        ),
+      ),
+    );
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const host = element();
+    await next('jfb:rendered');
+    const form = must(host.querySelector('form'), 'the form');
+    const errors: unknown[] = [];
+    host.addEventListener('jfb:error', (event) => errors.push((event as CustomEvent).detail));
+
+    const press = new Event('submit', { bubbles: true, cancelable: true });
+    form.dispatchEvent(press);
+
+    const notice = form.querySelector<HTMLElement>(':scope > [data-jfb-notice="server_error"]');
+    expect(press.defaultPrevented).toBe(true);
+    expect(notice, "the notice of the form's own templates").not.toBeNull();
+    expect([notice?.nextElementSibling?.classList.contains('jfb-navigation'), document.activeElement]).toEqual([
+      true,
+      notice,
+    ]);
+    expect(errors).toEqual([
+      { key: form.dataset['jfbForm'], alias: expect.any(String) as unknown, code: 'server_error' },
+    ]);
+    // A second press shows one notice, not two.
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(form.querySelectorAll(':scope > [data-jfb-notice]')).toHaveLength(1);
+  });
+
   it("never posts its form as a page would, to the page's own address", async () => {
     serve();
     const form = element();

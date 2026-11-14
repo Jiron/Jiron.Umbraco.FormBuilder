@@ -343,6 +343,29 @@ public sealed partial class FormPostTests : RenderingTestBase
     }
 
     [Test]
+    public async Task AFormThatStoresNoEntries_AnswersItsMessageOnThePost_AsNoPageAfterItWouldFindTheEntry()
+    {
+        _ = await PublishFormAsync("postWays", definition => Ways(definition) with
+        {
+            Settings = definition.Settings with { Submission = definition.Settings.Submission with { Store = EntryStorage.Never } },
+        }, Way);
+        _ = await PagesAsync("post-ways");
+        var form = FormOf(await DocumentAsync("/post-ways/"), "jfb-1");
+        Fill(form, "way", "message");
+
+        using var sent = await SubmitAsync(form, FormPostFields.Submit, "/post-ways/");
+        var page = await ParseAsync(sent);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK), "no redirect to a page that could not find the entry again");
+            Assert.That(Header(sent, "Cache-Control"), Is.EqualTo("no-store"));
+            Assert.That(page.QuerySelector("[data-jfb-outcome] p")?.TextContent, Is.EqualTo("Thank you, message."));
+            Assert.That(page.QuerySelector("form.jfb-form"), Is.Null, "the outcome stands in the form's place");
+        });
+    }
+
+    [Test]
     public async Task ASentValue_ForgedExpiredOrForAnotherInstance_ShowsTheFormAsForAnyVisitor_AndThePageIsNoStore()
     {
         _ = await PublishFormAsync("postWays", Ways, Way);

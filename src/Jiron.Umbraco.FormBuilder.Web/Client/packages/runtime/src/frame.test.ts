@@ -370,6 +370,65 @@ describe('the frame', () => {
   });
 });
 
+describe('a form that cannot post, as the element writes it', () => {
+  it('says so at a press when its logic could not load, tells the site, and tries again', async () => {
+    const attached: HTMLFormElement[] = [];
+    const load = vi
+      .fn<() => Promise<Chunk>>()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({
+        attach: (woken) => {
+          attached.push(woken);
+          return {};
+        },
+      });
+    const lame = form('jfb-1');
+    lame.insertAdjacentHTML(
+      'beforeend',
+      '<template data-jfb-templates><div data-jfb-notice="server_error" role="alert" tabindex="-1"><p>Something went wrong.</p></div></template>' +
+        '<div class="jfb-navigation"><button type="submit">Send</button></div>',
+    );
+    document.body.append(lame);
+    const errors: unknown[] = [];
+    lame.addEventListener('jfb:error', (event) => errors.push((event as CustomEvent).detail));
+    createFrame(load).init();
+    inputOf(lame).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await settled();
+    await settled();
+
+    const press = new Event('submit', { bubbles: true, cancelable: true });
+    lame.dispatchEvent(press);
+    const notice = lame.querySelector<HTMLElement>(':scope > [data-jfb-notice="server_error"]');
+    expect([press.defaultPrevented, notice?.nextElementSibling?.className, document.activeElement]).toEqual([
+      true,
+      'jfb-navigation',
+      notice,
+    ]);
+    expect(errors).toEqual([{ key: 'key-jfb-1', alias: 'jfb-1', code: 'server_error' }]);
+    await settled();
+    await settled();
+    expect([load.mock.calls.length, attached]).toEqual([2, [lame]]);
+
+    // With its logic there, a press is the logic's to answer: nothing of the frame's stays in its way.
+    const again = new Event('submit', { bubbles: true, cancelable: true });
+    lame.dispatchEvent(again);
+    expect([again.defaultPrevented, errors.length]).toEqual([false, 1]);
+  });
+
+  it('leaves a form that can post to its post, as before', async () => {
+    const posting = form('jfb-1');
+    posting.setAttribute('action', '/contact');
+    document.body.append(posting);
+    createFrame(() => Promise.reject(new Error('offline'))).init();
+    inputOf(posting).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await settled();
+    await settled();
+    const press = new Event('submit', { bubbles: true, cancelable: true });
+    posting.dispatchEvent(press);
+    expect(press.defaultPrevented).toBe(false);
+  });
+});
+
 describe('a form to work with', () => {
   const session = {
     validate: vi.fn(() => Promise.resolve(false)),

@@ -239,7 +239,7 @@ internal sealed class FormPostHandler(
             return FormPostAnswer.Page;
         }
 
-        var (fields, rows) = reader.Posted();
+        var (fields, rows) = reader.Posted(culture);
         var request = new SubmissionRequest
         {
             Form = formKey,
@@ -256,6 +256,7 @@ internal sealed class FormPostHandler(
             Member = member,
             Members = members,
             WithoutScript = true,
+            ResumeToken = One(posted, FormPostFields.Resume) is { Length: > 0 and <= EntryDrafts.MaxTokenLength } resume ? resume : null,
             Honeypot = posted[FormHoneypot.NameOf(formKey, revision)].ToString(),
             Address = http.Connection.RemoteIpAddress,
         };
@@ -302,6 +303,18 @@ internal sealed class FormPostHandler(
                 var result = await submissions.SubmitAsync(request, cancellationToken);
                 if (result is { Receipt: { } receipt, Outcome: { } outcome })
                 {
+                    // A form that stores no entries lets its entry go at once (ADR-0158), so the page a redirect leads to
+                    // would find none to show the outcome of and show the empty form again: its message is answered here,
+                    // on the post itself, without the copy of the answers, which went with the entry (ADR-0252).
+                    if (outcome.Kind == OutcomeKind.Message && definition.Settings.Submission.Store == EntryStorage.Never)
+                    {
+                        FormPosts.Set(http, formKey, instance, new FormPostState
+                        {
+                            Outcome = new FormPostOutcome(outcome.Html, receipt.Reference, IsPending: false, outcome.Url, outcome.ShowAnswers ? new FormPostCopy(null) : null),
+                        });
+                        return FormPostAnswer.Page;
+                    }
+
                     return new FormPostAnswer(FormPostAnswerKind.Redirect, outcome is { Kind: OutcomeKind.Redirect, Url: { } url }
                         ? AwayFromTheForm(url)
                         : SentAddress(http.Request, sent.Issue(formKey, receipt.SubmissionId, instance), instance));

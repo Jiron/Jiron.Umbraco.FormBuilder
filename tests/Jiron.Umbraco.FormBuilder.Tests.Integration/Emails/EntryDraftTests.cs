@@ -130,7 +130,7 @@ public sealed partial class EntryDraftTests : EmailTestBase
     }
 
     [Test]
-    public async Task ADraft_AnswersWithoutItsLink_WhichOnlyTheMailHolds_InTheAddresssFragment()
+    public async Task ADraft_AnswersWithItsToken_ForThePageThatSaved_AndTheMailHoldsTheLink_InTheAddresssFragment()
     {
         var form = await FormAsync(Action("first"));
 
@@ -145,7 +145,9 @@ public sealed partial class EntryDraftTests : EmailTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK), body);
-            Assert.That(body, Does.Contain("expiresUtc").And.Not.Contain(token));
+            Assert.That(JsonNode.Parse(body)!["expiresUtc"], Is.Not.Null);
+            Assert.That(JsonNode.Parse(body)!["resume"]!.GetValue<string>(), Is.EqualTo(token), "the page that saved names the draft to the entry that follows (ADR-0252)");
+            Assert.That(body, Does.Not.Contain("forms.jfb.test"), "never the link's address");
             Assert.That(link, Does.StartWith("https://forms.jfb.test/").And.Contain("#jfb-resume="));
             Assert.That(new Uri(link).Query, Is.Empty, "a token in a query reaches server logs");
             Assert.That(mail.To.Mailboxes.Single().Address, Is.EqualTo(Address));
@@ -194,7 +196,41 @@ public sealed partial class EntryDraftTests : EmailTestBase
         using var back = await ResumeAsync(token);
 
         var values = (await JsonAsync(back))["values"]!.AsObject();
+        Assert.Multiple(() =>
+        {
+            Assert.That(values["name"]!.AsArray().Select(value => value!.GetValue<string>()), Is.EqualTo(new[] { "Ada" }));
+            Assert.That(values.Where(value => value.Value!.AsArray().Count == 0).Select(value => value.Key), Is.EquivalentTo(new[] { "contact", "seat", "code", "mandatory" }), "left empty, or not read: the page empties what it starts them with");
+            Assert.That(values.Select(value => value.Key), Has.None.EqualTo("secretNote").And.None.EqualTo("agree"), "what a draft never keeps is not named, not even as empty");
+        });
+    }
+
+    [Test]
+    public async Task TheFieldsLeftEmpty_AreNamedOnlyWhileTheSiteServesTheVersionTheDraftWasSavedWith()
+    {
+        var form = await FormAsync();
+        var token = await SavedTokenAsync(form);
+
+        // Published again since: a field new to the form was never left empty by this visitor.
+        var added = new FormField { Key = Guid.Parse("c4000000-0000-4000-8000-000000000030"), Type = "text", Alias = "added", Label = new LocalizedText("Added") };
+        await SaveAndPublishAsync(form, definition => WithFields(definition, NameField, EmailField, Hidden, Consent, Seat, Code, Mandatory, added));
+        using var back = await ResumeAsync(token);
+
+        var values = (await JsonAsync(back))["values"]!.AsObject();
         Assert.That(values.Select(value => value.Key), Is.EqualTo(new[] { "name" }));
+    }
+
+    [Test]
+    public async Task ADraftOfNothingYet_IsSaved_AsItsLinkComesBackToThePage()
+    {
+        var form = await FormAsync();
+
+        using var saved = await DraftAsync(form, "{}");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK), await saved.Content.ReadAsStringAsync());
+            Assert.That(await AllEntriesAsync(form), Has.Count.EqualTo(1));
+        });
     }
 
     [Test]
@@ -263,7 +299,9 @@ public sealed partial class EntryDraftTests : EmailTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK), await saved.Content.ReadAsStringAsync());
-            Assert.That((await JsonAsync(back))["values"]!.AsObject().Select(value => value.Key), Is.EqualTo(new[] { "name" }));
+            var values = (await JsonAsync(back))["values"]!.AsObject();
+            Assert.That(values["name"]!.AsArray(), Has.Count.EqualTo(1));
+            Assert.That(values.Select(value => value.Key), Has.None.EqualTo("agree"));
         });
     }
 
@@ -363,6 +401,35 @@ public sealed partial class EntryDraftTests : EmailTestBase
         {
             Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(back.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        });
+    }
+
+    [Test]
+    public async Task ADraftsOwnMail_StaysWhileTheDraftDoes_SoItIsFoundByItsAddress_AndGoesOnceTheDraftHas()
+    {
+        // A link that works longer than mails are kept, on a form that asks for no address of its own.
+        var form = await PublishAsync(name: "Long", change: Saves(90), fields: [NameField]);
+        var token = await SavedTokenAsync(form);
+        var draft = (await AllEntriesAsync(form)).Single();
+        var people = GetRequiredService<IPersonDataRepository>();
+        var mailbox = Core.Email.EmailAddresses.KeyOf(Address)!;
+
+        Clock.Advance(Core.Email.EmailOutbox.Keep + TimeSpan.FromDays(10));
+        await Emails.PurgeAsync(10);
+        var whileADraft = await Emails.ListForEntryAsync(draft.Id);
+        var found = await people.FindByVisitorMailAsync(mailbox, 10);
+
+        // The entry is sent: the draft goes, and its mail at the next purge.
+        using var sent = await SubmitDraftAsync(form, token, """{"name":"Ada"}""");
+        await Emails.PurgeAsync(10);
+        var after = await people.FindByVisitorMailAsync(mailbox, 10);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(whileADraft.Select(mail => mail.Kind), Is.EqualTo(new[] { EmailKind.Resume }), "kept past the mails' own time, as the draft keeps no address");
+            Assert.That(found, Is.EqualTo(new[] { draft.Id }), "Privacy > People finds the draft by the address it was mailed to");
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            Assert.That(after, Has.None.EqualTo(draft.Id));
         });
     }
 
@@ -474,6 +541,30 @@ public sealed partial class EntryDraftTests : EmailTestBase
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "as a real draft's");
             Assert.That(nowhere.StatusCode, Is.EqualTo(HttpStatusCode.Conflict), "as a real draft's");
+        });
+    }
+
+    [Test]
+    public async Task ASavingAgainThatTheLimitsHoldBack_LeavesTheDraftItCameFrom_AndAnswersTheSame()
+    {
+        MailLimits.PerRecipientPerDay = 1;
+        var form = await FormAsync();
+        var first = await SavedTokenAsync(form, """{"name":"Ada"}""");
+
+        using var again = await DraftAsync(form, """{"name":"Ada Lovelace"}""", $$""","resume":"{{first}}" """);
+        await SendDueAsync();
+        var named = (await JsonAsync(again))["resume"]!.GetValue<string>();
+        using var old = await ResumeAsync(first);
+        using var none = await ResumeAsync(named);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.OK), "answered as a saving is");
+            Assert.That(Written(), Has.Count.EqualTo(1), "no second mail");
+            Assert.That(old.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the link the visitor holds still works");
+            Assert.That((await JsonAsync(old))["values"]!["name"]![0]!.GetValue<string>(), Is.EqualTo("Ada"));
+            Assert.That(none.StatusCode, Is.EqualTo(HttpStatusCode.NotFound), "the token the answer names is no draft's");
+            Assert.That(await AllEntriesAsync(form), Has.Count.EqualTo(1));
         });
     }
 
@@ -595,6 +686,32 @@ public sealed partial class EntryDraftTests : EmailTestBase
             Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
             Assert.That(none.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        });
+    }
+
+    [Test]
+    public async Task TheChallengeThatSavedADraft_StillMakesItsOneEntry_WhichTakesTheDraftAway()
+    {
+        var form = await FormAsync();
+        var challenge = await ChallengeAsync(form);
+        using var saved = await DraftAsync(form, more: $$""","challenge":"{{challenge}}" """);
+        var token = (await JsonAsync(saved))["resume"]!.GetValue<string>();
+
+        // The visitor carries on in the same page and sends: the same challenge, which what the page holds is bound to.
+        const string Answers = """{"name":"Ada","mandatory":"yes"}""";
+        using var content = new StringContent($$"""{"revision":1,"resume":"{{token}}","challenge":"{{challenge}}","values":{{Answers}}}""", Encoding.UTF8, "application/json");
+        using var sent = await SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/entries", request => request.Content = content);
+        using var content2 = new StringContent($$"""{"revision":1,"challenge":"{{challenge}}","values":{{Answers}}}""", Encoding.UTF8, "application/json");
+        using var again = await SendAsync(HttpMethod.Post, $"{Root}/forms/{form}/entries", request => request.Content = content2);
+
+        var entries = await AllEntriesAsync(form);
+        Assert.Multiple(async () =>
+        {
+            Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK), await saved.Content.ReadAsStringAsync());
+            Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.OK), await sent.Content.ReadAsStringAsync());
+            Assert.That(entries.Select(entry => entry.State), Has.None.EqualTo(EntryState.Draft), "the entry took its draft away");
+            Assert.That(entries, Has.Count.EqualTo(1));
+            Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized), "one entry a challenge, as before");
         });
     }
 

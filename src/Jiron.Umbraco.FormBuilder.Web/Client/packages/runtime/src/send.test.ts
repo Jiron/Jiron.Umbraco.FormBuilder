@@ -555,6 +555,14 @@ describe('a send that did not go through', () => {
     ['a 429 with no time', () => json(429, {}), 'rate_limited', 'Wait 2 minutes'],
     ['a 500', () => json(500, {}), 'server_error', 'went wrong'],
     ['a 503 that is no JSON', () => new Response('down', { status: 503 }), 'server_error', 'went wrong'],
+    // What stands between the page and the site answered in its place: no entry's receipt, so nothing was stored.
+    [
+      'a 200 that is no entry',
+      () => new Response('<html>Welcome</html>', { status: 200 }),
+      'server_error',
+      'went wrong',
+    ],
+    ['a 200 without a receipt', () => json(200, { ok: true }), 'server_error', 'went wrong'],
     ['a 504', () => json(504, {}), 'timeout', 'connection'],
     ['the code timeout', () => json(408, { code: 'timeout' }), 'timeout', 'connection'],
     ['no answer', () => Promise.reject(new TypeError('offline')), 'timeout', 'connection'],

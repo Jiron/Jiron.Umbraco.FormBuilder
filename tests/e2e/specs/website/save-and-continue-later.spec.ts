@@ -73,7 +73,7 @@ test('a form saved for later on its last page comes back from the link in the ma
   const offered = view.getByRole('switch', { name: 'Save and continue later' });
   await expect(offered).not.toBeChecked();
   await offered.check();
-  const days = view.getByLabel('Days the link works');
+  const days = view.getByLabel('Link valid for (days)');
   await expect(days).toHaveValue('30');
   await days.fill('400');
   await days.press('Tab');

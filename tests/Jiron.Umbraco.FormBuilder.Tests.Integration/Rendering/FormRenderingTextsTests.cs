@@ -279,6 +279,38 @@ public sealed class FormRenderingTextsTests : RenderingTestBase
         ],
     };
 
+    [Test]
+    public async Task AWordingThatLeavesItsValueOut_ShowsAsItIs_AndTheFormStillRenders()
+    {
+        // A wording may leave its value out (VisitorTextKeys.Problem): the note on required fields without its mark, the
+        // reference's line without the reference. Such a form rendered nothing at all before (ROADMAP 21.1).
+        await PublishFormAsync(
+            "renderingWorded",
+            definition => Marked(definition, RequiredMarker.Required, submit: null) with
+            {
+                Settings = definition.Settings with
+                {
+                    Appearance = definition.Settings.Appearance with { RequiredMarker = RequiredMarker.Required },
+                    Submission = definition.Settings.Submission with
+                    {
+                        Texts = Worded(("form.requiredNote", "", "Questions with a star need an answer."), ("form.reference", "", "Keep this page for your records.")),
+                    },
+                },
+            },
+            NameField with { Required = true },
+            City);
+        _ = await PagesAsync("worded");
+
+        var (html, page) = await PageAtAsync(FirstHost, "worded");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(page.QuerySelector("form#jfb-1"), Is.Not.Null, "the form renders");
+            Assert.That(html, Does.Contain("Questions with a star need an answer."));
+            Assert.That(html, Does.Contain("Keep this page for your records."), "in the template the runtime shows after a send");
+        });
+    }
+
     private static FormDefinition Marked(FormDefinition definition, RequiredMarker marker, string? submit) => definition with
     {
         Settings = definition.Settings with

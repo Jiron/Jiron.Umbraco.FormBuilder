@@ -292,6 +292,16 @@ describe('what follows a move', () => {
     expect(scrolled).toHaveBeenCalledWith({ block: 'start' });
   });
 
+  it('marks the way the visitor moved before the page shows, so the theme brings it in from that side', async () => {
+    const { paging, next, form } = wake();
+    const seen: (string | null)[] = [];
+    form.addEventListener('jfb:page', () => seen.push(form.getAttribute('data-jfb-direction')));
+    expect(form.hasAttribute('data-jfb-direction'), 'a page as it loads does not move').toBe(false);
+    await next();
+    paging.back();
+    expect(seen).toEqual(['next', 'back']);
+  });
+
   it('gives it to the page itself when it has no title', async () => {
     const { next, form } = wake({ pages: page('a', true) + page('b', false, false, false) });
     await next();

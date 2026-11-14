@@ -45,6 +45,9 @@ internal sealed partial class ActionSettlement(
     // What marks a used challenge of an entry that is gone, so a form that stores nothing keeps a challenge to one entry.
     private const string UsedChallengePrefix = "jfb.usedchallenge.";
 
+    // A challenge that saved a draft (ADR-0252), kept apart from the one above: it still makes its one entry.
+    private const string DraftChallengePrefix = "jfb.draftchallenge.";
+
     /// <summary>
     /// Whether an action of the form may still run for an entry that has none queued (section 4.4): any while it waits for
     /// its address to be confirmed or sits in Spam, an approved or rejected one while it waits for approval, and an approved
@@ -86,10 +89,29 @@ internal sealed partial class ActionSettlement(
     public Task SpendChallengeAsync(string challengeId, CancellationToken cancellationToken) =>
         keyValues.SetAsync(UsedChallengePrefix + challengeId, "1", cancellationToken);
 
-    /// <summary>Forgets the used challenges no longer in their time; how many.</summary>
+    /// <summary>Whether a challenge saved a draft already (ADR-0252): it saves one, whatever became of it.</summary>
+    /// <param name="challengeId">The challenge's id as an entry stores it.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<bool> DraftChallengeUsedAsync(string challengeId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(challengeId);
+        return await keyValues.GetAsync(DraftChallengePrefix + challengeId, cancellationToken) is not null;
+    }
+
+    /// <summary>Records that a challenge saved its draft, or was answered as if it had.</summary>
+    /// <param name="challengeId">The challenge's id as an entry stores it.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public Task SpendDraftChallengeAsync(string challengeId, CancellationToken cancellationToken) =>
+        keyValues.SetAsync(DraftChallengePrefix + challengeId, "1", cancellationToken);
+
+    /// <summary>Forgets the used challenges no longer in their time, the drafts' among them; how many.</summary>
     /// <param name="cancellationToken">Cancels the delete.</param>
-    public Task<int> ForgetUsedChallengesAsync(CancellationToken cancellationToken) =>
-        keyValues.DeleteOlderAsync(UsedChallengePrefix, (time.GetUtcNow() - FormChallenges.Lifetime - FormChallenges.ReceiptGrace).UtcDateTime, cancellationToken);
+    public async Task<int> ForgetUsedChallengesAsync(CancellationToken cancellationToken)
+    {
+        var before = (time.GetUtcNow() - FormChallenges.Lifetime - FormChallenges.ReceiptGrace).UtcDateTime;
+        return await keyValues.DeleteOlderAsync(UsedChallengePrefix, before, cancellationToken)
+            + await keyValues.DeleteOlderAsync(DraftChallengePrefix, before, cancellationToken);
+    }
 
     /// <summary>
     /// Records an outcome that may make a run final, and settles the entry in the same unit when its form has something to

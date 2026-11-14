@@ -169,6 +169,68 @@ describe('reading the page', () => {
     expect(read.get('k-name')?.values).toEqual([]);
   });
 
+  it('reads what the browser could not take, a number of letters or a date half typed, as an answer its type cannot read', () => {
+    const form = page();
+    const age = control(form, 'age');
+    // A number or date input answers such a text with no value at all, and says so in its validity alone.
+    age.type = 'number';
+    age.value = '';
+    Object.defineProperty(age, 'validity', { value: { badInput: true } });
+    expect(entriesOf(form).find(([name]) => name === 'age')?.[1]).not.toBe('');
+    const read = readPage(form, model).fields.get('k-age');
+    expect([read?.reading?.unreadable, read?.values]).toEqual([true, []]);
+    // One the rules turned off posts nothing, as before.
+    age.disabled = true;
+    expect(entriesOf(form).some(([name]) => name === 'age')).toBe(false);
+  });
+
+  it("reads a number with the decimal comma of the page's language as the number it is, and sends it so", () => {
+    const priced: FormModel = {
+      ...model,
+      culture: 'de-DE',
+      form: {
+        ...model.form,
+        pages: [
+          {
+            key: 'p',
+            groups: [
+              {
+                key: 'g',
+                fields: [
+                  field('k-price', 'number', 'price', { settings: { decimals: 2 } }),
+                  field('k-note', 'text', 'note'),
+                  field('k-items', 'repeater', 'items', {
+                    settings: { minRows: 1, maxRows: 2 },
+                    fields: [field('k-cost', 'number', 'cost', { settings: { decimals: 2 } })],
+                  }),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      fields: Object.fromEntries(
+        ['k-price', 'k-note', 'k-items', 'k-cost'].map((key) => [key, { canBeRequired: true, builtIn: true }]),
+      ),
+    };
+    document.body.innerHTML =
+      '<form><input name="price" value=" 12,5 "><input name="note" value="1,5 Zimmer">' +
+      '<input type="hidden" name="jfb-rows-items" value="1"><input name="items[0].cost" value="-0,75"></form>';
+    const form = document.querySelector('form') as HTMLFormElement;
+    const german = readPage(form, priced);
+    expect(german.fields.get('k-price')?.values).toEqual(['12.5']);
+    expect(german.fields.get('k-note')?.values, 'a text keeps its comma').toEqual(['1,5 Zimmer']);
+    expect(german.groups.get('k-items')?.rows[0]?.get('k-cost')?.values).toEqual(['-0.75']);
+    expect(german.post.fields.get('price')?.values, 'what a send carries').toEqual(['12.5']);
+
+    // Where the language writes a point, a comma groups thousands, which no number of the wire form has.
+    const english = readPage(form, { ...priced, culture: 'en-US' });
+    expect(english.fields.get('k-price')?.reading?.unreadable).toBe(true);
+    // Two commas, or digits grouped by points before the comma, are no number to guess at.
+    (form.elements.namedItem('price') as HTMLInputElement).value = '1.234,5';
+    expect(readPage(form, priced).fields.get('k-price')?.reading?.unreadable).toBe(true);
+  });
+
   it("reads a repeatable group's rows when their number keeps its limits", () => {
     const guests = readPage(page(), model).groups.get('k-guests');
     expect(guests?.count).toBe(2);

@@ -31,6 +31,12 @@ internal static class FormPostFields
     public const string Challenge = "jfb-challenge";
 
     /// <summary>
+    /// The token of the saved draft the tab holds, which the runtime writes into a form it sends by post (ADR-0252): the entry
+    /// takes the draft away, as an entry sent through the API does.
+    /// </summary>
+    public const string Resume = "jfb-resume";
+
+    /// <summary>
     /// The query name in the action of a form that stores files, <c>?jfb-post=&lt;key&gt;.&lt;instance&gt;</c>, which tells the
     /// files' reader before routing which form a post is (ADR-0006, ADR-0102).
     /// </summary>
