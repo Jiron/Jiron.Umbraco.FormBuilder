@@ -112,6 +112,11 @@ how to repeat it. Sizes are gzip.
   150 ms at p95. Busy sites should use SQL Server ([performance.md](performance.md#where-sqlite-stops-keeping-up)).
 - **Save and continue later needs JavaScript,** a page of the site for its link to come back to, and a form that stores
   entries; files, consents and sensitive answers are never saved, so the visitor gives them again.
+- **Without JavaScript, on a form for members with "one entry per member":** a post with a file that the browser
+  sends a second time (a reload of the result) is answered "not sent" although the first was stored, as the file is
+  stored again under a new name ([ADR-0252](decisions/0252-the-last-pass.md)).
+- **A form whose first publish from its file was refused** stays unpublished until the file changes again; the log
+  names the file and the reason.
 - **On Umbraco 18.3,** a form shown beside all its views in a window narrower than about 1,100 px (in German) leaves its
   name too little room, as Umbraco's own header row does for every workspace with that many views
   ([ADR-0250](decisions/0250-the-umbraco-18-line.md)).
