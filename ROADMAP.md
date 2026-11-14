@@ -6,7 +6,7 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
 
 ## How to use this roadmap
 
-- Work through Phase 0 to Phase 20 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
+- Work through Phase 0 to Phase 21 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
 - **There is no deadline.** Take the time each step needs. Read the relevant sections of this roadmap again before you start a step, check the result in a real browser before you call any UI done, and prefer the robust solution over the quick one.
 - Step markers (only steps use them, always at the start of a line):
   - `[ ]` open
@@ -3323,6 +3323,26 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - If the owner's private reference exists, update the private mapping in `.private/` one last time (never committed).
     - Done when: committed and pushed, and the final output of `node scripts/roadmap-status.mjs` shows `open=0 blocked_missing_in_owner_todo=0 clean=yes` with `head` equal to `origin_main`.
   - Done when: every part's "Done when" above passes, as each part says.
+
+### Phase 21: The owner's last pass
+
+- [ ] **21.1 A last pass: every function looked at again, calmer screens, and phase review** (the owner, 2026-11-14)
+  - The owner, after 20.1: "go through all functionalities roughly again to double check your work one last time and eliminate last findings", with screens that are "plain and simple", not "too much text too much info", "without missing out on features for no reason".
+  - **Look again:**
+    - walk every screen in the twelve looks, and the five journeys (§4.13), on the build as it stands;
+    - independent readers go through each area: the form library and the designer; a form's settings, actions, preview and history; entries and insights; the library; the settings, the privacy tools and Activity; the visitor's side in Razor, the runtime and the element; the server's pipeline, actions, storage and upgrades; the docs against the screens. The code of 8.6b comes first, as it was built after the last phase review;
+    - every finding is checked before anything changes, then fixed with a test that fails without the fix, or kept with its reason.
+  - **Calmer screens:**
+    - the walk counts the words each screen shows, and the pass goes through the screens from the wordiest down;
+    - what is said twice goes, and so does what the control beside it already says; what a person needs only once moves behind "Learn more" (the copy guide's rule). No feature, setting or state goes, and nothing a person needs to decide is hidden;
+    - the three design skills run again (ADR-0019, ADR-0020): `docs/ux/review-21.1.md` has a section per skill, each changed screen before and after with its words counted, and what was kept as it is. An ADR decides what changed.
+  - **Keep it true:** the copy guide, the docs, the screenshots of a changed screen, CHANGELOG and `docs/STATUS.md` follow the changes, and `v18/main` gets them by merge.
+  - Done when:
+    - the walk and the journeys reach every screen on the final build with nothing of the section's own from axe, and no changed screen shows more words than before;
+    - every finding of the readers is in the review document, fixed with its test or kept with its reason;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the pass merged in, and its unit and client tests and the integration and browser tests of what the pass touched pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
 ---
 
