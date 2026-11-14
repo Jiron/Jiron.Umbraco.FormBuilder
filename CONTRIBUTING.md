@@ -122,6 +122,15 @@ node scripts/gate-clone.mjs run HEAD
 node scripts/gate-clone.mjs status
 ```
 
+Before a release, the clean-clone verification (ROADMAP 20.1) clones origin's `main` into `%TEMP%` with a NuGet
+cache of its own and runs there `ci-local.ps1`, a pack, the install tests, the upgrade from the first prerelease and
+the secret scan of the whole history; the term guard of the whole history runs here. It removes its folders
+afterwards and prints a summary; its logs land in `.local/verify/`.
+
+```
+node scripts/verify-clean.mjs
+```
+
 CI runs on a push only when the repository variable `JFB_CI` is `true`, and always when it is started by hand or for
 a version tag.
 
