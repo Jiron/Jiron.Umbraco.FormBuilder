@@ -13,6 +13,7 @@ render their pages elsewhere, see [headless.md](headless.md).
 - [The markup](#the-markup)
 - [CSS custom properties](#css-custom-properties)
 - [JavaScript](#javascript)
+- [Save and continue later](#save-and-continue-later)
 - [Without JavaScript](#without-javascript)
 - [Content Security Policy](#content-security-policy)
 - [Caching](#caching)
@@ -316,6 +317,28 @@ document.addEventListener('jfb:submitted', (event) => {
 
 Jiron Form Builder tracks nothing itself; the events are there for a site's own analytics. To hear `jfb:ready` for the
 forms present when the page loads, add the listener before the asset tags.
+
+## Save and continue later
+
+A form with **Save and continue later** on (its Settings view › Submission › More options) offers it with its
+buttons, with JavaScript, on a page of the site, which the link a visitor gets by email comes back to. A panel takes
+the buttons' place: it says what is not kept and for how many days, and asks for the address; a notice then says
+where the link went and until when it works. The link brings the answers back on the page they were saved on, with a
+notice to add files, consents and sensitive answers again, which are never saved
+([ADR-0163](decisions/0163-save-and-resume.md)). A link that was used, or whose time is over, says so above the
+empty form.
+
+- **The link's token** is in the address's fragment, which no browser sends to a server. The runtime takes it out of
+  the address at once and keeps it in the tab's `sessionStorage` until the entry is sent, so a refresh finds the
+  answers again: the only browser storage the package uses ([the privacy facts](privacy/facts.md#on-the-visitors-device)).
+  A link opened in the tab that already shows its page loads the page again, as it would from the mail.
+- **The markup:** `Form.cshtml` writes the link and the panel as `template[data-jfb-resume]` right after the form's
+  templates, in the theme's classes, and the notices `resume_saved`, `resume_restored` and `resume_expired` with the
+  form's other notices. The runtime puts the link last in the `jfb-navigation` row. An overridden `Form` view without
+  the template offers no control.
+- **Its words** are visitor texts of their own group, "Save and continue later", which a site or a form may reword
+  ([multi-language.md](multi-language.md)).
+- **Without JavaScript** the form offers no saving; it still sends.
 
 ## Without JavaScript
 

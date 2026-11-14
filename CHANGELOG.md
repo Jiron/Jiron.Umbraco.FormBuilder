@@ -7,6 +7,18 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+### Added
+
+- **Save and continue later** on the website: a form can offer visitors a link by email to finish later, on the page
+  the form is on. The link brings the answers back on the page they were saved on, and the form asks again for files,
+  consents and sensitive answers, which are never saved. Editors turn it on under the form's Settings › Submission ›
+  More options, with the days the link works.
+
+### Changed
+
+- The website runtime's budget with every feature is 100 KB gzip at most (was 60 KB); what every page with a form
+  loads first stays within 16 KB.
+
 ### Fixed
 
 - The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.

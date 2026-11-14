@@ -131,6 +131,7 @@ internal sealed class FormSettingsController(
                 HtmlLength = DefinitionSaveChecks.HtmlLength,
                 NameLength = DefinitionStructureChecks.MaxNameLength,
                 VerificationDays = DefinitionSaveChecks.MaxVerificationDays,
+                ResumeDays = DefinitionSaveChecks.MaxResumeDays,
                 RetentionDays = DefinitionSaveChecks.MaxDays,
                 ReferenceDigits = DefinitionSaveChecks.MaxReferenceDigits,
                 Outcomes = limits.MaxOutcomes,
@@ -292,6 +293,9 @@ internal sealed record FormSettingsLimitsResponseModel
 
     /// <summary>The most days a verification link stays valid; the least is 1.</summary>
     public required int VerificationDays { get; init; }
+
+    /// <summary>The most days a saved form's link works (ADR-0163); the least is 1.</summary>
+    public required int ResumeDays { get; init; }
 
     /// <summary>The most days a form keeps entries, in a state or for a number of days (ADR-0222); the least is 1.</summary>
     public required int RetentionDays { get; init; }

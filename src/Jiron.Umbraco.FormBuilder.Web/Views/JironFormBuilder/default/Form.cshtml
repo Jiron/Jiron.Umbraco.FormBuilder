@@ -25,7 +25,33 @@
                     @await Html.PartialAsync(Model.Views.Navigation, moves)
                 }
             }
+            @if (Model.Resume is { } saved)
+            {
+                @await Html.PartialAsync(Model.Views.Notice, saved.Saved)
+                @await Html.PartialAsync(Model.Views.Notice, saved.Restored)
+                @await Html.PartialAsync(Model.Views.Notice, saved.Expired)
+            }
         </template>
+        @* Save and continue later (ADR-0163): the link button the runtime puts with the buttons, and the panel it shows in their place; a view without it offers none. *@
+        @if (Model.Resume is { } resume)
+        {
+            <template data-jfb-resume data-jfb-saving="@resume.SavingText" data-jfb-invalid="@resume.InvalidText" data-jfb-failed="@resume.FailedText">
+                <button type="button" class="@Model.Classes.ButtonLink" data-jfb-save-open>@resume.OpenLabel</button>
+                <div class="@resume.PanelClass" role="group" aria-labelledby="@(Model.Id)-save-title" data-jfb-save>
+                    <h2 id="@(Model.Id)-save-title">@resume.OpenLabel</h2>
+                    <p>@resume.Intro</p>
+                    <div class="@resume.FieldClass">
+                        <label class="@Model.Classes.Label" for="@(Model.Id)-save">@resume.EmailLabel</label>
+                        <input class="@Model.Classes.Control" type="email" id="@(Model.Id)-save" autocomplete="email" spellcheck="false" aria-describedby="@(Model.Id)-save-error">
+                        <p class="@Model.Classes.Error" id="@(Model.Id)-save-error" hidden></p>
+                    </div>
+                    <div class="@Model.Classes.Navigation">
+                        <button type="button" class="@Model.Classes.ButtonPrimary" data-jfb-save-send>@resume.SendLabel</button>
+                        <button type="button" class="@Model.Classes.Button" data-jfb-save-close>@resume.CancelLabel</button>
+                    </div>
+                </div>
+            </template>
+        }
         @if (Model.DefaultButton is { } first)
         {
             <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="@first.Value" tabindex="-1" aria-hidden="true">@first.Label</button>

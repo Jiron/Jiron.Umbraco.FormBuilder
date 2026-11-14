@@ -105,6 +105,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
+    resumeDays: 365,
     retentionDays: 3650,
     referenceDigits: 10,
     outcomes: 50,
@@ -488,14 +489,14 @@ describe('the submission', () => {
     expect(settings('submission')).toMatchObject({ store: 'days', storeDays: 400 });
   });
 
-  it('holds the page buttons, the visitor texts, the summary page, the progress and the reference under More options', async () => {
+  it('holds the page buttons, the visitor texts, the summary page, the progress, saving for later and the reference under More options', async () => {
     const { root, click, type, choose, box, settings } = await viewOf();
     const more = must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options');
-    expect([text(more), root.getElementById('next-label')]).toEqual(['More options (5)', null]);
+    expect([text(more), root.getElementById('next-label')]).toEqual(['More options (6)', null]);
     await click(more);
     expect(more.getAttribute('aria-expanded')).toBe('true');
     // The toggle counts what it opens.
-    expect(root.querySelectorAll('#submission-more > .item').length).toBe(5);
+    expect(root.querySelectorAll('#submission-more > .item').length).toBe(6);
     expect(
       [...must(root.getElementById('submission-more'), 'More options').querySelectorAll('jfb-learn-more')].map((link) =>
         link.getAttribute('topic'),
@@ -794,12 +795,58 @@ describe('the form check', () => {
     expect(why('member-groups')[0]).not.toBe('In English.');
   });
 
+  it('lets visitors save for later, its link from 30 days, each in range, and says why another number is refused', async () => {
+    const { root, click, type, box, settings, why } = await viewOf();
+    await click(must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options'));
+    expect([box('resume').checked, box('resume').disabled, root.getElementById('resume-days')]).toEqual([
+      false,
+      false,
+      null,
+    ]);
+    expect(text(root.getElementById('resume-help'))).toBe(
+      'Visitors can save their answers and get a link by email to finish later. Files, consents and sensitive answers are not saved.',
+    );
+    await click(box('resume'));
+    expect(settings('submission')['resume']).toEqual({ days: 30 });
+    expect([box('resume-days').value, text(root.getElementById('resume-days-unit'))]).toEqual(['30', 'days']);
+    await type('resume-days', '366');
+    expect(why('resume-days')).toEqual(['Enter a whole number from 1 to 365.']);
+    expect(settings('submission')['resume']).toEqual({ days: 30 });
+    await type('resume-days', '');
+    expect(why('resume-days')).toEqual(['Enter a whole number from 1 to 365.']);
+    await type('resume-days', '14');
+    expect([why('resume-days'), settings('submission')['resume']]).toEqual([[], { days: 14 }]);
+    await click(box('resume'));
+    expect([settings('submission')['resume'], root.getElementById('resume-days')]).toEqual([undefined, null]);
+  });
+
+  it('waits for entries to be stored before a form saves for later, and lets one that does turn it off', async () => {
+    const unstored = (submission: object) => ({
+      ...DEFINITION,
+      settings: { ...(DEFINITION['settings'] as object), submission },
+    });
+    const never = await viewOf(unstored({ store: 'never' }));
+    await never.click(must(never.root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options'));
+    expect(never.box('resume').disabled).toBe(true);
+    expect(text(never.root.getElementById('resume-help'))).toContain('It needs entries to be stored.');
+
+    const on = await viewOf(unstored({ store: 'never', resume: { days: 30 } }));
+    await on.click(must(on.root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options'));
+    expect([on.box('resume').disabled, on.box('resume').checked]).toEqual([false, true]);
+    await on.click(on.box('resume'));
+    expect(on.settings('submission')['resume']).toBeUndefined();
+  });
+
   it('leads a Fix it to its setting: the group and More options open, the focus on its box', async () => {
     const { workspace, view, root, head } = await viewOf();
     await settle(view);
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.submission.entryReference.digits' });
     await settle(view);
     expect(root.activeElement?.id).toBe('reference-digits');
+    // Saving for later is off, so its days have no box: the focus goes to its switch, under More options.
+    workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.submission.resume.days' });
+    await settle(view);
+    expect(root.activeElement?.id).toBe('resume');
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.developer.contextValues[0]' });
     await settle(view);
     expect([head('developer').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual([
@@ -845,6 +892,20 @@ describe('the form check', () => {
     must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options').click();
     await settle(view);
     expect([root.querySelector('.more-toggle .flag'), why('reference-digits')]).toEqual([null, ['In English.']]);
+  });
+
+  it("shows a problem with the link's days at saving for later's switch while it is off, counted on More options", async () => {
+    const { workspace, view, root, why } = await viewOf();
+    workspace.checks.setValue({
+      status: 'checked',
+      definition: DEFINITION,
+      issues: [issue('$.settings.submission.resume.days', 'invalid_value')],
+    });
+    await settle(view);
+    expect(text(root.querySelector('.more-toggle .flag'))).toBe('1 problem');
+    must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options').click();
+    await settle(view);
+    expect(why('resume')).toHaveLength(1);
   });
 
   it("keeps a provider's stored value in its box beside the check's problem with it", async () => {

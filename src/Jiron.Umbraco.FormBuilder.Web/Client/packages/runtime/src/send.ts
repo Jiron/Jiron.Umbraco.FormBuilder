@@ -118,6 +118,7 @@ export function bodyOf(
     instance?: string;
     captchaToken?: string;
     proofOfWork?: string;
+    resume?: string;
   } = {},
 ): object {
   const values = valuesOf(post);
@@ -135,6 +136,7 @@ export function bodyOf(
     proofOfWork: extra.proofOfWork,
     honeypot: extra.honeypot,
     placement: extra.placement,
+    resume: extra.resume,
   };
 }
 
@@ -170,6 +172,8 @@ export interface SenderOptions {
   readonly files?: PageUploads;
   /** The challenge the page holds, shared with its uploads, whose tokens name it (ADR-0138). */
   readonly challenges?: Challenges;
+  /** The token of the draft this send finishes (ADR-0163), or null. */
+  readonly draft?: () => string | null;
   /** The form's captcha, if the challenge named one by now (ADR-0157). */
   readonly captcha?: () => Promise<Captcha | undefined> | undefined;
 }
@@ -427,6 +431,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
       const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
       const placement = form.dataset['jfbPlacement'] || undefined;
+      const draft = options.draft?.() ?? null;
       const send = async (): Promise<Response> => {
         const current = await challenges.current();
         if (current !== null) held.add(current);
@@ -440,6 +445,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
             ...(captchaToken === undefined || captchaToken === null ? {} : { captchaToken }),
             ...(honeypot ? { honeypot } : {}),
             ...(placement === undefined ? {} : { placement }),
+            ...(draft === null ? {} : { resume: draft }),
             // A view's own id names no form the server wrote, so no copy can be asked for it.
             ...(/^jfb-\d+$/.test(form.id) ? { instance: form.id } : {}),
           }),

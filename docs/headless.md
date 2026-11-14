@@ -66,8 +66,10 @@ form's alias.
 `contentKey` names the Umbraco page the form is shown on, if any: that page's site decides the settings, texts and
 merge tags. `culture` is one of the site's languages, such as `de-DE`; otherwise the default language is used.
 
-The API also has endpoints for saving a form to finish later (`POST forms/{key}/drafts` and the resume link); the
-feature is not yet available on the website or in the backoffice, so leave them aside for now.
+The API also has the endpoints for saving a form to finish later ([ADR-0163](decisions/0163-save-and-resume.md)):
+`POST forms/{key}/drafts` saves the answers so far and mails the link, and `POST drafts/resume` brings them back for
+the link's token. The element offers it below the form's buttons, as the Razor views do, for a form with "Save and
+continue later" on and a page given by `contentKey`, which the link comes back to.
 
 ## Sending an entry
 

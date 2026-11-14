@@ -129,6 +129,7 @@ const NOT_TEXT: ReadonlySet<string> = new Set([
 
 /** The defaults a definition's settings take where it holds none (FormSettings in Core). */
 const VERIFICATION_DAYS = 7;
+const RESUME_DAYS = 30;
 /** The days Store entries "For a number of days" starts with. */
 const STORE_DAYS = 30;
 /** The most days entries are kept, as the save checks hold them, until the site's answer says. */
@@ -142,8 +143,11 @@ const REFERENCE_DIGITS = 5;
 const MOST_ENTRIES = 2_147_483_647;
 /** The number the reference's example shows. */
 const EXAMPLE_NUMBER = 42;
-/** What Submission's More options hold: the page buttons, the visitor texts, the summary page, the progress and the reference. */
-const MORE_OPTIONS = 5;
+/**
+ * What Submission's More options hold: the page buttons, the visitor texts, the summary page, the progress, save and
+ * continue later, and the reference.
+ */
+const MORE_OPTIONS = 6;
 
 /** The form check's problems as this view shows them: by the box they show under, and counted where they hide. */
 interface Checked {
@@ -518,8 +522,8 @@ export class FormSettingsViewElement extends UmbLitElement {
 
   /**
    * The box a setting shows under, of those the view draws now: a box drawn only with another setting's choice (the
-   * member groups, verification's field and days, a provider's own setting, the days of storage) falls back to that
-   * setting's.
+   * member groups, verification's field and days, a provider's own setting, the days of storage, the days a saved
+   * form's link works) falls back to that setting's.
    */
   #boxOf(anchor: Anchor, definition: DesignDefinition): string {
     const box = anchor.boxes[0] ?? '';
@@ -533,6 +537,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     )
       return 'verification';
     if (box === 'store-days' && wordIn(groupOf(definition, 'submission'), 'store', 'always') !== 'days') return 'store';
+    if (box === 'resume-days' && !objectIn(groupOf(definition, 'submission'), 'resume')) return 'resume';
     if (box.startsWith('setting-captcha-')) {
       const choice = protectionOf(definition);
       const provider =
@@ -1071,8 +1076,48 @@ export class FormSettingsViewElement extends UmbLitElement {
         ['steps', 'bar', 'none'].map((value) => ({ value, label: this.#term(`progress_${value}`) })),
         (value) => this.#set(['submission', 'progress'], value, progress),
       )}
-      ${this.#reference(definition)}
+      ${this.#resume(definition)} ${this.#reference(definition)}
     `;
+  }
+
+  // Save and continue later (ADR-0163), and once it is on the days its link works, under it: one template whether on or
+  // off, so the switch keeps the focus as it turns. A form that stores no entries keeps no draft, so the switch waits
+  // for entries to be stored; one turned on before stays on, to be turned off.
+  #resume(definition: DesignDefinition): TemplateResult {
+    const label = this.#term('resume');
+    const daysLabel = this.#term('resumeDays');
+    const submission = groupOf(definition, 'submission');
+    const resume = objectIn(submission, 'resume');
+    const unstored = wordIn(submission, 'store', 'always') === 'never';
+    const switched = this.#switch(
+      'resume',
+      label,
+      unstored ? `${this.#term('resumeHelp')} ${this.#term('resumeNeedsStore')}` : this.#term('resumeHelp'),
+      resume !== undefined,
+      (on) => this.#set(['submission', 'resume'], on ? { days: RESUME_DAYS } : undefined, label),
+      unstored && !resume,
+    );
+    return html`<div class="item with-detail">
+      ${switched}
+      ${
+        resume
+          ? html`<div class="detail">
+              ${this.#whole(
+                'resume-days',
+                daysLabel,
+                null,
+                numberIn(resume['days']) ?? RESUME_DAYS,
+                1,
+                this._choices?.limits.resumeDays ?? RESUME_DAYS,
+                (days, typed) =>
+                  this.#set(['submission', 'resume', 'days'], days, daysLabel, typed ? 'resume-days' : undefined),
+                'refused',
+                { unit: this.#term('daysUnit') },
+              )}
+            </div>`
+          : nothing
+      }
+    </div>`;
   }
 
   #reference(definition: DesignDefinition): TemplateResult {

@@ -24,8 +24,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// the server's script holding the same text. <c>packages/element</c>'s
 /// <c>markup.fixture.test.ts</c> writes each answer and expects the server's markup without what only a post without
 /// JavaScript uses, which each case names, and runs ADR-0015's contract on the sinks. The forms: a field of every
-/// built-in type in each built-in theme and hidden by its rule, three pages with steps, marks and a titled group, two
-/// pages with a bar and the form's own labels, texts that recall answers with a default that holds tags, and the
+/// built-in type in each built-in theme and hidden by its rule, three pages with steps, marks and a titled group that a
+/// visitor may save for later on a page of the site (ADR-0163), two pages with a bar and the form's own labels, texts
+/// that recall answers with a default that holds tags, and the
 /// notices of a closed form, a form not open yet and a form for members. After a deliberate change, run with
 /// <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the files and fails, so the diff gets reviewed.
 /// </summary>
@@ -34,6 +35,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 public sealed class ElementFixtureTests : RenderingTestBase
 {
     private static readonly DateTimeOffset Now = new(2026, 6, 15, 9, 30, 0, TimeSpan.Zero);
+
+    // The key the site's page has in the fixture, whose key is new on each run.
+    private static readonly Guid FixedPage = K(0xC0);
 
     // The post-only parts of the server's markup, which the element leaves out (ADR-0128).
     private static readonly JsonObject PostOnly = new()
@@ -77,15 +81,19 @@ public sealed class ElementFixtureTests : RenderingTestBase
             ("members", definition => Available(definition, new FormAvailabilitySettings { Access = MemberAccess.Members }), [BuiltInThemes.DefaultAlias]),
         };
 
+        var page = (await PagesAsync("element"))["element"];
         var cases = new JsonArray();
         var at = 0;
         foreach (var (name, change, themes) in forms)
         {
             var fixedKey = K(0x10 + at++);
             var key = await PublishFormAsync("element" + Pascal(name), definition => Headless(change(definition)), NameField);
+            // A form that may be saved for later is shown on the page, which its link comes back to.
+            var drafted = (await Forms.GetDraftAsync(key))?.Definition ?? throw new AssertionException($"{name} has no draft");
+            var onPage = drafted.Settings.Submission.Resume is not null;
             foreach (var theme in themes)
             {
-                var query = $"instance=jfb-1&culture={culture}&theme={theme}";
+                var query = $"instance=jfb-1&culture={culture}&theme={theme}" + (onPage ? $"&contentKey={page:D}" : string.Empty);
                 using var rendered = await GetAsync($"{Root}/forms/{key}/render?{query}&page=/element/");
                 using var element = await GetAsync($"{Root}/forms/{key}/element?{query}");
                 var html = await rendered.Content.ReadAsStringAsync();
@@ -101,8 +109,8 @@ public sealed class ElementFixtureTests : RenderingTestBase
                     ["themeClasses"] = new JsonObject(classes.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => KeyValuePair.Create<string, JsonNode?>(pair.Key, pair.Value))),
                     ["postOnly"] = PostOnly.DeepClone(),
                     ["names"] = Names.DeepClone(),
-                    ["answer"] = WithoutVersions(JsonNode.Parse(Fixed(answer, key, fixedKey))!),
-                    ["html"] = Fixed(await ServerMarkupAsync(html, JsonNode.Parse(answer)!["form"]!["modelData"]?.GetValue<string>()), key, fixedKey),
+                    ["answer"] = WithoutVersions(JsonNode.Parse(Fixed(Fixed(answer, key, fixedKey), page, FixedPage))!),
+                    ["html"] = Fixed(Fixed(await ServerMarkupAsync(html, JsonNode.Parse(answer)!["form"]!["modelData"]?.GetValue<string>()), key, fixedKey), page, FixedPage),
                 });
             }
         }
@@ -205,7 +213,7 @@ public sealed class ElementFixtureTests : RenderingTestBase
     {
         Settings = definition.Settings with
         {
-            Submission = definition.Settings.Submission with { Progress = ProgressIndicator.Steps },
+            Submission = definition.Settings.Submission with { Progress = ProgressIndicator.Steps, Resume = new SaveAndResume() },
             Appearance = definition.Settings.Appearance with { RequiredMarker = RequiredMarker.Required },
         },
         Pages =

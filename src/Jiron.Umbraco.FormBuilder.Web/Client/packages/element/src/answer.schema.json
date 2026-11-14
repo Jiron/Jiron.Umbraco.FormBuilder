@@ -668,6 +668,66 @@
       ],
       "additionalProperties": false
     },
+    "FormResumeModel": {
+      "type": "object",
+      "properties": {
+        "openLabel": {
+          "type": "string"
+        },
+        "intro": {
+          "type": "string"
+        },
+        "panelClass": {
+          "type": "string"
+        },
+        "fieldClass": {
+          "type": "string"
+        },
+        "emailLabel": {
+          "type": "string"
+        },
+        "sendLabel": {
+          "type": "string"
+        },
+        "cancelLabel": {
+          "type": "string"
+        },
+        "savingText": {
+          "type": "string"
+        },
+        "invalidText": {
+          "type": "string"
+        },
+        "failedText": {
+          "type": "string"
+        },
+        "saved": {
+          "$ref": "#/$defs/NoticeViewModel"
+        },
+        "restored": {
+          "$ref": "#/$defs/NoticeViewModel"
+        },
+        "expired": {
+          "$ref": "#/$defs/NoticeViewModel"
+        }
+      },
+      "required": [
+        "openLabel",
+        "intro",
+        "panelClass",
+        "fieldClass",
+        "emailLabel",
+        "sendLabel",
+        "cancelLabel",
+        "savingText",
+        "invalidText",
+        "failedText",
+        "saved",
+        "restored",
+        "expired"
+      ],
+      "additionalProperties": false
+    },
     "FormSendingModel": {
       "type": "object",
       "properties": {
@@ -769,6 +829,9 @@
         },
         "sending": {
           "$ref": "#/$defs/FormSendingModel"
+        },
+        "resume": {
+          "$ref": "#/$defs/FormResumeModel"
         },
         "defaultButton": {
           "$ref": "#/$defs/NavigationButtonModel"

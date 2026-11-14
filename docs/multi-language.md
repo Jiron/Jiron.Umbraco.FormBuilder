@@ -66,10 +66,10 @@ Every one of those words can be reworded:
 - **For a site:** Settings › General › **Visitor texts**, for all sites or one.
 - **For a form:** its Settings view › Submission › More options › **Visitor texts**.
 
-**Reword a text** lists them by group: around the questions, files, signature, notices, after sending, error messages,
-and yes and no. Each wording is per language and one line; a text you reword in German stays as it was in French. The
-form's wording comes first, then the site's, then the package's. A field's own message for one of its checks comes before
-all of them.
+**Reword a text** lists them by group: around the questions, files, signature, notices, save and continue later,
+after sending, error messages, and yes and no. Each wording is per language and one line; a text you reword in German
+stays as it was in French. The form's wording comes first, then the site's, then the package's. A field's own message
+for one of its checks comes before all of them.
 
 The **Send**, **Next** and **Back** buttons have boxes of their own, in Settings › General for the site and in the
 form's Settings view.

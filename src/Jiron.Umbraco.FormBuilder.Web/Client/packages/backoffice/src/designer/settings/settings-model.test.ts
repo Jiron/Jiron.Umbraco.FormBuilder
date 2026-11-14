@@ -77,6 +77,7 @@ const CHOICES: FormSettingsChoicesResponseModel = {
     htmlLength: 50000,
     nameLength: 64,
     verificationDays: 90,
+    resumeDays: 365,
     retentionDays: 3650,
     referenceDigits: 10,
     outcomes: 50,
@@ -144,6 +145,8 @@ describe('where a path is in the view', () => {
         { group: 'submission', more: false, boxes: ['verification-days', 'verification'] },
       ],
       ['$.settings.submission.verification', { group: 'submission', more: false, boxes: ['verification'] }],
+      ['$.settings.submission.resume.days', { group: 'submission', more: true, boxes: ['resume-days', 'resume'] }],
+      ['$.settings.submission.resume', { group: 'submission', more: true, boxes: ['resume'] }],
       ['$.settings.submission.nextLabel', { group: 'submission', more: true, boxes: ['next-label'] }],
       ['$.settings.submission.backLabel', { group: 'submission', more: true, boxes: ['back-label'] }],
       ['$.settings.submission.entryReference.digits', { group: 'submission', more: true, boxes: ['reference-digits'] }],
@@ -170,7 +173,7 @@ describe('where a path is in the view', () => {
   });
 
   it('is nowhere for a setting this view does not show yet, or a path outside the settings', () => {
-    for (const path of ['$.settings.submission.resume.days', '$.settings', '$.pages[0].label', 'nonsense'])
+    for (const path of ['$.settings.submission.unknown', '$.settings', '$.pages[0].label', 'nonsense'])
       expect(anchorOf(path), path).toBeNull();
   });
 });
@@ -245,6 +248,13 @@ describe("a closed group's line", () => {
     changed = withSettingAt(changed, ['submission', 'approval'], 'manual');
     changed = withSettingAt(changed, ['submission', 'verification'], { emailField: 'mail', days: 7 });
     expect(line(changed, 'submission')).toEqual(['summary_notStored', 'summary_approval', 'summary_verification']);
+    changed = withSettingAt(changed, ['submission', 'resume'], { days: 30 });
+    expect(line(changed, 'submission')).toEqual([
+      'summary_notStored',
+      'summary_approval',
+      'summary_verification',
+      'summary_resume',
+    ]);
   });
 
   it('says when the form is open, how many entries it takes and for whom', () => {

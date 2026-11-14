@@ -331,6 +331,22 @@ public enum Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormDisplay
   Notice = 1
   Outcome = 2
 
+public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormResumeModel
+  ctor()
+  required NoticeViewModel Expired { get; init; }
+  required NoticeViewModel Restored { get; init; }
+  required NoticeViewModel Saved { get; init; }
+  required string CancelLabel { get; init; }
+  required string EmailLabel { get; init; }
+  required string FailedText { get; init; }
+  required string FieldClass { get; init; }
+  required string Intro { get; init; }
+  required string InvalidText { get; init; }
+  required string OpenLabel { get; init; }
+  required string PanelClass { get; init; }
+  required string SavingText { get; init; }
+  required string SendLabel { get; init; }
+
 public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormSendingModel
   NavigationViewModel? Moves { get; init; }
   ctor()
@@ -342,6 +358,7 @@ public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormSendingMo
 public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormViewModel
   ErrorSummaryViewModel? ErrorSummary { get; init; }
   ErrorSummaryViewModel? ErrorSummaryTemplate { get; init; }
+  FormResumeModel? Resume { get; init; }
   FormSendingModel? Sending { get; init; }
   Guid? ContentKey { get; init; }
   Guid? InsightsReached { get; init; }

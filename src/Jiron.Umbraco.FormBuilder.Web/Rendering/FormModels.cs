@@ -137,6 +137,15 @@ internal sealed partial class FormModels(
     /// <summary>The code of the notice after a send that got no answer in time, or none at all (ADR-0022).</summary>
     public const string TimeoutCode = "timeout";
 
+    /// <summary>The code of the notice once a saved form's link is on its way (ADR-0163).</summary>
+    public const string ResumeSavedCode = "resume_saved";
+
+    /// <summary>The code of the notice when a link brought the saved answers back (ADR-0163).</summary>
+    public const string ResumeRestoredCode = "resume_restored";
+
+    /// <summary>The code of the notice when a link was used, or its time is over (ADR-0163).</summary>
+    public const string ResumeExpiredCode = "resume_expired";
+
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> NoQuery = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
 
     // The context values not taken in this process, by form and name, so each is logged once.
@@ -427,8 +436,29 @@ internal sealed partial class FormModels(
             postValues: PostValues(root, current, post, render.Redirect, render.Challenge),
             contentKey: render.Content,
             placement: render.Redirect is { } placement ? placements.Issue(root.Key, placement) : null,
-            sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null));
+            sending: Sending(root, words, shown.Pages.Count > 1 ? Moves(settings, words, root.Classes) : null),
+            resume: settings.Resume ? Resume(root, words, definition.Settings.Submission.Resume?.Days ?? new SaveAndResume().Days, render.Content is not null) : null);
     }
+
+    // What a form that can be saved for later offers (ADR-0163): the control below its buttons, and the notices of a link
+    // taken up. The projection offers it only where entries are stored; a form with no page to come back to has nowhere
+    // for a link to go.
+    private static FormResumeModel? Resume(Root root, RenderingWords words, int days, bool hasPage) => !hasPage ? null : new()
+    {
+        OpenLabel = words.SaveLater,
+        Intro = string.Format(CultureInfo.InvariantCulture, days == 1 ? words.SaveIntroOne : words.SaveIntro, days),
+        PanelClass = root.Classes.Join("jfb-notice jfb-save", FormBuilderThemeSlots.Notice),
+        FieldClass = root.Classes.Join("jfb-field jfb-field-email", FormBuilderThemeSlots.Field),
+        EmailLabel = words.SaveEmail,
+        SendLabel = words.SaveSend,
+        CancelLabel = words.SaveCancel,
+        SavingText = words.Saving,
+        InvalidText = words.SaveInvalid,
+        FailedText = words.SaveFailed,
+        Saved = SendNotice(root, words, ResumeSavedCode, new HtmlString("<p data-jfb-saved=\"" + WebUtility.HtmlEncode(words.SavedText) + "\"></p>"), words.SavedHeading),
+        Restored = SendNotice(root, words, ResumeRestoredCode, Paragraph(words.ResumeRestoredText), words.ResumeRestoredHeading),
+        Expired = SendNotice(root, words, ResumeExpiredCode, Paragraph(words.ResumeExpiredText), words.ResumeExpiredHeading),
+    };
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
     // holds (ADR-0068, ADR-0095), by its owner and name.
@@ -1054,6 +1084,7 @@ internal sealed partial class FormModels(
             Guid? contentKey = null,
             string? placement = null,
             FormSendingModel? sending = null,
+            FormResumeModel? resume = null,
             bool asksAtOnce = false,
             bool insights = false,
             bool insightsContinued = false,
@@ -1092,6 +1123,7 @@ internal sealed partial class FormModels(
                 ContentKey = contentKey,
                 Placement = placement,
                 Sending = sending,
+                Resume = resume,
                 AsksAtOnce = asksAtOnce,
                 Insights = insights,
                 InsightsContinued = insightsContinued,

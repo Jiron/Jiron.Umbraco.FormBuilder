@@ -159,6 +159,8 @@ export function anchorOf(path: string): Anchor | null {
         const box = inner === 'emailField' ? 'verification-field' : inner === 'days' ? 'verification-days' : null;
         return at('submission', box ? [box, 'verification'] : ['verification']);
       }
+      // Save and continue later's days show under its switch, under More options, once it is on.
+      if (name === 'resume') return at('submission', inner === 'days' ? ['resume-days', 'resume'] : ['resume'], true);
       if (name === 'entryReference') {
         const box = inner === 'year' ? 'reference-year' : inner === 'digits' ? 'reference-digits' : 'reference-prefix';
         return at('submission', [box], true);
@@ -348,6 +350,7 @@ export function summaryOf(
       );
       if (wordIn(submission, 'approval', 'automatic') === 'manual') parts.push(term('summary_approval'));
       if (objectIn(submission, 'verification')) parts.push(term('summary_verification'));
+      if (objectIn(submission, 'resume')) parts.push(term('summary_resume'));
       break;
     }
     case 'availability': {

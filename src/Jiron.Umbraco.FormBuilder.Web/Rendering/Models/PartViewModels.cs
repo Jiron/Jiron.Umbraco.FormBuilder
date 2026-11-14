@@ -235,6 +235,56 @@ public sealed class FormSendingModel
 }
 
 /// <summary>
+/// What a form that can be saved for later offers and says (ADR-0163): the link button the runtime puts with the form's
+/// buttons and the panel it shows in their place, which the views write in a template, and the notices of a link saved,
+/// taken up and gone, which they write with the other notices.
+/// </summary>
+public sealed class FormResumeModel
+{
+    /// <summary>The link button's words, which the panel's heading repeats in the buttons' place.</summary>
+    public required string OpenLabel { get; init; }
+
+    /// <summary>The panel's text: where the link goes, for how many days, and what is not kept.</summary>
+    public required string Intro { get; init; }
+
+    /// <summary>The panel's classes: a notice's, Jiron Form Builder's own with the theme's, and <c>jfb-save</c>.</summary>
+    public required string PanelClass { get; init; }
+
+    /// <summary>The classes of the address's field, as a field of the form has them.</summary>
+    public required string FieldClass { get; init; }
+
+    /// <summary>The label of the address the link goes to.</summary>
+    public required string EmailLabel { get; init; }
+
+    /// <summary>The button that saves the answers and sends the link.</summary>
+    public required string SendLabel { get; init; }
+
+    /// <summary>The button that closes the panel and brings the form's buttons back.</summary>
+    public required string CancelLabel { get; init; }
+
+    /// <summary>What the live region says while the saving is on its way.</summary>
+    public required string SavingText { get; init; }
+
+    /// <summary>The error under the address when it will not do.</summary>
+    public required string InvalidText { get; init; }
+
+    /// <summary>The error under the address when the answers could not be saved.</summary>
+    public required string FailedText { get; init; }
+
+    /// <summary>
+    /// The notice once the link is on its way (<c>resume_saved</c>), whose text the runtime writes from <c>data-jfb-saved</c>
+    /// with the address and the last day the link works, in the form's language.
+    /// </summary>
+    public required NoticeViewModel Saved { get; init; }
+
+    /// <summary>The notice when a link brought the saved answers back (<c>resume_restored</c>).</summary>
+    public required NoticeViewModel Restored { get; init; }
+
+    /// <summary>The notice when a link was used, or its time is over (<c>resume_expired</c>).</summary>
+    public required NoticeViewModel Expired { get; init; }
+}
+
+/// <summary>
 /// The copy of the answers below an outcome (ADR-0123): the entry's answers, shown once, as the summary page writes them
 /// without "Change", or on a later view a line in their place; then the print button and the link to the form again.
 /// </summary>

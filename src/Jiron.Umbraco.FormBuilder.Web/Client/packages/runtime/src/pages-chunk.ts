@@ -69,10 +69,13 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
       buttons != null &&
       [...buttons.querySelectorAll<HTMLButtonElement>(NAV)].map((each) => each.value).join() !== wanted.join()
     ) {
+      // What the row holds besides its buttons, such as the link that saves for later (ADR-0163), stays after them.
+      const others = [...buttons.children].filter((child) => !child.matches(NAV));
       buttons.replaceChildren(
         ...[...(templates?.content.querySelectorAll<HTMLButtonElement>(NAV) ?? [])]
           .filter((each) => wanted.includes(each.value))
           .map((each) => form.ownerDocument.importNode(each, true)),
+        ...others,
       );
     }
     const primary = buttons?.querySelector<HTMLButtonElement>(NAV);

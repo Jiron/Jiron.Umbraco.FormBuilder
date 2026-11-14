@@ -14,6 +14,7 @@ import type {
   ErrorSummaryViewModel,
   FieldViewModel,
   FileUploadWordsModel,
+  FormResumeModel,
   FormViewModel,
   GroupViewModel,
   HoneypotModel,
@@ -90,6 +91,7 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
     model.sending?.notices.map((each) => notice(d, each)),
     model.sending && writeOutcome(d, classes, model.sending.outcome),
     model.sending?.moves && writeNavigation(d, classes, model.sending.moves),
+    model.resume && [notice(d, model.resume.saved), notice(d, model.resume.restored), notice(d, model.resume.expired)],
   ]);
   const first = model.defaultButton;
   return el(
@@ -113,6 +115,7 @@ export function writeForm(context: ViewContext, model: FormViewModel): HTMLEleme
     },
     script,
     templates,
+    model.resume && writeResume(d, classes, model.id, model.resume),
     first &&
       el(
         d,
@@ -1493,3 +1496,49 @@ const honeypot = (d: Document, model: HoneypotModel): HTMLElement =>
     el(d, 'label', { for: model.id }, model.label),
     el(d, 'input', { type: 'text', id: model.id, name: model.name, tabindex: '-1', autocomplete: 'off' }),
   );
+
+/**
+ * `Form.cshtml`'s template of save and continue later (ADR-0163): the link button the runtime puts with the form's
+ * buttons and the panel it shows in their place, with what the saving says, which the runtime reads from the template.
+ */
+function writeResume(d: Document, classes: ThemeClassesModel, id: string, model: FormResumeModel): HTMLTemplateElement {
+  const template = el(d, 'template', {
+    'data-jfb-resume': FLAG,
+    'data-jfb-saving': model.savingText,
+    'data-jfb-invalid': model.invalidText,
+    'data-jfb-failed': model.failedText,
+  }) as HTMLTemplateElement;
+  append(template.content, [
+    el(d, 'button', { type: 'button', class: classes.buttonLink, 'data-jfb-save-open': FLAG }, model.openLabel),
+    el(
+      d,
+      'div',
+      { class: model.panelClass, role: 'group', 'aria-labelledby': `${id}-save-title`, 'data-jfb-save': FLAG },
+      el(d, 'h2', { id: `${id}-save-title` }, model.openLabel),
+      el(d, 'p', {}, model.intro),
+      el(
+        d,
+        'div',
+        { class: model.fieldClass },
+        el(d, 'label', { class: classes.label, for: `${id}-save` }, model.emailLabel),
+        el(d, 'input', {
+          class: classes.control,
+          type: 'email',
+          id: `${id}-save`,
+          autocomplete: 'email',
+          spellcheck: 'false',
+          'aria-describedby': `${id}-save-error`,
+        }),
+        el(d, 'p', { class: classes.error, id: `${id}-save-error`, hidden: FLAG }),
+      ),
+      el(
+        d,
+        'div',
+        { class: classes.navigation },
+        el(d, 'button', { type: 'button', class: classes.buttonPrimary, 'data-jfb-save-send': FLAG }, model.sendLabel),
+        el(d, 'button', { type: 'button', class: classes.button, 'data-jfb-save-close': FLAG }, model.cancelLabel),
+      ),
+    ),
+  ]);
+  return template;
+}

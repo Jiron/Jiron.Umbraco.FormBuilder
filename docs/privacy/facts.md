@@ -69,8 +69,8 @@ or ticking them, exports them.
 **No cookies.** Jiron Form Builder never sets a cookie. A captcha provider's script, once the visitor agreed to load it,
 sets cookies and browser storage of its own: list them in your consent tool and your privacy policy.
 
-**Browser storage.** Jiron Form Builder keeps none in this version. When "Save and continue later" ships (roadmap step 8.6b, waiting), it keeps
-one key for the visitor who opened their link, in the tab's `sessionStorage` only, and removes it once the entry is sent:
+**Browser storage.** Jiron Form Builder keeps one key, only for a visitor who opened the link to a form they saved for
+later, in the tab's `sessionStorage` only, and removes it once the entry is sent:
 
 | Storage | Key | When | Holds |
 | --- | --- | --- | --- |
