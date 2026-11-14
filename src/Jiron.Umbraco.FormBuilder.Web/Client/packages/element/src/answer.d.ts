@@ -177,6 +177,22 @@ export type FileUploadWordsModel = {
   megabytes: string;
 };
 
+export type FormResumeModel = {
+  openLabel: string;
+  intro: string;
+  panelClass: string;
+  fieldClass: string;
+  emailLabel: string;
+  sendLabel: string;
+  cancelLabel: string;
+  savingText: string;
+  invalidText: string;
+  failedText: string;
+  saved: NoticeViewModel;
+  restored: NoticeViewModel;
+  expired: NoticeViewModel;
+};
+
 export type FormSendingModel = {
   moves?: NavigationViewModel;
   sendingText: string;
@@ -206,6 +222,7 @@ export type FormViewModel = {
   errorSummary?: ErrorSummaryViewModel;
   errorSummaryTemplate?: ErrorSummaryViewModel;
   sending?: FormSendingModel;
+  resume?: FormResumeModel;
   defaultButton?: NavigationButtonModel;
   navigation?: NavigationViewModel;
   requiredNote?: string;

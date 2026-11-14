@@ -4,7 +4,7 @@
  * some forms use (uploads, signature, repeater, calculations, captchas) as theirs, so the entry stays within the core
  * budget of ROADMAP section 4.12.
  */
-import { createFrame } from './frame';
+import { createFrame, followResumeLinks } from './frame';
 import { installGlobal } from './global';
 
 declare global {
@@ -19,6 +19,8 @@ const runtime = installGlobal(
   (root) => frame.init(root),
   (form) => frame.get(form),
 );
+
+followResumeLinks(window);
 
 // A module runs once the document is parsed; one added while it still loads waits for the rest of the forms.
 if (document.readyState === 'loading')

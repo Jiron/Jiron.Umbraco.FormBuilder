@@ -141,7 +141,8 @@ It is kept for a year.
 ## On the visitor's device
 
 - **No cookies,** from any response of Jiron Form Builder.
-- **No browser storage.**
+- **No browser storage,** but for one key in the tab's session storage while a visitor finishes a form they saved for
+  later ([the privacy facts](privacy/facts.md#on-the-visitors-device)).
 - **Requests go only to the site itself,** for the form's script and stylesheet and its API.
 - **Insights** count what visitors do with a form without a cookie or an identifier, and can be turned off
   ([insights.md](insights.md)).

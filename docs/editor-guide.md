@@ -219,6 +219,9 @@ Under **More options**:
   don't reword keep the site's words ([multi-language.md](multi-language.md)).
 - **Summary page:** visitors check their answers on one page before they send.
 - **Progress:** numbered steps, a bar or nothing, on forms with more than one page.
+- **Save and continue later:** visitors can save their answers and get a link by email to finish later, on the page
+  the form is on. The link works for 30 days unless you change it (1 to 365). Files, consents and sensitive answers
+  are not saved, so the form asks for them again. It needs entries to be stored.
 - **Entry reference:** a prefix, the number of digits and whether the year is included. Visitors see the reference
   after they send, and the merge tag `{{ entry.reference }}` writes it.
 

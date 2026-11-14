@@ -1,6 +1,6 @@
 # ADR-0163: Save and resume
 
-Status: accepted, 2026-11-02 (ROADMAP 8.6). Builds on ADR-0009 (privacy defaults), ADR-0038 (drafts take a number), ADR-0090 and ADR-0091 (places and unique answers), ADR-0138 (the challenge), ADR-0159 (visitor mail) and ADR-0162 (what waits).
+Status: accepted, 2026-11-02 (ROADMAP 8.6); the runtime's control added 2026-11-14 (ROADMAP 8.6b, after ADR-0251). Builds on ADR-0009 (privacy defaults), ADR-0038 (drafts take a number), ADR-0090 and ADR-0091 (places and unique answers), ADR-0138 (the challenge), ADR-0159 (visitor mail) and ADR-0162 (what waits).
 
 ## Context
 
@@ -31,7 +31,14 @@ A long form should survive its visitor leaving. A saved form holds personal data
 
 **The answers come back by the form the site serves now,** with the fields it still has. A form published since has its way: the revision in the answer is the current one, and a field it dropped is gone.
 
-**The runtime's control waits for a decision on the budget.** The control and the restoring of answers come to 1.94 KB gzip as a chunk of their own, which puts the runtime at 61.95 KB against the 60 KB of ADR-0146. That ADR leaves anything past 60 KB to the owner, so step 8.6b holds this part, its work waits on `wip/8.6b-resume-control`, and `docs/OWNER-TODO.md` asks. The server side stands on its own in the meantime: a headless site can use both endpoints today.
+**The runtime's control** waited for the budget until the owner raised it to 100 KB (ADR-0251); it is a chunk of its own, about 2.6 KB gzip, that only a form offering it loads.
+
+- **Where it shows** is the Phase 2 design's (docs/ux/website/apply-room.html): a link button last in the form's buttons' row opens a panel in the row's place, drawn as a notice and named by its heading. It says, before the address, where the link goes, for how many days and what is not kept; then the address as a field, with its error under it, and its own row: "Send the link", the one primary action while the form's buttons are out of sight, and "Cancel", which, as Escape does, brings the buttons back with the focus on the link. Enter in the address saves; it never sends the form. It shows only with JavaScript, on a form the projection offers it for (one that stores entries) and on a page of the site, which the link comes back to; the Razor views and the headless element write the same template. The pages chunk, which writes the row's buttons for each page, keeps what else the row holds after them.
+- **What it says once saved:** a notice in the panel's place, which takes the focus, says where the link went and until when it works, the last day in the form's language from the answer's `expiresUtc`, so a mistyped address shows at once. The panel, which says the days before anything is saved, and the mail each have a sentence of their own for a link of one day.
+- **What it sends:** only the draft's members (revision, address, culture, content, page, answers, the token it replaces, and the protection a send takes: the challenge, renewed once on `401`, the puzzle, the captcha, which asks the visitor first, and the honeypot). A saving that went through ends the token the form held, as the new draft takes its place.
+- **A link taken up:** the token leaves the address before anything else; a link opened in the tab that already shows its page changes only the fragment, which loads nothing, so the frame loads the page again; one lookup serves every form of the page, and only the form the draft belongs to takes it up. Its answers come back in the background, so the form is ready while they are on their way; then the page they were saved on shows, and "Welcome back" says what to add again and takes the focus. A link used or past its time says so above the empty form, on the form whose tab held it or the first form that asked; the design put that notice in the form's place with a "Start again" button, but the form is already on the page, so it stays below the notice and starting again needs no press. With no answer at all, the tab keeps the token, so a refresh asks again. The notices are the theme's, written with the form's other notices, so they look and read as the rest; a status line only a screen reader hears would leave a sighted visitor wondering why the file is gone. As every notice with a code, they are alerts.
+- **Its words** are visitor texts of a group of their own (ADR-0230), in the seven languages, the sensitive answers named as the mail names them.
+- **The editor's switch** is under the Settings view's Submission › More options, with the days the link works (1 to 365) under it once it is on; it waits for entries to be stored, as a form that stores none keeps no draft, and a closed Submission group says it is on.
 
 ## Consequences
 

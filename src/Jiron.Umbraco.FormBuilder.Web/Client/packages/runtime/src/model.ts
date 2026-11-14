@@ -115,6 +115,7 @@ export interface FormModel {
       readonly validationSummary?: boolean | null;
       /** Whether the last page shows every answer before the send, which the server writes. */
       readonly summaryPage?: boolean;
+      readonly resume?: boolean;
     } | null;
   };
   /** By each field's key, a repeatable group's child fields too. */

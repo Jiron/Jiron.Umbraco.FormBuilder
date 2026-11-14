@@ -1334,6 +1334,7 @@ export type FormSettingsLimitsResponseModel = {
     htmlLength: number;
     nameLength: number;
     verificationDays: number;
+    resumeDays: number;
     retentionDays: number;
     referenceDigits: number;
     outcomes: number;

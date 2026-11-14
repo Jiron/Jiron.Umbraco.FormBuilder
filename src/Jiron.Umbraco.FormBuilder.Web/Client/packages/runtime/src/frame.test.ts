@@ -5,10 +5,10 @@
 // root fitted to its page once, a form to work with through `get` (6.4l, section 4.9), and what visitors do with a form
 // counted where its markup names where to (ROADMAP 11.5, ADR-0211).
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFrame, type Chunk, type ReadyDetail } from './frame';
+import { createFrame, followResumeLinks, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
 
-const model = (alias: string): string =>
+const model = (alias: string, settings?: Record<string, unknown>): string =>
   JSON.stringify({
     alias,
     revision: 1,
@@ -17,6 +17,7 @@ const model = (alias: string): string =>
     open: true,
     form: {
       key: 'f',
+      ...(settings === undefined ? {} : { settings }),
       pages: [{ key: 'p', groups: [{ key: 'g', fields: [{ key: 'k', type: 'text', alias: 'name' }] }] }],
     },
     fields: { k: { kind: 'text', canBeRequired: true, builtIn: true } },
@@ -250,6 +251,46 @@ describe('the frame', () => {
     await settled();
 
     expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
+  });
+
+  it('loads the logic at once for a form that saves for later, when a link or the tab names a saved form (ADR-0163)', async () => {
+    try {
+      history.replaceState(null, '', '#jfb-resume=t');
+      const linked = chunk();
+      document.body.append(form('jfb-1', { data: model('jfb-1', { resume: true }) }), form('jfb-2'));
+      createFrame(linked.load).init();
+      await settled();
+      expect(linked.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
+
+      history.replaceState(null, '', location.pathname);
+      document.body.replaceChildren();
+      sessionStorage.setItem('jfb-resume:key-jfb-3', 't');
+      const kept = chunk();
+      document.body.append(
+        form('jfb-3', { data: model('jfb-3', { resume: true }) }),
+        form('jfb-4', { data: model('jfb-4', { resume: true }) }),
+      );
+      createFrame(kept.load).init();
+      await settled();
+      expect(kept.attached.map(([element]) => element.id)).toEqual(['jfb-3']);
+    } finally {
+      history.replaceState(null, '', location.pathname);
+      sessionStorage.clear();
+    }
+  });
+
+  it('loads the page again when only the fragment changed to name a saved form, so its form takes the link up', () => {
+    const heard = new Map<string, () => void>();
+    const target = {
+      location: { hash: '#top', reload: vi.fn() },
+      addEventListener: (type: string, listener: () => void) => heard.set(type, listener),
+    };
+    followResumeLinks(target);
+    heard.get('hashchange')?.();
+    expect(target.location.reload).not.toHaveBeenCalled();
+    target.location.hash = '#jfb-resume=t';
+    heard.get('hashchange')?.();
+    expect(target.location.reload).toHaveBeenCalledTimes(1);
   });
 
   it.each(['focusin', 'pointerdown', 'input', 'change'])('loads the logic on %s', async (type) => {

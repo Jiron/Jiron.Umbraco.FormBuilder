@@ -181,7 +181,7 @@
  * a row of answers, or a section's heading with its first row, keeps to one sheet. A theme adds its colours.
  */
 @media print {
-  .jfb-form :is(.jfb-navigation, .jfb-progress, [data-jfb-print]) {
+  .jfb-form :is(.jfb-navigation, .jfb-progress, [data-jfb-print], .jfb-save) {
     display: none !important;
   }
 
@@ -192,6 +192,11 @@
   .jfb-form .jfb-summary h3 {
     break-after: avoid;
   }
+}
+
+/* A long word in a notice, such as the address a saved form's link went to, breaks rather than push the page sideways. */
+.jfb-form .jfb-notice {
+  overflow-wrap: anywhere;
 }
 
 /* What takes the focus after a send stands clear of the edge of the screen it scrolls to. */

@@ -38,9 +38,9 @@ internal static partial class VisitorTextKeys
 
     /// <summary>
     /// The groups, in the order the editor lists them: what a form shows around its questions, the file control, the
-    /// signature, the notices, what follows a send, the error messages and the words for yes and no.
+    /// signature, the notices, saving for later, what follows a send, the error messages and the words for yes and no.
     /// </summary>
-    public static ImmutableArray<string> Groups { get; } = ["form", "files", "signature", "notices", "after", "errors", "answers"];
+    public static ImmutableArray<string> Groups { get; } = ["form", "files", "signature", "notices", "save", "after", "errors", "answers"];
 
     // The words of a rendered form that may be reworded, by group, with the values each names, in RenderingWords' order.
     private static (string Group, string Name, string[] Values)[] FormWords =>
@@ -111,6 +111,21 @@ internal static partial class VisitorTextKeys
         ("after", "countdownOne", ["{0}"]),
         ("after", "countdownOther", ["{0}"]),
         ("notices", "sending", []),
+        ("save", "saveLater", []),
+        ("save", "saveIntro", ["{0}"]),
+        ("save", "saveIntroOne", ["{0}"]),
+        ("save", "saveEmail", []),
+        ("save", "saveSend", []),
+        ("save", "saveCancel", []),
+        ("save", "saving", []),
+        ("save", "saveInvalid", []),
+        ("save", "saveFailed", []),
+        ("save", "savedHeading", []),
+        ("save", "savedText", ["{0}", "{1}"]),
+        ("save", "resumeRestoredHeading", []),
+        ("save", "resumeRestoredText", []),
+        ("save", "resumeExpiredHeading", []),
+        ("save", "resumeExpiredText", []),
         ("notices", "connectionText", []),
         ("notices", "serverErrorText", []),
         ("notices", "changedHeading", []),

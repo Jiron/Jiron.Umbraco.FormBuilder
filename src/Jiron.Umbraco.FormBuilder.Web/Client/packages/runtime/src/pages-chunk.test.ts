@@ -194,6 +194,20 @@ describe('what follows a move', () => {
     expect(form.querySelector('#nav [data-jfb-nav="submit"]')?.textContent).toBe('Send');
   });
 
+  it('keeps what the row holds besides its buttons after them, such as the link that saves for later', async () => {
+    const { next, buttons, form } = wake();
+    const later = document.createElement('button');
+    later.type = 'button';
+    later.textContent = 'Save and continue later';
+    form.querySelector('#nav')?.append(later);
+
+    await next();
+    expect(buttons()).toEqual(['next', 'back']);
+    expect(form.querySelector('#nav')?.lastElementChild).toBe(later);
+    await next();
+    expect([buttons(), form.querySelector('#nav')?.lastElementChild]).toEqual([['submit', 'back'], later]);
+  });
+
   it('keeps the Next that is there when it is the one wanted', async () => {
     const { next, form } = wake();
     const before = form.querySelector('#nav [data-jfb-nav="next"]');

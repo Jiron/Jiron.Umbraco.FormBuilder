@@ -97,6 +97,32 @@ export interface Frame {
   get(form: Element): JironFormBuilderForm | null;
 }
 
+/** Whether the address or this tab names a saved form to take up (ADR-0163). */
+function comesBack(form: HTMLFormElement): boolean {
+  if (form.ownerDocument.location.hash.includes('jfb-resume=')) return true;
+  try {
+    return sessionStorage.getItem(`jfb-resume:${form.dataset['jfbForm'] ?? ''}`) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** What following a saved form's link needs of the window. */
+export interface ResumeLinkTarget {
+  addEventListener(type: 'hashchange', listener: () => void): void;
+  readonly location: { readonly hash: string; reload(): void };
+}
+
+/**
+ * A saved form's link opened in a tab that already shows its page changes only the address's fragment, which loads
+ * nothing: the page loads again, so its form takes the link up as it does from the mail (ADR-0163).
+ */
+export function followResumeLinks(target: ResumeLinkTarget): void {
+  target.addEventListener('hashchange', () => {
+    if (target.location.hash.includes('jfb-resume=')) target.location.reload();
+  });
+}
+
 /** A frame that loads its chunk through `load`, once for every form of the page. */
 export function createFrame(load: () => Promise<Chunk>): Frame {
   const enhanced = new WeakSet<Element>();
@@ -135,7 +161,12 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     // Counting is the site's, not the visitor's: a form that cannot count works all the same.
     alone(() => count(form));
     for (const type of TOUCHES) form.addEventListener(type, touched);
-    if (form.querySelector('[data-jfb-default]') !== null || form.hasAttribute('data-jfb-asks')) touched();
+    if (
+      form.querySelector('[data-jfb-default]') !== null ||
+      form.hasAttribute('data-jfb-asks') ||
+      (model.form.settings?.resume === true && comesBack(form))
+    )
+      touched();
     form.dispatchEvent(
       new CustomEvent<ReadyDetail>('jfb:ready', {
         bubbles: true,

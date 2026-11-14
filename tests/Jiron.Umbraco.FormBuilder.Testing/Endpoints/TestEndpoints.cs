@@ -21,7 +21,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models.ContentEditing;
+using Umbraco.Cms.Core.Models.ContentPublishing;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Routing;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Web;
 
 namespace Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 
@@ -707,6 +712,56 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 
     private sealed record DeliveriesRequest(string? Name);
 
+    // A page of the demo below its home page that shows a form by its alias, published in both of the demo's languages,
+    // for a test that changes a form of its own on the site, such as one saved for later, whose link comes back to its
+    // page (8.6b): the page's key and its English address.
+    private static async Task FormPageAsync(HttpContext context)
+    {
+        var body = await JsonSerializer.DeserializeAsync<FormPageRequest>(context.Request.Body, Json, context.RequestAborted);
+        if (body?.Form is not { Length: > 0 } alias)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var services = context.RequestServices;
+        var type = services.GetRequiredService<IContentTypeService>().Get("demoPage")
+            ?? throw new InvalidOperationException("The demo has no page type demoPage.");
+        var home = services.GetRequiredService<IContentService>().GetRootContent().First();
+        var name = $"Page {alias}";
+        string[] cultures = ["en-US", "de-DE"];
+        var created = await services.GetRequiredService<IContentEditingService>().CreateAsync(
+            new ContentCreateModel
+            {
+                ContentTypeKey = type.Key,
+                ParentKey = home.Key,
+                TemplateKey = type.DefaultTemplate?.Key,
+                Variants = [.. cultures.Select(culture => new VariantModel { Culture = culture, Name = name })],
+                Properties =
+                [
+                    new PropertyValueModel { Alias = "form", Value = alias },
+                    .. cultures.Select(culture => new PropertyValueModel { Alias = "heading", Value = name, Culture = culture }),
+                ],
+            },
+            Constants.Security.SuperUserKey);
+        var key = created.Result.Content?.Key ?? throw new InvalidOperationException($"The page {name} was not created ({created.Status}).");
+        var published = await services.GetRequiredService<IContentPublishingService>().PublishAsync(
+            key,
+            [.. cultures.Select(culture => new CulturePublishScheduleModel { Culture = culture })],
+            Constants.Security.SuperUserKey);
+        if (!published.Success)
+        {
+            throw new InvalidOperationException($"The page {name} was not published ({published.Status}).");
+        }
+
+        // This middleware runs ahead of Umbraco's, so the address is read in a context of its own.
+        using var umbraco = services.GetRequiredService<IUmbracoContextFactory>().EnsureUmbracoContext();
+        var path = services.GetRequiredService<IPublishedUrlProvider>().GetUrl(key, UrlMode.Relative, "en-US");
+        await context.Response.WriteAsJsonAsync(new { key, path }, Json, context.RequestAborted);
+    }
+
+    private sealed record FormPageRequest(string? Form);
+
     // The states of the mail one mailbox got, as the deliveries log has them, by any spelling of it.
     private static async Task MailLogAsync(HttpContext context)
     {
@@ -795,6 +850,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "load-entries" when HttpMethods.IsPost(context.Request.Method):
                 await LoadEndpoints.EntriesAsync(context);
+                return;
+            case "form-page" when HttpMethods.IsPost(context.Request.Method):
+                await FormPageAsync(context);
                 return;
             case "load-tree" when HttpMethods.IsPost(context.Request.Method):
                 await LoadEndpoints.TreeAsync(context);

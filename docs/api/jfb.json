@@ -17068,6 +17068,7 @@
           "htmlLength",
           "nameLength",
           "verificationDays",
+          "resumeDays",
           "retentionDays",
           "referenceDigits",
           "outcomes",
@@ -17088,6 +17089,10 @@
             "format": "int32"
           },
           "verificationDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resumeDays": {
             "type": "integer",
             "format": "int32"
           },

@@ -100,6 +100,21 @@ internal sealed partial record RenderingWords
             CountdownOne = "Taking you to the next page in {0} second.",
             CountdownOther = "Taking you to the next page in {0} seconds.",
             Sending = "Sending your answers",
+            SaveLater = "Save and continue later",
+            SaveIntro = "We email you a link back to this page, valid for {0} days. Files, consents and sensitive answers are not kept, so you add them again when you come back.",
+            SaveIntroOne = "We email you a link back to this page, valid for {0} day. Files, consents and sensitive answers are not kept, so you add them again when you come back.",
+            SaveEmail = "Email address",
+            SaveSend = "Send the link",
+            SaveCancel = "Cancel",
+            Saving = "Saving your answers",
+            SaveInvalid = "Enter an email address",
+            SaveFailed = "Your answers could not be saved. Try again in a moment.",
+            SavedHeading = "We have emailed you a link",
+            SavedText = "It went to {0} and works until {1}. You can close this page now, or carry on.",
+            ResumeRestoredHeading = "Welcome back",
+            ResumeRestoredText = "Your answers are back, on the page where you left off. Add your files, consents and sensitive answers again: they are not kept with saved answers.",
+            ResumeExpiredHeading = "This link no longer works",
+            ResumeExpiredText = "Saved answers are kept for a limited time and only until the form is sent, so these are gone now. Fill in the form again below.",
             ConnectionText = "Check your connection, then send again. Your answers are kept.",
             ServerErrorText = "Something went wrong on our side. Send again in a moment. Your answers are kept.",
             ChangedHeading = "This form was updated while you filled it in",
@@ -214,6 +229,21 @@ internal sealed partial record RenderingWords
             CountdownOne = "In {0} Sekunde geht es weiter zur n" + AUmlaut + "chsten Seite.",
             CountdownOther = "In {0} Sekunden geht es weiter zur n" + AUmlaut + "chsten Seite.",
             Sending = "Ihre Antworten werden gesendet",
+            SaveLater = "Speichern und sp" + AUmlaut + "ter weitermachen",
+            SaveIntro = "Wir schicken Ihnen per E-Mail einen Link zur" + UUmlaut + "ck zu dieser Seite, g" + UUmlaut + "ltig f" + UUmlaut + "r {0} Tage. Dateien, Einwilligungen und vertrauliche Antworten werden nicht gespeichert; Sie f" + UUmlaut + "gen sie wieder hinzu, wenn Sie zur" + UUmlaut + "ckkommen.",
+            SaveIntroOne = "Wir schicken Ihnen per E-Mail einen Link zur" + UUmlaut + "ck zu dieser Seite, g" + UUmlaut + "ltig f" + UUmlaut + "r {0} Tag. Dateien, Einwilligungen und vertrauliche Antworten werden nicht gespeichert; Sie f" + UUmlaut + "gen sie wieder hinzu, wenn Sie zur" + UUmlaut + "ckkommen.",
+            SaveEmail = "E-Mail-Adresse",
+            SaveSend = "Link senden",
+            SaveCancel = "Abbrechen",
+            Saving = "Ihre Antworten werden gespeichert",
+            SaveInvalid = "Geben Sie eine E-Mail-Adresse ein",
+            SaveFailed = "Ihre Antworten konnten nicht gespeichert werden. Versuchen Sie es gleich noch einmal.",
+            SavedHeading = "Wir haben Ihnen einen Link geschickt",
+            SavedText = "Er ging an {0} und gilt bis zum {1}. Sie k" + OUmlaut + "nnen diese Seite jetzt schlie" + SharpS + "en oder weitermachen.",
+            ResumeRestoredHeading = "Willkommen zur" + UUmlaut + "ck",
+            ResumeRestoredText = "Ihre Antworten sind wieder da, auf der Seite, auf der Sie aufgeh" + OUmlaut + "rt haben. F" + UUmlaut + "gen Sie Ihre Dateien, Einwilligungen und vertraulichen Antworten erneut hinzu: Sie werden mit gespeicherten Antworten nicht aufbewahrt.",
+            ResumeExpiredHeading = "Dieser Link gilt nicht mehr",
+            ResumeExpiredText = "Gespeicherte Antworten werden nur eine begrenzte Zeit und nur bis zum Senden des Formulars aufbewahrt, deshalb sind diese nicht mehr vorhanden. F" + UUmlaut + "llen Sie das Formular unten erneut aus.",
             ConnectionText = "Pr" + UUmlaut + "fen Sie Ihre Internetverbindung und senden Sie erneut. Ihre Antworten bleiben erhalten.",
             ServerErrorText = "Bei uns ist etwas schiefgegangen. Senden Sie gleich noch einmal. Ihre Antworten bleiben erhalten.",
             ChangedHeading = "Dieses Formular wurde ge" + AUmlaut + "ndert, w" + AUmlaut + "hrend Sie es ausgef" + UUmlaut + "llt haben",
@@ -513,6 +543,51 @@ internal sealed partial record RenderingWords
 
     /// <summary>What the live region says while a send is on its way (ADR-0022).</summary>
     public required string Sending { get; init; }
+
+    /// <summary>The button that opens the saving for later (ADR-0163), after the form's buttons, and the heading of its panel.</summary>
+    public required string SaveLater { get; init; }
+
+    /// <summary>The panel's text: {0} is the days the link works, more than one.</summary>
+    public required string SaveIntro { get; init; }
+
+    /// <summary>The panel's text for a link that works one day: {0} is 1.</summary>
+    public required string SaveIntroOne { get; init; }
+
+    /// <summary>The label of the address the link goes to.</summary>
+    public required string SaveEmail { get; init; }
+
+    /// <summary>The button that saves the answers and sends the link.</summary>
+    public required string SaveSend { get; init; }
+
+    /// <summary>The button that closes the panel and brings the form's buttons back.</summary>
+    public required string SaveCancel { get; init; }
+
+    /// <summary>What the live region says while the saving is on its way.</summary>
+    public required string Saving { get; init; }
+
+    /// <summary>The error under the address when it will not do.</summary>
+    public required string SaveInvalid { get; init; }
+
+    /// <summary>The error under the address when the answers could not be saved.</summary>
+    public required string SaveFailed { get; init; }
+
+    /// <summary>The heading of the notice once the link is on its way.</summary>
+    public required string SavedHeading { get; init; }
+
+    /// <summary>Its text: {0} is the address, {1} the last day the link works, in the visitor's language.</summary>
+    public required string SavedText { get; init; }
+
+    /// <summary>The heading of the notice when a link brought the saved answers back.</summary>
+    public required string ResumeRestoredHeading { get; init; }
+
+    /// <summary>Its text: what the form asks for again.</summary>
+    public required string ResumeRestoredText { get; init; }
+
+    /// <summary>The heading of the notice when a link was used, or its time is over.</summary>
+    public required string ResumeExpiredHeading { get; init; }
+
+    /// <summary>Its text.</summary>
+    public required string ResumeExpiredText { get; init; }
 
     /// <summary>The notice's text when a send got no answer in time, or none at all.</summary>
     public required string ConnectionText { get; init; }

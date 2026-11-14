@@ -153,7 +153,7 @@ internal sealed class EntryDrafts(
                 Kind = EmailKind.Resume,
                 To = [draft.Email],
                 Subject = words.Subject,
-                Body = $"<p>{WebUtility.HtmlEncode(string.Format(CultureInfo.InvariantCulture, words.Intro, draft.Form.Form.Name, days))}</p><p><a href=\"{WebUtility.HtmlEncode(link)}\">{WebUtility.HtmlEncode(words.Button)}</a></p><p>{WebUtility.HtmlEncode(words.Again)}</p><p>{WebUtility.HtmlEncode(words.NotYou)}</p>",
+                Body = $"<p>{WebUtility.HtmlEncode(string.Format(CultureInfo.InvariantCulture, days == 1 ? words.IntroOne : words.Intro, draft.Form.Form.Name, days))}</p><p><a href=\"{WebUtility.HtmlEncode(link)}\">{WebUtility.HtmlEncode(words.Button)}</a></p><p>{WebUtility.HtmlEncode(words.Again)}</p><p>{WebUtility.HtmlEncode(words.NotYou)}</p>",
                 Culture = draft.Culture,
                 ToVisitor = true,
                 Site = draft.Page.Site,
@@ -376,20 +376,21 @@ internal sealed class EntryDrafts(
 /// <summary>What a resume mail says, in the visitor's language.</summary>
 /// <param name="Subject">Its subject.</param>
 /// <param name="Intro">Its first line, with the form's name and the days the link works.</param>
+/// <param name="IntroOne">Its first line for a link that works one day.</param>
 /// <param name="Button">The link's text.</param>
 /// <param name="Again">What the form asks for again.</param>
 /// <param name="NotYou">What to do when it was someone else.</param>
-internal sealed record ResumeWords(string Subject, string Intro, string Button, string Again, string NotYou)
+internal sealed record ResumeWords(string Subject, string Intro, string IntroOne, string Button, string Again, string NotYou)
 {
     private static readonly FrozenDictionary<string, ResumeWords> Words = new Dictionary<string, ResumeWords>(StringComparer.OrdinalIgnoreCase)
     {
-        ["en"] = new("Continue your form", "Your answers to {0} are saved. This link takes you back to them for {1} days.", "Continue my form", "Files, consents and sensitive answers are not saved, so the form asks for them again.", "If this was not you, you can ignore this mail."),
-        ["de"] = new("Ihr Formular fortsetzen", "Ihre Antworten zu {0} sind gespeichert. Dieser Link f\u00fchrt Sie {1} Tage lang zu ihnen zur\u00fcck.", "Formular fortsetzen", "Dateien, Einwilligungen und vertrauliche Antworten werden nicht gespeichert. Das Formular fragt sie erneut ab.", "Falls Sie das nicht waren, k\u00f6nnen Sie diese E-Mail ignorieren."),
-        ["fr"] = new("Reprendre votre formulaire", "Vos r\u00e9ponses \u00e0 {0} sont enregistr\u00e9es. Ce lien vous y ram\u00e8ne pendant {1} jours.", "Reprendre mon formulaire", "Les fichiers, consentements et r\u00e9ponses sensibles ne sont pas enregistr\u00e9s\u00a0: le formulaire les redemande.", "Si ce n\u2019\u00e9tait pas vous, ignorez simplement ce message."),
-        ["it"] = new("Riprendi il modulo", "Le tue risposte a {0} sono salvate. Questo link ti riporta a esse per {1} giorni.", "Riprendi il modulo", "File, consensi e risposte riservate non vengono salvati: il modulo li richiede di nuovo.", "Se non hai salvato tu queste risposte, puoi ignorare questa email."),
-        ["nl"] = new("Ga verder met uw formulier", "Uw antwoorden op {0} zijn opgeslagen. Deze link brengt u er {1} dagen lang naar terug.", "Verder met mijn formulier", "Bestanden, toestemmingen en vertrouwelijke antwoorden worden niet opgeslagen: het formulier vraagt er opnieuw om.", "Was u dit niet? Dan kunt u deze e-mail negeren."),
-        ["es"] = new("Contin\u00fae su formulario", "Sus respuestas a {0} est\u00e1n guardadas. Este enlace le lleva a ellas durante {1} d\u00edas.", "Continuar mi formulario", "Los archivos, consentimientos y respuestas confidenciales no se guardan: el formulario los vuelve a pedir.", "Si no ha sido usted, puede ignorar este correo."),
-        ["da"] = new("Forts\u00e6t din formular", "Dine svar p\u00e5 {0} er gemt. Dette link f\u00f8rer dig tilbage til dem i {1} dage.", "Forts\u00e6t min formular", "Filer, samtykker og f\u00f8lsomme svar gemmes ikke, s\u00e5 formularen sp\u00f8rger om dem igen.", "Hvis det ikke var dig, kan du se bort fra denne mail."),
+        ["en"] = new("Continue your form", "Your answers to {0} are saved. This link takes you back to them for {1} days.", "Your answers to {0} are saved. This link takes you back to them for {1} day.", "Continue my form", "Files, consents and sensitive answers are not saved, so the form asks for them again.", "If this was not you, you can ignore this mail."),
+        ["de"] = new("Ihr Formular fortsetzen", "Ihre Antworten zu {0} sind gespeichert. Dieser Link f\u00fchrt Sie {1} Tage lang zu ihnen zur\u00fcck.", "Ihre Antworten zu {0} sind gespeichert. Dieser Link f\u00fchrt Sie {1} Tag lang zu ihnen zur\u00fcck.", "Formular fortsetzen", "Dateien, Einwilligungen und vertrauliche Antworten werden nicht gespeichert. Das Formular fragt sie erneut ab.", "Falls Sie das nicht waren, k\u00f6nnen Sie diese E-Mail ignorieren."),
+        ["fr"] = new("Reprendre votre formulaire", "Vos r\u00e9ponses \u00e0 {0} sont enregistr\u00e9es. Ce lien vous y ram\u00e8ne pendant {1} jours.", "Vos r\u00e9ponses \u00e0 {0} sont enregistr\u00e9es. Ce lien vous y ram\u00e8ne pendant {1} jour.", "Reprendre mon formulaire", "Les fichiers, consentements et r\u00e9ponses sensibles ne sont pas enregistr\u00e9s\u00a0: le formulaire les redemande.", "Si ce n\u2019\u00e9tait pas vous, ignorez simplement ce message."),
+        ["it"] = new("Riprendi il modulo", "Le tue risposte a {0} sono salvate. Questo link ti riporta a esse per {1} giorni.", "Le tue risposte a {0} sono salvate. Questo link ti riporta a esse per {1} giorno.", "Riprendi il modulo", "File, consensi e risposte riservate non vengono salvati: il modulo li richiede di nuovo.", "Se non hai salvato tu queste risposte, puoi ignorare questa email."),
+        ["nl"] = new("Ga verder met uw formulier", "Uw antwoorden op {0} zijn opgeslagen. Deze link brengt u er {1} dagen lang naar terug.", "Uw antwoorden op {0} zijn opgeslagen. Deze link brengt u er {1} dag lang naar terug.", "Verder met mijn formulier", "Bestanden, toestemmingen en vertrouwelijke antwoorden worden niet opgeslagen: het formulier vraagt er opnieuw om.", "Was u dit niet? Dan kunt u deze e-mail negeren."),
+        ["es"] = new("Contin\u00fae su formulario", "Sus respuestas a {0} est\u00e1n guardadas. Este enlace le lleva a ellas durante {1} d\u00edas.", "Sus respuestas a {0} est\u00e1n guardadas. Este enlace le lleva a ellas durante {1} d\u00eda.", "Continuar mi formulario", "Los archivos, consentimientos y respuestas confidenciales no se guardan: el formulario los vuelve a pedir.", "Si no ha sido usted, puede ignorar este correo."),
+        ["da"] = new("Forts\u00e6t din formular", "Dine svar p\u00e5 {0} er gemt. Dette link f\u00f8rer dig tilbage til dem i {1} dage.", "Dine svar p\u00e5 {0} er gemt. Dette link f\u00f8rer dig tilbage til dem i {1} dag.", "Forts\u00e6t min formular", "Filer, samtykker og f\u00f8lsomme svar gemmes ikke, s\u00e5 formularen sp\u00f8rger om dem igen.", "Hvis det ikke var dig, kan du se bort fra denne mail."),
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The words of a culture's language, or English.</summary>
