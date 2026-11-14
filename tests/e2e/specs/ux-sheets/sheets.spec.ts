@@ -52,15 +52,18 @@ test("the walk's contact sheets", async ({ page }) => {
   writeFileSync(join(dir, 'summary.json'), JSON.stringify(summary, null, 2));
 
   // With an earlier walk to compare with (JFB_UX_BEFORE names its folder), every screen's words in both: words.json
-  // holds them all, and no screen may have grown by more than the few words a time of day or a count changes.
+  // holds them all, and no screen may have grown by more than the few words a time of day or a count changes. A list's
+  // rows are data, though, and two looks share one site: a screen that grew by a row someone has looked at is named in
+  // JFB_UX_GROWN (comma-separated), and the review says why.
   const earlier = process.env.JFB_UX_BEFORE ? join(process.env.JFB_UX_BEFORE, 'summary.json') : null;
   if (earlier && existsSync(earlier)) {
     const changes = wordChanges(JSON.parse(readFileSync(earlier, 'utf8')) as WalkSummary, summary);
     writeFileSync(join(dir, 'words.json'), JSON.stringify(changes, null, 2));
     expect(changes.length, 'screens that both walks reached').toBeGreaterThan(0);
+    const explained = new Set((process.env.JFB_UX_GROWN ?? '').split(',').map((name) => name.trim()));
     expect(
       changes
-        .filter((change) => change.after - change.before > WORDS_NOISE)
+        .filter((change) => change.after - change.before > WORDS_NOISE && !explained.has(change.screen))
         .map((change) => `${change.screen} (${change.look}): ${change.before} to ${change.after}`),
       'screens that show more words than before',
     ).toEqual([]);

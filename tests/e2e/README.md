@@ -102,6 +102,7 @@ project puts each screen's twelve shots on one sheet. Both join the config only 
 | `JFB_UX_OUT`    | where the shots, reports and sheets go (default `.local/ux/latest`)                                                                                 |
 | `JFB_UX_ONLY`   | only the screens whose names start with one of its comma-separated prefixes, such as `settings`                                                     |
 | `JFB_UX_BEFORE` | the folder of an earlier walk: the sheets then write `words.json`, each screen's words in both walks, and fail when a screen shows more than before |
+| `JFB_UX_GROWN`  | the screens of that comparison that grew by a row of data and were looked at, comma-separated: the review says why                                  |
 
 ## Checks and output
 
