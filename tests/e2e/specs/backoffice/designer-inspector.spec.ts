@@ -318,9 +318,7 @@ test("on the site's two languages, a field's German label is edited in the inspe
   await expect(canvas.locator('.bo-chip')).toHaveText('No German text yet');
   await design.getByRole('button', { name: /^Name, / }).click();
   const inspector = design.locator('jfb-designer-inspector');
-  await expect(inspector.locator('.note')).toHaveText(
-    'Editing the German texts. Where one is empty, visitors see the English text.',
-  );
+  await expect(inspector.locator('.note')).toHaveText('Where a German text is empty, visitors see the English one.');
   const label = inspector.getByLabel('Label', { exact: true });
   await expect(label).toHaveValue('');
   await expect(label).toHaveAttribute('placeholder', 'Name');

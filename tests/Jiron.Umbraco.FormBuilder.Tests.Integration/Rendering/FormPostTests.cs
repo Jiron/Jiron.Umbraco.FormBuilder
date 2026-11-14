@@ -299,7 +299,7 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(notice?.GetAttribute("tabindex"), Is.EqualTo("-1"));
             Assert.That(notice?.GetAttribute("aria-labelledby"), Is.EqualTo("jfb-1-notice"));
             Assert.That(notice?.QuerySelector("h2#jfb-1-notice")?.TextContent, Is.EqualTo("This form was updated while you filled it in"));
-            Assert.That(notice?.QuerySelector("p")?.TextContent, Is.EqualTo("Your answers are kept. An agreement has new wording, so it is no longer ticked: read it again before you send."));
+            Assert.That(notice?.QuerySelector("p")?.TextContent, Is.EqualTo("Your answers are kept. A consent has new wording, so it is no longer ticked: read it again before you send."));
             Assert.That(shown.QuerySelector("[name='terms']")!.HasAttribute("checked"), Is.False, "the consent whose wording changed");
             Assert.That(shown.QuerySelector("[name='fullName.first']")!.GetAttribute("value"), Is.EqualTo("Ada"), "every other answer kept");
             Assert.That(shown.QuerySelector("[name='jfb-revision']")!.GetAttribute("value"), Is.EqualTo("2"), "the form as it is now");
@@ -604,7 +604,7 @@ public sealed partial class FormPostTests : RenderingTestBase
         {
             Assert.That(unchanged.QuerySelector("[data-jfb-notice] p")!.TextContent, Is.EqualTo("Your answers are kept."), "a revision no version had: no agreement changed");
             Assert.That(unchanged.QuerySelectorAll("input[type=checkbox]:checked, input[type=checkbox][checked]").Select(box => box.GetAttribute("name")), Is.EqualTo(new[] { "first", "second" }), "so both stay ticked");
-            Assert.That(both.QuerySelector("[data-jfb-notice] p")!.TextContent, Is.EqualTo("Your answers are kept. Some agreements have new wording, so they are no longer ticked: read them again before you send."));
+            Assert.That(both.QuerySelector("[data-jfb-notice] p")!.TextContent, Is.EqualTo("Your answers are kept. Some consents have new wording, so they are no longer ticked: read them again before you send."));
             Assert.That(both.QuerySelectorAll("input[type=checkbox][checked]"), Is.Empty);
             Assert.That(both.QuerySelector("[name='way']")!.GetAttribute("value"), Is.EqualTo("message"));
         });

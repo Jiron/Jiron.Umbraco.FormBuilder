@@ -181,7 +181,7 @@ test('Settings \u203a Spam protection names the keys a captcha lacks and the key
   try {
     await expect(screen.getByRole('radio', { name: 'reCAPTCHA v2' })).toBeDisabled();
     await expect(
-      screen.getByText('No keys yet. A developer adds them in JironFormBuilder:Captcha:RecaptchaV2.'),
+      screen.getByText('No keys in host configuration yet: JironFormBuilder:Captcha:RecaptchaV2'),
     ).toBeVisible();
     await expect(screen.getByRole('radio', { name: 'Load without asking' })).toBeDisabled();
     await expect(
@@ -267,7 +267,7 @@ test('Settings \u203a Integrations takes a secret only as a reference, and says 
     await saveIn(screen);
     await saved(page);
     await expect(
-      screen.getByText('Not in host configuration yet: a developer adds JironFormBuilder:Secrets:SettingsTest.'),
+      screen.getByText('Not in host configuration yet: JironFormBuilder:Secrets:SettingsTest'),
     ).toBeVisible();
     expect((await read(api, 'integrations')).values['signingSecret']).toBe('$JironFormBuilder:Secrets:SettingsTest');
   } finally {

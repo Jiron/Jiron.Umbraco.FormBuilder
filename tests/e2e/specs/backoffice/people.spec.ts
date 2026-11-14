@@ -107,7 +107,7 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   const dialog = page.locator('jfb-people-erase-modal');
   // A lone form is named in the sentence, and no row says its count again (16.6's review).
   await expect(dialog.locator('#what')).toHaveText(
-    `1 entry in ${formName} is erased. Statistics stay. You can't undo this.`,
+    `1 entry in ${formName} is erased. Insights stay. You can't undo this.`,
   );
   await expect(dialog.locator('.forms')).toHaveCount(0);
   await expect(dialog.getByText('1 entry on legal hold stays until its hold ends.')).toBeVisible();
@@ -117,7 +117,7 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   await expect(dialog).toHaveCount(0);
   await expect(screen.locator('.done')).toHaveText(
     new RegExp(
-      `Everything about ${who.toUpperCase().replace(/[.]/g, '\\.')} is erased: 1 entry\\. Statistics stay\\. ` +
+      `Everything about ${who.toUpperCase().replace(/[.]/g, '\\.')} is erased: 1 entry\\. Insights stay\\. ` +
         "1 entry on legal hold stays until its hold ends\\.\\s*It's recorded in the audit log\\.",
     ),
   );
@@ -134,9 +134,9 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   await expect(left.locator('uui-tag')).toHaveCount(0);
   await screen.getByRole('button', { name: 'Erase\u2026', exact: true }).click();
   await dialog.getByRole('radio', { name: 'Anonymise them' }).check();
-  await dialog.getByRole('button', { name: 'Erase 1 entry', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Anonymise 1 entry', exact: true }).click();
   await expect(screen.locator('.done p').first()).toHaveText(
-    /1 entry anonymised, which stays in the counts\. Statistics stay\./,
+    /1 entry anonymised, which stays in the counts\. Insights stay\./,
   );
   await find();
   await expect(screen.getByText(`No entries found for ${who.toUpperCase()}.`, { exact: false })).toBeVisible();

@@ -52,7 +52,7 @@ public sealed class FormRenderingResumeTests : RenderingTestBase
                 ["data-jfb-save"] = string.Empty,
             }), "a notice in the buttons' place, named by its heading");
             Assert.That((Find(panel, "h2").Id, Find(panel, "h2").TextContent), Is.EqualTo(("jfb-1-save-title", "Keep it for later")));
-            Assert.That(Find(panel, ":scope > p").TextContent, Is.EqualTo("We email you a link back to this page, valid for 14 days. Files, consents and sensitive answers are not kept, so you add them again when you come back."), "what is kept, and how long, before the address");
+            Assert.That(Find(panel, ":scope > p").TextContent, Is.EqualTo("We email you a link back to this page, valid for 14 days. Files, consents and sensitive answers are not kept."), "what is kept, and how long, before the address");
             Assert.That(Find(panel, ".jfb-field > label").GetAttribute("for"), Is.EqualTo(email.Id));
             Assert.That(Attributes(email), Is.EqualTo(new Dictionary<string, string>
             {
@@ -77,7 +77,7 @@ public sealed class FormRenderingResumeTests : RenderingTestBase
             foreach (var (code, heading, text) in new[]
             {
                 ("resume_saved", "We have emailed you a link", string.Empty),
-                ("resume_restored", "Welcome back", "Your answers are back, on the page where you left off. Add your files, consents and sensitive answers again: they are not kept with saved answers."),
+                ("resume_restored", "Welcome back", "Your answers are back, on the page where you left off. Add your files, consents and sensitive answers again: they are not saved."),
                 ("resume_expired", "This link no longer works", "Saved answers are kept for a limited time and only until the form is sent, so these are gone now. Fill in the form again below."),
             })
             {

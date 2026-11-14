@@ -134,7 +134,7 @@ test('a form saved for later on its last page comes back from the link in the ma
   await expect(panel).toBeVisible();
   await expect(buttons).toBeHidden();
   await expect(panel.locator(':scope > p')).toHaveText(
-    'We email you a link back to this page, valid for 14 days. Files, consents and sensitive answers are not kept, so you add them again when you come back.',
+    'We email you a link back to this page, valid for 14 days. Files, consents and sensitive answers are not kept.',
   );
   const address = panel.getByLabel('Email address');
   await expect(address).toBeFocused();

@@ -252,7 +252,7 @@ test('form_changed on a page the cache still serves: the published form comes in
     await expect(notice).toHaveAttribute('role', 'alert');
     await expect(notice.locator('h2')).toHaveText('This form was updated while you filled it in');
     await expect(notice.locator('p')).toHaveText(
-      'Your answers are kept. An agreement has new wording, so it is no longer ticked: read it again before you send.',
+      'Your answers are kept. A consent has new wording, so it is no longer ticked: read it again before you send.',
     );
     expect(await newsletter.getAttribute('data-jfb-revision'), 'the published form').not.toBe(stale);
     await expect(newsletter.getByLabel('Email address')).toHaveValue('lin@visitor.jfb.test');

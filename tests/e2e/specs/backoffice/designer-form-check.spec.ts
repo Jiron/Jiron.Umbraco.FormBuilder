@@ -180,9 +180,7 @@ test("a blank form's one error opens the palette, blocks Publish with Fix it, an
   // Publish... shows the error, which blocks Publish, with Fix it, which leads to the palette again.
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
   let dialog = page.locator('jfb-publish-modal');
-  await expect(dialog.locator('[role="alert"] .lead')).toHaveText(
-    "This form can't be published yet: 1 error needs fixing.",
-  );
+  await expect(dialog.locator('[role="alert"] .lead')).toHaveText('1 error blocks publishing.');
   await expect(dialog.getByRole('button', { name: 'Publish', exact: true })).toBeDisabled();
   // While an error blocks it, the dialog says what to fix, and nothing of what changed (ROADMAP 10.3d).
   await expect(dialog.locator('.changes')).toHaveCount(0);

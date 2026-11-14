@@ -146,7 +146,7 @@ test('rules show as chips, and the overview lists them by page, warns of a confl
     /^\s*Attachment\s/,
   ]);
   await expect(overview.locator(`button.row[data-key="${keys.attachment}"] .conflict`)).toHaveText(
-    'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required, so visitors can send without it.',
+    'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required.',
   );
   await axeInside(page, 'jfb-rules-overview-modal');
 

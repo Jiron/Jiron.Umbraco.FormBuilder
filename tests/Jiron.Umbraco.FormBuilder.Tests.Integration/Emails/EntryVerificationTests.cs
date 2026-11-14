@@ -473,8 +473,8 @@ public sealed partial class EntryVerificationTests : EmailTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(page.Html, Does.Contain("This link is too old").And.Contain("name=\"action\" value=\"resend\""));
-            Assert.That(pressed.Html, Does.Contain("This link is too old"));
+            Assert.That(page.Html, Does.Contain("This link no longer works").And.Contain("name=\"action\" value=\"resend\""));
+            Assert.That(pressed.Html, Does.Contain("This link no longer works"));
             Assert.That(state, Is.EqualTo(EntryState.Unverified));
             Assert.That(resent.Html, Does.Contain("A new link is on its way"));
             Assert.That(confirmed.Html, Does.Contain("Your address is confirmed"));
