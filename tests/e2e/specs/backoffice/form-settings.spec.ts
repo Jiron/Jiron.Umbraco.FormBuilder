@@ -142,9 +142,9 @@ test('the submission group and its More options set what they say, refuse what t
   await view.getByRole('button', { name: 'Name {{ field.name }}' }).click();
   await expect(title).toHaveValue('Request from {{ field.name }}');
   await expect(title).toBeFocused();
-
+  // More options: the buttons between pages, the summary page, the progress, saving for later (its own spec) and the reference.
   // More options: the buttons between pages, the summary page, the progress and the reference with its example.
-  const more = view.getByRole('button', { name: 'More options (5)' });
+  const more = view.getByRole('button', { name: 'More options (6)' });
   await more.click();
   await expect(view.getByRole('button', { name: 'Fewer options' })).toHaveAttribute('aria-expanded', 'true');
   await expect(view.getByLabel('Next page')).toHaveAttribute('placeholder', 'Next');
