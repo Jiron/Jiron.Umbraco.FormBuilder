@@ -86,7 +86,8 @@ export class AccessScreenElement extends UmbLitElement {
         display: flex;
         flex-wrap: wrap;
         gap: var(--uui-size-space-1) var(--uui-size-space-3);
-        margin: 0;
+        /* The note's own space below, so the links never touch the table under them. */
+        margin: 0 0 var(--uui-size-space-4);
         padding: 0;
         list-style: none;
       }
