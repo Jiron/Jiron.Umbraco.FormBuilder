@@ -3299,7 +3299,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 20: Final verification and handover
 
-- [ ] **20.1 Clean-clone verification and the status report** (20.1 and 20.2 in one, ADR-0197)
+- [x] **20.1 Clean-clone verification and the status report** (20.1 and 20.2 in one, ADR-0197) (2026-11-14, 800520b1)
   - **20.1 Clean-clone verification**:
     - Clone `origin/main` into `%TEMP%\jfb-verify-<timestamp>`, outside the repo, so no parent `NuGet.config` or `node_modules` can leak in. Use a fresh `NUGET_PACKAGES` cache in `%TEMP%\jfb-nuget-<timestamp>`, and the throwaway-build settings of CLAUDE.md rule 6, so the folders can be deleted afterwards. The hang-marker rerun applies here too.
     - Run, in order:
