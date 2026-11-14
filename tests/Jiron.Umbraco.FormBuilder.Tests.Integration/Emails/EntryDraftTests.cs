@@ -367,6 +367,17 @@ public sealed partial class EntryDraftTests : EmailTestBase
     }
 
     [Test]
+    public async Task ALinkOfOneDay_SaysOneDay_InTheMail()
+    {
+        var form = await PublishAsync(name: "Brief", change: Saves(days: 1), fields: [NameField]);
+        using (await DraftAsync(form))
+        {
+        }
+
+        Assert.That(((TextPart)(await QueuedMailAsync(form)).Body!).Text, Does.Contain("for 1 day.").And.Not.Contain("1 days"));
+    }
+
+    [Test]
     public async Task ALinkPastItsTime_IsGone_AndTheDraftIsPurged_WithItsWaitingMail()
     {
         var form = await PublishAsync(name: "Short", change: Saves(days: 2), fields: [NameField]);

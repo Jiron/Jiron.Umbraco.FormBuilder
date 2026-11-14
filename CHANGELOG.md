@@ -9,6 +9,7 @@ follows the Umbraco major).
 
 ### Fixed
 
+- The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.
 - Leaving a form for another screen of the backoffice no longer raises an error in the browser's console when the AI
   add-on is installed.
 
