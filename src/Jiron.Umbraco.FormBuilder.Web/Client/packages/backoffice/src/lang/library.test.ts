@@ -56,7 +56,7 @@ describe('deleting a form for good', () => {
       'Dabei werden das Formular, sein Eintrag und eine hochgeladene Datei gelöscht.',
     );
     expect(DE.deleteFormText(5, 0)).toBe('Dabei werden das Formular und seine 5 Einträge gelöscht.');
-    expect(EN.deleteFormText(0, 0)).toBe('This deletes the form. It has no entries.');
+    expect(EN.deleteFormText(0, 0)).toBe('It has no entries.');
     expect(EN.deleteFormConfirm(0)).toBe('Delete form');
     expect(DE.deleteFormConfirm(1)).toBe('Formular und Eintrag löschen');
   });

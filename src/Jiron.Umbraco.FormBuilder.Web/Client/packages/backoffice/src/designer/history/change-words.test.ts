@@ -287,7 +287,7 @@ describe('a comparison in words', () => {
       'Email verification, Link valid for (days)',
     );
     expect(name({ kind: 'settings', settingsGroup: 'privacy' }, ['retentionDays', 'spam'])).toBe(
-      'Delete entries after, Spam (days)',
+      'Days kept in each state, Spam (days)',
     );
     expect(name({ type: 'email' }, ['help', 'de'])).toBe('Help text \u00b7 German');
     expect(name({ kind: 'outcome' }, ['redirect', 'url'])).toBe('Redirect, Address');
@@ -315,7 +315,7 @@ describe('a comparison in words', () => {
     expect(row(['includeInEmails'], true, false)).toMatchObject({ older: 'Yes', newer: 'No' });
     expect(row(['hideLabel'], null, true)).toMatchObject({ older: 'none', newer: 'Yes' });
     expect(row(['retentionDays', 'spam'], null, 30, { kind: 'settings', settingsGroup: 'privacy', key: null })).toEqual(
-      { what: 'Privacy, Delete entries after, Spam (days)', older: 'none', newer: '30' },
+      { what: 'Privacy, Days kept in each state, Spam (days)', older: 'none', newer: '30' },
     );
     expect(row(['span'], null, 1200)).toMatchObject({ older: 'none', newer: '1,200' });
     expect(row(['settings', 'maxBytes'], null, 10_485_760, { type: 'file' })).toMatchObject({ newer: '10 MB' });

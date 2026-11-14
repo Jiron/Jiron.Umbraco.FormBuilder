@@ -136,8 +136,7 @@ export default {
     yesnoStyle: 'Style',
     consentText: 'Consent text',
     consentLoadsCaptcha: 'Ticking this loads the captcha',
-    consentLoadsCaptchaHelp:
-      "Where the form's captcha waits for consent, it loads only once a visitor ticks this, and not before.",
+    consentLoadsCaptchaHelp: "Where the form's captcha waits for consent, it loads only once a visitor ticks this.",
     countryAllowed: 'Allowed countries',
     countryTop: 'Countries shown first',
     countryDefault: 'Preselected country',
@@ -230,7 +229,6 @@ export default {
   },
   jfbActionSettings: {
     contentDocumentType: 'Document type',
-    contentDocumentTypeHelp: 'Each entry becomes an item of this type.',
     contentParentSource: 'Where it goes',
     contentParent: 'Parent, or the item it must stay under',
     contentName: 'Name of the item',
@@ -257,9 +255,8 @@ export default {
     webhookIncludeSensitive: 'Send sensitive fields',
     webhookMessage: 'Message',
     webhookSecretHelp:
-      "Signs each request in its X-Jfb-Signature header, so the receiver can tell it came from this site. A reference to the site's configuration; empty uses the site's own.",
-    webhookHeadersHelp:
-      'Sent with each request. A header whose name has auth, key, token, secret, password or cookie in it takes a reference.',
+      "A reference to the secret that signs each request, so the receiver can tell it came from this site. Empty uses the site's own.",
+    webhookHeadersHelp: 'A header whose name has auth, key, token, secret, password or cookie in it takes a reference.',
     emailTo: 'To',
     emailToField: 'To the address in a field',
     emailToCreator: 'To the person who created the form',

@@ -7,7 +7,7 @@ const count = (number: number, one: string, many: string) => (number === 1 ? `1 
 
 export default {
   jfbActions: {
-    empty: 'No actions yet. Most forms email the team when an entry comes in, and Add action starts with that.',
+    empty: 'No actions yet. Add action starts with an email to the team.',
     readOnly:
       'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
     addAction: 'Add action',
@@ -23,8 +23,8 @@ export default {
     when_approvedEach: 'as each entry comes in, because this form has no manual approval',
     when_rejected: 'when someone rejects an entry',
     when_verified: 'when a visitor confirms their address',
-    needs_approval: 'Runs when someone rejects an entry. It needs manual approval:',
-    needs_verification: 'Runs when a visitor confirms their address. It needs email verification:',
+    needs_approval: 'Needs manual approval:',
+    needs_verification: 'Needs email verification:',
     held_approval: "These don't run until the form has manual approval:",
     held_verification: "These don't run until the form has email verification:",
     turnOn: 'turn it on in Settings',
@@ -77,16 +77,14 @@ export default {
     whatHappens: 'What happens',
     whatHappensKept: 'An action keeps what it does. To do something else, add another action.',
     name: 'Name',
-    nameHelp: 'Shown on its card and in the deliveries log.',
     trigger: 'When it runs',
-    place: 'Position in the list',
-    placeHelp: 'Actions of the same trigger run in this order.',
+    place: 'Run order',
     placeOf: (place: number, count: number) => `${place} of ${count}`,
     stopOnFailure: 'Stop the rest if this fails',
     stopOnFailureHelp:
       "If it fails for good, the actions after it for the same entry don't run. Retrying it from Deliveries brings them back.",
     rule: 'Rule',
-    noRule: 'Runs for every entry its trigger brings.',
+    noRule: 'Runs for every entry.',
     addRule: 'Add a rule',
     changeRule: 'Change rule',
     add: 'Add',
@@ -129,7 +127,7 @@ export default {
     removeCreator: 'Remove the person who created the form',
     removePrivacyTeam: 'Remove everyone who may use the privacy tools',
     removeMap: (field: string) => `Remove the addresses chosen by ${field}`,
-    routesHelp: 'The addresses each answer sends to, separated by commas. An answer without addresses adds no one.',
+    routesHelp: 'Addresses per answer, separated by commas. An answer without any adds no one.',
     optionsReading: "Reading the field's options\u2026",
     optionsNone: 'This field has no options yet.',
     optionGone: (value: string) => `${value} (no longer an option)`,
@@ -138,9 +136,9 @@ export default {
     addressHelp_url:
       'An https address on a host the site allows. Where the address holds a key, name it as a reference, such as $JironFormBuilder:Secrets:CrmHook.',
     addressHelp_slack:
-      "Empty sends to the site's Slack address. To send elsewhere, name the address as a reference, such as $JironFormBuilder:Secrets:SalesSlack, as it holds its key.",
+      "Empty sends to the site's Slack address. For another, give a reference, such as $JironFormBuilder:Secrets:SalesSlack.",
     addressHelp_teams:
-      "Empty sends to the site's Microsoft Teams address. To send elsewhere, name the address as a reference, such as $JironFormBuilder:Secrets:SalesTeams, as it holds its key.",
+      "Empty sends to the site's Microsoft Teams address. For another, give a reference, such as $JironFormBuilder:Secrets:SalesTeams.",
     addressReference_slack:
       "A Slack address holds its key, so it stays in the site's configuration: name it as a reference.",
     addressReference_teams:
@@ -160,7 +158,7 @@ export default {
     modeLine_message_teams: "In Teams' formatting, such as **bold**, with merge tags.",
     messageHelp: "Empty sends the form's name and the answers.",
     bodyEmpty: 'Write the body, or choose another way of sending above.',
-    metadataHelp: 'What happened, the delivery, the form and the entry, beside the answers.',
+    metadataHelp: 'What happened, the delivery, the form and the entry.',
     pairName: 'Name',
     pairValue: 'Value',
     pairNameOf: (row: number) => `Name ${row}`,
@@ -233,8 +231,6 @@ export default {
     mapRead_value: (property: string, value: string) => `${property}: ${value}`,
 
     preview: 'Preview with a sample entry',
-    previewHelp: "As the team gets it, with sample answers made from the form's fields.",
-    previewHelpVisitor: "As the visitor gets it, with sample answers made from the form's fields.",
     previewFailed: "The preview couldn't be shown.",
     previewRetry: 'Try again',
     previewViewMissing: (view: string) =>
@@ -360,7 +356,7 @@ export default {
     runTestHelp_webhook: 'Test sends a sample entry, so you can see whether the server answers again.',
     runTestHelp: 'Test runs the action with a sample entry, so you can see whether it works now.',
     runRetryWho:
-      "Someone who sees this form's entries and may change its actions finds the entry in Entries with the Actions filter, and can retry the run there. An administrator can also retry it in Activity › Deliveries.",
+      'With View entries and Manage actions, retry the run on its entry: Entries, Actions filter. An administrator can also retry it in Activity › Deliveries.',
     runError_http: (status: string) => `The server answered ${status}.`,
     runError_timed_out: "The server didn't answer in time.",
     runError_no_connection: "The server couldn't be reached.",

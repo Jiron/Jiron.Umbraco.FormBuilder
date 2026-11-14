@@ -22,7 +22,6 @@ export default {
       'Die Konfiguration der Website hat den Zugriff inzwischen gesperrt. Er wird so gezeigt, wie sie ihn festlegt.',
 
     everyForm: 'Jedes Formular',
-    everyFormLead: 'Formulare und Einträge können je Ordner oder Formular abweichen.',
     administrators: 'Administratoren haben überall jede Berechtigung, weil sie sich jede selbst erteilen könnten.',
     noSection: (count: number) =>
       count === 1
@@ -45,8 +44,7 @@ export default {
 
     items: 'Ordner und Formulare mit eigenem Zugriff',
     addItem: 'Ordner oder Formular hinzufügen…',
-    itemsNone:
-      'Kein Ordner und kein Formular hat eigenen Zugriff; der Zugriff jeder Gruppe oben reicht also bis zu jedem Formular.',
+    itemsNone: 'Noch keine.',
     only: (names: readonly string[]) => `Nur diese Benutzergruppen: ${list(names)}`,
     onlyAdministrators: 'Nur Administratoren',
     also: (names: readonly string[]) => `Zusätzlich: ${list(names)}`,
@@ -58,9 +56,8 @@ export default {
     headline: (name: string) => `Berechtigungen für ${name}`,
     restrict: 'Nur diese Benutzergruppen',
     restrictHelpFolder:
-      'Nur die Gruppen unten und Administratoren sehen die Formulare dieses Ordners. Zugriff auf jedes Formular oder auf einen übergeordneten Ordner endet hier.',
-    restrictHelpForm:
-      'Nur die Gruppen unten und Administratoren sehen dieses Formular. Zugriff auf jedes Formular oder auf seinen Ordner endet hier.',
+      'Zugriff auf jedes Formular oder auf einen übergeordneten Ordner endet hier. Administratoren behalten ihren.',
+    restrictHelpForm: 'Zugriff auf jedes Formular oder auf seinen Ordner endet hier. Administratoren behalten ihren.',
     groupsHere: 'Gruppen mit Zugriff hier',
     addGroup: 'Benutzergruppe hinzufügen',
     addGroupNone: 'Benutzergruppe wählen',

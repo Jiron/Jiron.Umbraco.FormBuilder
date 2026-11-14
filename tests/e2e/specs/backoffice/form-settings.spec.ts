@@ -259,7 +259,7 @@ test("IP addresses: the Privacy group chooses what the form's entries keep, and 
   // The host doesn't allow full addresses, and the help names the key that would.
   await expect(ip.locator('option[value="full"]')).toBeDisabled();
   await expect(view.locator('#ip-help')).toHaveText(
-    "What each entry keeps of the address it was sent from. Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
+    "Full addresses need JironFormBuilder:Privacy:AllowFullIp in the site's configuration.",
   );
   await ip.selectOption('anonymised');
   await axeInside(page, 'jfb-form-settings-view');

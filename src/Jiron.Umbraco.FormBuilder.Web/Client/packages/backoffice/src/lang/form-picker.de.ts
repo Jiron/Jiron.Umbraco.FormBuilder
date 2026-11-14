@@ -30,13 +30,11 @@ export default {
     settingAllowedFolders: 'Erlaubte Ordner',
     settingAllowedFoldersHelp: 'Die Formulare in diesen Ordnern und in den Ordnern darunter können gewählt werden.',
     settingAllowedForms: 'Erlaubte Formulare',
-    settingAllowedFormsHelp:
-      'Auch diese Formulare können gewählt werden. Ohne erlaubte Ordner oder Formulare ist jedes Formular wählbar.',
+    settingAllowedFormsHelp: 'Ohne erlaubte Ordner oder Formulare ist jedes Formular wählbar.',
     settingTheme: 'Theme',
     settingThemeHelp: 'Jedes hier platzierte Formular erscheint in diesem Theme.',
     settingRedirect: 'Seite nach dem Absenden',
-    settingRedirectHelp:
-      'Nach dem Absenden eines hier platzierten Formulars kommen Besucher auf diese Seite. Leer lassen, um den Einstellungen des Formulars zu folgen.',
+    settingRedirectHelp: 'Leer lassen, um den Einstellungen des Formulars zu folgen.',
     folderNotAvailable: 'Ordner nicht verfügbar',
     folderNotAvailableDetail: 'Gelöscht, im Papierkorb oder für Sie nicht sichtbar',
     removeFolderNotAvailable: 'Den nicht verfügbaren Ordner entfernen',

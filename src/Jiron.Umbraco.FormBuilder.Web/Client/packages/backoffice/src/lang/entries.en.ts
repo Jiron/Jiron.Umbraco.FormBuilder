@@ -145,7 +145,6 @@ export default {
     columnsFailed: "The columns couldn't be kept for next time.",
 
     chooser_headline: 'Columns',
-    chooser_details: 'Every entry shows its state, when it was received and its actions.',
     chooser_fields: "The form's fields",
     chooser_removed: 'removed from the form',
     chooser_sensitive: 'Sensitive fields show in an entry only.',
@@ -243,7 +242,7 @@ export default {
     emptied: (number: number) => `${entries(number)} deleted from Spam.`,
     emptiedMore: 'Spam holds more. Empty spam… again deletes the rest.',
     emptyFailed: "Spam couldn't be emptied. Try again.",
-    noResults: 'No entries match these filters. Remove one above, or clear them all.',
+    noResults: 'No entries match the filters above.',
     noSearch: (term: string) => `No entries match “${term}”.`,
     noSearchSensitive: (term: string) => `No entries match “${term}”. Sensitive fields aren't searched.`,
 
@@ -253,13 +252,11 @@ export default {
     digest_off: 'Off',
     digest_daily: 'Daily',
     digest_weekly: 'Weekly, on Mondays',
-    digest_when: (time: string, place: string) =>
-      `It goes out at ${time} ${place} time, the time zone set for all sites, and covers the day or week before.`,
-    digest_whenUtc: (time: string) =>
-      `It goes out at ${time} UTC, the time zone set for all sites, and covers the day or week before.`,
+    digest_when: (time: string, place: string) => `Sent at ${time} ${place} time, for the day or week before.`,
+    digest_whenUtc: (time: string) => `Sent at ${time} UTC, for the day or week before.`,
     digest_preview: 'What it looks like',
     digest_note: (address: string) =>
-      `It holds counts and links, never answers, and only the forms you may view. It goes to your own address, ${address}.`,
+      `Counts and links only, never answers, for the forms you may view. Sent to ${address}.`,
     digest_noAddress: 'Your user has no email address yet, so no summary can go out.',
     digest_test: 'Send test email',
     digest_testSent: (address: string) => `Test email sent to ${address}.`,
@@ -297,8 +294,8 @@ export default {
     tab_notesCount: (number: number) => `Notes (${number})`,
     details_test: 'Test entry, sent from the preview',
     details_sentFrom: (page: string) => `Sent from ${page}`,
-    details_quick: 'Under a minute to complete',
-    details_minutes: (minutes: number) => `${minutes} min to complete`,
+    details_quick: 'Took under a minute',
+    details_minutes: (minutes: number) => `Took ${minutes} min`,
     details_more: 'More details',
     details_fewer: 'Fewer details',
     details_member: 'Member',
@@ -330,7 +327,7 @@ export default {
     file_download: 'Download',
     file_failed: "The file couldn't be downloaded. Try again.",
     edit_answers: 'Edit answers',
-    edit_note: 'Your changes are recorded, with the old values.',
+    edit_note: 'Changes are recorded with the old values.',
     edit_save: 'Save',
     edit_saved: 'The answers are saved.',
     edit_failed: "The answers couldn't be saved. Try again.",
@@ -413,7 +410,7 @@ export default {
     mail_limited: 'held back by a limit',
     timeline_failed: "The timeline couldn't be read. Try again.",
     notes_new: 'New note',
-    notes_help: 'Visitors never see notes. Everyone who may open this entry can read them.',
+    notes_help: 'Only people who may open this entry see notes.',
     notes_add: 'Add note',
     notes_edit: 'Edit',
     notes_editFor: (author: string) => `Edit the note by ${author}`,
@@ -425,7 +422,7 @@ export default {
     notes_none: 'No notes yet.',
     forward_headline: (number: number) => `Forward entry #${number}`,
     forward_to: 'To',
-    forward_toHelp: 'A backoffice user, or one of the team addresses in Settings › Email.',
+    forward_toHelp: 'Team addresses come from Settings › Email.',
     forward_message: 'Message (optional)',
     forward_sensitive: 'Include sensitive values',
     forward_sensitiveHidden: (name: string) => `${name} may not see sensitive values, so they stay hidden.`,
@@ -483,9 +480,9 @@ export default {
         ? `Preparing the export: ${entries(done)} so far.`
         : `Preparing the export: ${done.toLocaleString('en')} of ${entries(total)}.`,
     export_preparingToast: (number: number, more: boolean) =>
-      `${more ? 'Preparing the export of more than 1,000 entries.' : `Preparing the export of ${entries(number)}.`} You can keep working; a notification links to the file.`,
+      `${more ? 'Preparing the export of more than 1,000 entries.' : `Preparing the export of ${entries(number)}.`} A notification will link to the file.`,
     export_progressToast: (done: number, total: number, more: boolean) =>
-      `${more ? `Preparing the export: ${entries(done)} so far.` : `Preparing the export: ${done.toLocaleString('en')} of ${entries(total)}.`} You can keep working; a notification links to the file.`,
+      `${more ? `Preparing the export: ${entries(done)} so far.` : `Preparing the export: ${done.toLocaleString('en')} of ${entries(total)}.`} A notification will link to the file.`,
     export_readyToast: (number: number) => `Your export of ${entries(number)} is ready.`,
     export_failedToast: (number: number, more: boolean) =>
       `The export of ${more ? 'more than 1,000 entries' : entries(number)} couldn't be prepared. Try again; if it fails again, a developer finds why in the site's log.`,

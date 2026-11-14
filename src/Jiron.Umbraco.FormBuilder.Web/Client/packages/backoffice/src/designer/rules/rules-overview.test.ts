@@ -150,7 +150,7 @@ describe('the rules overview', () => {
       'the row',
     );
     expect(text(row.querySelector('.conflict'))).toBe(
-      'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required, so visitors can send without it.',
+      'Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required.',
     );
     expect([...row.querySelectorAll('.said')].map((said) => text(said))).toEqual([
       'Hidden when Topic is Press',
@@ -313,7 +313,7 @@ describe('the rules overview', () => {
   it('says in one sentence what most rules do where the form has none, and closes', async () => {
     const { element, modal, root } = await overviewOf({ pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] });
     expect(text(root.querySelector('.empty'))).toBe(
-      'No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question.',
+      'No rules yet. Most rules show a question only when another answer calls for it.',
     );
     expect(root.querySelector('uui-box')).toBeNull();
     must(root.querySelector<HTMLElement>('[slot="actions"] uui-button'), 'Close').click();

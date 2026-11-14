@@ -286,8 +286,7 @@ export class EmailPreviewElement extends UmbLitElement {
     const busy = status === 'idle' || status === 'asking';
     const mail = preview && !('unshown' in preview) ? preview : null;
     const mailHtml = mail?.html;
-    const help =
-      this.help ?? this.#term(mail && mail.to.length === 0 && mail.visitor ? 'previewHelpVisitor' : 'previewHelp');
+    const help = this.help;
     return html`<section class="preview" aria-labelledby="preview-heading">
       <div class="head">
         <h4 id="preview-heading">${this.heading ?? this.#term('preview')}</h4>

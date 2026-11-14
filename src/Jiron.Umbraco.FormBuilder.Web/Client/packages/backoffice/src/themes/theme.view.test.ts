@@ -155,7 +155,7 @@ describe("a theme's view", () => {
     await settle(view);
     const used = context.setTokens.mock.lastCall?.[0].light['--jfb-color-border'];
     expect(used).toMatch(/^#[0-9a-f]{6}$/);
-    expect(text(root.querySelector('#colour-light-jfb-color-border-check'))).toMatch(/on the surface: passes$/);
+    expect(text(root.querySelector('#colour-light-jfb-color-border-check'))).toMatch(/^Contrast [0-9.]+:1$/);
     await vi.waitFor(() =>
       expect(api.previewed.at(-1)?.tokens).toEqual({ light: { '--jfb-color-border': used }, dark: {} }),
     );

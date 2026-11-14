@@ -276,10 +276,9 @@ export class RulesOverviewModalElement extends UmbModalBaseElement<RulesOverview
     const lacking = this._tried && this._chosen === '';
     return html`<div class="add" role="group" aria-labelledby="affects-label">
       <label id="affects-label" for="affects">${this.#term('jfbRules_overviewAffects')}</label>
-      <p class="help" id="affects-help">${this.#term('jfbRules_overviewAffectsHelp')}</p>
       <select
         id="affects"
-        aria-describedby=${lacking ? 'affects-help affects-why' : 'affects-help'}
+        aria-describedby=${lacking ? 'affects-why' : nothing}
         aria-invalid=${lacking ? 'true' : 'false'}
         @change=${(event: Event) => (this._chosen = (event.target as HTMLSelectElement).value)}
         @keydown=${(event: KeyboardEvent) => {

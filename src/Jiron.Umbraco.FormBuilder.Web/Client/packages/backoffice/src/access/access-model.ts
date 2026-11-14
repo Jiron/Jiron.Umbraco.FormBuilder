@@ -56,6 +56,20 @@ export function changedGrants(before: Grants, now: Grants, order: readonly strin
   return edits;
 }
 
+/**
+ * The grants an answer read again brings, with each group the user changed and has not saved kept as the user left it:
+ * the screen reads again after a folder's or form's sidebar saved, which changes none of these.
+ */
+export function withPending(before: Grants, mine: Grants, fresh: Grants): Grants {
+  const next = new Map(fresh);
+  for (const [group, granted] of mine) {
+    const was = before.get(group) ?? new Set<string>();
+    const same = was.size === granted.size && [...granted].every((name) => was.has(name));
+    if (!same && fresh.has(group)) next.set(group, granted);
+  }
+  return next;
+}
+
 /** The grants of the groups an answer lists, as sets. */
 export const grantsOf = (
   groups: readonly { readonly key: string; readonly permissions: readonly string[] }[],

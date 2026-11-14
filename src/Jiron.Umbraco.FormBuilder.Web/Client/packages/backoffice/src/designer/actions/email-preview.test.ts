@@ -161,19 +161,13 @@ describe("an email action's preview", () => {
   it("says a mail goes to no one yet, or only to a visitor's address, and shows a plain-text mail's text", async () => {
     const nobody = await previewOf(mail({ to: [] }));
     expect(nobody.meta()[1]).toEqual(['To', 'No recipient yet']);
-    expect(text(nobody.root.querySelector('.help'))).toBe(
-      "As the team gets it, with sample answers made from the form's fields.",
-    );
+    expect(nobody.root.querySelector('.help'), 'the sample answers name their fields, so no line says it').toBeNull();
     document.body.replaceChildren();
     const visitor = await previewOf(mail({ to: [], visitor: 'alex.berger@example.com', from: '' }));
     expect(visitor.meta().slice(0, 2)).toEqual([
       ['From', "None yet: the site's email settings name no sender"],
       ['To', 'alex.berger@example.com, in a mail of its own'],
     ]);
-    // Only the visitor gets it, and the help says so.
-    expect(text(visitor.root.querySelector('.help'))).toBe(
-      "As the visitor gets it, with sample answers made from the form's fields.",
-    );
     document.body.replaceChildren();
     const plain = await previewOf(mail({ html: null, text: 'Alex Berger wrote.\nThanks.', direction: 'rtl' }));
     expect(plain.root.querySelector('iframe')).toBeNull();

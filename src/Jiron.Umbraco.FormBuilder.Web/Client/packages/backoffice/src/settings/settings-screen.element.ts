@@ -30,6 +30,7 @@ import { readLook, type SiteLanguage } from '../designer/preview/look';
 import { choiceStyles } from '../designer/settings/choice.styles';
 import { loadWorkspaceWords } from '../designer/workspace-words';
 import { FORM_BLOCK_MODAL } from '../overview/form-block-modal.token';
+import { LeaveGuard } from '../ui/leave-guard';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { confirmText } from '../ui/confirm';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
@@ -44,7 +45,7 @@ export const MOST_IN_A_BOX = 7;
 
 /** The boxes whose headline has a sentence under it, by section. */
 export const LEADS: Readonly<Record<string, readonly string[]>> = {
-  general: ['newForms', 'history'],
+  general: ['history'],
   protection: ['content'],
   integrations: ['chat'],
   privacy: ['ip', 'insights', 'members'],
@@ -296,6 +297,8 @@ export class SettingsScreenElement extends UmbLitElement {
 
   constructor() {
     super();
+    // Changes not saved yet are asked about before the backoffice leaves the screen.
+    new LeaveGuard(this, () => this._changed.size > 0);
     this._model = undefined;
     this._failed = false;
     this._values = {};
@@ -558,7 +561,15 @@ export class SettingsScreenElement extends UmbLitElement {
 
   async #createBlock() {
     await umbOpenModal(this, FORM_BLOCK_MODAL).catch(() => undefined);
+    // What the dialog made shows in what the screen reads again. The changes not saved yet stay as they stand: the
+    // dialog saved none of the settings, whether it made the block type or was closed.
+    const { _changed: changed, _overrides: overrides, _values: values, _problems: problems } = this;
     await this.#read();
+    if (this._failed || changed.size === 0) return;
+    this._values = { ...this._values, ...Object.fromEntries([...changed].map((name) => [name, values[name]])) };
+    this._changed = changed;
+    this._overrides = overrides;
+    this._problems = problems;
   }
 
   // ---- Drawing ------------------------------------------------------------------------------------------------------
@@ -734,9 +745,7 @@ export class SettingsScreenElement extends UmbLitElement {
         <div class="block">
           ${
             block.exists
-              ? html`<p>
-                    ${this.#words('formBlockThere', block.createdAt ? this.localize.date(block.createdAt, { dateStyle: 'medium' }) : '')}
-                  </p>
+              ? html`<p>${this.#words('formBlockThere')}</p>
                   <p class="note">${this.#words('formBlockHow')} ${learnMore('formBlock')}</p>`
               : html`<p>${this.#words('formBlockMissing')} ${learnMore('formBlock')}</p>
                   ${

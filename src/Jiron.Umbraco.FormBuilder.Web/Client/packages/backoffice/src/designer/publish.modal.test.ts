@@ -83,7 +83,7 @@ describe('the publish dialog', () => {
   it('says once that the form check found no problems, and publishes with the comment', async () => {
     const { element, root, modal, publish } = await dialogOf(checked([issue('hint', 'consent_missing', '$')]));
     expect(root.querySelector('uui-dialog-layout')?.getAttribute('headline')).toBe('Publish Contact us?');
-    expect(all(element, '.result .note').map((note) => text(note))).toEqual(['The form check found no problems.']);
+    expect(all(element, '.result .note').map((note) => text(note))).toEqual(['No problems found.']);
     expect(publish.hasAttribute('disabled')).toBe(false);
     const comment = must(root.querySelector<HTMLTextAreaElement>('uui-textarea'), 'the comment');
     comment.value = 'Typo fixed';
@@ -110,7 +110,7 @@ describe('the publish dialog', () => {
     ]).toEqual([null, expect.not.stringContaining('Visitors get this version')]);
     const [errors, warnings] = all<HTMLElement>(element, '.result section');
     expect(errors?.getAttribute('role')).toBe('alert');
-    expect(text(errors?.querySelector('.lead'))).toBe("This form can't be published yet: 1 error needs fixing.");
+    expect(text(errors?.querySelector('.lead'))).toBe('1 error blocks publishing.');
     expect(text(errors?.querySelector('li span'))).toBe(
       'Email address: This field has no label, which screen readers and the entries name it by.',
     );
@@ -156,7 +156,7 @@ describe('the publish dialog', () => {
     state.setValue({ status: 'checked', issues: [], definition: DEFINITION });
     await settle(element);
     expect(root.querySelector('[role="status"]')).toBe(region);
-    expect(text(region)).toBe('The form check found no problems.');
+    expect(text(region)).toBe('No problems found.');
   });
 });
 

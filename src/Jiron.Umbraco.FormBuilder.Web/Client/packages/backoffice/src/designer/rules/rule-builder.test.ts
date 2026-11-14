@@ -414,15 +414,11 @@ describe('the rules builder', () => {
 
   it('takes the first effect a new element offers when it lacks the one chosen, and says the switch for it', async () => {
     const { element, root } = await builderOf({ effect: 'require' });
-    expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. The field is then never required.',
-    );
+    expect(text(root.querySelector('.use .help'))).toBe('Off, the rule is kept and the field is never required.');
     await pick(element, must(root.querySelector<HTMLSelectElement>('#target'), 'to what'), 'p1');
     const effect = must(root.querySelector<HTMLSelectElement>('#effect'), 'what it does');
     expect([effect.value, ...options(effect)]).toEqual(['show', 'Show', 'Hide']);
-    expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. The page then always shows.',
-    );
+    expect(text(root.querySelector('.use .help'))).toBe('Off, the rule is kept and the page always shows.');
   });
 
   it("keeps showing what a rule does where its element can't have it any more, and keeps the rule only once changed", async () => {
@@ -531,9 +527,7 @@ describe('the rules builder', () => {
     // A rule that is off does nothing; the switch's help says why, once.
     expect(text(root.querySelector('.verdict'))).toBe('Which shows.');
     expect(root.querySelector('label[for="try-country"]')).not.toBeNull();
-    expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. The field then always shows.',
-    );
+    expect(text(root.querySelector('.use .help'))).toBe('Off, the rule is kept and the field always shows.');
     must(row(root).querySelector<HTMLElement>('uui-button'), 'remove').click();
     await settle(element);
     expect(text(root.querySelector('.verdict'))).toBe('Complete every condition to try the rule.');
@@ -569,9 +563,7 @@ describe('the rules builder', () => {
     expect(text(root.querySelector('.verdict'))).toBe('The message shows on Which.');
     await typeIn(element, must(root.querySelector<HTMLInputElement>('#try-which'), "Which's box"), 'Spain');
     expect(text(root.querySelector('.verdict'))).toBe("The message doesn't show on Which.");
-    expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. The message then never shows.',
-    );
+    expect(text(root.querySelector('.use .help'))).toBe('Off, the rule is kept and the message never shows.');
     await typeIn(element, message, 'Name a country');
     keep(root).click();
     await settle(element);
@@ -795,7 +787,7 @@ describe('the rules builder', () => {
     await pick(element, must(root.querySelector<HTMLSelectElement>('.try-boxes select'), "Country's box"), 'other');
     expect(text(root.querySelector('.verdict'))).toBe('This outcome applies.');
     expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. Visitors then get this outcome unless an earlier one applies.',
+      'Off, the rule is kept and visitors get this outcome unless an earlier one applies.',
     );
     keep(root).click();
     await settle(element);
@@ -824,7 +816,7 @@ describe('the rules builder', () => {
     await pick(element, must(root.querySelector<HTMLSelectElement>('.try-boxes select'), "Country's box"), 'other');
     expect(text(root.querySelector('.verdict'))).toBe('This action runs.');
     expect(text(root.querySelector('.use .help'))).toBe(
-      'Turn it off to keep the rule without using it. The action then runs for every entry its trigger brings.',
+      'Off, the rule is kept and the action runs for every entry its trigger brings.',
     );
     keep(root).click();
     await settle(element);

@@ -49,6 +49,12 @@ vi.mock('../api', async (original) => ({
   testEmailSend: async () => api.mails.shift(),
 }));
 
+vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
+  ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
+  // A dialog the screen opens, closed without an answer.
+  umbOpenModal: async () => Promise.reject(new Error('closed')),
+}));
+
 vi.mock('../designer/preview/look', async (original) => ({
   ...(await original<typeof import('../designer/preview/look')>()),
   readLook: async () => ({
@@ -290,9 +296,19 @@ const topics = (root: ParentNode) => all(root, 'jfb-learn-more').map((link) => l
 
 beforeAll(registerEnglish);
 
+// The screen's own address, which a leaving is told from.
+beforeAll(() => history.replaceState({}, '', '/umbraco/section/jfb-forms/settings/general'));
+
 afterEach(() => {
   document.body.replaceChildren();
 });
+
+/** The router's event before the address changes; whether the screen stopped it to ask first. */
+const stopsLeaving = (): boolean => {
+  const event = new CustomEvent('willchangestate', { detail: { url: '/umbraco/section/content' }, cancelable: true });
+  window.dispatchEvent(event);
+  return event.defaultPrevented;
+};
 
 describe('the global settings screen', () => {
   it('draws the boxes in the order the section serves them, each setting with its help below it, and no title of its own', async () => {
@@ -306,7 +322,9 @@ describe('the global settings screen', () => {
     ]);
     expect(boxes.every((one) => one.getAttribute('headline-variant') === 'h2')).toBe(true);
     expect(text(root.querySelector('label[for="setting-requiredMarker"]'))).toBe('Fields that get a mark');
-    expect(text(root.getElementById('setting-requiredMarker-help'))).toContain('marking the few optional ones');
+    expect(text(root.getElementById('setting-requiredMarker-help'))).toContain(
+      'Most forms have few optional fields, so marking those reads calmer.',
+    );
     // A box of one object holds its settings: History's name is said once, as the box's headline.
     expect(root.querySelector('legend')).toBeNull();
     expect(text(root.getElementById('setting-history-draftDays-unit'))).toBe('days');
@@ -315,7 +333,9 @@ describe('the global settings screen', () => {
     );
     expect(text(root.getElementById('setting-baseUrl'))).toBe('');
     expect(root.getElementById('setting-baseUrl')?.getAttribute('placeholder')).toBe('https://nordwind.example');
-    expect(text(boxes[3])).toContain('Pages show forms through the block type Form, created on');
+    expect(text(boxes[3])).toContain(
+      'Pages show forms through the block type Form. Add it to the available blocks of the Block List or Block Grid data type your pages use.',
+    );
   });
 
   it("hands the site's own wording of the visitor texts to its editor, in the language the screen edits, and saves what it changes (ADR-0230)", async () => {
@@ -344,6 +364,40 @@ describe('the global settings screen', () => {
     await save();
     expect(api.sent).toEqual([{ version: 3, site: null, values: { history: { draftDays: 30, draftCount: 50 } } }]);
     expect(peek).toHaveBeenCalledWith('positive', { data: { message: 'The settings are saved.' } });
+  });
+
+  it('keeps the changes not saved yet when the form block dialog closes and the screen reads again, so Save sends them', async () => {
+    const model = general();
+    const facts = model.facts?.general;
+    const missing = {
+      facts: { ...model.facts, general: { ...facts, formBlock: { exists: false, createdAt: null, canCreate: true } } },
+    } as Partial<SettingsSectionResponseModel>;
+    const { root, type, save } = await screenOf('general', general(missing));
+    await type('setting-history-draftDays', '30');
+    api.reads = [{ data: general(missing) }];
+    must(
+      [...root.querySelectorAll<HTMLElement>('uui-button')].find(
+        (one) => one.getAttribute('label') === 'Create a form block type\u2026',
+      ),
+      'the form block button',
+    ).click();
+    await vi.waitFor(() => expect(api.reads).toHaveLength(0));
+    await settle();
+    expect(root.querySelector<HTMLInputElement>('#setting-history-draftDays')?.value, 'the change stays').toBe('30');
+
+    api.saves = [{ data: general({ version: 4 }) }];
+    await save();
+    expect(api.sent).toEqual([{ version: 3, site: null, values: { history: { draftDays: 30, draftCount: 50 } } }]);
+  });
+
+  it('asks before the backoffice leaves it with changes not saved, and not once they are saved', async () => {
+    const { type, save } = await screenOf('general', general());
+    expect(stopsLeaving(), 'nothing changed').toBe(false);
+    await type('setting-history-draftDays', '30');
+    expect(stopsLeaving(), 'a change waits to be saved').toBe(true);
+    api.saves = [{ data: general({ version: 4 }) }];
+    await save();
+    expect(stopsLeaving(), 'saved').toBe(false);
   });
 
   it("says why a value can't be kept under its box, and sends nothing", async () => {
@@ -467,7 +521,7 @@ describe('the global settings screen', () => {
     const { root, save } = await screenOf('protection', protection());
     const radio = (value: string) => must(root.querySelector<HTMLInputElement>(`input[value="${value}"]`), value);
     expect(radio('captcha:recaptchaV2').disabled).toBe(true);
-    expect(said(root)).toContain('No keys yet. A developer adds them in JironFormBuilder:Captcha:RecaptchaV2.');
+    expect(said(root)).toContain('No keys in host configuration yet: JironFormBuilder:Captcha:RecaptchaV2');
     expect(root.getElementById('setting-proofBits')).toBeNull();
     radio('captcha:hcaptcha').click();
     await settle();
@@ -493,7 +547,9 @@ describe('the global settings screen', () => {
   it('keeps IP addresses as the site chooses, the full address greyed with its key until the host allows it', async () => {
     const { root, save } = await screenOf('privacy', privacy());
     const radio = (value: string) => must(root.querySelector<HTMLInputElement>(`input[value="${value}"]`), value);
-    expect(said(root)).toContain('Each entry can keep the address it was sent from.');
+    expect(said(root)).toContain(
+      'Rate limits and blocked address ranges read the address an entry is sent from without keeping it.',
+    );
     expect([radio('none').checked, radio('full').disabled]).toEqual([true, true]);
     expect(said(root)).toContain('Locked by configuration: JironFormBuilder:Privacy:AllowFullIp');
     radio('anonymised').click();
@@ -659,7 +715,7 @@ describe('the global settings screen', () => {
     expect(topics(root)).toEqual(['signatures']);
     expect(text(root.getElementById('setting-signingSecret-status'))).toBe('Found in host configuration.');
     expect(text(root.getElementById('setting-slackWebhook-status'))).toBe(
-      'Not in host configuration yet: a developer adds JironFormBuilder:Secrets:Slack.',
+      'Not in host configuration yet: JironFormBuilder:Secrets:Slack',
     );
     expect(said(root)).toContain('None yet, so webhook actions and JSON option lists call no address.');
     await type('setting-slackWebhook', 'https://hooks.example.test/abc');

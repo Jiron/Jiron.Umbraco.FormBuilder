@@ -45,7 +45,7 @@ export default {
     same: (before: string) => `so viele wie davor (${before})`,
     upFromNone: 'davor keine',
     pointsUp: (points: string, before: string) => `${points} Prozentpunkte mehr als ${before}`,
-    pointsDown: (points: string, before: string) => `${points} Punkte weniger als ${before}`,
+    pointsDown: (points: string, before: string) => `${points} Prozentpunkte weniger als ${before}`,
 
     showTable: 'Als Tabelle zeigen',
     showChart: 'Als Diagramm zeigen',
@@ -76,7 +76,7 @@ export default {
     minutes: (count: number) => (count === 1 ? '1 Minute' : `${count} Minuten`),
     hour: '1 Stunde',
 
-    fields: 'Felder, an denen Besucher am häufigsten hängen bleiben',
+    fields: 'Wo Besucher am häufigsten hängen bleiben',
     fieldsNone: 'In diesem Zeitraum ist kein Besucher an einem Feld hängen geblieben.',
     fieldLine: (count: string, share: string, kind: string) => `${count} (${share} der Begonnenen), meist ${kind}`,
     fieldLineAlone: (count: string, kind: string) => `${count}, meist ${kind}`,
@@ -113,7 +113,7 @@ export default {
     col_websitePage: 'Seite der Website',
 
     hours: 'Einträge nach Tageszeit',
-    hoursZone: (zone: string) => `In der Zeit von ${zone}, der Zeitzone für alle Websites`,
+    hoursZone: (zone: string) => `Zeitzone: ${zone}`,
     col_hour: 'Stunde',
     hoursChart: (heading: string, most: string) =>
       `${heading}: die meisten um ${most}. „Als Tabelle zeigen“ liest jede Stunde vor.`,
@@ -124,8 +124,7 @@ export default {
       `${members} Mitglieder haben ${entries} Einträge gesendet, davor ${before} Mitglieder.`,
     membersLineDown: (members: string, entries: string, before: string) =>
       `${members} Mitglieder haben ${entries} Einträge gesendet, davor ${before} Mitglieder.`,
-    membersOther: (entries: string) =>
-      `Die anderen ${entries} Einträge kamen von Besuchern, die nicht angemeldet waren.`,
+    membersOther: (entries: string) => `Die anderen ${entries} kamen von nicht angemeldeten Besuchern.`,
 
     mode: 'Ansicht',
     mode_overview: 'Übersicht',
@@ -146,9 +145,9 @@ export default {
     optionLine: (share: string, count: string) => `${share} (${count})`,
     optionOlder: (label: string) => `${label} (keine Option mehr)`,
     optionOther: 'Sonstiges, in eigenen Worten',
-    optionSeveral: 'Mehrere konnten gewählt werden, daher ergeben die Anteile zusammen mehr als 100 %.',
+    optionSeveral: 'Mehrere waren wählbar, daher ergeben die Anteile mehr als 100 %.',
     positionLine: (position: string) => `durchschnittlich auf Position ${position}`,
-    rankingNote: 'Je höher eine Option im Durchschnitt steht, desto länger ist ihr Balken.',
+    rankingNote: 'Durchschnittliche Position: Je höher eine Option steht, desto länger ihr Balken.',
     figure_average: 'Durchschnitt',
     figure_median: 'Median',
     figure_lowest: 'Niedrigster Wert',
@@ -188,6 +187,6 @@ export default {
     short_same: 'unverändert',
     short_new: 'davor keine',
     short_pointsUp: (points: string) => `${points} Prozentpunkte mehr`,
-    short_pointsDown: (points: string) => `${points} Punkte weniger`,
+    short_pointsDown: (points: string) => `${points} Prozentpunkte weniger`,
   },
 } satisfies UmbLocalizationDictionary;

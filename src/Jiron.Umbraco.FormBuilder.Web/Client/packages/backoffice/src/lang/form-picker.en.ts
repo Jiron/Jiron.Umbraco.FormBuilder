@@ -30,13 +30,11 @@ export default {
     settingAllowedFolders: 'Allowed folders',
     settingAllowedFoldersHelp: 'The forms in these folders and in the folders below them can be picked.',
     settingAllowedForms: 'Allowed forms',
-    settingAllowedFormsHelp:
-      'These forms can be picked too. With no allowed folders or forms, every form can be picked.',
+    settingAllowedFormsHelp: 'With no allowed folders or forms, every form can be picked.',
     settingTheme: 'Theme',
     settingThemeHelp: 'Every form placed here renders in this theme.',
     settingRedirect: 'Page after a send',
-    settingRedirectHelp:
-      "Visitors go to this page once they have sent a form placed here. Leave it empty to follow the form's own settings.",
+    settingRedirectHelp: "Leave it empty to follow the form's own settings.",
     folderNotAvailable: 'Folder not available',
     folderNotAvailableDetail: 'Deleted, in the trash or not one you can see',
     removeFolderNotAvailable: "Remove the folder that isn't available",

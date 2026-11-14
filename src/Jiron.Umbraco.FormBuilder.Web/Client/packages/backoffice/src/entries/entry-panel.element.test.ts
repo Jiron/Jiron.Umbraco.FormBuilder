@@ -51,6 +51,11 @@ const server = vi.hoisted(() => ({
   moves: [] as { entries: readonly string[]; state: string; overbook: boolean }[],
   moveAnswers: [] as (Partial<EntryStateResponseModel> | undefined)[],
   undos: [] as string[],
+  /** The form each move and each undo named. */
+  moveForms: [] as string[],
+  undoForms: [] as string[],
+  /** A move's answer waits for this, when a test holds it back. */
+  hold: undefined as Promise<void> | undefined,
   deletes: [] as boolean[],
   /** Whether a legal hold keeps the entry a delete asks for. */
   held: false,
@@ -103,9 +108,11 @@ vi.mock('./entry-panel-api', () => ({
 }));
 
 vi.mock('./entries-api', () => ({
-  changeState: async (_host: unknown, _form: string, entries: readonly string[], state: string, overbook = false) => {
+  changeState: async (_host: unknown, form: string, entries: readonly string[], state: string, overbook = false) => {
     server.moves.push({ entries, state, overbook });
+    server.moveForms.push(form);
     const answer = server.moveAnswers.shift();
+    await server.hold;
     return {
       changeKey: 'change1',
       undoUntilUtc: new Date(Date.now() + 10_000).toISOString(),
@@ -114,8 +121,9 @@ vi.mock('./entries-api', () => ({
       ...answer,
     };
   },
-  undoChange: async (_host: unknown, _form: string, change: string) => {
+  undoChange: async (_host: unknown, form: string, change: string) => {
     server.undos.push(change);
+    server.undoForms.push(form);
     return 'done';
   },
   deleteEntries: async (_host: unknown, _form: string, entries: readonly string[], confirm: boolean) => {
@@ -285,6 +293,9 @@ beforeEach(() => {
     moves: [],
     moveAnswers: [],
     undos: [],
+    moveForms: [],
+    undoForms: [],
+    hold: undefined,
     deletes: [],
     held: false,
     reruns: [],
@@ -341,10 +352,53 @@ describe("the entry panel's header", () => {
     expect(spam.root.querySelector('.head uui-tag')).toBeNull();
   });
 
-  it('says so where the entry could not be read', async () => {
+  it('says so where the entry could not be read, with Try again and, beside or over a list, a way back to it', async () => {
     server.panel = undefined;
-    const beside = await open('beside');
-    expect(text(beside.root.querySelector('[role="alert"]'))).toBe("The entry couldn't be shown.");
+    const beside = await open('covering');
+    expect(text(beside.root.querySelector('[role="alert"] span'))).toBe("The entry couldn't be shown.");
+    const labels = () =>
+      [...beside.root.querySelectorAll('.failed uui-button')].map((one) => one.getAttribute('label'));
+    expect(labels()).toEqual(['Try again', 'Close the entry']);
+
+    await beside.click(
+      must(beside.root.querySelector<HTMLElement>('.failed uui-button[label="Close the entry"]'), 'Close'),
+    );
+    expect(beside.told.at(-1)).toMatchObject({ name: 'jfb-entry-close', detail: { key: 'e7' } });
+
+    server.panel = panelOf();
+    const opens = server.opens;
+    await beside.click(
+      must(beside.root.querySelector<HTMLElement>('.failed uui-button[label="Try again"]'), 'Try again'),
+    );
+    await vi.waitFor(() => expect(shadow(beside.panel).querySelector('h2')).not.toBeNull());
+    expect(server.opens).toBe(opens + 1);
+
+    // On a screen of its own there is no list to go back to.
+    server.panel = undefined;
+    const alone = await open('alone');
+    expect([...alone.root.querySelectorAll('.failed uui-button')].map((one) => one.getAttribute('label'))).toEqual([
+      'Try again',
+    ]);
+  });
+
+  it('takes the focus it was asked to take once the entry is read: the heading, or the way out when it failed', async () => {
+    const host = testHost();
+    host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek: vi.fn(), getHostElement: () => host } as never);
+    const wake = async (panel: EntryPanelResponseModel | undefined) => {
+      server.panel = panel;
+      const element = document.createElement('jfb-entry-panel');
+      Object.assign(element, { place: 'covering', form: 'form1', entry: 'e7' });
+      host.append(element);
+      // Asked while the skeleton shows, as the list asks when it opens the entry.
+      element.focusHeading();
+      await vi.waitFor(() => expect(shadow(element).querySelector('.head, [role="alert"]')).not.toBeNull());
+      await settle(element);
+      return shadow(element);
+    };
+    const read = await wake(panelOf());
+    expect(read.activeElement).toBe(read.querySelector('h2'));
+    const failed = await wake(undefined);
+    expect(failed.activeElement?.getAttribute('label')).toBe('Try again');
   });
 });
 
@@ -389,9 +443,7 @@ describe("the entry panel's member", () => {
 describe("the entry panel's answers", () => {
   it('starts with the details line, then each answer as it was kept', async () => {
     const { root, answerOf } = await open();
-    expect(text(root.querySelector('.details span'))).toBe(
-      'Sent from /careers/apply \u00b7 English \u00b7 6 min to complete',
-    );
+    expect(text(root.querySelector('.details span'))).toBe('Sent from /careers/apply \u00b7 English \u00b7 Took 6 min');
     expect(text(answerOf('Name'))).toBe('Jane Doe');
     expect(text(answerOf('Terms'))).toBe('Yes: \u201cI agree to the terms.\u201d');
     expect(text(answerOf('Signature').querySelector('.line'))).toBe('The signature');
@@ -471,6 +523,50 @@ describe("the entry panel's bar", () => {
     expect(server.undos).toEqual(['change1']);
     expect(told.at(-1)).toEqual({ name: 'jfb-entry-moved', detail: { key: 'e7', state: 'submitted' } });
     expect(bar().at(-1)).toBe('Approve');
+  });
+
+  it("undoes on the form the entry is on, and leaves the panel to the entry it went on to, as in the Inbox's list of several forms", async () => {
+    const { panel, button, click, peek, told } = await open();
+    await click(button('Approve'));
+    const toast = peek.mock.calls.at(-1)?.[1] as { data: { undo(): Promise<void> } };
+
+    // The handler went on to an entry of another form.
+    server.panel = panelOf({ key: 'e9', number: 9 });
+    panel.form = 'form2';
+    panel.entry = 'e9';
+    await vi.waitFor(() => expect(text(must(shadow(panel).querySelector('h2'), 'the heading'))).toContain('#9'));
+    await toast.data.undo();
+    await settle(panel);
+
+    expect([server.moveForms, server.undoForms]).toEqual([['form1'], ['form1']]);
+    expect(told.at(-1)).toEqual({ name: 'jfb-entry-moved', detail: { key: 'e7', state: 'submitted' } });
+    expect(text(must(shadow(panel).querySelector('h2'), 'the heading')), 'the panel keeps its entry').toContain('#9');
+  });
+
+  it('gives a move that is answered late to its own entry, not to the one the panel shows by then', async () => {
+    const { panel, button, told } = await open();
+    let release = (): void => undefined;
+    server.hold = new Promise<void>((resolve) => (release = resolve));
+    button('Approve').click();
+    await settle(panel);
+
+    server.panel = panelOf({ key: 'e9', number: 9 });
+    panel.entry = 'e9';
+    await vi.waitFor(() => expect(text(must(shadow(panel).querySelector('h2'), 'the heading'))).toContain('#9'));
+    release();
+    server.hold = undefined;
+    await vi.waitFor(() =>
+      expect(told).toContainEqual({ name: 'jfb-entry-moved', detail: { key: 'e7', state: 'approved' } }),
+    );
+    await settle(panel);
+
+    expect(text(must(shadow(panel).querySelector('h2'), 'the heading')), 'the entry the panel went on to').toContain(
+      '#9',
+    );
+    expect(
+      [...shadow(panel).querySelectorAll('footer.bar > uui-button')].map((one) => one.getAttribute('label')).at(-1),
+      "its own state, not the moved entry's",
+    ).toBe('Approve');
   });
 
   it('acts on a key only with an action its bar offers', async () => {
@@ -574,7 +670,7 @@ describe('editing answers', () => {
     server.editAnswer = [{ problems: [{ code: 'required', path: 'answers[0].values' }] }];
     const { root, bar, button, click } = await open();
     await click(button('Edit answers'));
-    expect(text(root.querySelector('.edit-note'))).toBe('Your changes are recorded, with the old values.');
+    expect(text(root.querySelector('.edit-note'))).toBe('Changes are recorded with the old values.');
     expect(bar()).toEqual(['Cancel', 'Save']);
     // A file, a consent and a value the user can't see stay as they are.
     expect(root.querySelectorAll('uui-input, uui-textarea, select').length).toBe(1);
@@ -660,9 +756,7 @@ describe('the timeline and notes', () => {
     ];
     const { panel, root, button, tab, click } = await open();
     await click(tab('Notes'));
-    expect(text(root.querySelector('#note-help'))).toBe(
-      'Visitors never see notes. Everyone who may open this entry can read them.',
-    );
+    expect(text(root.querySelector('#note-help'))).toBe('Only people who may open this entry see notes.');
     const box = must(root.querySelector<HTMLTextAreaElement>('uui-textarea#note'), 'the note box');
     box.value = 'Invite for an interview.';
     box.dispatchEvent(new Event('input'));

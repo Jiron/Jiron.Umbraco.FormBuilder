@@ -2,6 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
+import { shownRow } from '../../support/tree.ts';
 
 // Publishing (ROADMAP 10.3d, IA 5.7): the publish dialog says what a first version holds, and on a later publish what
 // changed since the version visitors get, grouped as History groups it, with the changes not saved yet; Publish saves
@@ -49,7 +50,8 @@ test('a first publish says what the first version holds, and a later one what ch
 }) => {
   test.setTimeout(180_000);
   const api = await apiAs('designer');
-  const key = await formWithFields(api, unique('Publish'), [
+  const name = unique('Publish');
+  const key = await formWithFields(api, name, [
     { type: 'text', alias: 'name', label: { '': 'Name' } },
     { type: 'email', alias: 'email', label: { '': 'Email' } },
   ]);
@@ -58,6 +60,9 @@ test('a first publish says what the first version holds, and a later one what ch
   await page.goto(`${SECTION}/${key}/view/design`);
   const design = page.locator('jfb-form-design-view');
   await expect(design.getByRole('button', { name: /^Name, / })).toBeVisible();
+  // The tree's row says the form is not published yet.
+  const row = await shownRow(page, name);
+  await expect(row.locator('.unpublished')).toHaveText(`${name}, not published`);
 
   // A first publish: what the first version holds, in one sentence.
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
@@ -66,6 +71,9 @@ test('a first publish says what the first version holds, and a later one what ch
   await axeInside(page, 'jfb-publish-modal');
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect.poll(async () => (await formOf(api, key)).isPublished).toBe(true);
+  // The tree's row follows without a reload: still there, and no longer marked.
+  await expect((await shownRow(page, name)).locator('.unpublished')).toHaveCount(0);
+  await expect(await shownRow(page, name)).toBeVisible();
 
   // A field added and saved elsewhere, then a label changed here and not saved yet.
   await addField(api, key, 'Phone');

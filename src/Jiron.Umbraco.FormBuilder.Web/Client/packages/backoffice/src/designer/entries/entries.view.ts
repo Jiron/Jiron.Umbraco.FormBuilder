@@ -818,6 +818,8 @@ export class EntriesViewElement extends UmbLitElement {
     if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - 1);
     this._open = undefined;
     this._cursor = -1;
+    // The last row it had loaded, while the form holds more: the list reads on from its start.
+    if (this._rows.length === 0 && this._next) return void this.#read();
     // The keyboard reads on at the row that took its place.
     void this.updateComplete.then(() => this.#focusRow(Math.min(index, this._rows.length - 1)));
   };
@@ -1425,6 +1427,9 @@ export class EntriesViewElement extends UmbLitElement {
       this._rows = this._rows.filter((row) => !gone.has(row.key));
       if (this._open !== undefined && gone.has(this._open)) this._open = undefined;
       if (this._total !== null && !this._totalMore) this._total = Math.max(0, this._total - count);
+      // Every row it had loaded is gone while the form holds more: the list reads on from its start, never the
+      // sentence of a form without entries.
+      if (this._rows.length === 0 && this._next) await this.#read();
     }
     await this.#notify(
       'positive',
@@ -1877,9 +1882,11 @@ export class EntriesViewElement extends UmbLitElement {
     const below = alarming ? html`<span class="below tone-${runs.tone}">${runs.text}</span>` : nothing;
     const open = row.key === this._open;
     const form = this.#showsForm() ? (this._forms.get(row.form)?.name ?? '') : undefined;
-    // In Spam a row says its state only once Not spam took it out, until the list reads again (IA 6.2).
+    // Where every row has one state, which no column shows (Spam, or a filter for one state), a row says its state
+    // only once a move took it out of it, until the list reads again (IA 6.2).
+    const only = this.place === 'spam' ? 'spam' : this._filter.states.length === 1 ? this._filter.states[0] : undefined;
     const moved =
-      this.place === 'spam' && row.state !== 'spam'
+      only !== undefined && row.state !== only
         ? html`<span class="moved-state tone-muted">${stateText(row.state, this.#full)}</span>`
         : nothing;
     return html`<tr

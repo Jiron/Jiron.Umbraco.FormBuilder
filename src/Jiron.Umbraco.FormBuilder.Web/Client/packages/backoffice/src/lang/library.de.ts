@@ -55,7 +55,7 @@ export default {
     actionRestore: 'Wiederherstellen…',
     actionDeleteForGood: 'Löschen…',
     optionForm: 'Formular',
-    optionFormDescription: 'Ein neues, leeres Formular.',
+    optionFormDescription: 'Beginnt leer.',
     optionFromTemplate: 'Formular aus einer Vorlage…',
     optionFromTemplateDescription: 'Etwa ein Kontaktformular, zum Anpassen.',
     optionImport: 'Formular importieren…',
@@ -68,18 +68,16 @@ export default {
     columnName: 'Name',
     columnEntries: 'Einträge, letzte 30 Tage',
     columnChanged: 'Zuletzt geändert',
-    columnTrashed: 'Verschoben',
+    columnTrashed: 'Im Papierkorb seit',
     columnActions: 'Aktionen',
     listFailed: 'Die Formulare konnten nicht geladen werden.',
-    emptyFolder:
-      'Hier gibt es noch keine Formulare. Mit einer Vorlage haben Sie in einer Minute ein fertiges Formular.',
+    emptyFolder: 'Hier gibt es noch keine Formulare.',
     emptyFolderReadOnly: 'Hier gibt es noch keine Formulare.',
     chooseTemplate: 'Vorlage wählen…',
     loadMore: 'Mehr anzeigen',
     folderName: 'Ordnername',
     binFailed: 'Der Papierkorb konnte nicht geladen werden.',
-    binEmpty:
-      'Der Papierkorb ist leer. Formulare im Papierkorb warten hier mit ihren Einträgen, bis jemand sie wiederherstellt oder endgültig löscht.',
+    binEmpty: 'Der Papierkorb ist leer.',
     emptyBin: 'Papierkorb leeren…',
     itemGone: 'Dieses Element gibt es nicht mehr, oder Sie haben keinen Zugriff darauf.',
     // Ein kurzes Datum endet schon mit einem Punkt ("3. Nov."), der dann auch den Satz beendet.
@@ -94,16 +92,15 @@ export default {
     rename: 'Umbenennen',
     name: 'Name',
     nameNeeded: 'Geben Sie einen Namen ein.',
-    templateName: 'Name der Vorlage',
+    templateName: 'Name',
     templateDescription: 'Beschreibung',
     optional: '(optional)',
     saveTemplate: 'Speichern',
     saveAsTemplateHeadline: (name: string) => `${name} als Vorlage speichern`,
-    saveAsTemplateNote:
-      'Die Vorlage enthält das Formular, wie es zuletzt gespeichert wurde: Ungespeicherte Änderungen bleiben außen vor.',
+    saveAsTemplateNote: 'Ungespeicherte Änderungen kommen nicht in die Vorlage.',
     savedAsTemplate: (name: string) => `${name} wurde als Vorlage gespeichert.`,
     deleteFolderHeadline: (name: string) => `${name} löschen?`,
-    deleteFolderText: 'Der Ordner ist leer, es wird also nichts anderes mit ihm gelöscht.',
+    deleteFolderText: 'Der Ordner ist leer.',
     deleteFolderConfirm: 'Ordner löschen',
 
     trashHeadline: (name: string) => `${name} in den Papierkorb verschieben?`,
@@ -135,7 +132,7 @@ export default {
 
     deleteFormHeadline: (name: string) => `${name} endgültig löschen?`,
     deleteFormText: (entries: number, files: number) => {
-      if (entries === 0) return 'Dabei wird das Formular gelöscht. Es hat keine Einträge.';
+      if (entries === 0) return 'Es hat keine Einträge.';
       const held = entries === 1 ? 'sein Eintrag' : `seine ${number(entries)} Einträge`;
       if (!(files > 0)) return `Dabei werden das Formular und ${held} gelöscht.`;
       const uploaded =
@@ -154,7 +151,7 @@ export default {
           : 'Formular und Einträge löschen',
     deleteTrashedFolderHeadline: (name: string) => `${name} endgültig löschen?`,
     deleteTrashedFolderText:
-      'Dabei werden der Ordner und die Formulare, Ordner und Einträge, die mit ihm in den Papierkorb kamen, endgültig gelöscht.',
+      'Die Formulare, Ordner und Einträge, die mit ihm in den Papierkorb kamen, werden mitgelöscht.',
     deleteTrashedFolderConfirm: 'Ordner und Inhalt löschen',
     cannotUndo: 'Das lässt sich nicht rückgängig machen.',
 
@@ -218,7 +215,7 @@ export default {
     copyActionsToo: (actions: number) =>
       actions === 1 ? 'Auch seine Aktion kopieren' : `Auch seine ${number(actions)} Aktionen kopieren`,
     duplicateRestricted: (where: string) =>
-      `Dieses Formular hat eigene Zugriffsrechte, die die Kopie nicht übernimmt: Die Kopie landet in ${where} und erhält den Zugriff, der dort gilt.`,
+      `Die Kopie übernimmt die eigenen Zugriffsrechte dieses Formulars nicht: Für sie gilt der Zugriff in ${where}.`,
 
     copyActionsHeadline: 'Aktionen kopieren',
     copyTo: 'Kopieren nach',
@@ -282,26 +279,21 @@ export default {
     template_newsletter: 'Newsletter',
     template_newsletterDescription: 'Eine per Link bestätigte E-Mail-Adresse, die Themen und die Einwilligung.',
     template_eventRegistration: 'Veranstaltungsanmeldung',
-    template_eventRegistrationDescription:
-      'Sitzungen mit Plätzen, die Person auf zwei Seiten, eine Übersicht und eine Bestätigung.',
+    template_eventRegistrationDescription: 'Sitzungen mit Plätzen, eine Übersicht und eine Bestätigung.',
     template_jobApplication: 'Bewerbung',
     template_jobApplicationDescription:
-      'Die Person, Lebenslauf und Anschreiben als Dateien, Einwilligung und manuelle Genehmigung.',
+      'Lebenslauf und Anschreiben als Dateien, Einwilligung und manuelle Genehmigung.',
     template_feedback: 'Feedback',
-    template_feedbackDescription:
-      'Wie wahrscheinlich jemand Sie weiterempfiehlt, von 0 bis 10, eine Bewertungsmatrix und ein Kommentar.',
+    template_feedbackDescription: 'Eine Weiterempfehlungsnote, eine Bewertungsmatrix und ein Kommentar.',
     template_quoteRequest: 'Angebotsanfrage',
-    template_quoteRequestDescription:
-      'Eine Leistung und die Stunden, eine laufend berechnete Schätzung und die Kontaktdaten.',
+    template_quoteRequestDescription: 'Leistung, Stunden, eine laufende Schätzung und die Kontaktdaten.',
     template_supportRequest: 'Supportanfrage',
-    template_supportRequestDescription: 'Thema, Dringlichkeit, eine Beschreibung und Dateien, dazu eine Anfragenummer.',
+    template_supportRequestDescription: 'Thema, Dringlichkeit, Beschreibung, Dateien und eine Anfragenummer.',
     template_privacyRequest: 'Datenschutzanfrage',
-    template_privacyRequestDescription:
-      'Eine Kopie oder die Löschung der eigenen Daten, an das Datenschutzteam, sobald die Adresse bestätigt ist.',
+    template_privacyRequestDescription: 'Kopie oder Löschung der eigenen Daten, sobald die Adresse bestätigt ist.',
 
     importHeadline: 'Formular importieren',
-    importIntro:
-      'Wählen Sie eine JSON-Datei, die eine Website mit Jiron Form Builder exportiert hat. Das Formular kommt als neue Kopie an; hier ändert sich sonst nichts.',
+    importIntro: 'Wählen Sie die JSON-Datei eines exportierten Formulars.',
     chooseFile: 'Datei wählen…',
     chooseAnotherFile: 'Andere Datei wählen…',
     readingFile: 'Die Datei wird gelesen',
@@ -338,12 +330,11 @@ export default {
     notePageMissing:
       'Ein Abschluss leitet auf eine Seite weiter, die diese Website nicht hat. Wählen Sie dafür eine andere Seite.',
     noteOther: (code: string) => `Der Import meldet „${code}“. Prüfen Sie das Formular, bevor Sie es veröffentlichen.`,
-    arrivesAsDraft: (where: string) =>
-      `Es kommt als Entwurf in ${where} an. Besucher sehen nichts davon, bis Sie es veröffentlichen.`,
+    arrivesAsDraft: (where: string) => `Es kommt als Entwurf in ${where} an.`,
     importAsNewCopy: 'Als neue Kopie importieren',
     replaceHeadline: (name: string) => `${name} aus einer Datei ersetzen`,
     replaceIntro:
-      'Wählen Sie eine JSON-Datei, die eine Website mit Jiron Form Builder exportiert hat. Ihr Formular wird zum Entwurf dieses Formulars; Name, Einträge und Zugriffsrechte bleiben, wie sie sind.',
+      'Wählen Sie die JSON-Datei eines exportierten Formulars. Ihr Formular wird zum Entwurf dieses Formulars; Name, Einträge und Zugriffsrechte bleiben, wie sie sind.',
     replacesDraft: (name: string) =>
       `Die Datei wird zum Entwurf von ${name}. Besucher sehen weiter die veröffentlichte Version, bis Sie veröffentlichen.`,
     replaceDiscardsUnsaved: 'Änderungen, die Sie noch nicht gespeichert haben, werden verworfen.',

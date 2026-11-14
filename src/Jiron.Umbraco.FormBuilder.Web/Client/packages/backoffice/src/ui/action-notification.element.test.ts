@@ -60,16 +60,12 @@ describe('the action toast', () => {
       },
     });
 
-    expect(text(message())).toBe(
-      'Preparing the export of 6 entries. You can keep working; a notification links to the file.',
-    );
+    expect(text(message())).toBe('Preparing the export of 6 entries. A notification will link to the file.');
     expect(message()?.hasAttribute('aria-live'), 'its first sentence is announced').toBe(false);
     expect(button(), 'no button without an action').toBeNull();
     must(show, 'the listener')({ key: 'jfbEntries_export_progressToast', args: [2, 6, false] });
     await toast.updateComplete;
-    expect(text(message())).toBe(
-      'Preparing the export: 2 of 6 entries. You can keep working; a notification links to the file.',
-    );
+    expect(text(message())).toBe('Preparing the export: 2 of 6 entries. A notification will link to the file.');
     expect(message()?.getAttribute('aria-live')).toBe('off');
 
     toast.remove();

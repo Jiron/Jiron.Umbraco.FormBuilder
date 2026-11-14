@@ -21,7 +21,6 @@ export default {
     lockedNow: "The site's configuration has locked access meanwhile. It is shown as the configuration sets it.",
 
     everyForm: 'Every form',
-    everyFormLead: 'Forms and entries can differ per folder or form.',
     administrators: 'Administrators hold every permission everywhere, because they could grant themselves any.',
     noSection: (count: number) =>
       count === 1
@@ -43,7 +42,7 @@ export default {
 
     items: 'Folders and forms with their own access',
     addItem: 'Add folder or form…',
-    itemsNone: "No folder or form has access of its own, so each group's access above reaches every form.",
+    itemsNone: 'None yet.',
     only: (names: readonly string[]) => `Only these groups: ${list(names)}`,
     onlyAdministrators: 'Only administrators',
     also: (names: readonly string[]) => `Also: ${list(names)}`,
@@ -54,10 +53,8 @@ export default {
 
     headline: (name: string) => `Permissions for ${name}`,
     restrict: 'Only these groups',
-    restrictHelpFolder:
-      "Only the groups below, and administrators, see this folder's forms. Access given to every form or to a parent folder stops here.",
-    restrictHelpForm:
-      'Only the groups below, and administrators, see this form. Access given to every form or to its folder stops here.',
+    restrictHelpFolder: 'Access given to every form or to a parent folder stops here. Administrators keep theirs.',
+    restrictHelpForm: 'Access given to every form or to its folder stops here. Administrators keep theirs.',
     groupsHere: 'Groups with access here',
     addGroup: 'Add user group',
     addGroupNone: 'Choose a group',

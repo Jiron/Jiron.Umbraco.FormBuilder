@@ -971,7 +971,7 @@
         "settings": [],
         "default": null,
         "label": "#jfbActionSettings_contentDocumentType",
-        "description": "#jfbActionSettings_contentDocumentTypeHelp",
+        "description": null,
         "editor": "documentTypePicker",
         "group": "essentials",
         "supportsMergeTags": false,

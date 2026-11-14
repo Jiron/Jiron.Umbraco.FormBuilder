@@ -19,11 +19,11 @@ internal sealed record IntegrationSettings : ISettingsSection
     public string? SigningSecret { get; init; }
 
     /// <summary>A reference to the address of Slack's incoming webhook, which a Slack action goes to unless it names its own.</summary>
-    [SettingsField("chat", Editor = "secretReference")]
+    [SettingsField("chat", Editor = "secretReference", Help = false)]
     public string? SlackWebhook { get; init; }
 
     /// <summary>A reference to the address of the Microsoft Teams workflow, which a Teams action goes to unless it names its own.</summary>
-    [SettingsField("chat", Order = 1, Editor = "secretReference")]
+    [SettingsField("chat", Order = 1, Editor = "secretReference", Help = false)]
     public string? TeamsWebhook { get; init; }
 
     /// <summary>Whether entry events reach Umbraco's own webhooks (Settings, Webhooks); on by default, and they send only to what a site set up.</summary>

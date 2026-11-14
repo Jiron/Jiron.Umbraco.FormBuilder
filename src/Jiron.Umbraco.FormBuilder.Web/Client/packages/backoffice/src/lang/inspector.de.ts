@@ -11,11 +11,10 @@ export default {
     fold: 'Inspektor einklappen',
     unfold: 'Inspektor öffnen',
     nothingSelected: 'Nichts ausgewählt',
-    nothingSelectedHelp:
-      'Wählen Sie ein Feld, eine Gruppe oder eine Seite im Formular aus, um hier die Einstellungen zu ändern.',
+    nothingSelectedHelp: 'Wählen Sie ein Feld, eine Gruppe oder eine Seite, um die Einstellungen zu ändern.',
     elementActions: 'Aktionen für dieses Element',
     editingLanguage: (language: string, standard: string) =>
-      `Sie bearbeiten die Texte auf ${language}. Wo einer leer ist, sehen Besucher den Text auf ${standard}.`,
+      `Wo ein Text auf ${language} fehlt, sehen Besucher den auf ${standard}.`,
     dictionaryShows: (text: string) => `Aus dem Wörterbuch: ${text}`,
     dictionaryEmpty: (written: string) =>
       `Der Wörterbucheintrag hat keinen Text in dieser Sprache, darum sehen Besucher „${written}“.`,
@@ -29,15 +28,14 @@ export default {
     section_rules: 'Regeln',
     section_appearance: 'Darstellung',
     section_advanced: 'Erweitert',
-    summaryNone: 'Nichts geändert',
+    summaryNone: 'Standard',
     moreOptions: (count: number) => `Weitere Optionen (${count})`,
     fewerOptions: 'Weniger Optionen',
     rulesNone: 'Immer sichtbar',
     rulesAdd: 'Regel hinzufügen',
     rulesOff: 'Aus',
     rulesOffSummary: (words: string) => `${words} (aus)`,
-    rulesHelp:
-      'Eine Regel sitzt an dem Element, das sie zeigt, verbirgt oder zur Pflicht macht, oder an dem Feld, bei dem sie eine Meldung zeigt.',
+    rulesHelp: 'Regeln sitzen an dem Element, auf das sie wirken.',
     saidChanged: (name: string) => `${name} geändert`,
 
     property_label: 'Beschriftung',
@@ -60,11 +58,11 @@ export default {
     property_unique: 'Jede Antwort nur einmal',
     property_matches: 'Muss übereinstimmen mit',
     property_pattern: 'Muss einem Muster entsprechen',
-    help_pattern: 'Die ganze Antwort muss ihm entsprechen, so wie [A-Z]{2}[0-9]{4} AB1234 entspricht. Leer für keines.',
+    help_pattern: 'Die ganze Antwort muss ihm entsprechen, so wie [A-Z]{2}[0-9]{4} AB1234 entspricht.',
     patternUnsafe:
       'Der Abgleich der Website nimmt dieses Muster nicht an: Es verwendet Syntax außerhalb seiner Teilmenge oder ist zu lang.',
     patternTry: 'Ausprobieren',
-    patternTryHelp: 'Geben Sie eine Antwort ein, um zu sehen, ob das Muster sie annimmt. Sie wird nicht gespeichert.',
+    patternTryHelp: 'Geben Sie eine Beispielantwort ein. Sie wird nicht gespeichert.',
     patternTryWaits: 'Antworten lassen sich ausprobieren, sobald die Website das Muster annimmt.',
     patternMatches: 'Das Muster nimmt diese Antwort an.',
     patternFails: 'Das Muster nimmt diese Antwort nicht an.',
@@ -73,7 +71,7 @@ export default {
     help_includeInEmails: 'Ob die Antwort in den E-Mails steht, die das Formular sendet.',
     help_alias: 'Platzhalter, Exporte und die API verwenden ihn.',
     help_keep:
-      'Bis die Aktionen gelaufen sind: E-Mails und Webhooks erhalten die Antwort noch, danach wird sie aus dem Eintrag, der dann „nicht aufbewahrt“ zeigt, und aus seinen E-Mails entfernt. Vertraulich maskiert eine Antwort nur, dies entfernt sie.',
+      'Bis die Aktionen gelaufen sind: E-Mails und Webhooks erhalten die Antwort noch, danach wird sie aus dem Eintrag und seinen E-Mails entfernt.',
     help_unique: 'Ein zweiter Eintrag mit derselben Antwort wird abgelehnt.',
     spanOf: (span: number, columns: number) => `${span} von ${columns} Spalten`,
     columnsCount: (count: number) => (count === 1 ? '1 Spalte' : `${count} Spalten`),
@@ -208,7 +206,7 @@ export default {
     options_standardNone: 'Liste wählen',
     options_dependsOn: 'Hängt ab von',
     options_dependsOnNothing: 'Keinem anderen Feld',
-    options_dependsOnHelp: 'Die Antwort im hier gewählten Feld entscheidet, welche dieser Optionen angeboten werden.',
+    options_dependsOnHelp: 'Die Antwort dieses Felds entscheidet, welche dieser Optionen angeboten werden.',
     options_move: (label: string) => `${label} verschieben`,
     options_moveNamed: (label: string) => `${label} verschoben`,
     options_moved: (label: string, position: number, count: number) =>
@@ -231,8 +229,7 @@ export default {
         : `${added === 1 ? '1 Option' : `${added} Optionen`} hinzugefügt.`,
     options_cancel: 'Abbrechen',
     options_value: 'Gespeichert als',
-    options_valueHelp:
-      'Was Einträge für diese Option speichern. Schon gespeicherte Einträge behalten, was sie enthalten.',
+    options_valueHelp: 'Schon gespeicherte Einträge behalten, was sie enthalten.',
     options_valueInvalid: 'Verwenden Sie 1 bis 200 Zeichen, ohne Leerzeichen am Anfang oder Ende.',
     options_valueRepeats: 'Eine andere Option speichert das schon.',
     options_description: 'Beschreibung',

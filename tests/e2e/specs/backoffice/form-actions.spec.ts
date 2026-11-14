@@ -104,9 +104,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   const status = view.locator('.page + [role="status"]');
 
   // A form without actions says what most forms do, which Add action starts with.
-  await expect(view.locator('.empty')).toHaveText(
-    'No actions yet. Most forms email the team when an entry comes in, and Add action starts with that.',
-  );
+  await expect(view.locator('.empty')).toHaveText('No actions yet. Add action starts with an email to the team.');
   await axeInside(page, 'jfb-form-actions-view');
 
   // Add action: ready to email the team, kept back by the check until the mail has someone to go to.
@@ -160,7 +158,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
 
   // Without dragging, a pointer chooses its place in its sidebar (WCAG 2.5.7); Ctrl+Z takes the move back.
   await cardOf(view, 'Mark as approved').click();
-  await sidebar.getByRole('combobox', { name: 'Position in the list' }).selectOption({ label: '1 of 2' });
+  await sidebar.getByRole('combobox', { name: 'Run order' }).selectOption({ label: '1 of 2' });
   await sidebar.getByRole('button', { name: 'Update', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
   await expect(names).toHaveText(['Mark as approved', 'Email the team']);
@@ -179,7 +177,7 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await cardOf(view, 'Email the team').click();
   await expect(sidebar.getByRole('heading', { name: 'Email the team' })).toBeVisible();
   await expect(sidebar.locator('.kept')).toHaveText('Email');
-  await expect(sidebar.locator('#rule-words')).toHaveText('Runs for every entry its trigger brings.');
+  await expect(sidebar.locator('#rule-words')).toHaveText('Runs for every entry.');
   await sidebar.getByRole('button', { name: 'Add a rule' }).click();
   const builder = page.locator('jfb-rule-builder-modal');
   await expect(builder.getByRole('heading', { name: 'New rule' })).toBeVisible();

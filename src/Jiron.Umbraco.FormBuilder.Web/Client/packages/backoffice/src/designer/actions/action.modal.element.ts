@@ -877,12 +877,11 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     };
     return html`<div class="item">
       <label class="label" for=${BOX.name}>${this.#term('name')}</label>
-      <p class="help" id="name-help">${this.#term('nameHelp')}</p>
       <input
         type="text"
         id=${BOX.name}
         autocomplete="off"
-        aria-describedby=${described(BOX.name, true, problems) ?? nothing}
+        aria-describedby=${described(BOX.name, false, problems) ?? nothing}
         aria-invalid=${problems.some((problem) => problem.severity === 'error') ? 'true' : 'false'}
         .value=${boxValue(this._edit.name, this._typed.has(BOX.name))}
         @input=${(event: Event) => typed((event.target as HTMLInputElement).value, false)}
@@ -943,11 +942,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     if (count < 2 || this.data?.readOnly) return nothing;
     return html`<div class="item">
       <label class="label" for=${BOX.place}>${this.#term('place')}</label>
-      <p class="help" id="place-help">${this.#term('placeHelp')}</p>
       <select
         id=${BOX.place}
         class="short"
-        aria-describedby="place-help"
         .value=${live(String(at))}
         @change=${(event: Event) => {
           this._at = Number((event.target as HTMLSelectElement).value);

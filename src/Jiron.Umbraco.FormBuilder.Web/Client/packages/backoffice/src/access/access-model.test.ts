@@ -2,7 +2,7 @@
 // what needs it; a save sends only the groups that changed, from what the editor saw; and each folder's or form's
 // sentence says who alone may see it, or who may also.
 import { describe, expect, it } from 'vitest';
-import { changedGrants, grantsOf, sentenceOf, withPermission } from './access-model';
+import { changedGrants, grantsOf, sentenceOf, withPending, withPermission } from './access-model';
 
 const NEEDS = [
   { permission: 'manageActions', needs: 'design' },
@@ -33,6 +33,32 @@ describe('a box of the matrix', () => {
   it('changes nothing else when nothing depends on it', () => {
     expect(withPermission(new Set(['design']), 'viewEntries', true, NEEDS).besides).toEqual([]);
     expect(withPermission(new Set(['design']), 'design', true, NEEDS).granted).toEqual(new Set(['design']));
+  });
+});
+
+describe('the grants read again while ticks wait to be saved', () => {
+  it('keep each group the user changed as the user left it, and take the rest as read', () => {
+    const before = grantsOf([
+      { key: 'a', permissions: ['viewEntries'] },
+      { key: 'b', permissions: ['design'] },
+      { key: 'gone', permissions: [] },
+    ]);
+    const mine = new Map([
+      ['a', new Set(['viewEntries', 'export'])],
+      ['b', new Set(['design'])],
+      ['gone', new Set(['design'])],
+    ]);
+    const fresh = grantsOf([
+      { key: 'a', permissions: ['viewEntries'] },
+      { key: 'b', permissions: ['design', 'manageActions'] },
+      { key: 'new', permissions: ['viewEntries'] },
+    ]);
+    const kept = withPending(before, mine, fresh);
+    expect([...kept].map(([group, granted]) => [group, [...granted].sort()])).toEqual([
+      ['a', ['export', 'viewEntries']],
+      ['b', ['design', 'manageActions']],
+      ['new', ['viewEntries']],
+    ]);
   });
 });
 

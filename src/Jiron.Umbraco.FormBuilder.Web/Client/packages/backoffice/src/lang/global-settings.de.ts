@@ -38,60 +38,48 @@ export default {
     // Allgemein
     generalBox_forms: 'Vorgaben für Formulare',
     general_theme: 'Standard-Theme',
-    general_themeHelp: 'Formulare verwenden es, wenn sie unter „Darstellung“ kein anderes wählen.',
     general_requiredMarker: 'Felder mit Markierung',
     general_requiredMarkerHelp:
-      'Die meisten Formulare haben mehr Pflichtfelder als optionale; die wenigen optionalen zu kennzeichnen liest sich ruhiger.',
+      'Die meisten Formulare haben wenige optionale Felder; diese zu markieren wirkt ruhiger.',
     general_requiredMarker_required: 'Pflichtfelder, mit „*“',
     general_requiredMarker_optional: 'Optionale Felder, mit „(optional)“',
     general_requiredMarker_none: 'Keine Felder',
     general_submitLabel: 'Schaltfläche Senden',
-    general_submitLabelHelp:
-      'Die Beschriftung der Schaltfläche auf der letzten Seite, wenn ein Formular keine eigene hat. Leer: „Senden“.',
+    general_submitLabelHelp: 'Leer steht dort „Senden“.',
     general_nextLabel: 'Schaltfläche Weiter',
-    general_nextLabelHelp:
-      'Die Beschriftung der Schaltfläche zur nächsten Seite, wenn ein Formular keine eigene hat. Leer: „Weiter“.',
+    general_nextLabelHelp: 'Leer steht dort „Weiter“.',
     general_backLabel: 'Schaltfläche Zurück',
-    general_backLabelHelp:
-      'Die Beschriftung der Schaltfläche zurück, wenn ein Formular keine eigene hat. Leer: „Zurück“.',
+    general_backLabelHelp: 'Leer steht dort „Zurück“.',
     general_texts: 'Texte für Besucher',
-    general_textsHelp:
-      'Eigene Worte für die Texte, die jedes Formular mitbringt, etwa seine Hinweise, Meldungen und Fehlermeldungen. Die eigenen Worte eines Formulars gehen vor.',
+    general_textsHelp: 'Eigene Worte für die Hinweise, Meldungen und Fehlermeldungen, die jedes Formular mitbringt.',
     generalBox_site: 'Adresse und Zeit',
     general_baseUrl: 'Basis-URL',
     general_baseUrlHelp: 'Links in E-Mails beginnen damit. Leer beginnen sie mit der Adresse, die das Feld zeigt.',
     general_timeZone: 'Zeitzone',
     general_timeZoneHelp:
-      'Daten in E-Mails und Exporten verwenden sie. In der Zeitzone aller Websites öffnen und schließen auch die Formulare. Tippen Sie die ersten Buchstaben einer Stadt, um sie zu finden.',
+      'Daten in E-Mails und Exporten verwenden sie. Formulare öffnen und schließen in der Zeitzone aller Websites.',
     zonesWithoutArea: 'Universell',
-    generalBox_newForms: 'Neue Formulare',
-    generalBox_newFormsLead:
-      'Womit ein leer erstelltes Formular beginnt. Eine Vorlage bringt ihre eigenen Felder und Aktionen mit.',
+    generalBox_newForms: 'Neue leere Formulare',
     general_newForms: 'Neue Formulare',
     general_newFormsHelp: 'Womit ein leer erstelltes Formular beginnt.',
     general_newForms_consent: 'Ein Einwilligungsfeld hinzufügen',
     general_newForms_consentHelp:
-      'Ein Pflichtfeld zum Ankreuzen am Ende der letzten Seite, mit dem eigenen Wortlaut der Website. Formulare, die personenbezogene Daten behalten, brauchen eines, wenn die Einwilligung ihre Grundlage ist.',
+      'Ein Pflichtfeld zum Ankreuzen am Ende der letzten Seite. Formulare, die personenbezogene Daten behalten, brauchen eines, wenn die Einwilligung ihre Grundlage ist.',
     consentLabel: 'Beschriftung',
     consentText: 'Wortlaut',
     consentNeedsLabel: 'Geben Sie dem Einwilligungsfeld eine Beschriftung.',
     general_newForms_notifyCreator: 'Jeden Eintrag an den Ersteller des Formulars senden',
-    general_newForms_notifyCreatorHelp:
-      'Neue Formulare beginnen mit einer E-Mail-Aktion an die Person, die sie erstellt.',
     generalBox_history: 'Verlauf',
     generalBox_historyLead:
-      'Wie lange der Verlauf jedes Formulars seine gespeicherten Entwürfe behält. Veröffentlichte und angeheftete Versionen, der aktuelle Entwurf jedes Formulars und die Versionen, mit denen Einträge gesendet wurden, bleiben immer erhalten.',
+      'Veröffentlichte und angeheftete Versionen, der aktuelle Entwurf jedes Formulars und die Versionen, mit denen Einträge gesendet wurden, bleiben immer erhalten.',
     general_history: 'Verlauf',
     general_historyHelp: 'Wie lange der Verlauf jedes Formulars seine gespeicherten Entwürfe behält.',
     general_history_draftDays: 'Gespeicherte Entwürfe behalten für',
     general_history_draftDaysUnit: 'Tage',
-    general_history_draftDaysHelp: 'Jeder gespeicherte Entwurf bleibt mindestens so lange erhalten.',
-    general_history_draftCount: 'Immer behalten',
+    general_history_draftCount: 'Je Formular immer behalten',
     general_history_draftCountUnit: 'neueste gespeicherte Entwürfe',
-    general_history_draftCountHelp:
-      'Unabhängig von ihrem Alter behält jedes Formular so viele seiner neuesten gespeicherten Entwürfe.',
     formBlock: 'Formulare auf Seiten zeigen',
-    formBlockThere: (date: string) => `Seiten zeigen Formulare über den Blocktyp Form, erstellt am ${date}.`,
+    formBlockThere: 'Seiten zeigen Formulare über den Blocktyp Form.',
     formBlockHow:
       'Fügen Sie ihn den verfügbaren Blöcken des Blocklisten- oder Blockraster-Datentyps hinzu, den Ihre Seiten verwenden.',
     formBlockMissing:
@@ -108,12 +96,10 @@ export default {
     testFailed: 'Die Test-E-Mail konnte nicht gesendet werden. Versuchen Sie es gleich noch einmal.',
     emailBox_sender: 'Absender',
     email_senderName: 'Name',
-    email_senderNameHelp: 'Der Name, den Empfänger als Absender sehen.',
     email_senderAddress: 'Adresse',
     email_senderAddressHelp:
       'Verwenden Sie eine Adresse der eigenen Domain der Website, damit Mailserver ihr vertrauen.',
     email_defaultLayout: 'Standardlayout',
-    email_defaultLayoutHelp: 'So sehen E-Mails aus, wenn die E-Mail eines Formulars kein anderes Layout wählt.',
     email_defaultLayout_card: 'Karte',
     email_defaultLayout_letter: 'Brief',
     emailBox_team: 'Das Team',
@@ -121,14 +107,13 @@ export default {
     email_teamRecipientsHelp:
       'Diese Adressen erfahren, wenn eine Zustellung endgültig fehlschlägt, höchstens einmal pro Stunde und Formular.',
     email_forwardAddresses: 'Adressen, an die Einträge weitergeleitet werden dürfen',
-    email_forwardAddressesHelp:
-      'Neben Backoffice-Benutzern bietet Weiterleiten nur diese an, damit Einträge die Website nur zu Personen verlassen, denen sie bereits vertraut.',
+    email_forwardAddressesHelp: 'Neben Backoffice-Benutzern bietet „Weiterleiten“ nur diese an.',
 
     // Spamschutz
     protectionBox_level: 'Standardschutz',
     protection_level: 'Schutz',
     protection_levelHelp:
-      'Formulare verwenden ihn, wenn ihre Gruppe Spamschutz keinen anderen wählt. reCAPTCHA und hCaptcha laden ein Skript ihres Anbieters, nur in Formularen, die sie verwenden, und nur so, wie es die Einwilligung unten erlaubt.',
+      'reCAPTCHA und hCaptcha laden ein Skript ihres Anbieters, nur in Formularen, die sie verwenden, und nur so, wie es die Einwilligung unten erlaubt.',
     protection_level_standard: 'Standard',
     protection_level_standardLine:
       'Ein verborgenes Feld, eine Mindestzeit zum Ausfüllen und eine signierte Prüfung. Nichts wird von anderen Websites geladen.',
@@ -137,8 +122,7 @@ export default {
       'Der Browser des Besuchers löst zusätzlich ein kurzes Rätsel, das Bots Zeit kostet. Es braucht JavaScript.',
     protection_level_captcha: 'Ein Captcha',
     captchaKeys: 'Schlüssel in der Host-Konfiguration gefunden.',
-    captchaNoKeys: (key: string) =>
-      `Noch keine Schlüssel. Eine Entwicklerin oder ein Entwickler fügt sie in ${key} hinzu.`,
+    captchaNoKeys: (key: string) => `Noch keine Schlüssel in der Host-Konfiguration: ${key}`,
     captchaGone: 'Nicht mehr auf dieser Website. Wählen Sie einen anderen.',
     protection_captchaProvider: 'Captcha',
     protection_captchaProviderHelp: 'Das Captcha, das Formulare verwenden, wenn ihr Schutz ein Captcha ist.',
@@ -148,8 +132,6 @@ export default {
       'Jedes weitere Bit verdoppelt die Arbeit für den Browser des Besuchers und für Bots. Der Standard, 16, dauert auf einem Telefon einen Moment.',
     protectionBox_consent: 'Captchas von Drittanbietern',
     protection_captchaConsent: 'Bevor reCAPTCHA oder hCaptcha lädt',
-    protection_captchaConsentHelp:
-      'Nur Formulare, die reCAPTCHA oder hCaptcha schützt, fragen. Der Standardschutz braucht keine Einwilligung.',
     protection_captchaConsent_explicit: 'Im Formular fragen',
     protection_captchaConsent_explicitLine:
       'Das Formular zeigt einen kurzen Hinweis und eine Schaltfläche, die die Prüfung lädt.',
@@ -169,9 +151,8 @@ export default {
     protection_cookiebotCategory_marketing: 'Marketing',
     protectionBox_content: 'Inhaltsprüfungen',
     protectionBox_contentLead:
-      'Ein Treffer weist nie einen Eintrag ab: Er verschiebt ihn in den Spam, wo nichts verloren geht. Eine gesperrte E-Mail-Domain genügt allein; gesperrte Wörter und zusätzliche Links zählen zusammen.',
+      'Ein Treffer weist nie einen Eintrag ab: Er verschiebt ihn in den Spam, wo nichts verloren geht.',
     protection_contentRules: 'Standardstrenge',
-    protection_contentRulesHelp: 'Formulare verwenden sie, wenn ihre Gruppe Spamschutz keine andere wählt.',
     protection_contentRules_off: 'Aus',
     protection_contentRules_normal: 'Normal: drei gesperrte Wörter oder zwei mit zu vielen Links',
     protection_contentRules_strict: 'Streng: zwei gesperrte Wörter oder eines mit zu vielen Links',
@@ -185,7 +166,7 @@ export default {
     protectionBox_ranges: 'Gesperrte Adressbereiche',
     protection_blockedRanges: 'Bereiche',
     protection_blockedRangesHelp:
-      'Bereiche wie 203.0.113.0/24. Einträge, die von dort gesendet werden, gehen in den Spam. Die Adresse wird beim Eingang eines Eintrags verglichen und nie gespeichert.',
+      'Einträge aus ihnen, etwa 203.0.113.0/24, gehen in den Spam. Die Adresse wird beim Eingang eines Eintrags verglichen und nie gespeichert.',
 
     // Dateien
     filesBox_types: 'Was Besucher hochladen dürfen',
@@ -225,7 +206,7 @@ export default {
       'Webhook-Aktionen signieren jeden Aufruf mit diesem Geheimnis, sodass der Empfänger erkennt, dass er von dieser Website kommt. Das Geheimnis selbst bleibt in der Host-Konfiguration.',
     integrations_umbracoWebhookEvents: 'Eintragsereignisse anbieten',
     integrations_umbracoWebhookEventsHelp:
-      'Fügt Eintrag gesendet, genehmigt, abgelehnt und gelöscht sowie Aktion fehlgeschlagen den Ereignissen von Umbracos Einstellungen › Webhooks hinzu, wo Entwickler sie abonnieren.',
+      'Fügt Eintrag gesendet, genehmigt, abgelehnt und gelöscht sowie Aktion fehlgeschlagen den Ereignissen von Umbracos Einstellungen › Webhooks hinzu.',
     hosts: 'Hosts, die Webhooks aufrufen dürfen',
     hostsNone: 'Noch keine, Webhook-Aktionen und JSON-Optionslisten rufen also keine Adresse auf.',
     hostsKey: (key: string) => `Die Host-Konfiguration legt sie fest: ${key}.`,
@@ -234,13 +215,10 @@ export default {
     integrationsBox_chatLead:
       'Slack- und Microsoft-Teams-Aktionen verwenden diese, wenn sie keine eigenen festlegen. Die Adressen wirken wie Passwörter, darum werden sie als Verweise auf die Host-Konfiguration eingegeben.',
     integrations_slackWebhook: 'Slack-Webhook-Adresse',
-    integrations_slackWebhookHelp: 'Wohin Slack-Aktionen posten, wenn sie keine eigene nennen.',
     integrations_teamsWebhook: 'Teams-Webhook-Adresse',
-    integrations_teamsWebhookHelp: 'Wohin Teams-Aktionen posten, wenn sie keine eigene nennen.',
     referencePlaceholder: (name: string) => `Ein Verweis, etwa $JironFormBuilder:Secrets:${name}`,
     referenceFound: 'In der Host-Konfiguration gefunden.',
-    referenceMissing: (key: string) =>
-      `Noch nicht in der Host-Konfiguration: Eine Entwicklerin oder ein Entwickler fügt ${key} hinzu.`,
+    referenceMissing: (key: string) => `Noch nicht in der Host-Konfiguration: ${key}`,
     referenceInvalid: 'Geben Sie einen Verweis wie $JironFormBuilder:Secrets:Crm ein, nie das Geheimnis selbst.',
 
     // Datenschutz › Aufbewahrung
@@ -252,13 +230,11 @@ export default {
     privacy_retention_submittedHelp: 'Einträge, die auf Genehmigung warten, zählen hier mit.',
     privacy_retention_submittedUnit: 'Tage',
     privacy_retention_approved: 'Genehmigt',
-    privacy_retention_approvedHelp: 'Einträge, die jemand genehmigt hat oder die sofort genehmigt wurden.',
+    privacy_retention_approvedHelp: 'Auch jeder Eintrag eines Formulars ohne manuelle Genehmigung.',
     privacy_retention_approvedUnit: 'Tage',
     privacy_retention_rejected: 'Abgelehnt',
-    privacy_retention_rejectedHelp: 'Einträge, die jemand abgelehnt hat.',
     privacy_retention_rejectedUnit: 'Tage',
     privacy_retention_spam: 'Spam',
-    privacy_retention_spamHelp: 'Einträge, die die Prüfungen oder jemand in den Spam verschoben haben.',
     privacy_retention_spamUnit: 'Tage',
     retentionForGood: 'Dauerhaft aufbewahren',
     retentionForGoodShown: 'Dauerhaft aufbewahrt',
@@ -286,7 +262,7 @@ export default {
         : `${count} weitere haben eine Löschsperre und bleiben, bis sie endet.`,
     retentionHeldStay: 'Einträge mit Löschsperre bleiben.',
     retentionUnsaved: 'Gezählt mit den Tagen oben, bevor Sie speichern.',
-    retentionByItself: 'Sie müssen nichts drücken: Die Aufbewahrung löscht jede Stunde von selbst.',
+    retentionByItself: 'Die Aufbewahrung löscht von selbst, jede Stunde.',
     retentionColumnForm: 'Formular',
     retentionColumnEntries: 'Einträge',
     retentionColumnFiles: 'Dateien',
@@ -321,7 +297,7 @@ export default {
     people_failed: 'Die Einträge konnten nicht gefunden werden.',
     people_export: 'Alles exportieren',
     people_hold: 'Löschsperre setzen…',
-    people_erase: 'Löschen…',
+    people_erase: 'Daten löschen…',
     people_columnEntry: 'Eintrag',
     people_columnForm: 'Formular',
     people_columnReceived: 'Eingegangen',
@@ -337,13 +313,13 @@ export default {
     people_releaseLabel: (entry: string) => `Löschsperre für ${entry} aufheben`,
     people_released: 'Die Löschsperre ist aufgehoben.',
     people_exporting: (done: string, total: string) =>
-      `Der Export wird vorbereitet: ${done} von ${total} Einträgen. Sie können weiterarbeiten; eine Benachrichtigung verlinkt die Datei.`,
+      `Der Export wird vorbereitet: ${done} von ${total} Einträgen. Eine Benachrichtigung verlinkt die Datei.`,
     people_exportLabel: 'Export',
     people_exportFailed: 'Der Export konnte nicht vorbereitet werden. Versuchen Sie es erneut.',
     people_erased: (who: string, parts: readonly string[]) =>
-      `Alles über ${who} ist gelöscht: ${and(parts)}. Die Statistik bleibt.`,
+      `Alles über ${who} ist gelöscht: ${and(parts)}. Die Einblicke bleiben.`,
     people_erasedAnonymised: (who: string, entries: string, one: boolean, deleted: readonly string[]) =>
-      `Alles über ${who} ist gelöscht: ${entries} anonymisiert, ${one ? 'der in den Zahlen bleibt' : 'die in den Zahlen bleiben'}${deleted.length > 0 ? `, und ${and(deleted)} gelöscht` : ''}. Die Statistik bleibt.`,
+      `Alles über ${who} ist gelöscht: ${entries} anonymisiert, ${one ? 'der in den Zahlen bleibt' : 'die in den Zahlen bleiben'}${deleted.length > 0 ? `, und ${and(deleted)} gelöscht` : ''}. Die Einblicke bleiben.`,
     people_erasedHeld: (entries: string, one: boolean) =>
       one
         ? `${entries} mit Löschsperre bleibt, bis die Sperre endet.`
@@ -352,7 +328,7 @@ export default {
     people_auditRecorded: 'Es ist im Protokoll festgehalten.',
     people_eraseHeadline: (who: string) => `Alles über ${who} löschen?`,
     people_eraseText: (parts: readonly string[], one: boolean) =>
-      `${and(parts)} ${one ? 'wird' : 'werden'} gelöscht. Die Statistik bleibt. Das lässt sich nicht rückgängig machen.`,
+      `${and(parts)} ${one ? 'wird' : 'werden'} gelöscht. Die Einblicke bleiben. Das lässt sich nicht rückgängig machen.`,
     people_eraseHeld: (entries: string, one: boolean) =>
       one
         ? `${entries} mit Löschsperre bleibt, bis die Sperre endet.`
@@ -361,11 +337,12 @@ export default {
       'Diesmal werden nur die neuesten 500 Einträge gelöscht; suchen Sie danach erneut nach den übrigen.',
     people_eraseFormHeld: (count: string) => `${count} mit Löschsperre`,
     people_eraseHow: 'Was mit den Einträgen geschieht',
-    people_eraseDelete: 'Löschen',
+    people_eraseDelete: 'Einträge löschen',
     people_eraseDeleteHelp: 'Die Einträge gehen mit ihren Dateien und E-Mails.',
-    people_eraseAnonymise: 'Anonymisieren',
+    people_eraseAnonymise: 'Einträge anonymisieren',
     people_eraseAnonymiseHelp: 'Die Einträge bleiben in den Zahlen, ohne eine Antwort, Datei oder E-Mail der Person.',
     people_eraseConfirm: (entries: string) => `${entries} löschen`,
+    people_eraseConfirmAnonymise: (entries: string) => `${entries} anonymisieren`,
     people_eraseNothing:
       'Alle Einträge haben eine Löschsperre, daher gibt es nichts zu löschen, bis die Sperren enden.',
     people_eraseFailed: 'Das Löschen konnte nicht ausgeführt werden. Nichts wurde geändert; versuchen Sie es erneut.',
@@ -374,7 +351,7 @@ export default {
     people_holdOf: (form: string, received: string) => `${form}, ${received}`,
     people_holdReason: 'Grund',
     people_holdReasonHelp:
-      'Wird mit der Sperre gespeichert. Das Prüfprotokoll hält fest, wer sie gesetzt hat und bis wann.',
+      'Wird mit der Sperre gespeichert. Das Protokoll hält fest, wer sie gesetzt hat und bis wann.',
     people_holdUntil: 'Aufbewahren bis',
     people_holdUntilHelp: 'Höchstens ein Jahr ab heute. Sie können die Sperre verlängern, bevor sie endet.',
     people_holdNote:
@@ -389,7 +366,7 @@ export default {
     // Datenschutz › Datenerfassung
     privacyBox_ip: 'IP-Adressen',
     privacyBox_ipLead:
-      'Jeder Eintrag kann die Adresse speichern, von der er gesendet wurde. Ratenbegrenzungen und gesperrte Adressbereiche lesen die Adresse, ohne sie zu speichern.',
+      'Ratenbegrenzungen und gesperrte Adressbereiche lesen die Adresse, von der ein Eintrag gesendet wird, ohne sie zu speichern.',
     privacy_ip: 'Was Einträge speichern',
     privacy_ipHelp: 'Jedes Formular kann in seiner Ansicht Einstellungen unter Datenschutz eine eigene Wahl treffen.',
     privacy_ip_none: 'Nichts',
@@ -402,17 +379,16 @@ export default {
       'Nur für eine Website, die sie ganz braucht, etwa um Missbrauch zu melden. Nennen Sie das in Ihrer Datenschutzerklärung.',
     privacyBox_insights: 'Einblicke',
     privacyBox_insightsLead:
-      'Formulare zählen, was Besucher mit ihnen tun, für die Ansicht Einblicke jedes Formulars und die Übersicht: Aufrufe, Begonnene, die Seiten, die sie erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert.',
+      'Formulare zählen Aufrufe, Begonnene, die Seiten, die Besucher erreichen, und die Felder, an denen sie hängen bleiben. Keine Antwort und kein Besucher wird gezählt, und im Browser des Besuchers wird nichts gespeichert.',
     privacy_insights: 'Zählen, was Besucher mit den Formularen tun',
     privacy_insightsHelp: 'Jedes Formular kann es in seiner Ansicht Einstellungen unter Datenschutz ausschalten.',
     privacyBox_members: 'Mitglieder',
     privacyBox_membersLead:
-      'Wird ein Mitglied in Umbraco gelöscht, gehen seine Einträge in allen Formularen mit oder behalten nichts, was es nennt. Seine Entwürfe gehen immer, und eine Löschsperre behält ihre Einträge, wie sie sind.',
+      'Die Entwürfe eines gelöschten Mitglieds gehen immer, und eine Löschsperre behält ihre Einträge, wie sie sind.',
     privacy_memberDeleted: 'Wenn ein Mitglied gelöscht wird',
-    privacy_memberDeletedHelp: 'Für alle Websites gleich, da ein Mitglied zu keiner gehört.',
     privacy_memberDeleted_anonymise: 'Seine Einträge anonymisieren',
     privacy_memberDeleted_anonymiseLine:
-      'Die Einträge bleiben mit Formular, Nummer und Status erhalten, sodass Zählungen und Statistiken sie behalten; jede Antwort und alles andere über das Mitglied geht.',
+      'Die Einträge bleiben mit Formular, Nummer und Status in den Zahlen; jede Antwort und alles andere über das Mitglied geht.',
     privacy_memberDeleted_delete: 'Seine Einträge löschen',
     privacy_memberDeleted_deleteLine: 'Die Einträge gehen, mit ihren Dateien und E-Mails.',
   },

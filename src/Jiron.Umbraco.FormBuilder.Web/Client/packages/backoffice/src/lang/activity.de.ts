@@ -10,7 +10,7 @@ const ofEntry = (f: AuditFacts) => (f.entry ? `von Eintrag ${f.entry}` : 'eines 
 export default {
   jfbActivity: {
     retry: 'Erneut versuchen',
-    loadMore: 'Mehr laden',
+    loadMore: 'Mehr anzeigen',
     close: 'Schließen',
     tooLong: 'Die Liste hat zu lange gebraucht. Grenzen Sie sie mit der Suche oder den Filtern ein.',
     filterWhen: 'Wann',
@@ -75,14 +75,14 @@ export default {
     headlineWebhook: (to: string) => `Webhook an ${to}`,
     uncertainEmail: 'Der Versand brach ab, bevor der Mailserver antwortete; sie ist also vielleicht angekommen.',
     uncertainRun: 'Der Versuch brach ab, bevor der Server antwortete; er ist also vielleicht angekommen.',
-    tryingAgain: (next: string) => `Sie wird ${next} erneut versucht.`,
-    tryingAgainSoon: 'Sie wird erneut versucht, sobald der Versand weitergeht.',
+    tryingAgain: (next: string) => `Nächster Versuch ${next}.`,
+    tryingAgainSoon: 'Nächster Versuch, sobald der Versand weitergeht.',
     limitedRecipient: (n: number, to: string) =>
-      `Nicht gesendet: Die Formulare dieser Website hatten an diesem Tag schon ${count(n, 'E-Mail', 'E-Mails')} an ${to} gesendet, die Höchstzahl für eine Adresse an einem Tag.`,
+      `Nicht gesendet: Die Formulare dieser Website hatten an diesem Tag schon ${count(n, 'E-Mail', 'E-Mails')} an ${to} gesendet, die Höchstzahl für eine Adresse.`,
     limitedSite: (n: number) =>
-      `Nicht gesendet: Die Formulare dieser Website hatten in dieser Stunde schon ${count(n, 'E-Mail', 'E-Mails')} an Besucheradressen gesendet, die Höchstzahl der Website für eine Stunde.`,
+      `Nicht gesendet: Die Formulare dieser Website hatten in dieser Stunde schon ${count(n, 'E-Mail', 'E-Mails')} an Besucheradressen gesendet, die Höchstzahl der Website.`,
     limitedWhy: (key: string) =>
-      `Die Grenze verhindert, dass die Formulare genutzt werden, um Fremden E-Mails zu schicken. Eine begrenzte E-Mail wird nie später gesendet und lässt sich deshalb nicht wiederholen. Die Hostkonfiguration legt die Grenze fest: ${key}.`,
+      `Eine begrenzte E-Mail wird nie später gesendet und lässt sich deshalb nicht wiederholen. Die Hostkonfiguration legt die Grenze fest: ${key}.`,
     skipped_stopped: 'Eine frühere Aktion des Eintrags schlug fehl und hielt die übrigen an.',
     skipped_undone: 'Die Änderung, die sie auslöste, wurde rückgängig gemacht.',
     skipped_superseded: 'Eine spätere Verschiebung des Eintrags ersetzte die Änderung, die sie auslöste.',
@@ -116,7 +116,7 @@ export default {
     what_settings: 'Einstellungen und Zugriff',
     whoClear: (name: string) => `Alle zeigen, nicht nur ${name}`,
     chipWho: (name: string) => `Wer: ${name}`,
-    showOnly: (name: string) => `Nur Änderungen von ${name} zeigen`,
+    showOnly: (name: string) => `Nur Aktionen von ${name} zeigen`,
     export: 'Exportieren',
     exportFailed: 'Das Protokoll konnte nicht exportiert werden. Versuchen Sie es gleich noch einmal.',
     auditCaption: 'Protokollierte Aktionen, die neuesten zuerst',
@@ -201,7 +201,8 @@ export default {
       `${count(f.count, 'Eintrag', 'Einträge')} nach Ablauf der Aufbewahrung gelöscht`,
     audit_entry_released: (f: AuditFacts) =>
       `Löschsperre für ${f.entry ? `Eintrag ${f.entry}` : 'einen Eintrag'} aufgehoben`,
-    audit_entry_sensitiveRevealed: (f: AuditFacts) => `${f.field || 'eine sensible Antwort'} ${ofEntry(f)} aufgedeckt`,
+    audit_entry_sensitiveRevealed: (f: AuditFacts) =>
+      `${f.field || 'eine vertrauliche Antwort'} ${ofEntry(f)} aufgedeckt`,
     audit_entry_stateChangeUndone: (f: AuditFacts) => `Eine Verschiebung ${ofEntry(f)} rückgängig gemacht`,
     audit_entry_stateChanged: (f: AuditFacts) =>
       f.from && f.to ? `${entry(f)} von ${f.from} nach ${f.to} verschoben` : `${entry(f)} verschoben`,
@@ -212,7 +213,7 @@ export default {
     audit_entryFile_archiveStarted: 'Ein ZIP der Dateien begonnen',
     audit_entryFile_archived: (f: AuditFacts) => `${count(f.count, 'Datei', 'Dateien')} als ZIP heruntergeladen`,
     audit_entryFile_sensitiveDownloaded: (f: AuditFacts) =>
-      f.field ? `Eine sensible Datei von ${f.field} heruntergeladen` : 'Eine sensible Datei heruntergeladen',
+      f.field ? `Eine vertrauliche Datei von ${f.field} heruntergeladen` : 'Eine vertrauliche Datei heruntergeladen',
     audit_folder_created: 'Den Ordner erstellt',
     audit_folder_deleted: 'Den Ordner gelöscht',
     audit_folder_moved: 'Den Ordner verschoben',
@@ -220,7 +221,7 @@ export default {
     audit_folder_restored: 'Den Ordner aus dem Papierkorb wiederhergestellt',
     audit_folder_trashed: 'Den Ordner in den Papierkorb verschoben',
     audit_form_actionsCopied: (f: AuditFacts) => `${count(f.count, 'Aktion', 'Aktionen')} in das Formular kopiert`,
-    audit_form_created: 'Formular erstellt',
+    audit_form_created: 'Das Formular erstellt',
     audit_form_createdFromTemplate: 'Das Formular aus einer Vorlage erstellt',
     audit_form_deleted: (f: AuditFacts) =>
       f.count > 0

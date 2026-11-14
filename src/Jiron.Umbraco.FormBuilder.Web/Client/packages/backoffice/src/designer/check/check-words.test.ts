@@ -141,9 +141,11 @@ describe("a problem's words", () => {
   it("tell a type the site lacks by where it is, a page by its number, and kept limits by the form's storage", () => {
     expect(words('unknown_type', '$.actions[0].type', 'error').said).toBe('The site has no action type "email".');
     expect(words('unknown_type', `${F}[0].type`, 'error').said).toBe('The site has no field type "email".');
-    expect(words('page_unreachable', '$.pages[1].rules[0]').said).toContain('before page 2 make it show');
+    expect(words('page_unreachable', '$.pages[1].rules[0]').said).toContain(
+      'before page 2 make it show, so visitors never reach it',
+    );
     expect(words('rule_value_not_option', '$.outcomes[1].rules[0].conditions[0].value').said).toBe(
-      'This rule compares the answer to \u201cJa\u201d, which is none of its options, so a visitor never gives it. Choose one of the options.',
+      "This rule compares the answer to \u201cJa\u201d, which isn't one of its options. Choose an option.",
     );
     expect(words('limit_without_entries', `${F}[3].options`).said).toBe(
       'The form keeps no entries, so this limit forgets each entry once its actions have run.',

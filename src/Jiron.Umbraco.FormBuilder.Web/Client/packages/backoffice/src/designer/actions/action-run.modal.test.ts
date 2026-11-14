@@ -57,7 +57,7 @@ describe("a last run's Details", () => {
       ['Tries', 'Tried 2 times, the first at 13:40.'],
       [
         'What can be done',
-        "Test sends a sample entry, so you can see whether the server answers again. Someone who sees this form's entries and may change its actions finds the entry in Entries with the Actions filter, and can retry the run there. An administrator can also retry it in Activity \u203a Deliveries.",
+        'Test sends a sample entry, so you can see whether the server answers again. With View entries and Manage actions, retry the run on its entry: Entries, Actions filter. An administrator can also retry it in Activity \u203a Deliveries.',
       ],
     ]);
     expect(root.querySelector('.line')?.getAttribute('data-tone')).toBe('danger');
@@ -74,7 +74,7 @@ describe("a last run's Details", () => {
     document.body.replaceChildren();
     const reader = await detailsOf();
     expect(text(all(reader.element, '.part')[3])).toBe(
-      "What can be done Someone who sees this form's entries and may change its actions finds the entry in Entries with the Actions filter, and can retry the run there. An administrator can also retry it in Activity \u203a Deliveries.",
+      'What can be done With View entries and Manage actions, retry the run on its entry: Entries, Actions filter. An administrator can also retry it in Activity \u203a Deliveries.',
     );
     expect(reader.root.querySelector('uui-button[slot="footer-info"]')).toBeNull();
   });

@@ -20,11 +20,9 @@ export default {
     failed: 'Die Formularprüfung hat nicht geantwortet. Versuchen Sie es gleich noch einmal.',
     retry: 'Erneut versuchen',
 
-    publishClear: 'Die Formularprüfung hat keine Probleme gefunden.',
+    publishClear: 'Keine Probleme gefunden.',
     publishErrors: (number: number) =>
-      number === 1
-        ? 'Dieses Formular kann noch nicht veröffentlicht werden: 1 Fehler muss behoben werden.'
-        : `Dieses Formular kann noch nicht veröffentlicht werden: ${number} Fehler müssen behoben werden.`,
+      number === 1 ? '1 Fehler verhindert das Veröffentlichen.' : `${number} Fehler verhindern das Veröffentlichen.`,
     publishWarnings: (number: number) =>
       number === 1
         ? 'Die Formularprüfung hat 1 Warnung gefunden. Sie verhindert das Veröffentlichen nicht.'
@@ -55,7 +53,7 @@ export default {
     place_ip: 'IP-Adressen',
     place_button: 'Text der Schaltfläche',
 
-    code_fields_missing: 'Das Formular hat noch kein Feld zum Ausfüllen; Besucher hätten also nichts zu senden.',
+    code_fields_missing: 'Besucher hätten nichts zu senden.',
     code_label_missing: 'Dieses Feld hat keine Beschriftung, mit der Screenreader und die Einträge es benennen.',
     code_lock_replaces_value: (setting: string) =>
       `Die Website legt „${setting}“ fest; das Formular läuft also mit dem Wert der Website statt mit seinem eigenen.`,
@@ -103,12 +101,12 @@ export default {
     code_reply_field_unset:
       'Wählen Sie das E-Mail-Feld, an das geantwortet wird, damit eine Antwort auf diese E-Mail die Person erreicht, die das Formular ausgefüllt hat.',
     code_required_can_hide:
-      'Diese Regel macht das Feld für Antworten zur Pflicht, für die eine Regel es verbirgt. Ein verborgenes Feld ist nie Pflicht; Besucher können also senden, ohne es auszufüllen.',
+      'Diese Regel macht das Feld bei Antworten zur Pflicht, bei denen eine andere Regel es verbirgt, und ein verborgenes Feld ist nie Pflicht.',
     code_page_unreachable: (number: number) =>
-      `Keine Antwort, die Besucher vor Seite ${number} geben können, lässt die Seite erscheinen; wer weitergeht, erreicht sie also nie.`,
+      `Keine Antwort vor Seite ${number} lässt sie erscheinen; Besucher erreichen sie also nie.`,
 
     code_rule_value_not_option: (value: string) =>
-      `Diese Regel vergleicht die Antwort mit „${value}“, das keine ihrer Optionen ist; Besucher geben es also nie. Wählen Sie eine der Optionen.`,
+      `Diese Regel vergleicht die Antwort mit „${value}“, das keine ihrer Optionen ist. Wählen Sie eine Option.`,
 
     code_consent_missing:
       'Das Formular fragt nach personenbezogenen Daten, etwa mit dieser Antwort, hat aber kein Einwilligungsfeld. Fügen Sie eines hinzu, wenn die Einträge auf Grundlage einer Einwilligung aufbewahrt und genutzt werden.',
@@ -124,14 +122,13 @@ export default {
       'Ein anonymes Formular läuft ohne das Mitglied, daher bleiben die Platzhalter des Mitglieds in diesem Text leer.',
     code_password_asked:
       'Dieses Feld fragt nach einem Passwort, das in den Einträgen, E-Mails und Exporten des Formulars landen würde. Lassen Sie Mitglieder sich stattdessen anmelden.',
-    code_file_size_unset:
-      'Dieses Feld nimmt Dateien bis zur Grenze der Website je Datei an: Legen Sie die Höchstgröße fest, die seine Antworten brauchen.',
+    code_file_size_unset: 'Ohne „Größte Datei“ dürfen Dateien so groß sein, wie die Website erlaubt.',
     code_file_size_above_site:
       'Die Website nimmt kleinere Dateien an, als dieses Feld erlaubt (Einstellungen › Dateien); eine größere Datei wird also abgewiesen.',
     code_file_type_not_taken:
       'Die Website nimmt einige der Typen, die dieses Feld erlaubt, nicht mehr an (Einstellungen › Dateien); solche Dateien werden also abgewiesen.',
     code_options_can_fill:
-      'Jede Option dieses Pflichtfelds hat eine begrenzte Zahl von Plätzen; sind alle vergeben, kann niemand das Formular senden: Fügen Sie eine Option ohne Grenze hinzu, oder erlauben Sie, das Feld leer zu lassen.',
+      'Sind alle Optionen dieses Pflichtfelds voll, kann niemand das Formular senden. Fügen Sie eine Option ohne Grenze hinzu, oder machen Sie das Feld optional.',
     code_limit_without_entries: (form: boolean) =>
       form
         ? 'Das Formular bewahrt keine Einträge auf; diese Grenze vergisst also jeden Eintrag, sobald seine Aktionen gelaufen sind.'

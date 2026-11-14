@@ -154,15 +154,13 @@ export default {
     cycle: (name: string) =>
       `With this rule, whether ${name} shows would depend on itself. Choose another question, or another element.`,
     useRule: 'Use this rule',
-    offHelpShows_field: 'Turn it off to keep the rule without using it. The field then always shows.',
-    offHelpShows_group: 'Turn it off to keep the rule without using it. The group then always shows.',
-    offHelpShows_page: 'Turn it off to keep the rule without using it. The page then always shows.',
-    offHelpRequired: 'Turn it off to keep the rule without using it. The field is then never required.',
-    offHelpMessage: 'Turn it off to keep the rule without using it. The message then never shows.',
-    offHelpUse:
-      'Turn it off to keep the rule without using it. Visitors then get this outcome unless an earlier one applies.',
-    offHelpRun:
-      'Turn it off to keep the rule without using it. The action then runs for every entry its trigger brings.',
+    offHelpShows_field: 'Off, the rule is kept and the field always shows.',
+    offHelpShows_group: 'Off, the rule is kept and the group always shows.',
+    offHelpShows_page: 'Off, the rule is kept and the page always shows.',
+    offHelpRequired: 'Off, the rule is kept and the field is never required.',
+    offHelpMessage: 'Off, the rule is kept and the message never shows.',
+    offHelpUse: 'Off, the rule is kept and visitors get this outcome unless an earlier one applies.',
+    offHelpRun: 'Off, the rule is kept and the action runs for every entry its trigger brings.',
     deleteRule: 'Delete rule',
     add: 'Add',
     update: 'Update',
@@ -171,7 +169,7 @@ export default {
     saidChanged: (name: string) => `Changed a rule of ${name}`,
     saidDeleted: (name: string) => `Deleted a rule of ${name}`,
     try: 'Try it',
-    tryHelp: 'Give answers to see what the rule does. Nothing you give here is kept.',
+    tryHelp: 'Nothing you give here is kept.',
     tryIncomplete: 'Complete every condition to try the rule.',
     tryShows: (name: string) => `${name} shows.`,
     tryHidden: (name: string) => `${name} stays hidden.`,
@@ -192,20 +190,17 @@ export default {
 
     overviewHeadline: 'Rules',
     overviewAdd: 'Add rule',
-    overviewEmpty:
-      'No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question.',
+    overviewEmpty: 'No rules yet. Most rules show a question only when another answer calls for it.',
     overviewPage: (number: number) => `Page ${number}`,
     overviewPageNamed: (number: number, name: string) => `Page ${number}: ${name}`,
     overviewAfter: 'After sending',
     overviewOff: 'Off',
     overviewConflict: (words: string) =>
-      `Conflict: when ${words}, one rule hides it and the other requires it. A hidden field is never required, so visitors can send without it.`,
+      `Conflict: when ${words}, one rule hides it and the other requires it. A hidden field is never required.`,
     overviewConflictAlways:
-      'Conflict: one rule hides it whatever the answers, and the other requires it. A hidden field is never required, so visitors can send without it.',
+      'Conflict: one rule hides it whatever the answers, and the other requires it. A hidden field is never required.',
     overviewConflictFiles: (name: string, count: number) => `${name} has ${count === 1 ? '1 file' : `${count} files`}`,
     overviewAffects: 'What should the rule affect?',
-    overviewAffectsHelp:
-      'Choose the question, group or page the rule shows, hides or requires, or the field it shows a message on.',
     overviewChoose: 'Choose an element',
     overviewContinue: 'Continue',
     overviewChooseFirst: 'Choose what the rule affects.',

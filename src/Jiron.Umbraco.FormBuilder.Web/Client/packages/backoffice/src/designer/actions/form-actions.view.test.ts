@@ -325,12 +325,8 @@ describe('the Actions view', () => {
       '',
     ]);
     expect(text(sections()[1]?.querySelector('.none'))).toBe('No actions here yet.');
-    expect(text(sections()[2]?.querySelector('.off'))).toBe(
-      'Runs when someone rejects an entry. It needs manual approval: turn it on in Settings',
-    );
-    expect(text(sections()[3]?.querySelector('.off'))).toBe(
-      'Runs when a visitor confirms their address. It needs email verification: turn it on in Settings',
-    );
+    expect(text(sections()[2]?.querySelector('.off'))).toBe('Needs manual approval: turn it on in Settings');
+    expect(text(sections()[3]?.querySelector('.off'))).toBe('Needs email verification: turn it on in Settings');
     expect(root.querySelector('#add')?.getAttribute('label')).toBe('Add action');
   });
 
@@ -365,9 +361,7 @@ describe('the Actions view', () => {
   it('starts empty with one sentence, Add action its only button', async () => {
     const { root, sections } = await viewOf(definitionWith([]));
     expect(sections()).toEqual([]);
-    expect(text(root.querySelector('.empty'))).toBe(
-      'No actions yet. Most forms email the team when an entry comes in, and Add action starts with that.',
-    );
+    expect(text(root.querySelector('.empty'))).toBe('No actions yet. Add action starts with an email to the team.');
   });
 
   it("names each card's action by what it does, its rule in words, and a site's own type by its type", async () => {

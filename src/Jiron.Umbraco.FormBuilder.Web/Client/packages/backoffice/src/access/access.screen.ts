@@ -18,8 +18,9 @@ import { LIBRARY_TREE_ALIAS } from '../tree/aliases';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { readAccess, readTarget, saveAccess, type AccessTarget } from './access-api';
 import { accessMatrix, matrixStyles, type MatrixPart } from './access-matrix';
-import { changedGrants, grantsOf, sentenceOf, withPermission, type Grants } from './access-model';
+import { changedGrants, type Grants, grantsOf, sentenceOf, withPending, withPermission } from './access-model';
 import { loadAccessWords } from './access-words';
+import { LeaveGuard } from '../ui/leave-guard';
 import { PERMISSIONS_MODAL } from './permissions.modal.token';
 import { jfbPhoneColumn } from '../styles/phone';
 
@@ -160,6 +161,13 @@ export class AccessScreenElement extends UmbLitElement {
 
   constructor() {
     super();
+    // Ticks not saved yet are asked about before the backoffice leaves the screen.
+    new LeaveGuard(
+      this,
+      () =>
+        this._answer !== undefined &&
+        changedGrants(grantsOf(this._answer.groups), this._grants, this.#order()).length > 0,
+    );
     this._answer = undefined;
     this._failed = false;
     this._grants = new Map();
@@ -248,7 +256,13 @@ export class AccessScreenElement extends UmbLitElement {
   /** Opens a folder's or form's Permissions sidebar; the list is read again once it saved. */
   async #open(target: AccessTarget, key: string) {
     const value = await umbOpenModal(this, PERMISSIONS_MODAL, { data: { target, key } }).catch(() => undefined);
-    if (value?.saved) await this.#read();
+    if (!value?.saved) return;
+    // The ticks not saved yet stay as they stand: the sidebar saved who sees one folder or form, not the grants.
+    const before = this._answer;
+    const mine = this._grants;
+    await this.#read();
+    if (before && this._answer && !this._failed)
+      this._grants = withPending(grantsOf(before.groups), mine, grantsOf(this._answer.groups));
   }
 
   /** Picks a folder or form from the library and opens its sidebar. */
@@ -352,7 +366,6 @@ export class AccessScreenElement extends UmbLitElement {
     const lock = answer.lock;
     return html`${alert ? html`<p class="alert" role="alert">${alert}</p>` : nothing}
       <uui-box headline-variant="h2" headline=${this.#words('everyForm')}>
-        <p class="lead">${this.#words('everyFormLead')}</p>
         <p class="note">${this.#words('administrators')}</p>
         ${this.#withoutSection(answer)}
         ${

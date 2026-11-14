@@ -29,6 +29,7 @@ import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { jfbPhoneColumn } from '../styles/phone';
 import { configKey } from '../ui/config-key';
+import { LeaveGuard } from '../ui/leave-guard';
 
 /** The states retention keeps entries in, in the order the screen names them. */
 export const STATES = ['submitted', 'approved', 'rejected', 'spam'] as const;
@@ -393,6 +394,8 @@ export class RetentionScreenElement extends UmbLitElement {
 
   constructor() {
     super();
+    // Days not saved yet are asked about before the backoffice leaves the screen.
+    new LeaveGuard(this, () => this.#changed());
     this._model = undefined;
     this._failed = false;
     this._days = DEFAULTS;

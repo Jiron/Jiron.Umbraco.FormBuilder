@@ -49,7 +49,7 @@ export default {
     actionRestore: 'Restore…',
     actionDeleteForGood: 'Delete…',
     optionForm: 'Form',
-    optionFormDescription: 'A new, empty form.',
+    optionFormDescription: 'Starts empty.',
     optionFromTemplate: 'Form from a template…',
     optionFromTemplateDescription: 'A contact form or another to adapt.',
     optionImport: 'Import a form…',
@@ -65,14 +65,13 @@ export default {
     columnTrashed: 'Trashed',
     columnActions: 'Actions',
     listFailed: "The forms couldn't be loaded.",
-    emptyFolder: 'No forms here yet. A template gives you a working form in a minute.',
+    emptyFolder: 'No forms here yet.',
     emptyFolderReadOnly: 'No forms here yet.',
     chooseTemplate: 'Choose a template…',
     loadMore: 'Show more',
     folderName: 'Folder name',
     binFailed: "The Recycle Bin couldn't be loaded.",
-    binEmpty:
-      'The Recycle Bin is empty. Trashed forms wait here with their entries until someone restores them or deletes them for good.',
+    binEmpty: 'The Recycle Bin is empty.',
     emptyBin: 'Empty recycle bin…',
     itemGone: "This item doesn't exist any more, or you don't have access to it.",
     inBinSince: (day: string) => `In the Recycle Bin since ${onDay(day, '')}.`,
@@ -83,15 +82,15 @@ export default {
     rename: 'Rename',
     name: 'Name',
     nameNeeded: 'Enter a name.',
-    templateName: 'Name of the template',
+    templateName: 'Name',
     templateDescription: 'Description',
     optional: '(optional)',
     saveTemplate: 'Save',
     saveAsTemplateHeadline: (name: string) => `Save ${name} as a template`,
-    saveAsTemplateNote: 'The template holds the form as last saved: changes not saved yet stay out.',
+    saveAsTemplateNote: 'Changes not saved yet stay out of the template.',
     savedAsTemplate: (name: string) => `${name} was saved as a template.`,
     deleteFolderHeadline: (name: string) => `Delete ${name}?`,
-    deleteFolderText: 'The folder is empty, so nothing else is deleted with it.',
+    deleteFolderText: 'The folder is empty.',
     deleteFolderConfirm: 'Delete folder',
 
     trashHeadline: (name: string) => `Move ${name} to the Recycle Bin?`,
@@ -122,7 +121,7 @@ export default {
 
     deleteFormHeadline: (name: string) => `Delete ${name} for good?`,
     deleteFormText: (entries: number, files: number) => {
-      if (entries === 0) return 'This deletes the form. It has no entries.';
+      if (entries === 0) return 'It has no entries.';
       const held = `its ${count(entries, 'entry', 'entries')}`;
       return files > 0
         ? `This deletes the form with ${held} and ${count(files, 'uploaded file', 'uploaded files')}.`
@@ -133,8 +132,7 @@ export default {
     deleteFormConfirm: (entries: number) =>
       entries === 0 ? 'Delete form' : entries === 1 ? 'Delete form and entry' : 'Delete form and entries',
     deleteTrashedFolderHeadline: (name: string) => `Delete ${name} for good?`,
-    deleteTrashedFolderText:
-      'This deletes the folder for good, with the forms, folders and entries that went to the Recycle Bin with it.',
+    deleteTrashedFolderText: 'The forms, folders and entries that went to the Recycle Bin with it are deleted too.',
     deleteTrashedFolderConfirm: 'Delete folder and contents',
     cannotUndo: "You can't undo this.",
 
@@ -197,7 +195,7 @@ export default {
     copyActionsToo: (actions: number) =>
       actions === 1 ? 'Copy its action too' : `Copy its ${number(actions)} actions too`,
     duplicateRestricted: (where: string) =>
-      `This form has access settings of its own, which the copy doesn't take: it lands in ${where} and gets the access set there.`,
+      `The copy doesn't take this form's own access settings: it gets the access set in ${where}.`,
 
     copyActionsHeadline: 'Copy actions',
     copyTo: 'Copy to',
@@ -260,26 +258,20 @@ export default {
     template_newsletter: 'Newsletter',
     template_newsletterDescription: 'An email address confirmed by a link, the topics and consent.',
     template_eventRegistration: 'Event registration',
-    template_eventRegistrationDescription:
-      'Sessions with places, the person over two pages, a summary and a confirmation.',
+    template_eventRegistrationDescription: 'Sessions with places, a summary and a confirmation.',
     template_jobApplication: 'Job application',
-    template_jobApplicationDescription:
-      'The person, a CV and a letter as files, consent, and approval before anything else.',
+    template_jobApplicationDescription: 'A CV and a letter as files, consent and manual approval.',
     template_feedback: 'Feedback',
-    template_feedbackDescription: 'How likely someone recommends you from 0 to 10, a grid of ratings and a comment.',
+    template_feedbackDescription: 'A recommendation score, a grid of ratings and a comment.',
     template_quoteRequest: 'Quote request',
-    template_quoteRequestDescription:
-      'A service and the hours, an estimate worked out as they type, and contact details.',
+    template_quoteRequestDescription: 'A service, the hours, a live estimate and contact details.',
     template_supportRequest: 'Support request',
-    template_supportRequestDescription:
-      'The topic, the urgency, a description and files, and a request number to quote.',
+    template_supportRequestDescription: 'Topic, urgency, a description, files and a request number.',
     template_privacyRequest: 'Privacy request',
-    template_privacyRequestDescription:
-      "A copy or the deletion of someone's data, sent to the privacy team once their address is confirmed.",
+    template_privacyRequestDescription: "A copy or the deletion of someone's data, once their address is confirmed.",
 
     importHeadline: 'Import a form',
-    importIntro:
-      'Choose a JSON file that a site running Jiron Form Builder exported. The form arrives as a new copy; nothing here changes.',
+    importIntro: 'Choose the JSON file of an exported form.',
     chooseFile: 'Choose a file…',
     chooseAnotherFile: 'Choose another file…',
     readingFile: 'Reading the file',
@@ -310,12 +302,11 @@ export default {
     noteActionType: (type: string) => `This site has no action type "${type}", so that action stays off.`,
     notePageMissing: 'An outcome sends visitors to a page this site lacks. Choose another page for it.',
     noteOther: (code: string) => `The import noted "${code}". Check the form before you publish it.`,
-    arrivesAsDraft: (where: string) =>
-      `It arrives as a draft in ${where}, so visitors see nothing until you publish it.`,
+    arrivesAsDraft: (where: string) => `It arrives as a draft in ${where}.`,
     importAsNewCopy: 'Import as a new copy',
     replaceHeadline: (name: string) => `Replace ${name} from a file`,
     replaceIntro:
-      'Choose a JSON file that a site running Jiron Form Builder exported. Its form becomes the draft of this form; the name, entries and access stay as they are.',
+      'Choose the JSON file of an exported form. Its form becomes the draft of this form; the name, entries and access stay as they are.',
     replacesDraft: (name: string) =>
       `It becomes the draft of ${name}. Visitors keep seeing the published version until you publish.`,
     replaceDiscardsUnsaved: "Changes you haven't saved yet are discarded.",

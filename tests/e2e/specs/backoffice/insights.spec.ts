@@ -167,7 +167,7 @@ test('the beacons arrive, the Insights view fills, and turning the form off in i
   await expect(head).toBeVisible({ timeout: 60_000 });
   await expect(head).toContainText('Insights on');
   await head.click();
-  const toggle = settings.getByRole('switch', { name: 'Count what visitors do with this form' });
+  const toggle = settings.getByRole('switch', { name: 'Insights' });
   await expect(toggle).toBeChecked();
   await toggle.uncheck();
   const saved = page.waitForResponse(

@@ -61,7 +61,7 @@ public sealed class SettingsWordsTests
     private static IEnumerable<string> Keys(SettingsFieldDescriptor field) =>
     [
         field.Label,
-        field.Description,
+        .. field.Description is null ? [] : new[] { field.Description },
         .. field.Unit is null ? [] : new[] { field.Unit },
         .. field.Choices.Select(choice => $"{field.Label}_{choice}"),
         .. field.Fields.SelectMany(Keys),

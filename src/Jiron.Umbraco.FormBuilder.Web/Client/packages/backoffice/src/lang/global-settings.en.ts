@@ -38,56 +38,46 @@ export default {
     // General
     generalBox_forms: 'Defaults for forms',
     general_theme: 'Default theme',
-    general_themeHelp: 'Forms use it unless their Appearance group picks another.',
     general_requiredMarker: 'Fields that get a mark',
-    general_requiredMarkerHelp:
-      'Most forms have more required fields than optional ones, so marking the few optional ones reads calmer.',
+    general_requiredMarkerHelp: 'Most forms have few optional fields, so marking those reads calmer.',
     general_requiredMarker_required: 'Required fields, with "*"',
     general_requiredMarker_optional: 'Optional fields, with "(optional)"',
     general_requiredMarker_none: 'No fields',
     general_submitLabel: 'Send button',
-    general_submitLabelHelp: "What the last page's button says, unless a form labels it. Left empty, it says Send.",
+    general_submitLabelHelp: 'Left empty, it says Send.',
     general_nextLabel: 'Next button',
-    general_nextLabelHelp:
-      "What a page's button to the next one says, unless a form labels it. Left empty, it says Next.",
+    general_nextLabelHelp: 'Left empty, it says Next.',
     general_backLabel: 'Back button',
-    general_backLabelHelp: "What a page's button back says, unless a form labels it. Left empty, it says Back.",
+    general_backLabelHelp: 'Left empty, it says Back.',
     general_texts: 'Visitor texts',
-    general_textsHelp:
-      "Your own words for the texts every form brings, such as its hints, notices and error messages. A form's own words come first.",
+    general_textsHelp: 'Your own words for the hints, notices and error messages every form brings.',
     generalBox_site: 'Address and time',
     general_baseUrl: 'Base URL',
     general_baseUrlHelp: 'Links in emails start with it. Left empty, they start with the address shown in the box.',
     general_timeZone: 'Time zone',
-    general_timeZoneHelp:
-      "Dates in emails and exports use it. The zone set for all sites is also the one forms open and close in. Type a city's first letters to find it.",
+    general_timeZoneHelp: 'Dates in emails and exports use it. Forms open and close in the zone set for all sites.',
     zonesWithoutArea: 'Universal',
-    generalBox_newForms: 'New forms',
-    generalBox_newFormsLead:
-      'What a form created from blank starts with. A template brings its own fields and actions.',
+    generalBox_newForms: 'New blank forms',
     general_newForms: 'New forms',
     general_newFormsHelp: 'What a form created from blank starts with.',
     general_newForms_consent: 'Add a consent field',
     general_newForms_consentHelp:
-      "A required box at the end of the last page, with the site's own wording. Forms that keep personal data need one where consent is their basis.",
+      'A required checkbox at the end of the last page. Forms that keep personal data need one where consent is their basis.',
     consentLabel: 'Label',
     consentText: 'Wording',
     consentNeedsLabel: 'Give the consent field a label.',
     general_newForms_notifyCreator: "Email each entry to the form's creator",
-    general_newForms_notifyCreatorHelp: 'New forms start with an email action to whoever creates them.',
     generalBox_history: 'History',
     generalBox_historyLead:
-      "How long each form's History keeps its draft saves. Published and pinned versions, each form's current draft and the versions entries were sent with are always kept.",
+      "Published and pinned versions, each form's current draft and the versions entries were sent with are always kept.",
     general_history: 'History',
     general_historyHelp: "How long each form's History keeps its draft saves.",
     general_history_draftDays: 'Keep draft saves for',
     general_history_draftDaysUnit: 'days',
-    general_history_draftDaysHelp: 'Every draft save stays at least this long.',
-    general_history_draftCount: 'Always keep the newest',
+    general_history_draftCount: "Always keep each form's newest",
     general_history_draftCountUnit: 'draft saves',
-    general_history_draftCountHelp: 'However old they are, each form keeps this many of its newest draft saves.',
     formBlock: 'Putting forms on pages',
-    formBlockThere: (date: string) => `Pages show forms through the block type Form, created on ${date}.`,
+    formBlockThere: 'Pages show forms through the block type Form.',
     formBlockHow: 'Add it to the available blocks of the Block List or Block Grid data type your pages use.',
     formBlockMissing:
       "Pages can't show forms yet: they need the block type Form, which is then added to a Block List or Block Grid.",
@@ -103,25 +93,22 @@ export default {
     testFailed: "The test email couldn't be sent. Try again in a moment.",
     emailBox_sender: 'Sender',
     email_senderName: 'Name',
-    email_senderNameHelp: 'Who mail comes from, as inboxes show it.',
     email_senderAddress: 'Address',
     email_senderAddressHelp: "Use an address of the site's own domain, so mail servers trust it.",
     email_defaultLayout: 'Default layout',
-    email_defaultLayoutHelp: "Mail looks like this unless a form's email picks another layout.",
     email_defaultLayout_card: 'Card',
     email_defaultLayout_letter: 'Letter',
     emailBox_team: 'The team',
     email_teamRecipients: 'System notices go to',
     email_teamRecipientsHelp: 'They hear when a delivery fails for good, at most once an hour per form.',
     email_forwardAddresses: 'Addresses entries may be forwarded to',
-    email_forwardAddressesHelp:
-      'Besides backoffice users, Forward offers only these, so entries leave the site only to people it already trusts.',
+    email_forwardAddressesHelp: 'Besides backoffice users, Forward offers only these.',
 
     // Spam protection
     protectionBox_level: 'Default protection',
     protection_level: 'Protection',
     protection_levelHelp:
-      'Forms use it unless their Spam protection group picks another. reCAPTCHA and hCaptcha load a script from their provider, only on forms that use them, and only as the consent below allows.',
+      "reCAPTCHA and hCaptcha load their provider's script, only on forms that use them and only as the consent below allows.",
     protection_level_standard: 'Standard',
     protection_level_standardLine:
       'A hidden field, a minimum fill time and a signed check. Nothing loads from other sites.',
@@ -130,7 +117,7 @@ export default {
       "The visitor's browser also solves a short puzzle, which costs bots time. It needs JavaScript.",
     protection_level_captcha: 'A captcha',
     captchaKeys: 'Keys found in host configuration.',
-    captchaNoKeys: (key: string) => `No keys yet. A developer adds them in ${key}.`,
+    captchaNoKeys: (key: string) => `No keys in host configuration yet: ${key}`,
     captchaGone: 'No longer on this site. Choose another.',
     protection_captchaProvider: 'Captcha',
     protection_captchaProviderHelp: 'The captcha forms use when their protection is a captcha.',
@@ -140,8 +127,6 @@ export default {
       "Each bit more doubles the work for the visitor's browser and for bots. The default, 16, takes a phone a moment.",
     protectionBox_consent: 'Third-party captchas',
     protection_captchaConsent: 'Before reCAPTCHA or hCaptcha loads',
-    protection_captchaConsentHelp:
-      'Only forms protected by reCAPTCHA or hCaptcha ask. Standard protection needs no consent.',
     protection_captchaConsent_explicit: 'Ask on the form',
     protection_captchaConsent_explicitLine: 'The form shows a short notice and a button that loads the check.',
     protection_captchaConsent_cookiebot: 'Follow a Cookiebot category',
@@ -158,10 +143,8 @@ export default {
     protection_cookiebotCategory_necessary: 'Necessary',
     protection_cookiebotCategory_marketing: 'Marketing',
     protectionBox_content: 'Content checks',
-    protectionBox_contentLead:
-      'A match never refuses an entry: it moves it to Spam, where nothing is lost. A blocked email domain is enough on its own; blocked words and extra links add up.',
+    protectionBox_contentLead: 'A match never refuses an entry: it moves it to Spam, where nothing is lost.',
     protection_contentRules: 'Default strictness',
-    protection_contentRulesHelp: 'Forms use it unless their Spam protection group picks another.',
     protection_contentRules_off: 'Off',
     protection_contentRules_normal: 'Normal: three blocked words, or two with too many links',
     protection_contentRules_strict: 'Strict: two blocked words, or one with too many links',
@@ -174,7 +157,7 @@ export default {
     protectionBox_ranges: 'Blocked address ranges',
     protection_blockedRanges: 'Ranges',
     protection_blockedRangesHelp:
-      'Ranges such as 203.0.113.0/24. Entries sent from them go to Spam. The address is compared when an entry arrives and never stored.',
+      'Entries sent from them, such as 203.0.113.0/24, go to Spam. The address is compared when an entry arrives and never stored.',
 
     // Files
     filesBox_types: 'What visitors may upload',
@@ -214,7 +197,7 @@ export default {
       'Webhook actions sign every call with it, so the receiver can tell it came from this site. The secret itself stays in host configuration.',
     integrations_umbracoWebhookEvents: 'Offer entry events',
     integrations_umbracoWebhookEventsHelp:
-      "Adds Entry submitted, approved, rejected and deleted, and Action failed, to the events of Umbraco's Settings › Webhooks, where developers subscribe to them.",
+      "Adds Entry submitted, approved, rejected and deleted, and Action failed, to the events of Umbraco's Settings › Webhooks.",
     hosts: 'Hosts that webhooks may call',
     hostsNone: 'None yet, so webhook actions and JSON option lists call no address.',
     hostsKey: (key: string) => `Host configuration sets them: ${key}.`,
@@ -223,12 +206,10 @@ export default {
     integrationsBox_chatLead:
       'Slack and Microsoft Teams actions use these unless they set their own. The addresses work like passwords, so they are entered as references to host configuration.',
     integrations_slackWebhook: 'Slack webhook address',
-    integrations_slackWebhookHelp: 'Where Slack actions post unless they name their own.',
     integrations_teamsWebhook: 'Teams webhook address',
-    integrations_teamsWebhookHelp: 'Where Teams actions post unless they name their own.',
     referencePlaceholder: (name: string) => `A reference, such as $JironFormBuilder:Secrets:${name}`,
     referenceFound: 'Found in host configuration.',
-    referenceMissing: (key: string) => `Not in host configuration yet: a developer adds ${key}.`,
+    referenceMissing: (key: string) => `Not in host configuration yet: ${key}`,
     referenceInvalid: 'Enter a reference such as $JironFormBuilder:Secrets:Crm, never the secret itself.',
 
     // Privacy › Retention
@@ -240,13 +221,11 @@ export default {
     privacy_retention_submittedHelp: 'Entries waiting for approval count here too.',
     privacy_retention_submittedUnit: 'days',
     privacy_retention_approved: 'Approved',
-    privacy_retention_approvedHelp: 'Entries a reviewer approved, or that were approved at once.',
+    privacy_retention_approvedHelp: 'Also every entry of a form without manual approval.',
     privacy_retention_approvedUnit: 'days',
     privacy_retention_rejected: 'Rejected',
-    privacy_retention_rejectedHelp: 'Entries a reviewer rejected.',
     privacy_retention_rejectedUnit: 'days',
     privacy_retention_spam: 'Spam',
-    privacy_retention_spamHelp: 'Entries the checks or a reviewer moved to Spam.',
     privacy_retention_spamUnit: 'days',
     retentionForGood: 'Keep for good',
     retentionForGoodShown: 'Kept for good',
@@ -273,7 +252,7 @@ export default {
         : `${count} more are on legal hold and stay until their holds end.`,
     retentionHeldStay: 'Entries on legal hold stay.',
     retentionUnsaved: 'Counted with the days above, before you save.',
-    retentionByItself: 'Nothing needs to be pressed: retention deletes by itself every hour.',
+    retentionByItself: 'Retention deletes by itself, every hour.',
     retentionColumnForm: 'Form',
     retentionColumnEntries: 'Entries',
     retentionColumnFiles: 'Files',
@@ -322,13 +301,13 @@ export default {
     people_releaseLabel: (entry: string) => `Release the legal hold on ${entry}`,
     people_released: 'The legal hold is released.',
     people_exporting: (done: string, total: string) =>
-      `Preparing the export: ${done} of ${total} entries. You can keep working; a notification links to the file.`,
+      `Preparing the export: ${done} of ${total} entries. A notification will link to the file.`,
     people_exportLabel: 'Export',
     people_exportFailed: "The export couldn't be prepared. Try again.",
     people_erased: (who: string, parts: readonly string[]) =>
-      `Everything about ${who} is erased: ${and(parts)}. Statistics stay.`,
+      `Everything about ${who} is erased: ${and(parts)}. Insights stay.`,
     people_erasedAnonymised: (who: string, entries: string, one: boolean, deleted: readonly string[]) =>
-      `Everything about ${who} is erased: ${entries} anonymised, which ${one ? 'stays' : 'stay'} in the counts${deleted.length > 0 ? `, and ${and(deleted)} deleted` : ''}. Statistics stay.`,
+      `Everything about ${who} is erased: ${entries} anonymised, which ${one ? 'stays' : 'stay'} in the counts${deleted.length > 0 ? `, and ${and(deleted)} deleted` : ''}. Insights stay.`,
     people_erasedHeld: (entries: string, one: boolean) =>
       one
         ? `${entries} on legal hold stays until its hold ends.`
@@ -337,7 +316,7 @@ export default {
     people_auditRecorded: "It's recorded in the audit log.",
     people_eraseHeadline: (who: string) => `Erase everything about ${who}?`,
     people_eraseText: (parts: readonly string[], one: boolean) =>
-      `${and(parts)} ${one ? 'is' : 'are'} erased. Statistics stay. You can't undo this.`,
+      `${and(parts)} ${one ? 'is' : 'are'} erased. Insights stay. You can't undo this.`,
     people_eraseHeld: (entries: string, one: boolean) =>
       one
         ? `${entries} on legal hold stays until its hold ends.`
@@ -350,6 +329,7 @@ export default {
     people_eraseAnonymise: 'Anonymise them',
     people_eraseAnonymiseHelp: 'The entries stay in the counts without any answer, file or email of the person.',
     people_eraseConfirm: (entries: string) => `Erase ${entries}`,
+    people_eraseConfirmAnonymise: (entries: string) => `Anonymise ${entries}`,
     people_eraseNothing: 'Every entry is on legal hold, so there is nothing to erase until the holds end.',
     people_eraseFailed: "The erase couldn't be done. Nothing changed; try again.",
     people_holdHeadline: 'Set legal hold',
@@ -370,7 +350,7 @@ export default {
     // Privacy › Data collection
     privacyBox_ip: 'IP addresses',
     privacyBox_ipLead:
-      'Each entry can keep the address it was sent from. Rate limits and blocked address ranges read the address without keeping it.',
+      'Rate limits and blocked address ranges read the address an entry is sent from without keeping it.',
     privacy_ip: 'What entries keep',
     privacy_ipHelp: 'Each form can choose its own in its Settings view, under Privacy.',
     privacy_ip_none: 'Nothing',
@@ -382,17 +362,15 @@ export default {
     privacy_ip_fullLine: 'Only for a site that needs it whole, such as to report abuse. Say so in your privacy policy.',
     privacyBox_insights: 'Insights',
     privacyBox_insightsLead:
-      "Forms count what visitors do with them, for each form's Insights view and the Overview: views, starts, the pages they reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser.",
+      "Forms count views, starts, the pages visitors reach and the fields that stop them. No answer and no visitor is counted, and nothing is stored in the visitor's browser.",
     privacy_insights: 'Count what visitors do with the forms',
     privacy_insightsHelp: 'Each form can turn it off in its Settings view, under Privacy.',
     privacyBox_members: 'Members',
-    privacyBox_membersLead:
-      'When a member is deleted in Umbraco, their entries in every form go with them, or keep nothing that names them. Their drafts always go, and a legal hold keeps its entries as they are.',
+    privacyBox_membersLead: "A deleted member's drafts always go, and a legal hold keeps its entries as they are.",
     privacy_memberDeleted: 'When a member is deleted',
-    privacy_memberDeletedHelp: 'The same for every site, since a member belongs to none.',
     privacy_memberDeleted_anonymise: 'Anonymise their entries',
     privacy_memberDeleted_anonymiseLine:
-      'The entries stay with their form, number and state, so counts and statistics keep them; every answer and everything else about the member goes.',
+      'The entries stay in the counts, with their form, number and state; every answer and everything else about the member goes.',
     privacy_memberDeleted_delete: 'Delete their entries',
     privacy_memberDeleted_deleteLine: 'The entries go, with their files and mail.',
   },

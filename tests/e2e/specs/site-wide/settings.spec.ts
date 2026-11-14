@@ -76,7 +76,7 @@ test('Settings \u203a General keeps draft saves, picks the time zone from the li
   await expect(page).toHaveURL(/workspace\/jfb-settings-general$/);
 
   const days = screen.getByRole('textbox', { name: 'Keep draft saves for' });
-  const count = screen.getByRole('textbox', { name: 'Always keep the newest' });
+  const count = screen.getByRole('textbox', { name: "Always keep each form's newest" });
   const zone = screen.getByRole('combobox', { name: 'Time zone' });
   await expect(days).toHaveValue(String((before.values['history'] as { draftDays: number }).draftDays));
   await axeInside(page, 'jfb-settings-general');

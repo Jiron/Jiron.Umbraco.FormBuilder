@@ -321,7 +321,7 @@ describe('the People screen', () => {
 
     expect(api.modals[0]?.data).toMatchObject({ person: { email: 'lena@example.com' }, who: 'lena@example.com' });
     expect(said(root.querySelector('.done'))).toBe(
-      'Everything about lena@example.com is erased: 1 entry, 1 saved draft and 3 emails. Statistics stay. 1 entry on legal hold stays until its hold ends. Open the audit log',
+      'Everything about lena@example.com is erased: 1 entry, 1 saved draft and 3 emails. Insights stay. 1 entry on legal hold stays until its hold ends. Open the audit log',
     );
     expect(root.querySelector('table')).toBeNull();
   });
@@ -339,7 +339,7 @@ describe('the People screen', () => {
     await vi.waitFor(() => expect(root.querySelector('.done')).not.toBeNull());
     await settle(screen);
     expect(said(root.querySelector('.done p'))).toBe(
-      'Everything about lena@example.com is erased: 1 entry anonymised, which stays in the counts, and 2 files deleted. Statistics stay.',
+      'Everything about lena@example.com is erased: 1 entry anonymised, which stays in the counts, and 2 files deleted. Insights stay.',
     );
   });
 
@@ -355,7 +355,7 @@ describe('the People screen', () => {
     api.followers[0]?.listener.progress({ ...queued, state: 'running', done: 2 });
     await settle(screen);
     expect(said(root.querySelector('.progress'))).toBe(
-      'Preparing the export: 2 of 3 entries. You can keep working; a notification links to the file.',
+      'Preparing the export: 2 of 3 entries. A notification will link to the file.',
     );
     expect(button('Export everything').hasAttribute('disabled')).toBe(true);
 
@@ -420,7 +420,7 @@ describe('the erase dialog', () => {
       'Erase everything about lena@example.com?',
     );
     expect(text(root.getElementById('what'))).toBe(
-      "6 entries in 2 forms, 2 files and 4 emails are erased. Statistics stay. You can't undo this.",
+      "6 entries in 2 forms, 2 files and 4 emails are erased. Insights stay. You can't undo this.",
     );
     expect(text(root.querySelector('#what + p'))).toBe('1 entry on legal hold stays until its hold ends.');
     expect([...root.querySelectorAll('.forms dd')].map((cell) => text(cell))).toEqual([
@@ -438,7 +438,7 @@ describe('the erase dialog', () => {
     const { root } = await dialogOf([CONTACT]);
 
     expect(text(root.getElementById('what'))).toBe(
-      "3 entries in Contact us and 3 emails are erased. Statistics stay. You can't undo this.",
+      "3 entries in Contact us and 3 emails are erased. Insights stay. You can't undo this.",
     );
     expect(root.querySelector('.forms')).toBeNull();
     expect(must(root.querySelector<HTMLElement>('uui-button[color="danger"]'), 'Erase').getAttribute('label')).toBe(
@@ -454,7 +454,9 @@ describe('the erase dialog', () => {
       new Event('change'),
     );
     await settle(element);
-    must(root.querySelector<HTMLElement>('uui-button[color="danger"]'), 'Erase').click();
+    const confirm = must(root.querySelector<HTMLElement>('uui-button[color="danger"]'), 'Erase');
+    expect(confirm.getAttribute('label'), 'the button says what the choice does').toContain('Anonymise ');
+    confirm.click();
     await vi.waitFor(() => expect(context.submit).toHaveBeenCalled());
 
     expect(api.erased).toEqual([{ email: 'lena@example.com', mode: 'anonymise' }]);

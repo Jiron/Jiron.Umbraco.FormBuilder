@@ -13,7 +13,7 @@ export default {
     columnKind: 'Art',
     columnUsedBy: 'Verwendet von',
     usedBy: (count: number) => (count === 0 ? 'keinem Formular' : count === 1 ? '1 Formular' : `${count} Formularen`),
-    loadMore: 'Mehr laden',
+    loadMore: 'Mehr anzeigen',
     kind_manual: 'Feste Optionen',
     kind_content: 'Seiten',
     kind_dataType: 'Werte eines Datentyps',
@@ -24,7 +24,7 @@ export default {
     kind_unknown: 'Eine Art, die diese Version nicht kennt',
     kindHelp_manual: 'Optionen eintippen oder einfügen',
     kindHelp_content: 'Die Seiten unter einer Inhaltsseite',
-    kindHelp_dataType: 'Die Werte eines Datentyps mit Dropdown, Kontrollkästchen- oder Optionsfeldliste',
+    kindHelp_dataType: 'Dropdown, Kontrollkästchen- oder Optionsfeldliste',
     kindHelp_url: 'Von einer Webadresse abgerufen und eine Weile behalten',
     kindHelp_file: 'Aus einer CSV- oder TXT-Datei gelesen',
     kindHelp_countries: 'Alle Länder oder die gewählten, in der Sprache der Besucher',
@@ -54,16 +54,14 @@ export default {
     uploadTooLarge: (megabytes: number) => `Eine Datei mit Optionen ist höchstens ${megabytes} MB groß.`,
     fileOptions: (count: number) =>
       count === 1 ? '1 Option aus der letzten Datei' : `${count} Optionen aus der letzten Datei`,
-    fileNeeded: 'Laden Sie eine Datei hoch, um der Liste ihre Optionen zu geben.',
+    fileNeeded: 'Noch keine Datei.',
     replaced: (count: number) =>
-      count === 1 ? 'Die Optionen sind jetzt die 1 der Datei.' : `Die Optionen sind jetzt die ${count} der Datei.`,
+      count === 1 ? 'Durch die 1 Option der Datei ersetzt.' : `Durch die ${count} Optionen der Datei ersetzt.`,
     undo: 'Rückgängig',
     keepUrl: 'Abgerufene Optionen behalten für',
     keepCode: 'Optionen behalten für',
-    keepUrlHelp:
-      'Formulare verwenden die behaltene Kopie und rufen nach dieser Zeit eine neue ab. Antwortet die Adresse nicht, bleibt die letzte Kopie in Gebrauch.',
-    keepCodeHelp:
-      'Formulare fragen die Liste nach dieser Zeit erneut. Behalten Sie sie eine Weile, wenn das Erstellen der Optionen lange dauert.',
+    keepUrlHelp: 'Antwortet die Adresse nicht, bleibt die letzte Kopie in Gebrauch.',
+    keepCodeHelp: 'Eine längere Zeit hilft, wenn das Erstellen der Optionen lange dauert.',
     keep_none: 'Nicht behalten',
     keep_seconds: (count: number) => (count === 1 ? '1 Sekunde' : `${count} Sekunden`),
     keep_minutes: (count: number) => (count === 1 ? '1 Minute' : `${count} Minuten`),
@@ -102,8 +100,7 @@ export default {
     deleteConfirm: 'Löschen',
     deleted: (name: string) => `${name} wurde gelöscht.`,
     inUseHeadline: (name: string) => `${name} wird verwendet`,
-    inUseText:
-      'Wählen Sie in den Feldern, die ihre Optionen daraus beziehen, eine andere Quelle, und löschen Sie sie dann. Diese Formulare verwenden sie:',
+    inUseText: 'Wählen Sie in den Feldern dieser Formulare eine andere Quelle, und löschen Sie sie dann:',
     deleteFailed: 'Die Liste konnte nicht gelöscht werden.',
     changedMeanwhile:
       'Jemand anderes hat diese Liste inzwischen geändert. Laden Sie sie erneut, und nehmen Sie dann Ihre Änderung vor.',

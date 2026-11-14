@@ -28,7 +28,7 @@ internal sealed record GeneralSettings : ISettingsSection
     /// ADR-0105); null for <c>default</c>. It is not held to the registered themes: one the site no longer has renders as
     /// <c>default</c>.
     /// </summary>
-    [SettingsField("forms", Editor = "theme")]
+    [SettingsField("forms", Editor = "theme", Help = false)]
     public string? Theme { get; init; }
 
     /// <summary>
@@ -109,12 +109,12 @@ internal sealed record HistorySettings
     public const int MaxDraftCount = 1000;
 
     /// <summary>The days a draft save stays at least: 90 by default.</summary>
-    [SettingsField("", Unit = true)]
+    [SettingsField("", Unit = true, Help = false)]
     [Range(MinDraftDays, MaxDraftDays)]
     public int DraftDays { get; init; } = 90;
 
     /// <summary>How many of a form's newest draft saves stay however old they are: 50 by default.</summary>
-    [SettingsField("", Order = 1, Unit = true)]
+    [SettingsField("", Order = 1, Unit = true, Help = false)]
     [Range(0, MaxDraftCount)]
     public int DraftCount { get; init; } = 50;
 }
@@ -130,7 +130,7 @@ internal sealed record NewFormDefaults
     public NewFormConsent? Consent { get; init; }
 
     /// <summary>Whether a new form starts with an email action to its creator, unless a template brings one; off by default (ADR-0160).</summary>
-    [SettingsField("", Order = 1)]
+    [SettingsField("", Order = 1, Help = false)]
     public bool NotifyCreator { get; init; }
 }
 

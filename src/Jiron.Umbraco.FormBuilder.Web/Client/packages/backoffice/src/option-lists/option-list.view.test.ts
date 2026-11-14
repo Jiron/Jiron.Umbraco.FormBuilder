@@ -269,7 +269,7 @@ describe("an option list's view", () => {
     expect([color, toast.elementName, toast.data.message, toast.data.undoLabel]).toEqual([
       'positive',
       UNDO_NOTIFICATION,
-      "The options are now the file's 2.",
+      "Replaced with the file's 2 options.",
       'Undo',
     ]);
     await toast.data.undo();
@@ -298,7 +298,7 @@ describe("an option list's view", () => {
   it("says how many options an upload list's last file gave, or that it needs one, and offers no Undo", async () => {
     const needing = await viewOf(list({ kind: 'file', items: [] }));
     expect(must(needing.root.querySelector('uui-box'), 'box').getAttribute('headline')).toBe('An upload');
-    expect(text(needing.root.querySelector('.upload .lead'))).toBe('Upload a file to give the list its options.');
+    expect(text(needing.root.querySelector('.upload .lead'))).toBe('No file yet.');
     expect(needing.root.querySelector('jfb-option-editor')).toBeNull();
     document.body.replaceChildren();
 

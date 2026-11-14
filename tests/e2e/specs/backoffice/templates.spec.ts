@@ -146,7 +146,7 @@ test('a group saved on one form is inserted into another with keys of its own an
   ).toBeVisible();
   const width = (await dialog.locator('uui-dialog-layout').boundingBox())?.width ?? Infinity;
   expect(width, 'the note wraps in a dialog as wide as a sentence reads well').toBeLessThanOrEqual(520);
-  await dialog.getByRole('textbox', { name: 'Name of the template' }).fill(block);
+  await dialog.getByRole('textbox', { name: 'Name' }).fill(block);
   await axeInside(page, 'jfb-template-name-modal');
   await look(page, info, 'save group as template');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
@@ -209,7 +209,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
     .filter({ visible: true })
     .click();
   const dialog = page.locator('jfb-template-name-modal');
-  await expect(dialog.getByRole('textbox', { name: 'Name of the template' })).toHaveValue(name);
+  await expect(dialog.getByRole('textbox', { name: 'Name' })).toHaveValue(name);
   await dialog.getByRole('textbox', { name: 'Description' }).fill('For questions about an order');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(toast(page, `${name} was saved as a template.`)).toBeVisible();
@@ -227,7 +227,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
   await screen.getByRole('button', { name: `Actions for ${name}` }).click();
   await screen.locator('uui-menu-item[label="Rename\u2026"]').click();
   const renamed = `${name} renamed`;
-  await dialog.getByRole('textbox', { name: 'Name of the template' }).fill(renamed);
+  await dialog.getByRole('textbox', { name: 'Name' }).fill(renamed);
   await dialog.getByRole('button', { name: 'Rename', exact: true }).click();
   await expect(toast(page, `The template is now ${renamed}.`)).toBeVisible();
   await expect(screen.locator('.card').filter({ hasText: renamed })).toBeVisible();

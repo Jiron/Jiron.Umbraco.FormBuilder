@@ -466,7 +466,6 @@ export class EmailLayoutViewElement extends UmbLitElement {
                   html`<option value=${look} ?selected=${design.look === look}>${this.#term(`look_${look}`)}</option>`,
               )}
             </select>
-            <p class="help">${this.#term(`lookHelp_${design.look}`)}</p>
           </div>
         </div>
         <div class="group" role="group" aria-labelledby="logo-heading">
@@ -515,7 +514,6 @@ export class EmailLayoutViewElement extends UmbLitElement {
                   <label class="label" for="language">${this.#term('language')}</label>
                   <select
                     id="language"
-                    aria-describedby="language-help"
                     @change=${(event: Event) => {
                       this._culture = (event.target as HTMLSelectElement).value;
                       this.#schedule();
@@ -528,7 +526,6 @@ export class EmailLayoutViewElement extends UmbLitElement {
                         </option>`,
                     )}
                   </select>
-                  <p class="help" id="language-help">${this.#term('languageHelp')}</p>
                 </div>`
               : nothing
           }

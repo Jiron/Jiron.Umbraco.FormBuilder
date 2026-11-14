@@ -23,11 +23,9 @@ export default {
     failed: "The form check didn't answer. Try again in a moment.",
     retry: 'Try again',
 
-    publishClear: 'The form check found no problems.',
+    publishClear: 'No problems found.',
     publishErrors: (number: number) =>
-      number === 1
-        ? "This form can't be published yet: 1 error needs fixing."
-        : `This form can't be published yet: ${number} errors need fixing.`,
+      number === 1 ? '1 error blocks publishing.' : `${number} errors block publishing.`,
     publishWarnings: (number: number) =>
       number === 1
         ? "The form check found 1 warning. It doesn't block publishing."
@@ -56,7 +54,7 @@ export default {
     place_ip: 'IP addresses',
     place_button: 'Button text',
 
-    code_fields_missing: 'The form has no field to fill in yet, so visitors would have nothing to send.',
+    code_fields_missing: 'Visitors would have nothing to send.',
     code_label_missing: 'This field has no label, which screen readers and the entries name it by.',
     code_lock_replaces_value: (setting: string) =>
       `The site locks "${setting}", so the form runs with the site's value instead of the one it holds.`,
@@ -98,12 +96,12 @@ export default {
     code_reply_field_unset:
       'Choose the email field to reply to, so a reply to this mail reaches the person who filled in the form.',
     code_required_can_hide:
-      'This rule makes the field required for answers for which a rule hides it. A hidden field is never required, so visitors can send without it.',
+      'This rule requires the field for answers where another rule hides it, and a hidden field is never required.',
     code_page_unreachable: (number: number) =>
-      `No answers a visitor can give before page ${number} make it show, so a visitor going forward never reaches it.`,
+      `No answers given before page ${number} make it show, so visitors never reach it.`,
 
     code_rule_value_not_option: (value: string) =>
-      `This rule compares the answer to “${value}”, which is none of its options, so a visitor never gives it. Choose one of the options.`,
+      `This rule compares the answer to “${value}”, which isn't one of its options. Choose an option.`,
 
     code_consent_missing:
       'The form asks for personal data, such as this answer, but has no consent field. Add one if consent is the basis on which the entries are kept and used.',
@@ -118,14 +116,13 @@ export default {
     code_anonymous_member_tag: "An anonymous form runs without the member, so this text's member tags stay empty.",
     code_password_asked:
       "This field asks for a password, which would end up in the form's entries, mail and exports. Let members sign in instead.",
-    code_file_size_unset:
-      "This field takes files up to the site's limit for each file: give it the largest size its answers need.",
+    code_file_size_unset: 'No "Largest file" is set, so files may be as large as the site allows.',
     code_file_size_above_site:
       'The site takes smaller files than this field allows (Settings › Files), so a larger file is refused.',
     code_file_type_not_taken:
       'The site no longer takes some of the types this field allows (Settings › Files), so such files are refused.',
     code_options_can_fill:
-      'Every option of this required field has a number of places, so once all are taken nobody can send the form: add an option without a limit, or let the field be left empty.',
+      'Once every option of this required field is full, nobody can send the form. Add an option without a limit, or make the field optional.',
     code_limit_without_entries: (form: boolean) =>
       form
         ? 'The form keeps no entries, so this limit forgets each entry once its actions have run.'

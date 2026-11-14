@@ -18,7 +18,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** The keys the code builds of a family's name and a part. */
 const FAMILIES: Record<string, readonly string[]> = {
   look: ['card', 'letter'],
-  lookHelp: ['card', 'letter'],
   colour: COLOURS,
   text: ['header', 'footer', 'logoAlt'],
   problem: ['name', 'alias', 'aliasTaken', 'other', 'logoMedia', 'logoUrl', 'long', 'colour'],
