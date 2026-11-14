@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Actions;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -160,12 +161,14 @@ internal sealed class EntryEdits(
         var definition = read.Scope.Form;
         var fields = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).ToDictionary(field => field.Key);
         var current = fields.Keys.ToDictionary(key => key, key => (IReadOnlyList<string>)[.. read.Answers?.Find(key)?.Values.Select(value => value.Value.Text) ?? []]);
+        // What the form keeps only until its actions ran is gone once they did: an edit never brings it back (ADR-0252).
+        var removed = read.Timeline.Any(entryEvent => entryEvent.Kind == ActionSettlement.ValuesRemovedEvent);
         var problems = new List<DefinitionProblem>();
         var changes = new List<(FormField Field, int Index, IReadOnlyList<string> Values)>();
         foreach (var (answer, index) in edited.Select((answer, index) => (answer, index)))
         {
             var path = $"answers[{index}]";
-            if (!fields.TryGetValue(answer.Field, out var field) || !Edits(field, maySeeSensitive))
+            if (!fields.TryGetValue(answer.Field, out var field) || !Edits(field, maySeeSensitive) || (removed && ActionSettlement.KeptUntilActions(definition, field.Key)))
             {
                 problems.Add(new DefinitionProblem("not_editable", path + ".field", "This answer can't be edited here."));
                 continue;

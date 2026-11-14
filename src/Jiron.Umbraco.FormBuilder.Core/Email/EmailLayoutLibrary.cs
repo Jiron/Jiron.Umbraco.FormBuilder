@@ -101,6 +101,25 @@ internal sealed partial class EmailLayoutLibrary(
     public async Task<Guid?> DefaultKeyAsync(CancellationToken cancellationToken = default) =>
         (await settings.GetAsync<EmailSettings>(cancellationToken: cancellationToken)).Value.DefaultLayout;
 
+    /// <summary>Whether the layout is the default for all sites or a site's own (ADR-0215), which stays while it is.</summary>
+    private async Task<bool> IsADefaultAsync(Guid key, CancellationToken cancellationToken)
+    {
+        if (await DefaultKeyAsync(cancellationToken) == key)
+        {
+            return true;
+        }
+
+        foreach (var site in await settings.SitesOfAsync<EmailSettings>(cancellationToken))
+        {
+            if ((await settings.GetAsync<EmailSettings>(site, cancellationToken)).Value.DefaultLayout == key)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>The forms whose email actions name the layout, as the user may see them.</summary>
     public Task<LibraryItemUsers> UsersAsync(AccessUser user, Guid key, CancellationToken cancellationToken = default) =>
         users.ForAsync(user, LibraryUseKind.EmailLayout, key, cancellationToken);
@@ -226,7 +245,7 @@ internal sealed partial class EmailLayoutLibrary(
             return EmailLayoutDelete.NotFound;
         }
 
-        if (await DefaultKeyAsync(cancellationToken) == key)
+        if (await IsADefaultAsync(key, cancellationToken))
         {
             return EmailLayoutDelete.IsDefault;
         }

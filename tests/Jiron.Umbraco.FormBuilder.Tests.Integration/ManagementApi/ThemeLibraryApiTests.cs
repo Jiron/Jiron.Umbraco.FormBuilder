@@ -135,6 +135,25 @@ public sealed class ThemeLibraryApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task ASitesOwnDefaultTheme_StaysToo_ThoughAllSitesNameAnother()
+    {
+        // General is set per site (ADR-0215): a theme that only one site starts its forms with is a default all the same.
+        var created = await CallAsync("designer", HttpMethod.Post, "theme", Autumn);
+        var key = created.Body!["key"]!.GetValue<Guid>();
+        var settings = GetRequiredService<IFormBuilderSettingsService>();
+        await settings.SaveSiteAsync(Guid.NewGuid(), new GeneralSettings { Theme = "autumn" }, ["theme"], 0, global::Umbraco.Cms.Core.Constants.Security.SuperUserKey);
+
+        var refused = await CallAsync("designer", HttpMethod.Delete, $"theme/{key}?concurrencyVersion=1");
+        var still = await CallAsync("designer", HttpMethod.Get, $"theme/{key}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(refused.Outcome, Is.EqualTo("409 is_default"), refused.ToString());
+            Assert.That(still.Status, Is.EqualTo(System.Net.HttpStatusCode.OK));
+        });
+    }
+
+    [Test]
     public async Task UsedBy_CountsAndNamesTheFormsThatNameTheTheme_AndTheDeleteWaits_AsItDoesForTheSitesDefault()
     {
         var created = await CallAsync("designer", HttpMethod.Post, "theme", Autumn);

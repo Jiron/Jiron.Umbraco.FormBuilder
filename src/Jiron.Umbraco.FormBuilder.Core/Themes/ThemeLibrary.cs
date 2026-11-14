@@ -122,6 +122,25 @@ internal sealed class ThemeLibrary(
     public async Task<string> DefaultAliasAsync(CancellationToken cancellationToken = default) =>
         (await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken)).Value.Theme ?? BuiltInThemes.DefaultAlias;
 
+    /// <summary>Whether the theme is the default for all sites or a site's own (ADR-0215), which stays while it is.</summary>
+    private async Task<bool> IsADefaultAsync(string alias, CancellationToken cancellationToken)
+    {
+        if (string.Equals(alias, await DefaultAliasAsync(cancellationToken), StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        foreach (var site in await settings.SitesOfAsync<GeneralSettings>(cancellationToken))
+        {
+            if (string.Equals(alias, (await settings.GetAsync<GeneralSettings>(site, cancellationToken)).Value.Theme, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>The forms whose draft or live version names the theme, as the user may see them.</summary>
     public Task<LibraryItemUsers> UsersAsync(AccessUser user, Guid key, CancellationToken cancellationToken = default) =>
         users.ForAsync(user, LibraryUseKind.Theme, key, cancellationToken);
@@ -220,7 +239,7 @@ internal sealed class ThemeLibrary(
             return ThemeDelete.NotFound;
         }
 
-        if (string.Equals(row.Alias, await DefaultAliasAsync(cancellationToken), StringComparison.OrdinalIgnoreCase))
+        if (await IsADefaultAsync(row.Alias, cancellationToken))
         {
             return ThemeDelete.IsDefault;
         }

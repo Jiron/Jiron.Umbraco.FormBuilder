@@ -243,6 +243,9 @@ public sealed class TwoProcessorsTests : ActionTestBase
         public Task<bool> RetryAsync(long runId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default) =>
             _gone.ContainsKey(token) ? Task.FromResult(true) : inner.RetryAsync(runId, token, delay, error, cancellationToken);
 
+        public Task<bool> ReleaseAsync(long runId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default) =>
+            _gone.ContainsKey(token) ? Task.FromResult(true) : inner.ReleaseAsync(runId, token, delay, error, cancellationToken);
+
         public Task<bool> FailAsync(long runId, string token, DeliveryError error, CancellationToken cancellationToken = default) =>
             _gone.ContainsKey(token) ? Task.FromResult(true) : inner.FailAsync(runId, token, error, cancellationToken);
 

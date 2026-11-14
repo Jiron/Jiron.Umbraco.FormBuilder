@@ -282,6 +282,8 @@ internal sealed partial class ActionAttempts(
             {
                 ActionResultKind.Succeeded => await settlement.FinishAsync(run, () => runs.SucceedAsync(run.Id, token, CancellationToken.None)),
                 ActionResultKind.Failed => await settlement.FinishAsync(run, () => runs.FailAsync(run.Id, token, error!, CancellationToken.None)),
+                // An attempt that sent nothing is none of the action's: the run gets it back.
+                ActionResultKind.TryAgain when nothingSent => await runs.ReleaseAsync(run.Id, token, BackOff[Math.Clamp(run.Attempts, 1, BackOff.Length) - 1], error!, CancellationToken.None),
                 ActionResultKind.TryAgain => await runs.RetryAsync(run.Id, token, BackOff[Math.Clamp(run.Attempts, 1, BackOff.Length) - 1], error!, CancellationToken.None),
                 _ => await runs.CutOffAsync(run.Id, token, error!, CancellationToken.None),
             };

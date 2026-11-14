@@ -146,6 +146,13 @@ internal interface IActionRunRepository
     Task<bool> RetryAsync(long runId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lets a claimed run go without an attempt, to be claimed again after <paramref name="delay"/>: nothing was sent, as
+    /// when its entry could not be read, so the claim's attempt is given back and the run still waits for its first, as a
+    /// mail's release does (ADR-0252). False when the token no longer holds the run.
+    /// </summary>
+    Task<bool> ReleaseAsync(long runId, string token, TimeSpan delay, DeliveryError error, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Records a failure for good: <see cref="ActionRunState.Failed"/>, and when the run stops the rest, the later pending
     /// runs of its batch <see cref="ActionRunState.Skipped"/> with the code <see cref="DeliveryError.Stopped"/> in the
     /// same unit. False when the token no longer holds the run.
