@@ -130,6 +130,7 @@ export default {
     code_last_outcome_has_rule:
       "Visitors whose answers no outcome's rule matches get the built-in thank-you message: leave the last outcome without a rule, so it is there for every other answer.",
 
+    code_option_list_missing: "The option list this field takes its options from isn't on this site. Choose another.",
     code_theme_missing: (theme: string) =>
       `The site has no theme "${theme}", so the form shows with the default theme.`,
     code_content_missing: (redirect: boolean) =>

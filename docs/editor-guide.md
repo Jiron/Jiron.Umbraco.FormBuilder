@@ -193,7 +193,8 @@ need. Answers already sent keep their values.
 The badge in the canvas's toolbar shows how many problems the form check finds, and opens its list. **Errors** block
 publishing; **warnings** and **suggestions** don't. Each problem names the element and what is wrong, and **Fix it**
 selects the element and opens the setting. Typical ones: a field without a label, personal data asked for without a
-consent field, a card number asked for, or outcomes that leave some visitors without one.
+consent field, a card number asked for, a field whose option list this site lacks (an error, since it would offer no
+choices), or outcomes that leave some visitors without one.
 
 ## The Settings view
 

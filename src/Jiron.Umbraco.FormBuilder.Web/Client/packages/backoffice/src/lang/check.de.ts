@@ -136,6 +136,8 @@ export default {
     code_last_outcome_has_rule:
       'Besucher, deren Antworten keine Regel eines Abschlusses trifft, erhalten die eingebaute Dankesmeldung: Lassen Sie den letzten Abschluss ohne Regel, damit er für alle anderen Antworten da ist.',
 
+    code_option_list_missing:
+      'Die Optionsliste, aus der dieses Feld seine Optionen bezieht, gibt es auf dieser Website nicht. Wählen Sie eine andere.',
     code_theme_missing: (theme: string) =>
       `Die Website hat kein Theme „${theme}“; das Formular erscheint also mit dem Standard-Theme.`,
     code_content_missing: (redirect: boolean) =>

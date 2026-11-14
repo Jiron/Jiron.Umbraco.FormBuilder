@@ -165,6 +165,7 @@ export class EmailLayoutViewElement extends UmbLitElement {
 
       .schemes {
         display: inline-flex;
+        justify-self: start;
         border: 1px solid var(--uui-color-border-emphasis);
         border-radius: var(--uui-border-radius);
       }

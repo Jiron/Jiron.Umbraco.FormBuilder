@@ -163,8 +163,14 @@ export default {
           : `Dabei werden die ${number(folders)} Ordner darin endgültig gelöscht.`;
       const one = forms === 1;
       const gone = one ? 'Dabei wird 1 Formular' : `Dabei werden ${number(forms)} Formulare`;
-      if (entries === 0) return `${gone} endgültig gelöscht. ${one ? 'Es hat' : 'Sie haben'} keine Einträge.`;
-      return `${gone} mit ${withHeld(one ? 'sein' : 'ihr', entries, files)} endgültig gelöscht.`;
+      const too =
+        folders === 0
+          ? ''
+          : folders === 1
+            ? ' Der Ordner darin wird mitgelöscht.'
+            : ` Die ${number(folders)} Ordner darin werden mitgelöscht.`;
+      if (entries === 0) return `${gone} endgültig gelöscht. ${one ? 'Es hat' : 'Sie haben'} keine Einträge.${too}`;
+      return `${gone} mit ${withHeld(one ? 'sein' : 'ihr', entries, files)} endgültig gelöscht.${too}`;
     },
     emptyLeft: (left: number) =>
       left === 1

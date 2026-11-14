@@ -33,7 +33,7 @@ export default {
     formName: 'Name des Formulars',
     state_draft: 'Entwurf',
     state_published: 'Veröffentlicht',
-    state_pending: 'Veröffentlicht, Entwurf geändert',
+    state_pending: 'Veröffentlicht (geändert)',
     state_unpublished: 'Nicht veröffentlicht',
 
     preview: 'Vorschau',

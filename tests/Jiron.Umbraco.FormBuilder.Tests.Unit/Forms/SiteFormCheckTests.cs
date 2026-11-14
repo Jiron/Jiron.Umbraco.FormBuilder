@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -38,6 +39,30 @@ public sealed class SiteFormCheckTests
     private static readonly Guid GoneGroup = Guid.Parse("82000000-0000-4000-8000-000000000002");
 
     private static readonly FieldTypeRegistry Types = TestFieldTypes.Registry;
+
+    [Test]
+    public async Task AnOptionList_TheSiteLacks_IsAnErrorAtEveryFieldThatNamesIt_AndOneItHasIsNone()
+    {
+        var there = Guid.Parse("83000000-0000-4000-8000-000000000001");
+        var gone = Guid.Parse("83000000-0000-4000-8000-000000000002");
+        var lists = Substitute.For<IOptionListRepository>();
+        lists.GetAsync(there, Arg.Any<CancellationToken>()).Returns(new StoredOptionList(1, there, "plans", "Plans", OptionListKind.Manual, "{}", default!, 0, 1, default, default));
+        string Choice(int number, Guid list) =>
+            $$$"""{"key":"30000000-0000-4000-8000-0000000009{{{number:00}}}","type":"radio","alias":"choice{{{number}}}","label":{"":"Choice"},"options":{"source":"list","list":"{{{list:D}}}"}}""";
+        var form = Form([Choice(1, there), Choice(2, gone), Choice(3, gone)]);
+
+        var issues = await new OptionListFormCheck(lists).CheckAsync(form, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(issues.Select(issue => (issue.Severity, issue.Code, issue.Path)), Is.EqualTo(new[]
+            {
+                (FormCheckSeverity.Error, OptionListFormCheck.OptionListMissing, Fields + "[1].options.list"),
+                (FormCheckSeverity.Error, OptionListFormCheck.OptionListMissing, Fields + "[2].options.list"),
+            }));
+            Assert.That(lists.ReceivedCalls().Count(), Is.EqualTo(2), "each list is asked for once");
+        });
+    }
 
     [Test]
     public async Task ATheme_TheSiteLacks_InCodeAndInTheLibrary_IsAWarning()

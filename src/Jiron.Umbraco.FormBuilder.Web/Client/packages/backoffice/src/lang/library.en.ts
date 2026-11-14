@@ -144,11 +144,18 @@ export default {
           : `This deletes the ${count(folders, 'folder', 'folders')} in it for good.`;
       const gone = `This deletes ${count(forms, 'form', 'forms')} for good`;
       const their = forms === 1 ? 'its' : 'their';
-      if (entries === 0) return `${gone}. ${forms === 1 ? 'It has' : 'They have'} no entries.`;
+      // The folders that go with the forms are named too, never dropped from the sentence.
+      const too =
+        folders === 0
+          ? ''
+          : folders === 1
+            ? ' The folder in it goes too.'
+            : ` The ${count(folders, 'folder', 'folders')} in it go too.`;
+      if (entries === 0) return `${gone}. ${forms === 1 ? 'It has' : 'They have'} no entries.${too}`;
       const held = `${their} ${count(entries, 'entry', 'entries')}`;
       return files > 0
-        ? `${gone}, with ${held} and ${count(files, 'uploaded file', 'uploaded files')}.`
-        : `${gone}, with ${held}.`;
+        ? `${gone}, with ${held} and ${count(files, 'uploaded file', 'uploaded files')}.${too}`
+        : `${gone}, with ${held}.${too}`;
     },
     emptyLeft: (left: number) =>
       `${count(left, 'item', 'items')} you may not delete ${left === 1 ? 'stays' : 'stay'} in it.`,

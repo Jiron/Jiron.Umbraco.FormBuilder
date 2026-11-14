@@ -419,11 +419,29 @@ internal sealed class SubmissionEntries(
             return null;
         }
 
-        var definition = locks.Apply(documents.Readable(version));
+        var definition = SensitiveAsNow(locks.Apply(documents.Readable(version)), await forms.ListFieldsAsync(entry.FormId, cancellationToken));
         var page = await pages.EntryPageAsync(entry);
         var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
         return new EntryRead(ScopeOf(entry, definition, form.Name, form.Alias, page, timeline, answers), answers, timeline);
+    }
+
+    // The entry's version with every field marked sensitive that the form marks so now (ADR-0252): a field made sensitive
+    // after an entry arrived is masked in that entry's panel, forward and edit too, as the list, the exports and the
+    // downloads go by the form's catalogue (ADR-0210). A field the version marks stays marked.
+    private static FormDefinition SensitiveAsNow(FormDefinition definition, IReadOnlyList<CatalogueField> catalogue)
+    {
+        var now = catalogue.Where(field => field.Values.IsSensitive).Select(field => field.Values.FieldKey).ToHashSet();
+        if (now.Count == 0)
+        {
+            return definition;
+        }
+
+        FormField Marked(FormField field) => field with { Sensitive = field.Sensitive || now.Contains(field.Key), Fields = [.. field.Fields.Select(Marked)] };
+        return definition with
+        {
+            Pages = [.. definition.Pages.Select(page => page with { Groups = [.. page.Groups.Select(group => group with { Fields = [.. group.Fields.Select(Marked)] })] })],
+        };
     }
 
     /// <summary>

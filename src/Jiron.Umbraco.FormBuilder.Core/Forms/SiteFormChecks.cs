@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Services;
@@ -33,6 +34,58 @@ internal sealed class ThemeFormCheck(FormThemes themes) : IFormCheck
 
         var path = JsonPaths.Property(JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "settings"), "appearance"), "theme");
         return [new FormCheckIssue(FormCheckSeverity.Warning, ThemeMissing, path, $"The site has no theme '{theme}', so the form shows with the default theme.")];
+    }
+}
+
+/// <summary>
+/// An option list the site lacks (ROADMAP 21.1, ADR-0214, ADR-0252): an error at every field that names it, since the
+/// field would offer its visitors no choices, and a required one would refuse every entry. A form comes to name such a
+/// list through a file whose lists the site did not take in, or when the list is deleted from another site's copy.
+/// </summary>
+/// <param name="optionLists">The library's option lists.</param>
+internal sealed class OptionListFormCheck(IOptionListRepository optionLists) : IFormCheck
+{
+    /// <summary>An option list the site lacks (an error).</summary>
+    public const string OptionListMissing = "option_list_missing";
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<FormCheckIssue>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        var issues = new List<FormCheckIssue>();
+        var known = new Dictionary<Guid, bool>();
+        async Task VisitAsync(IReadOnlyList<FormField> fields, string path)
+        {
+            for (var i = 0; i < fields.Count; i++)
+            {
+                var at = JsonPaths.Index(JsonPaths.Property(path, "fields"), i);
+                if (fields[i].Options is { Source: OptionSource.List, OptionList: { } list })
+                {
+                    if (!known.TryGetValue(list, out var there))
+                    {
+                        known[list] = there = await optionLists.GetAsync(list, cancellationToken) is not null;
+                    }
+
+                    if (!there)
+                    {
+                        issues.Add(new FormCheckIssue(FormCheckSeverity.Error, OptionListMissing, JsonPaths.Property(JsonPaths.Property(at, "options"), "list"), $"The site has no option list '{list:D}', so the field would offer no choices."));
+                    }
+                }
+
+                await VisitAsync(fields[i].Fields, at);
+            }
+        }
+
+        for (var p = 0; p < definition.Pages.Count; p++)
+        {
+            var page = JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "pages"), p);
+            for (var g = 0; g < definition.Pages[p].Groups.Count; g++)
+            {
+                await VisitAsync(definition.Pages[p].Groups[g].Fields, JsonPaths.Index(JsonPaths.Property(page, "groups"), g));
+            }
+        }
+
+        return issues;
     }
 }
 

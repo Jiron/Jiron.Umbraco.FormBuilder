@@ -59,6 +59,11 @@ export class DeliveriesScreenElement extends UmbLitElement {
     jfbSkeleton,
     controlStyles,
     css`
+      /* A state reads as one word group: "Trying again" never breaks inside its tag. */
+      uui-tag {
+        white-space: nowrap;
+      }
+
       :host {
         display: block;
         block-size: 100%;
