@@ -115,8 +115,6 @@ how to repeat it. Sizes are gzip.
 - **Without JavaScript, on a form for members with "one entry per member":** a post with a file that the browser
   sends a second time (a reload of the result) is answered "not sent" although the first was stored, as the file is
   stored again under a new name ([ADR-0252](decisions/0252-the-last-pass.md)).
-- **A webhook receiver that never answers** can hold mail back for as long as its runs take their passes of the
-  outbox; mail is not lost ([ADR-0252](decisions/0252-the-last-pass.md)).
 - **A form whose first publish from its file was refused** stays unpublished until the file changes again; the log
   names the file and the reason.
 - **On Umbraco 18.3,** a form shown beside all its views in a window narrower than about 1,100 px (in German) leaves its

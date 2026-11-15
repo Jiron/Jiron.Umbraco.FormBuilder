@@ -107,7 +107,7 @@ internal interface IOutboxQueue
 }
 
 /// <summary>
-/// One pass of the worker (ADR-0007): the queues in their order, within <see cref="Budget"/>. It does nothing while sending
+/// One pass of the worker (ADR-0007): the queues in their order, each within <see cref="Budget"/>. It does nothing while sending
 /// is paused, while Umbraco does not run or while a migration is pending, and a pass that left work due wakes the worker
 /// again. A queue that fails is logged, and the next one runs.
 /// </summary>
@@ -119,7 +119,10 @@ internal sealed partial class OutboxPass(
     TimeProvider time,
     ILogger<OutboxPass> logger)
 {
-    /// <summary>How long a pass goes on claiming.</summary>
+    /// <summary>
+    /// How long a queue of a pass goes on claiming. Each queue has its own time (ADR-0252): runs that wait on a host that never
+    /// answers use up theirs, and the mails after them still leave.
+    /// </summary>
     public static readonly TimeSpan Budget = TimeSpan.FromMinutes(2);
 
     private readonly string _claimant = $"{Environment.MachineName}/{Guid.NewGuid():N}";
@@ -133,7 +136,6 @@ internal sealed partial class OutboxPass(
             return;
         }
 
-        var deadline = time.GetUtcNow() + Budget;
         var left = false;
         foreach (var queue in queues)
         {
@@ -144,7 +146,7 @@ internal sealed partial class OutboxPass(
 
             try
             {
-                left |= await queue.PassAsync(_claimant, deadline, stopping);
+                left |= await queue.PassAsync(_claimant, time.GetUtcNow() + Budget, stopping);
             }
             catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {

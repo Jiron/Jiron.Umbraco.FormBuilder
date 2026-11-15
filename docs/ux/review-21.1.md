@@ -34,7 +34,7 @@ of each finding. The decisions that change an earlier record are in
 | R2.3 | The same post repeated on a members' form with a file is answered "not sent" | kept: needs a digest by content; named in STATUS.md |
 | R3.1 | Every mail over SMTP carried an `Expires` header 45 seconds ahead | fixed: none is written |
 | R3.2 | A designer could import an action that sends a site's secret | fixed: only who manages settings imports such a file |
-| R3.3 | One hanging webhook host could stop all mail | kept: a time budget for each queue stalled the browser suite's SQLite site in every long run and was taken out again (ADR-0252); mail is delayed, not lost |
+| R3.3 | One hanging webhook host could stop all mail | fixed: each queue has its own time |
 | R3.4 | Failing to read a run spent its attempts | fixed |
 | R4.1 | Privacy > People could not find a draft once its mail was 30 days old | fixed: the mail's row stays while the draft does |
 | R4.2 | A field marked sensitive later stayed readable in older entries' panel, forward and edit | fixed for all three; kept: the search text stored with an older entry holds the answer until the entry is edited, so a search for it finds the entry and shows no answer |
