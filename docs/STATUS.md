@@ -1,6 +1,6 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-14: what was built, how it is tested, what
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-15, after the last pass over it: what was built, how it is tested, what
 the budgets measured, what it does not do yet, and what only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
@@ -48,35 +48,37 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran on 2026-11-14 on origin's `main` at `7ce88bc6`, in a fresh clone with
-a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step passed, in 4,709 s, the browser tests on their
-first run:
+The clean-clone verification of ROADMAP 20.1 ran again at the end of the last pass (21.1), on 2026-11-15 on origin's
+`main` at `81193183`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 4,501 s, the browser tests on their first run:
 
 | What ran | Count |
 | --- | --- |
-| Unit tests (.NET), with the shared vectors in the server's engine | 9,119; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,300 |
+| Unit tests (.NET), with the shared vectors in the server's engine | 9,123; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,312 |
 | The AI add-on's tests (.NET) | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,210 in 230 files |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,244 in 232 files |
 | The repository's scripts (Node) | 400 |
-| The browser tests' own support (Node) | 52 |
+| The browser tests' own support (Node) | 54 |
 | The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 556 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean |
-| A pack of `17.0.0-dev.202611140342` | 4 packages |
+| A pack of `17.0.0-dev.202611150542` | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks |
-| The secret scan of the whole history | 1,190 commits, clean |
+| The secret scan of the whole history | 1,209 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) |
 
-- **Coverage:** Core 97.6% of its lines (35,703 of 36,585) and Web 97.7% (11,246 of 11,508), from the .NET tests on
-  `7ce88bc6` (ROADMAP §6 asks 85% of Core).
+- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from the .NET tests on
+  `81193183` (ROADMAP §6 asks 85% of Core).
 - **Checked by changing the code:** each step put behaviours back wrong one at a time and ran the tests that should
   catch each, until all were caught ([WORKLOG.md](WORKLOG.md) names them per step).
 - **Accessibility:** axe on every backoffice screen and every theme, keyboard paths, and the narrowest widths in the
   browser tests ([accessibility.md](accessibility.md)).
 - **The Umbraco 18 line:** its own gate passed at the Phase 19 review on `e54d894c` (the browser projects on their one
   allowed rerun after a database stall, ADR-0011), and the 17 to 18 upgrade with data passed 53 checks; save and
-  continue later, merged into it since, passed its own checks there.
+  continue later, merged into it since, passed its own checks there. So did the last pass: with it merged, the unit
+  tests (9,152), the client's (6,253), the integration tests of mail and actions (422) and the whole browser suite
+  (553, on its first run) pass there.
 
 ## The budgets, measured
 
@@ -85,8 +87,8 @@ how to repeat it. Sizes are gzip.
 
 | Budget | Measured | Limit |
 | --- | --- | --- |
-| The website runtime's core, what every page with a form loads first | 2.64 KB | 16 KB |
-| The runtime with every feature and the largest language's words | 62.40 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
+| The website runtime's core, what every page with a form loads first | 2.80 KB | 16 KB |
+| The runtime with every feature and the largest language's words | 63.54 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
 | The default theme's stylesheet | 8.06 KB | 10 KB |
 | Rendering a 50-field form from its cached definition | 4.8 ms median | 20 ms |
 | A submission, 10 at the same moment, on SQLite | 56.1 ms at p95 | 150 ms |
@@ -96,9 +98,9 @@ how to repeat it. Sizes are gzip.
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
 | The slowest designer interaction on a form of 300 fields | 56 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 45.27 KB | 64 KB |
-| The backoffice's largest file (the designer) | 32.43 KB | 64 KB |
-| The backoffice bundle | 509.29 KB | 512 KB |
+| What every backoffice session loads at its start | 44.39 KB | 64 KB |
+| The backoffice's largest file (the designer) | 32.45 KB | 64 KB |
+| The backoffice bundle | 505.56 KB | 512 KB |
 
 ## What it does not do yet
 

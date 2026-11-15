@@ -3326,7 +3326,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 ### Phase 21: The owner's last pass
 
-- [ ] **21.1 A last pass: every function looked at again, calmer screens, and phase review** (the owner, 2026-11-14)
+- [x] **21.1 A last pass: every function looked at again, calmer screens, and phase review** (the owner, 2026-11-14) (2026-11-15, 81193183)
   - The owner, after 20.1: "go through all functionalities roughly again to double check your work one last time and eliminate last findings", with screens that are "plain and simple", not "too much text too much info", "without missing out on features for no reason".
   - **Look again:**
     - walk every screen in the twelve looks, and the five journeys (§4.13), on the build as it stands;

@@ -101,18 +101,18 @@ lines run along square corners (ADR-0242).
 ## Files
 
 Checked by `scripts/size-check.mjs` on every client build, which fails the build when a budget is missed. Sizes are
-gzip, in kilobytes of 1,024 bytes, as the build of 2026-11-14 measured them.
+gzip, in kilobytes of 1,024 bytes, as the build of 2026-11-15 measured them.
 
 | What | Size | Budget |
 | --- | --- | --- |
-| The website runtime's core: the entry and its static imports | 2.64 | ≤ 16 |
-| The runtime with every feature, and the largest of the seven languages' words | 62.40 | ≤ 100 (ADR-0251) |
+| The website runtime's core: the entry and its static imports | 2.80 | ≤ 16 |
+| The runtime with every feature, and the largest of the seven languages' words | 63.54 | ≤ 100 (ADR-0251) |
 | The base rules every form loads (`base.css`) | 1.98 | ≤ 10 |
 | The default theme (`default.css`) | 8.06 | ≤ 10 |
 | The Bootstrap 5 theme (`bootstrap5.css`) | 4.73 | ≤ 10 |
-| What every backoffice session loads at its start: the entry, its static imports, and two languages' words | 45.27 | ≤ 64 |
-| The backoffice's largest file (the designer) | 32.43 | ≤ 64 |
-| The whole backoffice bundle (56 files) | 509.29 | ≤ 512 |
+| What every backoffice session loads at its start: the entry, its static imports, and two languages' words | 44.39 | ≤ 64 |
+| The backoffice's largest file (the designer) | 32.45 | ≤ 64 |
+| The whole backoffice bundle (56 files) | 505.56 | ≤ 512 |
 
 A page loads only the runtime's core and the features its forms use, each when it is first needed; every file is served
 compressed, under a fingerprint, with a year's caching (ADR-0026, ADR-0092), and nothing loads from another host.
