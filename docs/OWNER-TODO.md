@@ -184,7 +184,9 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   retry policy runs both statements again inside their transactions, and SQLite's shared cache refuses every other
   transaction meanwhile ("SQLite Error 6: database table is locked", "Cache instruction sync did not complete within
   00:01:00"). Four browsers saving forms at once met it in most 20-minute runs. The record holds what a memory dump
-  of the stalled site showed. Umbraco 18 no longer uses the shared cache, so this is for the 17 line.
+  of the stalled site showed, and on the development machine `.local/pass-21.1/stall-1-sqlite-state.txt` and
+  `stall-2-sqlite-state.txt` hold SQLite's state as read from both dumps. Umbraco 18 no longer uses the shared cache,
+  so this is for the 17 line.
 - [ ] **Report to Umbraco HQ** (added 2026-10-31, ROADMAP 6.7f): in Umbraco 17.7.1's dark theme UUI's positive
   primary button (`#347d39` under `#eeeeef`) is 4.37:1, below WCAG AA's 4.5:1, on every dialog's main button. Jiron
   Form Builder keeps Umbraco's buttons as Umbraco draws them; its own parts use tokens that pass (docs/ux/tokens.md).

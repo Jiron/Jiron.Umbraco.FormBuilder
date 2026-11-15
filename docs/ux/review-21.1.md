@@ -101,13 +101,17 @@ The walk now counts the words the section's own elements show on each screen, an
 (`JFB_UX_BEFORE`). The comparison is like for like: the build before the pass (`00e1494c`) and the final build, each on
 a fresh site, in the two looks 1440 px light in English and in German, 147 screens each.
 
-- **English:** 33,836 words before, 31,666 after. **German:** 32,160 before, 30,165 after.
-- Of the 294 shots, 184 show fewer words, 91 the same, and 19 more.
+- **English:** 33,836 words before, 31,720 after. **German:** 32,160 before, 30,126 after.
+- Of the 294 shots, 188 show fewer words, 87 the same, and 19 more.
 - **The 19 that show more grew by a row of data, not by a text.** Two looks share one site while they are walked, so a
   list holds what the other look has done by then: the Overview behind six dialogs and journey steps shows a second
   health line ("1 action failed in the last 24 hours") once the walk's own failing webhook has given up; the Recycle
-  Bin holds one more row in German and two fewer in English; the audit log holds one more row in German. They are
-  named to the comparison (`JFB_UX_GROWN`) after being looked at, and no text on them changed but for the shorter ones.
+  Bin and the audit log hold a row more in one look than in the other. They are named to the comparison
+  (`JFB_UX_GROWN`) after being looked at, and no text on them changed but for the shorter ones.
+- **One text says more on purpose:** emptying the Recycle Bin now names the folders that go with the forms (U1), two
+  words in the look whose bin held a folder.
+- The numbers are those of the final build (`81193183`); the comparison on the build the review was written on
+  differed by a few rows of data (31,666 and 30,165 words).
 
 The screens that changed most, in words:
 
@@ -155,8 +159,10 @@ The screens that changed most, in words:
 ## The walk on the final build
 
 All twelve looks and the five journeys reached every screen: 1,784 shots, none with an error, and the visitor's side
-in seven languages. A stall of the test site's SQLite database, which the suite reports as Umbraco's limit, stopped
-seven looks half-way; those were walked again.
+in seven languages. During the pass a stall of the test site's SQLite database stopped seven looks half-way, and
+those were walked again. Once the stall's cause was found and taken out of the test hosts
+([ADR-0253](../decisions/0253-one-servers-test-host-reads-cache-instructions-once-a-day.md)), the whole walk ran once
+more on the final build, `81193183`, in one go: the same 1,784 shots, none with an error, and the same findings.
 
 Axe inside the section's own elements found what it found on the build 20.1 verified, and nothing of the section's
 own:
@@ -164,9 +170,11 @@ own:
 - Umbraco's and its UI library's own components: a tree item's label that differs from its visible name, the colours
   of an open tree row in the dark theme, a checkbox's `indeterminate` state, the entity actions' target in the Recycle
   Bin, and the label colour of one of its buttons in the dark theme, in one shot at 768 px.
-- Two controls of an action's sidebar that the sidebar's own footer half covered at the moment of the shot (the fourth
-  trigger at 375 px in German, a toolbar button of the mail's body at 768 px): scrolled into view, the first is an
-  18 px radio in a row 44 px high that selects it, the second a 32 px button.
+- Three controls of the section's own that axe measured smaller than they are to use, each in the walk before the
+  pass too. Two sat half under an action's sidebar's footer at the moment of the shot: the fourth trigger at 375 px,
+  an 18 px radio in a row 44 px high that selects it, and a toolbar button of the mail's body at 768 px, a 32 px
+  button. The third is the drag handle of an action's card at 375 px, a 32 px button, measured right after the sidebar
+  that added the action had closed; a probe at that step finds nothing over it.
 
 ## The visitor's side in seven languages
 
