@@ -1128,3 +1128,9 @@ its reason, and a handover block at the end of every phase.
   roadmap of its own, not yet steps. Written as `docs/ux/simpler-backoffice.md` from the designer's code and the last
   walk's screens (no other product looked at; Umbraco's own patterns are the measure). Nothing built; ROADMAP.md is
   unchanged until the owner picks.
+- 2026-11-16 · The owner, the same day: build nothing yet; go through it once more, challenge the draft and refine it,
+  so the concept is sound before work starts. `docs/ux/simpler-backoffice.md` rewritten after reading the design
+  records behind the screens and about twenty screens of the last walk: each finding now names why the screen is as
+  it is, five things the first draft had wrong or missed are corrected (among them: the left side's fixed items lie
+  below the tree and out of sight, and taking the field list away costs a click per field), with four steps, a table
+  of what to measure, what it costs, and five decisions for the owner. Still nothing built; ROADMAP.md unchanged.
