@@ -5,7 +5,9 @@ import { setTimeout as delay } from 'node:timers/promises';
 // What the host's log says about its start-up work and, after a run, about its database (ADR-0011, ADR-0031). Umbraco
 // on SQLite can stall when several requests write at the same moment: Umbraco 17 hangs, and Umbraco 18, which runs it
 // in write-ahead mode without the shared cache, fails the write as "database is locked" (ADR-0250); the tests then
-// time out one after the other, far from the cause. The global set-up waits for the start-up work, and a run that
+// time out one after the other, far from the cause. On Umbraco 17 the cause is most often one of its two jobs
+// over the servers' cache instructions meeting a request's own instruction; the hosts of one server leave both jobs
+// out (ADR-0253). The global set-up waits for the start-up work, and a run that
 // ends with a stalled database leaves the hang marker, so the gate knows the one failure it may run again ("Flaky
 // means broken").
 
@@ -72,7 +74,7 @@ export function describeStall(stall: StalledDatabase, logFile: string): string {
   return (
     `e2e: the host's database stalled from ${stall.firstAt} (${stall.timedOut} command(s) ran into their 30 s timeout, ` +
     `${stall.locked} write(s) found it locked); the tests that failed after it did not fail on their own. This is ` +
-    `Umbraco's SQLite limit (ADR-0011, ADR-0250): run again. Log: ${logFile}`
+    `Umbraco's SQLite limit (ADR-0011, ADR-0250, ADR-0253): run again. Log: ${logFile}`
   );
 }
 

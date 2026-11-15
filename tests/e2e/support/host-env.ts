@@ -4,6 +4,15 @@ import { E2E_WEBHOOK_SECRET, STATIC_ORIGIN, STUB_PORT, STUB_URL } from './paths.
 export const E2E_FORM_LIMIT = 200;
 import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
 
+/** Umbraco's setting for the time between two reads of the servers' cache instructions (five seconds unless set). */
+export const INSTRUCTION_SYNC = 'Umbraco__CMS__Global__DatabaseServerMessenger__TimeBetweenSyncOperations';
+
+/** Umbraco's setting for the time between two prunings of the old cache instructions (a minute unless set). */
+export const INSTRUCTION_PRUNING = 'Umbraco__CMS__Global__DatabaseServerMessenger__TimeBetweenPruneOperations';
+
+/** What a host of one server waits between two reads, and between two prunings: a day, longer than any run. */
+export const ONE_SERVER_WAIT = '1.00:00:00';
+
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
 export function deliveryApiOn(env: NodeJS.ProcessEnv = process.env): boolean {
   const value = (env.JFB_E2E_DELIVERY_API ?? 'off').trim().toLowerCase();
@@ -16,7 +25,10 @@ export function deliveryApiOn(env: NodeJS.ProcessEnv = process.env): boolean {
  * The Testing project turns on what the browser tests need (ADR-0029): the test-only endpoints, the test clock, the
  * stub and the start-up marker.
  */
-export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boolean }): Record<string, string> {
+export function hostEnvironment(
+  secrets: E2ESecrets,
+  options: { deliveryApi: boolean; severalServers?: boolean },
+): Record<string, string> {
   const admin = secrets.users.admin;
   const env: Record<string, string> = {
     Umbraco__CMS__Unattended__UnattendedUserName: admin.name,
@@ -26,6 +38,13 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     // Several tests sign in as the same user at the same time.
     Umbraco__CMS__Security__AllowConcurrentLogins: 'true',
     Umbraco__CMS__DeliveryApi__Enabled: String(options.deliveryApi),
+    // A site of one server has no other server's cache instructions to read, so its host reads them, and prunes
+    // the old ones, once a day: not every five seconds and every minute. Both of Umbraco 17's jobs read the
+    // instruction table and then write in the same transaction; on SQLite's shared cache that deadlocks with a
+    // request that adds an instruction as it ends, Umbraco tries both statements again inside their transactions,
+    // and every database call of the host waits (ADR-0253). Several servers keep Umbraco's own intervals, as they
+    // tell each other what changed this way.
+    ...(options.severalServers ? {} : { [INSTRUCTION_SYNC]: ONE_SERVER_WAIT, [INSTRUCTION_PRUNING]: ONE_SERVER_WAIT }),
     JironFormBuilderTesting__Endpoints: 'true',
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),

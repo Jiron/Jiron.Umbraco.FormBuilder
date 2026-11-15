@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { deliveryApiOn, hostEnvironment } from './host-env.ts';
+import { deliveryApiOn, hostEnvironment, INSTRUCTION_PRUNING, INSTRUCTION_SYNC } from './host-env.ts';
 import { MARKER_NOT_LAST, STARTUP_LINES } from './host-health.ts';
 import { checkPort, demoDll, FAILED_LINES, hostProcessEnvironment, READY_LINES } from './host.ts';
 import {
@@ -141,6 +141,18 @@ test('the host environment turns on what the browser tests need, and the Deliver
   assert.equal(off.JironFormBuilderTesting__StubPort, String(STUB_PORT));
   assert.equal(off.Umbraco__CMS__DeliveryApi__Enabled, 'false');
   assert.equal(on.Umbraco__CMS__DeliveryApi__Enabled, 'true');
+});
+
+test("a host of one server reads and prunes cache instructions once a day, and several servers keep Umbraco's intervals", () => {
+  const one = hostEnvironment(secrets, { deliveryApi: false });
+  const several = hostEnvironment(secrets, { deliveryApi: false, severalServers: true });
+
+  assert.equal(INSTRUCTION_SYNC, 'Umbraco__CMS__Global__DatabaseServerMessenger__TimeBetweenSyncOperations');
+  assert.equal(INSTRUCTION_PRUNING, 'Umbraco__CMS__Global__DatabaseServerMessenger__TimeBetweenPruneOperations');
+  assert.equal(one[INSTRUCTION_SYNC], '1.00:00:00');
+  assert.equal(one[INSTRUCTION_PRUNING], '1.00:00:00');
+  assert.equal(INSTRUCTION_SYNC in several, false);
+  assert.equal(INSTRUCTION_PRUNING in several, false);
 });
 
 test('JFB_E2E_DELIVERY_API is on, off or unset', () => {

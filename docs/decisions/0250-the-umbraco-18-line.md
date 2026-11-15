@@ -1,6 +1,7 @@
 # 0250. The Umbraco 18 line
 
-- Status: accepted (refines D3, D16, ADR-0010, ADR-0011 and ADR-0213)
+- Status: accepted (refines D3, D16, ADR-0010, ADR-0011 and ADR-0213); the stall on Umbraco 17 named in
+  [ADR-0253](0253-one-servers-test-host-reads-cache-instructions-once-a-day.md)
 - Date: 2026-11-13
 - Roadmap step: 19.1 (19.1 and 19.2, the Umbraco 18 line and its phase review)
 

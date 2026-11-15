@@ -6,7 +6,8 @@
   ([ADR-0079](0079-coverage-without-rewritten-assemblies.md)); where the gate may run amended by the owner on
   2026-10-30 ([ADR-0117](0117-long-checks-run-beside-the-next-step.md): on a commit in a throwaway clone, beside the
   next step); the stall the gate reruns once includes Umbraco 18's locked database
-  ([ADR-0250](0250-the-umbraco-18-line.md))
+  ([ADR-0250](0250-the-umbraco-18-line.md)); one cause of the stall named, and taken out of the hosts of one server
+  ([ADR-0253](0253-one-servers-test-host-reads-cache-instructions-once-a-day.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
