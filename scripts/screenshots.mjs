@@ -329,8 +329,14 @@ async function secondVersion(page, key) {
   await page.locator(PUBLISH).click();
   const dialog = page.locator('jfb-publish-modal');
   await dialog.locator('textarea, input[type="text"]').first().fill('A friendlier Send button.');
+  // The dialog closes before the form is published: the next page waits for the answer, or it would cut the request off.
+  const published = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/publish'),
+    { timeout: 60_000 },
+  );
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   await dialog.waitFor({ state: 'detached', timeout: 60_000 });
+  await published;
 }
 
 /** The backoffice's shots, each a function of a signed-in page at 1600 x 900 and the forms' keys. */

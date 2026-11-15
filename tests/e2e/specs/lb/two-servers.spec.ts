@@ -77,7 +77,7 @@ test.beforeAll(async () => {
   test.setTimeout(900_000);
   rmSync(deliveriesFile, { force: true });
   const env: Record<string, string> = {
-    ...hostEnvironment(readSecrets(), { deliveryApi: false }),
+    ...hostEnvironment(readSecrets(), { deliveryApi: false, severalServers: true }),
     JironFormBuilderTesting__StubPort: '0',
     JironFormBuilderTesting__DeliveriesFile: deliveriesFile,
     JironFormBuilder__Limits__Submit__PerAddressAndFormPerMinute: '0',

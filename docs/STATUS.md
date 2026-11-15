@@ -110,6 +110,13 @@ how to repeat it. Sizes are gzip.
   tested against local stubs and fakes, and names, roles and keyboard paths are checked automatically.
 - **SQLite has a single writer:** above about 20 submissions arriving at the same moment, a submission takes more than
   150 ms at p95. Busy sites should use SQL Server ([performance.md](performance.md#where-sqlite-stops-keeping-up)).
+- **Umbraco 17 on SQLite can stall when several editors save at the same moment,** with or without the package:
+  each of Umbraco's two jobs over the servers' cache instructions reads before it writes, and a job and a request's
+  own instruction can wait for each other in SQLite's shared cache; every database call of the site then waits with
+  them, for minutes. SQL Server has no such lock, and Umbraco 18 no longer uses the shared cache. The browser tests'
+  hosts of one server leave both jobs out
+  ([ADR-0253](decisions/0253-one-servers-test-host-reads-cache-instructions-once-a-day.md)); reporting it to Umbraco
+  is on your list ([OWNER-TODO.md](OWNER-TODO.md)).
 - **Save and continue later needs JavaScript,** a page of the site for its link to come back to, and a form that stores
   entries; files, consents and sensitive answers are never saved, so the visitor gives them again.
 - **Without JavaScript, on a form for members with "one entry per member":** a post with a file that the browser

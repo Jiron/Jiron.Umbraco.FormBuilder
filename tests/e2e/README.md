@@ -17,6 +17,10 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
 
 - **The Testing project** is on in this host only: the test-only endpoints under `/jfb-testing/`, the test clock, the
   stub on `http://127.0.0.1:5560`, and the start-up marker (ADR-0029, ADR-0031).
+- **One server reads no cache instructions:** `hostEnvironment` sets Umbraco's times between two reads, and between
+  two prunings, of the servers' cache instructions to a day. On SQLite's shared cache either of those jobs of
+  Umbraco 17 and a request's own instruction can wait for each other, and every database call of the host waits with
+  them (ADR-0253). A spec whose hosts share a database asks for `severalServers`, which keeps Umbraco's intervals.
 - **The start-up wait:** Umbraco 17 registers its jobs and rebuilds its indexes about a minute after it starts, and
   the tests start only after that (`support/host-health.ts`). The wait ends on a log line that appears whether the
   Content Delivery API is on or off. If the work does not finish, the set-up fails with the reason and the end of
