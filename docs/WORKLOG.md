@@ -1119,3 +1119,12 @@ its reason, and a handover block at the end of every phase.
     at the moment of a shot; the review names the three that the walks met.
 - **Open owner items added:** one, to report the SQLite stall to Umbraco HQ (`docs/OWNER-TODO.md`, Real-world
   checks).
+
+### After Phase 21: the owner's notes (2026-11-16)
+
+- 2026-11-16 · The owner, after trying the demo: the functions stay, but the backoffice should be simpler to find a
+  way through: one way to do a thing, a click that opens something, a page that can be deleted from where the pages
+  are, the left side's settings behind one item with tabs, fewer columns in the designer. Asked for: a short, rough
+  roadmap of its own, not yet steps. Written as `docs/ux/simpler-backoffice.md` from the designer's code and the last
+  walk's screens (no other product looked at; Umbraco's own patterns are the measure). Nothing built; ROADMAP.md is
+  unchanged until the owner picks.
