@@ -44,8 +44,8 @@ follows the Umbraco major).
   dependent options come back; a save the mail limits hold back keeps the earlier one; files attached before a save are
   still taken at Send; Privacy > People finds saved answers for as long as they are kept.
 - Mail no longer carries an `Expires` header, which could make a receiver drop a mail that was delivered late.
-- A slow webhook receiver no longer delays mail; a form's own file on disk that can't be read is never written over; a
-  theme or email layout that is one site's default can't be deleted.
+- A form's own file on disk that can't be read is never written over, and a theme or email layout that is one site's
+  default can't be deleted.
 - A file whose action sends a secret is imported only by a user who manages settings.
 - A half-typed date or number is refused instead of being sent as empty, and a form whose scripts can't load says so
   at Send.

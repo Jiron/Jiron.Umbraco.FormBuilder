@@ -58,7 +58,7 @@ the decisions that change an earlier one, and the rules the pass worked by.
 
 - **Mail goes out without an `Expires` header** (changes ADR-0007): Umbraco's sender writes one from the time-out it
   is handed, and a mail the queue delivers later could be dropped by its receiver.
-- **Each outbox queue has its own time in a pass,** and a run that sent nothing gives its attempt back.
+- **A run that sent nothing gives its attempt back:** failing to read an entry is no attempt of the action's.
 - **The mirror never writes over a form's own file that it can't read,** and one refused file no longer ends the pass.
 - **A theme or email layout that is one site's default can't be deleted.**
 - **A file whose action sends a secret reference is imported only by who manages settings.**
@@ -91,6 +91,11 @@ the decisions that change an earlier one, and the rules the pass worked by.
 - **The search text stored with an older entry** still holds an answer whose field was marked sensitive later, until
   the entry is edited: a search for that answer finds the entry and shows no answer. Rewriting every entry's search text
   at a publish is a job of its own.
+- **One time budget for a pass of the outbox, as before.** Giving each queue its own, so that runs waiting on a
+  receiver that never answers could not use up the mails' time, was tried and taken out again: with it the browser
+  suite's SQLite site stalled in every long run, and without it in none (a bisect over the pass's commits, then over
+  that commit's files, showed it). Why is not understood, so the change does not ship. A receiver that never answers
+  can therefore still hold mail back for the passes its runs take; mail is not lost.
 - **A form whose first mirror publish was refused stays unpublished until its file changes again:** the log names the
   file and the reason.
 - The entry panel, History and the audit log at 375 px, which is below the widths the backoffice supports.
