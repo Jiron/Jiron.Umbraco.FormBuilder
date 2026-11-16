@@ -1171,12 +1171,12 @@ a {
 
 /* ---------- The designer ---------- */
 
-/* Palette, stage, inspector. A page narrows a panel to a 48 px rail with --wf-palette or --wf-inspector (both can be
-   collapsed, IA 5.1), and at 620 px lays the panels over the stage, which is why this is a positioning context. */
+/* The stage and the inspector (ADR-0256). A page folds the inspector to a rail with --wf-inspector, and in a narrow
+   workspace lays it over the stage, which is why this is a positioning context. */
 .wf-designer {
   position: relative;
   display: grid;
-  grid-template-columns: var(--wf-palette, 248px) minmax(0, 1fr) var(--wf-inspector, 320px);
+  grid-template-columns: minmax(0, 1fr) var(--wf-inspector, 320px);
   height: 100%;
 }
 
@@ -1184,10 +1184,6 @@ a {
   min-height: 0;
   overflow: auto;
   background: var(--uui-color-surface);
-}
-
-.wf-panel--left {
-  border-right: 1px solid var(--uui-color-border);
 }
 
 .wf-panel--right {
@@ -1213,6 +1209,7 @@ a {
   font-weight: 700;
 }
 
+/* An item to pick in a list of kinds: the field types in the designer's picker */
 .wf-pal-item {
   display: flex;
   align-items: center;
@@ -1226,7 +1223,11 @@ a {
   font: inherit;
   color: inherit;
   text-align: left;
-  cursor: grab;
+  cursor: pointer;
+}
+
+.wf-pal-item:hover {
+  background: var(--uui-color-surface-emphasis);
 }
 
 .wf-disclosure {
@@ -1269,8 +1270,8 @@ a {
   margin-left: 0;
 }
 
-/* The stage holds the toolbar, the steps and the canvas, and is a container, so "Narrowed to fit" can compare its
-   room with the chosen width. The toolbar and the steps follow the canvas's column. */
+/* The stage holds the row above the sheet and the canvas, and is a container, so "Narrowed to fit" can compare its
+   room with the chosen width. */
 .wf-stage {
   min-height: 0;
   overflow: auto;
@@ -1352,13 +1353,6 @@ a {
   --jfb-font-size: 16px;
   max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px);
   padding: var(--wf-space-5);
-}
-
-/* The visitor's step progress is left out, because the steps across the top of the canvas stand in for it (IA 5.1).
-   The element stays in the markup, so the theme still lets the current step stand in for the page title from 480 px
-   (ADR-0022), as visitors see it. */
-.wf-canvas--site .jfb-form > .jfb-progress {
-  display: none;
 }
 
 /* "Narrowed to fit" shows when the stage's content box is narrower than the canvas at the chosen width: the width
@@ -1729,7 +1723,7 @@ a {
   gap: var(--wf-space-4);
 }
 
-/* "Add field" at the end of every page: a button that opens the palette for the end of the page */
+/* "Add field" at the end of every page: a button that opens the field picker for the end of the page */
 .wf-add-field {
   display: flex;
   align-items: center;

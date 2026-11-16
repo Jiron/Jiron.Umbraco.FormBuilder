@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Designer · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 inspector-closed@1440x900 tablet@1440x900 phone@1440x900 insert@1440x900 keyboard@1440x900 drag@1440x900 inline-edit@1440x900 menu@1440x900 shortcuts@1440x900 move@1440x900 undo@1440x900 new-form@1440x900 paste@1440x900 loading@1440x900 conflict@1440x900 save-failed@1440x900 used-on@1440x900 translate@1440x900 skip@1440x900 default@1024x900 narrow@920x900 palette@920x900">
+  <meta name="wf-shots" content="default@1440x900 selected@1440x900 picker@1440x900 picker-search@1440x900 picker-none@1440x900 page-menu@1440x900 one-page@1440x900 element-menu@1440x900 after@1440x900 outcome@1440x900 outcome-deleted@1440x900 two-rows@1440x900 tablet@1440x900 phone@1440x900 insert@1440x900 keyboard@1440x900 drag@1440x900 inline-edit@1440x900 menu@1440x900 shortcuts@1440x900 move@1440x900 undo@1440x900 new-form@1440x900 paste@1440x900 loading@1440x900 conflict@1440x900 save-failed@1440x900 used-on@1440x900 translate@1440x900 skip@1440x900 default@1024x900 narrow@920x900 picker@920x900 after@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <link rel="stylesheet" href="../website/assets/base.css">
   <link rel="stylesheet" href="../website/assets/theme.css">
@@ -16,43 +16,56 @@
     html:not([data-wf-state='phone']) .wf-fit--phone,
     html:is([data-wf-state='tablet'], [data-wf-state='phone']) .wf-fit--desktop { display: none; }
 
-    /* The inspector is there while an element is selected; collapsed, it is a rail */
-    .wf-designer:not(:has(> .wf-panel--right.wf-on, > .dz-rail--right.wf-on)) { --wf-inspector: 0px; }
-    .wf-designer:has(> .dz-rail--right.wf-on) { --wf-inspector: 48px; }
-
-    /* Rails: a panel folded to 48 px, by its collapse button, or for the palette below a 1024 px workspace */
-    .dz-rail { display: flex; flex-direction: column; align-items: center; gap: var(--wf-space-2); padding: var(--wf-space-4) 0; }
-    .dz-rail--left { display: none; border-right: 1px solid var(--uui-color-border); }
-    .dz-rail--right { border-left: 1px solid var(--uui-color-border); }
-    html[data-wf-state='tablet'] .wf-designer { --wf-palette: 48px; }
-    html[data-wf-state='tablet'] .wf-designer > .wf-panel--left { display: none; }
-    html[data-wf-state='tablet'] .wf-designer > .dz-rail--left { display: flex; }
-
-    .dz-pal-head { display: none; }
-    .dz-pal-search { display: flex; gap: var(--wf-space-2); }
-    .dz-pal-search > .wf-input--search { flex: 1; width: auto; min-width: 0; }
-    .wf-panel__head > .dz-insp-actions { display: none; }
+    /* The inspector folded to its rail (tablet): 56 px, the selection kept */
+    html[data-wf-state='tablet'] .wf-designer { --wf-inspector: 56px; }
+    html[data-wf-state='tablet'] .wf-designer > .wf-panel--right { display: none; }
+    .dz-rail { display: none; flex-direction: column; align-items: center; padding: var(--wf-space-4) 0; border-left: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    html[data-wf-state='tablet'] .dz-rail { display: flex; }
     .wf-panel__head > .dz-collapse { margin-left: auto; }
 
-    @container workspace (701px <= width < 1024px) {
-      /* Selecting an element folds the palette to its rail, so the canvas keeps its width beside the inspector;
-         clearing the selection opens it again (IA 5.1) */
-      .wf-designer:has(> .wf-panel--right.wf-on) { --wf-palette: 48px; }
-      .wf-designer:has(> .wf-panel--right.wf-on) > .wf-panel--left { display: none; }
-      .wf-designer:has(> .wf-panel--right.wf-on) > .dz-rail--left { display: flex; }
-    }
+    /*
+     * The one row above the sheet: the pages at its start, the tools at its end. It keeps the width of the Desktop
+     * sheet whatever width is chosen, so the width buttons never move under the pointer. Where the pages need the
+     * room, the row wraps: the pages take their natural width on the first row and the tools go to the end of the
+     * second. The tabs scroll inside their own strip only when they alone are wider than the row; "+" and After
+     * sending never leave the row.
+     */
+    .wf-stage > .dz-row { max-width: calc(960px + 2 * var(--wf-space-5) + 2px); margin-bottom: 0; gap: var(--wf-space-3) var(--wf-space-4); }
+    .dz-pages { display: flex; align-items: center; gap: var(--wf-space-2); min-width: 0; max-width: 100%; }
+    .dz-pages > :not(.dz-tabs) { flex: none; }
+    .dz-tabs { display: flex; align-items: center; gap: var(--wf-space-2); min-width: 0; padding: var(--wf-space-1); margin: calc(-1 * var(--wf-space-1)); overflow-x: auto; scrollbar-width: thin; }
+    /* A tab alone on its row shrinks first, its name cut with an ellipsis (whole in its tip), never under 5rem; only
+       then the strip scrolls */
+    .dz-tabs > * { flex: 0 1 auto; min-width: 5rem; }
+    .dz-tab-open > button:first-child { min-width: 0; }
+    .dz-tab-open > .dz-tab-more { flex: none; }
+    .dz-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dz-tools { display: flex; align-items: center; gap: var(--wf-space-2); margin-inline-start: auto; }
+    .dz-row .wf-btn { height: 32px; }
+    .dz-row .wf-btn:not(.wf-btn--icon) { padding: 0 var(--wf-space-3); }
+    .dz-row .wf-btn--icon { width: 32px; }
+    .dz-widths > button { justify-content: center; width: 32px; height: 30px; padding: 0; cursor: pointer; }
+    .dz-lang { gap: var(--wf-space-1); }
+    /* The form check's badge: its icon and the number of problems, a check mark alone where there is none, at one width
+       that holds two digits, so the row never changes while the form is edited; its words are its name and tip */
+    .dz-check { width: 60px; }
+
+    /* The open page's tab: its name, and "…" for its menu (Rename, Duplicate, Delete) */
+    .wf-step.dz-tab-open { gap: var(--wf-space-1); padding-inline-end: var(--wf-space-1); border-color: var(--uui-color-selected); background: var(--uui-color-selected); color: var(--uui-color-surface); font-weight: 700; }
+    .dz-tab-open > button { display: inline-flex; align-items: center; height: 24px; padding: 0; border: 0; border-radius: var(--wf-radius-round); background: none; color: inherit; font: inherit; cursor: pointer; }
+    .dz-tab-open > .dz-tab-more { justify-content: center; width: 24px; }
+    .dz-tab-open > button:focus-visible { box-shadow: 0 0 0 2px var(--uui-color-surface); }
+    .dz-tab-open > .dz-tab-more[aria-expanded='true'] { background: var(--uui-color-interactive-emphasis); }
+
+    /* "Narrowed to fit" at the sheet's top edge, in the room above the sheet, which is kept whether it shows or not */
+    .dz-fit-room { display: flex; align-items: center; justify-content: flex-end; height: 30px; max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px); margin: 0 auto; }
 
     @container workspace (width <= 700px) {
-      /* At 620 px the canvas takes the width. The inspector covers it while an element is selected, with the
-         element's actions in its head; the palette opens over it from Add field or an insert point. Esc closes either. */
+      /* A 620 px workspace: the canvas alone. The inspector lies over it when a field is selected or a page is
+         renamed (not drawn here); on After sending the outcomes lie under what visitors get. */
       .wf-designer { grid-template-columns: minmax(0, 1fr); }
-      html[data-wf-state] .wf-designer > :is(.wf-panel--left, .dz-rail) { display: none; }
-      .wf-designer > .wf-panel--right { position: absolute; inset: 0; z-index: 4; border-left: 0; }
-      html[data-wf-state='palette'] .wf-designer > .wf-panel--left { display: block; position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 4; width: min(300px, 100%); border-right: 0; box-shadow: var(--wf-shadow); }
-      .dz-pal-head { display: flex; }
-      .dz-collapse { display: none; }
-      .wf-panel__head > .dz-insp-actions { display: flex; }
-      .wf-canvas--site .wf-el__bar { display: none; }
+      html[data-wf-state] .wf-designer > :is(.wf-panel--right, .dz-rail) { display: none; }
+      .wf-stage > .dz-after-under { display: block; }
     }
 
     /* One "…" in the header: when the views fold (kit.js adds a "…" tab), they join the form's "…" instead */
@@ -70,9 +83,9 @@
     html[data-wf-state='keyboard'] #dz-email-sel > .wf-canvas__handle { box-shadow: var(--wf-focus); }
     html[data-wf-state='undo'] #dz-phone > .wf-canvas__select { box-shadow: inset 0 0 0 2px var(--uui-color-focus); }
     html[data-wf-state='undo'] #dz-phone > .wf-canvas__handle,
-    html[data-wf-state='insert'] #dz-email > .wf-canvas__insert { opacity: 1; }
+    html:is([data-wf-state='insert'], [data-wf-state^='picker']) #dz-email > .wf-canvas__insert { opacity: 1; }
     html[data-wf-state='insert'] #dz-email > .wf-canvas__insert > span { box-shadow: 0 0 0 2px var(--uui-color-surface), 0 0 0 4px var(--uui-color-focus); }
-    html[data-wf-state='palette'] .dz-search { box-shadow: var(--wf-focus); }
+    html[data-wf-state='picker'] .dz-pk-search { box-shadow: var(--wf-focus); }
 
     /* What the live region reads aloud, drawn as a caption: in the product it is heard, not seen */
     .dz-live { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: flex-start; gap: var(--wf-space-3); max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px); margin: var(--wf-space-5) auto 0; padding: var(--wf-space-3) var(--wf-space-4); border: 1px dashed var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
@@ -88,56 +101,106 @@
     .dz-move-page { margin: var(--wf-space-4) 0 var(--wf-space-2); }
     .dz-move-page:first-of-type { margin-top: 0; }
     .dz-move-list { display: flex; flex-direction: column; gap: var(--wf-space-3); padding-left: var(--wf-space-4); }
+
+    /* The picker: a sidebar of Umbraco's (small), headed "Add a field" */
+    .dz-pk-search { width: 100%; }
+    .dz-pk-groups { columns: 2; column-gap: var(--wf-space-5); margin-top: var(--wf-space-5); }
+    .dz-pk-group { break-inside: avoid; padding-bottom: var(--wf-space-4); }
+    .dz-pk-group > h3 { margin-bottom: var(--wf-space-1); padding: 0 var(--wf-space-2); }
+    .wf-pal-item.dz-pk-first { background: var(--uui-color-current); }
+    .wf-pal-item.dz-pk-first > .wf-kbd { margin-left: auto; }
+    .wf-pal-item[aria-disabled='true'] { color: var(--wf-color-text-muted); cursor: default; }
+    .wf-pal-item[aria-disabled='true']:hover { background: none; }
+    .dz-pk-why { padding: 0 var(--wf-space-2) var(--wf-space-2) calc(var(--wf-space-6) + var(--wf-space-2)); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+    .dz-pk-none { margin-top: var(--wf-space-5); color: var(--wf-color-text-muted); }
+
+    /* After sending: the outcomes, in the inspector's column, or under what visitors get where no inspector is beside
+       it. Every row has its move handle (a real button, ADR-0016). */
+    .dz-outcome { display: grid; grid-template-columns: 28px minmax(0, 1fr) max-content; gap: var(--wf-space-2); align-items: center; padding: var(--wf-space-3) var(--wf-space-3) var(--wf-space-3) var(--wf-space-1); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .dz-outcome + .dz-outcome { margin-top: var(--wf-space-3); }
+    .dz-outcome a { text-decoration: none; }
+    .dz-outcome a:is(:hover, :focus-visible) { text-decoration: underline; }
+    .dz-move { cursor: grab; touch-action: none; }
+    html[data-wf-state='after'] .dz-outcome--hover { background: var(--uui-color-surface-emphasis); }
+    .dz-after-under { display: none; max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px); margin: var(--wf-space-5) auto 0; }
+
+    /* The outcome's sidebar */
+    .rte { border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .rte__bar { display: flex; gap: var(--wf-space-1); padding: var(--wf-space-1) var(--wf-space-2); border-bottom: 1px solid var(--uui-color-border); }
+    .rte__body { min-height: 96px; padding: var(--wf-space-3) var(--wf-space-4); }
+    .oc-preview { display: flex; flex-direction: column; gap: var(--wf-space-3); padding: var(--wf-space-6); }
+    .oc-preview__mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--wf-radius-round); background: var(--uui-color-background); color: var(--uui-color-positive); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
 <body data-role="designer" data-active="form:contact" data-active-new-form="" data-active-paste="">
   <!--
-    IA section 5 (header, views, footer) and 5.1 (Design); ADR-0016 (drag, keyboard moves, announcements). The designer
-    persona sees Design, Settings, Actions and History (IA 11).
+    IA section 5 (header, views, footer) and 5.1 (Design); ADR-0256 (three columns, the picker, pages at their tabs,
+    After sending in place); ADR-0016 (drag, keyboard moves, announcements). The designer persona sees Design, Settings,
+    Actions and History (IA 11).
+
+    Three columns: Umbraco's section sidebar, the canvas, the inspector (320 px; 56 px folded). The inspector is never
+    empty: with no field or group selected it shows the open page, and on After sending the outcomes. In a 620 px
+    workspace the canvas is alone.
 
     The canvas renders the website's default theme (step 2.3, ADR-0022) on the website's markup. The chosen width is the
     form's own width: Desktop 960 px (the theme's widest form), Tablet 768 px, Phone 375 px. With less room the form
-    reflows as it would in a visitor's narrow window, never scaled down, and "Narrowed to fit" beside the width switch
-    says so. Collapsing the palette and the inspector gives the canvas its width back (tablet). The visitor's step
-    progress is left out: the steps across the top of the canvas stand in for it, and, as on the website, the current
-    step stands in for the page title from 480 px.
+    reflows as it would in a visitor's narrow window, never scaled down, and "Narrowed to fit" says so at the sheet's top
+    edge. The visitor's step progress is left out: the tabs above the sheet stand in for it.
+
+    The row above the sheet: the page tabs, "+" (Add page) and After sending; at its end the width (Phone, Tablet,
+    Desktop), the language (on sites with more than one; this one has English and German), the form check's badge and
+    "…". The open page's tab holds "…" ("More for Your details": Rename, Duplicate, Delete; no Delete for a form's only
+    page). A tab is dragged to move its page and takes a dropped field or group.
+
+    Adding: every "Add field" and every insert point opens the picker, a sidebar of Umbraco's headed "Add a field":
+    the search with the focus, Layout (Group), the field types under their groups, Saved groups, and in its footer
+    "Paste questions…" and Close. Enter adds the first match; Arrow down goes to the first item; Esc and Close give
+    the focus back to what opened it. A pick puts the element where the click was, selects it and focuses it.
 
     States:
-    - default: Email address selected; inspector-closed: nothing selected, so no inspector; tablet: Tablet width, with
-      the palette and the inspector collapsed to rails; phone: Phone width;
-    - insert: an insert point under the keyboard, nothing selected; keyboard: the handle "Move Email address" after
-      Alt+Down, and what the live region reads aloud; drag: a pointer drag with its insertion line; inline-edit: the label
-      edited in place (F2, or a double click);
-    - menu: the toolbar's "…"; shortcuts: the "?" overlay; move: Move to…; undo: the toast after deleting a field;
+    - default: a form of two pages, page 1 open, nothing selected: the inspector shows the page; selected: Email address
+      selected, with its bar, and the inspector shows the field with Change type in its header;
+    - picker: the picker from the insert point before Email address; picker-search: "em" typed, the first match marked
+      as what Enter adds; picker-none: a search without a match;
+    - page-menu: the open tab's menu; one-page: a form of one page, its tab's menu without Delete; element-menu: the
+      selected field's "…";
+    - after: After sending open, the outcomes in the inspector's column; outcome: an outcome's sidebar; outcome-deleted:
+      the message outcome deleted, with Undo;
+    - two-rows: six pages with longer names, so the row has become two rows;
+    - tablet: Tablet width, the inspector folded to its rail; phone: Phone width;
+    - insert: an insert point under the keyboard; keyboard: the handle "Move Email address" after Alt+Down, and what
+      the live region reads aloud; drag: a pointer drag with its insertion line; inline-edit: the label edited in place;
+    - menu: the row's "…"; shortcuts: the "?" overlay; move: Move to…; undo: the toast after deleting a field;
     - new-form: a new, blank form, whose form check finds one error; paste: Paste questions, from its empty state;
-      loading: the form loading, with the footer's buttons not yet usable;
+      loading: the form loading, with the row hidden and the footer's buttons not yet usable;
     - conflict: someone saved first; save-failed: the draft couldn't be saved; used-on: the pages that use the form;
-    - translate: German chosen in the language switch, on a site with English and German;
+    - translate: German chosen in the language switch;
     - skip: "Skip to the form", the workspace's first stop, under the keyboard;
-    - narrow (920 px): the inspector over the canvas; palette (920 px): the palette over the canvas, from Add field.
+    - narrow (920 px): the canvas alone and the row in two rows; picker and after at 920 px too.
 
-    Keyboard: Tab follows the visual order. Skip to the form; the header; the palette; the toolbar; the pages; then on
-    the canvas, per field: the insert point above it, the field, its handle, and for the selected field its bar; Add
-    field; the inspector; the footer. Enter or Space selects the focused field; Alt+Up and Alt+Down move the focused or
-    selected field and keep the focus on it; F2 edits its label in place, where Enter keeps the new label and Esc puts
-    back the old one; Esc clears the selection. After a delete, the focus moves to the field that took its place. Keyboard moves don't animate; a dropped field settles in 150 ms with an
-    ease-out, and with reduced motion it doesn't move at all.
+    Keyboard: Tab follows the visual order. Skip to the form; the header; the row (the tabs, the open tab's "…", "+",
+    After sending, the widths, the language, the badge, "…"); then on the canvas, per field: the insert point above it,
+    the field, its handle, and for the selected field its bar; Add field; the inspector; the footer. On a tab: Delete,
+    Ctrl+D, F2 (Rename), Alt+Up and Alt+Down. On a field: Enter or Space selects it; Alt+Up and Alt+Down move it; F2
+    edits its label in place; Esc clears the selection. After a delete, the focus moves to what took its place.
+    Keyboard moves don't animate; a dropped field settles in 150 ms with an ease-out, and with reduced motion it
+    doesn't move at all. The picker opens without a slide, since it is opened many times a session.
   -->
   <main class="wf-main">
     <a class="dz-skip" href="#dz-canvas">Skip to the form</a>
     <header class="wf-head">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit loading conflict save-failed used-on translate palette skip narrow">Contact us</span>
+        <span class="wf-head__name" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo loading conflict save-failed used-on translate skip narrow">Contact us</span>
         <span class="wf-head__name" data-state="new-form paste" style="border-color: var(--wf-color-control-border)"><span style="background: var(--uui-color-current)">Untitled form</span></span>
-        <span class="wf-chip wf-chip--warning" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit loading conflict save-failed used-on translate palette skip narrow">Published (pending changes)</span>
+        <span class="wf-chip wf-chip--warning" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo loading conflict save-failed used-on translate skip narrow">Published (pending changes)</span>
         <span class="wf-chip" data-state="new-form paste">Draft</span>
-        <a href="#" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit loading conflict save-failed used-on translate palette skip narrow">Used on 3 pages</a>
+        <a href="#" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo loading conflict save-failed used-on translate skip narrow">Used on 3 pages</a>
         <a href="#" data-state="new-form paste">Not used on any page</a>
-        <button class="wf-btn wf-btn--icon wf-btn--text dz-more--wide" data-wf-more aria-label="More actions for Contact us" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit loading conflict save-failed used-on translate palette skip narrow"><i data-i="more"></i></button>
-        <button class="wf-btn wf-btn--icon wf-btn--text dz-more--folded" data-wf-more aria-label="Views and more actions for Contact us" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit loading conflict save-failed used-on translate palette skip narrow"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text dz-more--wide" data-wf-more aria-label="More actions for Contact us" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo loading conflict save-failed used-on translate skip narrow"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text dz-more--folded" data-wf-more aria-label="Views and more actions for Contact us" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo loading conflict save-failed used-on translate skip narrow"><i data-i="more"></i></button>
         <button class="wf-btn wf-btn--icon wf-btn--text dz-more--wide" data-wf-more aria-label="More actions for Untitled form" data-state="new-form paste"><i data-i="more"></i></button>
         <button class="wf-btn wf-btn--icon wf-btn--text dz-more--folded" data-wf-more aria-label="Views and more actions for Untitled form" data-state="new-form paste"><i data-i="more"></i></button>
       </div>
@@ -152,78 +215,101 @@
     <div class="wf-content wf-content--flush">
       <div class="wf-designer">
 
-        <!-- The palette: open at 1024 px and wider, and collapsible; over the canvas at 620 px -->
-        <aside class="wf-panel wf-panel--left" aria-label="Field palette">
-          <div class="wf-panel__head dz-pal-head">
-            <span class="wf-title">Add a field</span>
-            <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-frame aria-label="Close the field palette" style="margin-left: auto"><i data-i="x"></i></button>
-          </div>
-          <div class="wf-panel__section dz-pal-search">
-            <span class="wf-input wf-input--search dz-search"><i data-i="search"></i><span class="wf-placeholder">Search fields</span></span>
-            <button class="wf-btn wf-btn--icon wf-btn--text dz-collapse" data-wf-frame aria-label="Collapse the field palette"><i data-i="chevron-left"></i></button>
-          </div>
-          <div class="wf-panel__section">
-            <h3 class="wf-panel__heading">Recently used</h3>
-            <button class="wf-pal-item"><i data-i="text-input"></i>Short text</button>
-            <button class="wf-pal-item"><i data-i="mail"></i>Email</button>
-            <button class="wf-pal-item"><i data-i="chevron-down"></i>Dropdown</button>
-          </div>
-          <div class="wf-panel__section">
-            <h3 class="wf-panel__heading">Layout</h3>
-            <button class="wf-pal-item"><i data-i="columns"></i>Group</button>
-            <button class="wf-pal-item"><i data-i="split"></i>New page</button>
-          </div>
-          <div class="wf-panel__section">
-            <h3 class="wf-panel__heading">Text</h3>
-            <button class="wf-pal-item"><i data-i="text-input"></i>Short text</button>
-            <button class="wf-pal-item"><i data-i="align-left"></i>Long text</button>
-            <button class="wf-pal-item"><i data-i="mail"></i>Email</button>
-            <button class="wf-pal-item"><i data-i="calculator"></i>Number</button>
-            <button class="wf-pal-item"><i data-i="phone"></i>Phone</button>
-            <button class="wf-pal-item"><i data-i="link"></i>Web address</button>
-          </div>
-          <div class="wf-panel__section">
-            <h3 class="wf-panel__heading">Choices</h3>
-            <button class="wf-pal-item"><i data-i="chevron-down"></i>Dropdown</button>
-            <button class="wf-pal-item"><i data-i="circle"></i>Radio buttons</button>
-            <button class="wf-pal-item"><i data-i="checkbox"></i>Checkboxes</button>
-            <button class="wf-pal-item"><i data-i="globe"></i>Country</button>
-          </div>
-          <div class="wf-panel__section">
-            <h3 class="wf-panel__heading">Saved groups</h3>
-            <button class="wf-pal-item"><i data-i="layers"></i>Address group</button>
-          </div>
-          <div class="wf-panel__section">
-            <button class="wf-pal-item"><i data-i="clipboard"></i>Paste questions…</button>
-          </div>
-        </aside>
-
-        <!-- The palette folded to its rail: collapsed by the user, or below a 1024 px workspace while an element is selected -->
-        <aside class="wf-panel dz-rail dz-rail--left" aria-label="Field palette, collapsed">
-          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Expand the field palette"><i data-i="chevron-right"></i></button>
-          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Search fields"><i data-i="search"></i></button>
-        </aside>
-
-        <!-- The stage: toolbar, pages and the canvas -->
+        <!-- The stage: the row above the sheet, then the canvas -->
         <section class="wf-stage" aria-label="Canvas">
-          <div class="wf-stage__bar" data-wf-actions="design toolbar" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow">
-            <div class="wf-seg" role="group" aria-label="Canvas width" data-state="default inspector-closed insert keyboard shortcuts undo move menu drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow">
-              <button aria-pressed="false">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="true">Desktop</button>
+          <div class="wf-stage__bar dz-row" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">
+
+            <!-- The pages: the tabs, then Add page, then After sending. An unnamed page reads "Page 1". -->
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="default selected picker picker-search picker-none element-menu tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on skip narrow">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" title="Your details"><span class="dz-tab-name">Your details</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="false" aria-label="More for Your details" title="More for Your details"><i data-i="more"></i></button></span>
+                <button class="wf-step" title="Your message"><span class="dz-tab-name">Your message</span></button>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="page-menu">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" title="Your details"><span class="dz-tab-name">Your details</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="true" aria-label="More for Your details" title="More for Your details"><i data-i="more"></i></button></span>
+                <button class="wf-step" title="Your message"><span class="dz-tab-name">Your message</span></button>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="one-page">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" title="Your details"><span class="dz-tab-name">Your details</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="true" aria-label="More for Your details" title="More for Your details"><i data-i="more"></i></button></span>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="after outcome outcome-deleted">
+              <div class="dz-tabs">
+                <button class="wf-step" title="Your details"><span class="dz-tab-name">Your details</span></button>
+                <button class="wf-step" title="Your message"><span class="dz-tab-name">Your message</span></button>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step" aria-current="step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="translate">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" lang="de" title="Ihre Angaben"><span class="dz-tab-name">Ihre Angaben</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="false" aria-label="More for Ihre Angaben" title="More for Ihre Angaben"><i data-i="more"></i></button></span>
+                <button class="wf-step" lang="de" title="Ihre Nachricht"><span class="dz-tab-name">Ihre Nachricht</span></button>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="new-form paste">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" title="Page 1"><span class="dz-tab-name">Page 1</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="false" aria-label="More for Page 1" title="More for Page 1"><i data-i="more"></i></button></span>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+            <nav class="dz-pages" aria-label="Pages" data-wf-actions="pages" data-state="two-rows">
+              <div class="dz-tabs">
+                <span class="wf-step dz-tab-open"><button aria-current="step" title="Your details"><span class="dz-tab-name">Your details</span></button><button class="dz-tab-more" data-wf-more aria-haspopup="menu" aria-expanded="false" aria-label="More for Your details" title="More for Your details"><i data-i="more"></i></button></span>
+                <button class="wf-step" title="Your stay"><span class="dz-tab-name">Your stay</span></button>
+                <button class="wf-step" title="Access needs"><span class="dz-tab-name">Access needs</span></button>
+                <button class="wf-step" title="Meals"><span class="dz-tab-name">Meals</span></button>
+                <button class="wf-step" title="Invoice"><span class="dz-tab-name">Invoice</span></button>
+                <button class="wf-step" title="Your message"><span class="dz-tab-name">Your message</span></button>
+              </div>
+              <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Add page" title="Add page"><i data-i="plus"></i></button>
+              <button class="wf-step"><i data-i="flag"></i>After sending</button>
+            </nav>
+
+            <!-- The tools at the row's end: three of them, and "…" -->
+            <div class="dz-tools" data-wf-actions="design tools">
+              <div class="wf-seg dz-widths" role="group" aria-label="Canvas width" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">
+                <button aria-pressed="false" aria-label="Phone" title="Phone"><i data-i="smartphone"></i></button><button aria-pressed="false" aria-label="Tablet" title="Tablet"><i data-i="tablet"></i></button><button aria-pressed="true" aria-label="Desktop" title="Desktop"><i data-i="monitor"></i></button>
+              </div>
+              <div class="wf-seg dz-widths" role="group" aria-label="Canvas width" data-state="tablet">
+                <button aria-pressed="false" aria-label="Phone" title="Phone"><i data-i="smartphone"></i></button><button aria-pressed="true" aria-label="Tablet" title="Tablet"><i data-i="tablet"></i></button><button aria-pressed="false" aria-label="Desktop" title="Desktop"><i data-i="monitor"></i></button>
+              </div>
+              <div class="wf-seg dz-widths" role="group" aria-label="Canvas width" data-state="phone">
+                <button aria-pressed="true" aria-label="Phone" title="Phone"><i data-i="smartphone"></i></button><button aria-pressed="false" aria-label="Tablet" title="Tablet"><i data-i="tablet"></i></button><button aria-pressed="false" aria-label="Desktop" title="Desktop"><i data-i="monitor"></i></button>
+              </div>
+              <button class="wf-btn dz-lang" aria-haspopup="listbox" aria-label="Language en-US: English (United States)" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on skip narrow new-form paste">en-US<i data-i="chevron-down"></i></button>
+              <button class="wf-btn dz-lang" aria-haspopup="listbox" aria-label="Language de-DE: German (Germany)" data-state="translate">de-DE<i data-i="chevron-down"></i></button>
+              <button class="wf-btn dz-check" aria-label="Form check: 2 problems" title="Form check: 2 problems" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow"><i data-i="alert"></i>2</button>
+              <button class="wf-btn dz-check" aria-label="Form check: 1 problem" title="Form check: 1 problem" data-state="new-form paste"><i data-i="alert"></i>1</button>
+              <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-haspopup="menu" aria-label="More design actions" aria-expanded="false" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste"><i data-i="more"></i></button>
+              <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-haspopup="menu" aria-label="More design actions" aria-expanded="true" data-state="menu"><i data-i="more"></i></button>
             </div>
-            <div class="wf-seg" role="group" aria-label="Canvas width" data-state="tablet">
-              <button aria-pressed="false">Phone</button><button aria-pressed="true">Tablet</button><button aria-pressed="false">Desktop</button>
+
+            <!-- The open tab's menu: Rename goes to the page's Title in the inspector, its text selected -->
+            <div class="wf-pop" data-state="page-menu" role="menu" aria-label="More for Your details" style="top: 42px; left: 0; width: 240px">
+              <span class="wf-pop__item wf-pop__item--hover" role="menuitem" aria-keyshortcuts="F2"><i data-i="pencil"></i>Rename<span class="dz-keys">F2</span></span>
+              <span class="wf-pop__item" role="menuitem" aria-keyshortcuts="Control+D"><i data-i="copy"></i>Duplicate<span class="dz-keys">Ctrl+D</span></span>
+              <span class="wf-pop__item" role="menuitem" aria-keyshortcuts="Delete"><i data-i="trash"></i>Delete<span class="dz-keys">Delete</span></span>
             </div>
-            <div class="wf-seg" role="group" aria-label="Canvas width" data-state="phone">
-              <button aria-pressed="true">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="false">Desktop</button>
+            <!-- A form's only page: no Delete -->
+            <div class="wf-pop" data-state="one-page" role="menu" aria-label="More for Your details" style="top: 42px; left: 0; width: 240px">
+              <span class="wf-pop__item wf-pop__item--hover" role="menuitem" aria-keyshortcuts="F2"><i data-i="pencil"></i>Rename<span class="dz-keys">F2</span></span>
+              <span class="wf-pop__item" role="menuitem" aria-keyshortcuts="Control+D"><i data-i="copy"></i>Duplicate<span class="dz-keys">Ctrl+D</span></span>
             </div>
-            <button class="wf-btn" data-state="translate" aria-haspopup="listbox" aria-label="Language: German"><i data-i="globe"></i>German<i data-i="chevron-down"></i></button>
-            <span class="wf-fit wf-fit--desktop wf-small wf-muted">Narrowed to fit</span>
-            <span class="wf-fit wf-fit--tablet wf-small wf-muted">Narrowed to fit</span>
-            <span class="wf-fit wf-fit--phone wf-small wf-muted">Narrowed to fit</span>
-            <button class="wf-btn" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit conflict save-failed used-on translate palette skip narrow"><i data-i="alert"></i>2 problems</button>
-            <button class="wf-btn" data-state="new-form paste"><i data-i="alert"></i>1 problem</button>
-            <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More design actions" aria-expanded="false" style="margin-left: auto" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow"><i data-i="more"></i></button>
-            <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More design actions" aria-expanded="true" style="margin-left: auto" data-state="menu"><i data-i="more"></i></button>
+            <!-- The row's "…" -->
             <div class="wf-pop" data-state="menu" role="menu" aria-label="More design actions" style="top: 42px; right: 0; width: 280px">
               <span class="wf-pop__item wf-pop__item--hover" role="menuitem" aria-keyshortcuts="Control+Z"><i data-i="undo"></i>Undo<span class="dz-keys">Ctrl+Z</span></span>
               <span class="wf-pop__item" role="menuitem" aria-keyshortcuts="Control+Y"><i data-i="redo"></i>Redo<span class="dz-keys">Ctrl+Y</span></span>
@@ -233,29 +319,16 @@
             </div>
           </div>
 
-          <!-- The pages, then Add page, then After sending. An unnamed page reads "Page 1". -->
-          <nav class="wf-steps" aria-label="Pages" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit conflict save-failed used-on palette skip narrow">
-            <button class="wf-step" aria-current="step">Your details</button>
-            <button class="wf-step">Your message</button>
-            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add page</button>
-            <button class="wf-step"><i data-i="flag"></i>After sending</button>
-          </nav>
-          <nav class="wf-steps" aria-label="Pages" data-state="translate">
-            <button class="wf-step" aria-current="step" lang="de">Ihre Angaben</button>
-            <button class="wf-step" lang="de">Ihre Nachricht</button>
-            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add page</button>
-            <button class="wf-step"><i data-i="flag"></i>After sending</button>
-          </nav>
-          <nav class="wf-steps" aria-label="Pages" data-state="new-form paste">
-            <button class="wf-step" aria-current="step">Page 1</button>
-            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add page</button>
-            <button class="wf-step"><i data-i="flag"></i>After sending</button>
-          </nav>
+          <!-- The room above the sheet, always kept -->
+          <div class="dz-fit-room wf-small wf-muted" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">
+            <span class="wf-fit wf-fit--desktop">Narrowed to fit</span>
+            <span class="wf-fit wf-fit--tablet">Narrowed to fit</span>
+            <span class="wf-fit wf-fit--phone">Narrowed to fit</span>
+          </div>
 
           <!-- Page 1 of Contact us, as the website renders it -->
-          <div class="wf-canvas wf-canvas--site" id="dz-canvas" tabindex="-1" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit conflict save-failed used-on palette skip narrow">
+          <div class="wf-canvas wf-canvas--site" id="dz-canvas" tabindex="-1" data-state="default selected picker picker-search picker-none page-menu one-page element-menu two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on skip narrow">
             <div class="jfb-form jfb-theme-default" data-wf-sample lang="en">
-              <div class="jfb-progress jfb-progress-steps"><ol aria-label="Progress"><li aria-current="step"><span>Your details</span></li><li><span>Your message</span></li></ol></div>
               <div class="jfb-page">
                 <h2 class="jfb-title">Your details</h2>
 
@@ -278,7 +351,7 @@
                     </div>
 
                     <!-- Email address, selected: its handle and its bar -->
-                    <div class="jfb-field jfb-field-email jfb-span-2 wf-canvas__el" role="listitem" id="dz-email-sel" data-state="default tablet phone keyboard shortcuts move menu conflict save-failed used-on skip narrow">
+                    <div class="jfb-field jfb-field-email jfb-span-2 wf-canvas__el" role="listitem" id="dz-email-sel" data-state="selected element-menu tablet phone keyboard move">
                       <button class="wf-canvas__insert" aria-label="Add a field here, before Email address"><span><i data-i="plus"></i>Add a field here</span></button>
                       <label class="jfb-label" for="dz-c-email-sel" inert>Email address</label>
                       <p class="jfb-help" inert>We only use it to reply.</p>
@@ -289,7 +362,13 @@
                         <button class="wf-btn wf-btn--small wf-btn--text">Move to…</button>
                         <button class="wf-btn wf-btn--small wf-btn--text">Duplicate</button>
                         <button class="wf-btn wf-btn--small wf-btn--text">Delete</button>
-                        <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Email address"><i data-i="more"></i></button>
+                        <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-haspopup="menu" aria-expanded="false" aria-label="More actions for Email address" data-state="selected tablet phone keyboard move"><i data-i="more"></i></button>
+                        <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-haspopup="menu" aria-expanded="true" aria-label="More actions for Email address" data-state="element-menu"><i data-i="more"></i></button>
+                      </div>
+                      <!-- The element's "…": offered here because Phone follows Email address on its page -->
+                      <div class="wf-pop" data-state="element-menu" role="menu" aria-label="More actions for Email address" style="top: 0; right: calc(-1 * var(--wf-space-2)); width: 300px">
+                        <span class="wf-pop__item wf-pop__item--hover" role="menuitem"><i data-i="split"></i>Move what follows to a new page</span>
+                        <span class="wf-pop__item" role="menuitem"><i data-i="copy"></i>Copy alias</span>
                       </div>
                     </div>
                     <!-- Email address, its label edited in place -->
@@ -301,8 +380,8 @@
                       <button class="wf-canvas__select" aria-pressed="true" aria-label="Your email, email field"></button>
                       <button class="wf-canvas__handle" aria-label="Move Your email"><i data-i="grip"></i></button>
                     </div>
-                    <!-- Email address, not selected; the target of the drag -->
-                    <div class="jfb-field jfb-field-email jfb-span-2 wf-canvas__el" role="listitem" id="dz-email" data-state="inspector-closed insert drag palette">
+                    <!-- Email address, not selected; the place the picker adds to; the target of the drag -->
+                    <div class="jfb-field jfb-field-email jfb-span-2 wf-canvas__el" role="listitem" id="dz-email" data-state="default picker picker-search picker-none page-menu one-page two-rows insert drag menu shortcuts conflict save-failed used-on skip narrow">
                       <button class="wf-canvas__insert" aria-label="Add a field here, before Email address"><span><i data-i="plus"></i>Add a field here</span></button>
                       <label class="jfb-label" for="dz-c-email" inert>Email address</label>
                       <p class="jfb-help" inert>We only use it to reply.</p>
@@ -345,8 +424,7 @@
                       <button class="wf-canvas__insert wf-canvas__insert--after" aria-label="Add a field here, after Which country?"><span><i data-i="plus"></i>Add a field here</span></button>
                     </div>
                   </div>
-                  <button class="wf-add-field" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit conflict save-failed used-on skip narrow"><i data-i="plus"></i>Add field</button>
-                  <button class="wf-add-field" aria-expanded="true" data-state="palette"><i data-i="plus"></i>Add field</button>
+                  <button class="wf-add-field"><i data-i="plus"></i>Add field</button>
                 </fieldset>
               </div>
               <div class="jfb-navigation" inert><button type="button" class="jfb-button jfb-button-primary">Next</button></div>
@@ -356,7 +434,6 @@
           <!-- The same page in German, on a site with English and German (D20) -->
           <div class="wf-canvas wf-canvas--site" data-state="translate">
             <div class="jfb-form jfb-theme-default" data-wf-sample lang="de">
-              <div class="jfb-progress jfb-progress-steps"><ol aria-label="Fortschritt"><li aria-current="step"><span>Ihre Angaben</span></li><li><span>Ihre Nachricht</span></li></ol></div>
               <div class="jfb-page">
                 <h2 class="jfb-title">Ihre Angaben</h2>
                 <fieldset class="jfb-group jfb-columns-2">
@@ -387,7 +464,7 @@
                         <button class="wf-btn wf-btn--small wf-btn--text">Move to…</button>
                         <button class="wf-btn wf-btn--small wf-btn--text">Duplicate</button>
                         <button class="wf-btn wf-btn--small wf-btn--text">Delete</button>
-                        <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for E-Mail-Adresse"><i data-i="more"></i></button>
+                        <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-haspopup="menu" aria-label="More actions for E-Mail-Adresse"><i data-i="more"></i></button>
                       </div>
                     </div>
                     <div class="jfb-field jfb-field-phone jfb-span-2 wf-canvas__el" role="listitem">
@@ -433,13 +510,49 @@
             <div class="jfb-form jfb-theme-default" data-wf-sample lang="en">
               <div class="jfb-page">
                 <div class="wf-empty dz-empty">
-                  <p class="wf-empty__text">Add your first field: pick a type on the left, or <button class="wf-btn wf-btn--link">paste your questions</button>.</p>
+                  <p class="wf-empty__text">Add your first field, or <button class="wf-btn wf-btn--link">paste your questions</button>.</p>
                 </div>
                 <button class="wf-add-field"><i data-i="plus"></i>Add field</button>
               </div>
               <div class="jfb-navigation" inert><button type="button" class="jfb-button jfb-button-primary">Send</button></div>
             </div>
           </div>
+
+          <!-- After sending: what visitors get, as the website renders it (here the message, which visitors in English
+               get; the sample entry fills its merge tag, as in the outcome's preview). Read-only: the outcomes are
+               edited in the inspector's column. -->
+          <div class="wf-canvas wf-canvas--site" data-state="after outcome outcome-deleted">
+            <div class="jfb-form jfb-theme-default" data-wf-sample lang="en">
+              <div class="jfb-outcome" data-state="after outcome">
+                <p>Thank you, Alex. We have received your message and answer within two working days.</p>
+              </div>
+              <div class="jfb-outcome" data-state="outcome-deleted">
+                <p>Thank you. We have received your message.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- In a 620 px workspace, where no inspector is beside the sheet, the outcomes lie under it -->
+          <section class="wf-box dz-after-under" aria-labelledby="dz-au-title" data-state="after outcome outcome-deleted">
+            <div class="wf-box__head"><h2 class="wf-box__title" id="dz-au-title">After sending</h2></div>
+            <div class="wf-box__body">
+              <p class="wf-help" style="margin-bottom: var(--wf-space-4)" data-state="after outcome">Visitors get the first outcome whose rule matches.</p>
+              <ul aria-label="Outcomes">
+                <li class="dz-outcome dz-outcome--hover">
+                  <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small dz-move" aria-label="Move Redirect to /de/danke" title="Move Redirect to /de/danke"><i data-i="grip"></i></button>
+                  <span><a href="#" class="wf-strong">Redirect to /de/danke</a><br><span class="wf-muted">Used when the language starts with "de"</span></span>
+                  <i data-i="chevron-right"></i>
+                </li>
+                <li class="dz-outcome" data-state="after outcome">
+                  <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small dz-move" aria-label="Move the message outcome" title="Move the message outcome"><i data-i="grip"></i></button>
+                  <span><a href="#" class="wf-strong">Message: "Thank you, <span style="white-space: nowrap">{{ field.firstName }}…"</span></a><br><span class="wf-muted">Otherwise</span></span>
+                  <i data-i="chevron-right"></i>
+                </li>
+              </ul>
+              <p class="wf-muted" style="margin-top: var(--wf-space-3)" data-state="outcome-deleted">Otherwise, visitors get the default message.</p>
+              <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="plus"></i>Add outcome</button>
+            </div>
+          </section>
 
           <!-- Loading -->
           <div class="wf-canvas wf-canvas--site wf-stack" data-state="loading" aria-busy="true">
@@ -457,47 +570,92 @@
           <p class="dz-live wf-small" data-state="keyboard"><i data-i="info"></i><span><span class="wf-strong">Read aloud:</span> "Moved. Email address: position 3 of 4 in About you, Page 1: Your details."</span></p>
         </section>
 
-        <!-- The inspector: there while an element is selected, and collapsible; over the canvas at 620 px -->
-        <aside class="wf-panel wf-panel--right" aria-label="Inspector" data-state="default phone keyboard shortcuts move menu inline-edit translate conflict save-failed used-on skip narrow">
-          <div class="wf-panel__head">
-            <span class="wf-title">Email field</span>
-            <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text dz-collapse" data-wf-frame aria-label="Collapse the inspector"><i data-i="chevron-right"></i></button>
-            <span class="wf-row dz-insp-actions" style="margin-left: auto" data-wf-actions="inspector head at 620 px">
-              <button class="wf-btn wf-btn--small wf-btn--text">Move to…</button>
-              <button class="wf-btn wf-btn--small wf-btn--text">Duplicate</button>
-              <button class="wf-btn wf-btn--small wf-btn--text">Delete</button>
-              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Email address"><i data-i="more"></i></button>
-              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-frame aria-label="Close the inspector"><i data-i="x"></i></button>
-            </span>
-          </div>
-          <p class="dz-note" data-state="translate">Editing the German texts. Where one is empty, visitors see the English text.</p>
-          <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="true"><i data-i="chevron-down"></i><span class="wf-strong">Essentials</span></button></div>
-          <div class="wf-panel__section" style="padding-bottom: var(--wf-space-6)">
-            <label class="wf-field"><span class="wf-label">Label</span><span class="wf-input"><span data-state="default phone keyboard shortcuts move menu conflict save-failed used-on skip narrow">Email address</span><span data-state="inline-edit">Your email</span><span data-state="translate" lang="de">E-Mail-Adresse</span></span></label>
-            <label class="wf-field"><span class="wf-label">Help text</span><span class="wf-textarea"><span data-state="default phone keyboard shortcuts move menu inline-edit conflict save-failed used-on skip narrow">We only use it to reply.</span><span data-state="translate" lang="de">Wir nutzen sie nur für die Antwort.</span></span></label>
-            <div class="wf-field">
-              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-label="Required"></span><span class="wf-label">Required</span></span>
+        <!-- The inspector: always there from a 1024 px window; it shows the selected field or group, else the open page,
+             and on After sending the outcomes -->
+        <aside class="wf-panel wf-panel--right" aria-label="Inspector">
+          <!-- The open page, while nothing is selected -->
+          <div data-state="default picker picker-search picker-none page-menu one-page two-rows insert drag menu shortcuts undo conflict save-failed used-on skip narrow new-form paste">
+            <div class="wf-panel__head">
+              <span class="wf-title">Page</span>
+              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text dz-collapse" data-wf-frame aria-label="Fold the inspector"><i data-i="chevron-right"></i></button>
             </div>
-            <label class="wf-field"><span class="wf-label">Placeholder</span><span class="wf-input"><span class="wf-placeholder">For example: name@example.com</span></span></label>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="true"><i data-i="chevron-down"></i><span class="wf-strong">Essentials</span></button></div>
+            <div class="wf-panel__section" style="padding-bottom: var(--wf-space-6)">
+              <label class="wf-field"><span class="wf-label">Title</span><span class="wf-input"><span data-state="default picker picker-search picker-none page-menu one-page two-rows insert drag menu shortcuts undo conflict save-failed used-on skip narrow">Your details</span><span class="wf-placeholder" data-state="new-form paste">Page 1</span></span></label>
+            </div>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Rules</span><span class="wf-disclosure__summary">Always shown</span></button><span class="wf-disclosure__summary wf-disclosure__after">· <a href="#">Add a rule</a></span></div>
           </div>
-          <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Validation</span><span class="wf-disclosure__summary">Must be an email address</span></button></div>
-          <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Rules</span><span class="wf-disclosure__summary">Always shown</span></button><span class="wf-disclosure__summary wf-disclosure__after">· <a href="#">Add a rule</a></span></div>
-          <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Appearance</span><span class="wf-disclosure__summary">Full width</span></button></div>
-          <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Advanced</span><span class="wf-disclosure__summary">Alias: email</span></button></div>
+
+          <!-- The selected field: Change type beside its type's name, the only place it is offered -->
+          <div data-state="selected element-menu phone keyboard move inline-edit translate">
+            <div class="wf-panel__head">
+              <span class="wf-title">Email field</span>
+              <button class="wf-btn wf-btn--small">Change type…</button>
+              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text dz-collapse" data-wf-frame aria-label="Fold the inspector"><i data-i="chevron-right"></i></button>
+            </div>
+            <p class="dz-note" data-state="translate">Editing the German texts. Where one is empty, visitors see the English text.</p>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="true"><i data-i="chevron-down"></i><span class="wf-strong">Essentials</span></button></div>
+            <div class="wf-panel__section" style="padding-bottom: var(--wf-space-6)">
+              <label class="wf-field"><span class="wf-label">Label</span><span class="wf-input"><span data-state="selected element-menu phone keyboard move">Email address</span><span data-state="inline-edit">Your email</span><span data-state="translate" lang="de">E-Mail-Adresse</span></span></label>
+              <label class="wf-field"><span class="wf-label">Help text</span><span class="wf-textarea"><span data-state="selected element-menu phone keyboard move inline-edit">We only use it to reply.</span><span data-state="translate" lang="de">Wir nutzen sie nur für die Antwort.</span></span></label>
+              <div class="wf-field">
+                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-label="Required"></span><span class="wf-label">Required</span></span>
+              </div>
+              <label class="wf-field"><span class="wf-label">Placeholder</span><span class="wf-input"><span class="wf-placeholder">For example: name@example.com</span></span></label>
+            </div>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Validation</span><span class="wf-disclosure__summary">Must be an email address</span></button></div>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Rules</span><span class="wf-disclosure__summary">Always shown</span></button><span class="wf-disclosure__summary wf-disclosure__after">· <a href="#">Add a rule</a></span></div>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Appearance</span><span class="wf-disclosure__summary">Full width</span></button></div>
+            <div class="wf-disclosure"><button class="wf-disclosure__toggle" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Advanced</span><span class="wf-disclosure__summary">Alias: email</span></button></div>
+          </div>
+
+          <!-- After sending: the outcomes in order; a row opens the outcome's sidebar -->
+          <div data-state="after outcome outcome-deleted">
+            <div class="wf-panel__head">
+              <span class="wf-title">After sending</span>
+              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text dz-collapse" data-wf-frame aria-label="Fold the inspector"><i data-i="chevron-right"></i></button>
+            </div>
+            <div class="wf-panel__section">
+              <p class="wf-help" style="margin-bottom: var(--wf-space-4)" data-state="after outcome">Visitors get the first outcome whose rule matches.</p>
+              <ul aria-label="Outcomes">
+                <li class="dz-outcome dz-outcome--hover">
+                  <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small dz-move" aria-label="Move Redirect to /de/danke" title="Move Redirect to /de/danke"><i data-i="grip"></i></button>
+                  <span><a href="#" class="wf-strong">Redirect to /de/danke</a><br><span class="wf-muted">Used when the language starts with "de"</span></span>
+                  <i data-i="chevron-right"></i>
+                </li>
+                <li class="dz-outcome" data-state="after outcome">
+                  <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small dz-move" aria-label="Move the message outcome" title="Move the message outcome"><i data-i="grip"></i></button>
+                  <span><a href="#" class="wf-strong">Message: "Thank you, <span style="white-space: nowrap">{{ field.firstName }}…"</span></a><br><span class="wf-muted">Otherwise</span></span>
+                  <i data-i="chevron-right"></i>
+                </li>
+              </ul>
+              <p class="wf-muted" style="margin-top: var(--wf-space-3)" data-state="outcome-deleted">Otherwise, visitors get the default message.</p>
+              <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="plus"></i>Add outcome</button>
+            </div>
+          </div>
+
+          <!-- Loading: the column is there from the start, so nothing moves when the form arrives -->
+          <div class="wf-panel__section wf-stack" data-state="loading" aria-hidden="true">
+            <span class="wf-skel" style="width: 40%; height: 18px"></span>
+            <span class="wf-skel" style="width: 30%"></span>
+            <span class="wf-skel" style="width: 100%; height: 36px"></span>
+            <span class="wf-skel" style="width: 30%"></span>
+            <span class="wf-skel" style="width: 100%; height: 72px"></span>
+          </div>
         </aside>
 
-        <!-- The inspector collapsed to its rail, with an element still selected -->
-        <aside class="wf-panel dz-rail dz-rail--right" aria-label="Inspector, collapsed" data-state="tablet">
-          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Expand the inspector"><i data-i="chevron-left"></i></button>
+        <!-- The inspector folded to its rail, with an element still selected -->
+        <aside class="dz-rail" aria-label="Inspector, folded">
+          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Open the inspector"><i data-i="chevron-left"></i></button>
         </aside>
       </div>
     </div>
 
     <footer class="wf-foot">
       <div class="wf-foot__end">
-        <button class="wf-btn" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow">Preview</button>
-        <button class="wf-btn" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow">Save draft</button>
-        <button class="wf-btn wf-btn--primary" data-state="default inspector-closed tablet phone insert keyboard shortcuts undo move menu drag inline-edit new-form paste conflict save-failed used-on translate palette skip narrow">Publish…</button>
+        <button class="wf-btn" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">Preview</button>
+        <button class="wf-btn" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">Save draft</button>
+        <button class="wf-btn wf-btn--primary" data-state="default selected picker picker-search picker-none page-menu one-page element-menu after outcome outcome-deleted two-rows tablet phone insert keyboard drag inline-edit menu shortcuts move undo conflict save-failed used-on translate skip narrow new-form paste">Publish…</button>
         <button class="wf-btn" aria-disabled="true" data-state="loading">Preview</button>
         <button class="wf-btn" aria-disabled="true" data-state="loading">Save draft</button>
         <button class="wf-btn wf-btn--primary" aria-disabled="true" data-state="loading">Publish…</button>
@@ -505,20 +663,107 @@
     </footer>
   </main>
 
-  <div class="wf-backdrop" data-state="shortcuts move paste conflict used-on"></div>
+  <div class="wf-backdrop" data-state="picker picker-search picker-none shortcuts move paste conflict used-on outcome"></div>
 
-  <!-- The "?" overlay, also from the toolbar's "…" -->
+  <!-- The picker, from the insert point before Email address. Search with the focus; Layout, the field types under
+       their groups and the saved groups, in two columns and in reading order for the Tab key. -->
+  <aside class="wf-sidebar" data-state="picker picker-search picker-none" role="dialog" aria-modal="true" aria-labelledby="dz-pk-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="dz-pk-title">Add a field</h2></header>
+    <div class="wf-sidebar__body">
+      <span class="wf-input wf-input--search dz-pk-search" role="searchbox" aria-label="Search field types" data-state="picker"><i data-i="search"></i><span class="wf-placeholder">Search field types</span></span>
+      <span class="wf-input wf-input--search dz-pk-search" role="searchbox" aria-label="Search field types" style="box-shadow: var(--wf-focus)" data-state="picker-search"><i data-i="search"></i><span>em</span></span>
+      <span class="wf-input wf-input--search dz-pk-search" role="searchbox" aria-label="Search field types" style="box-shadow: var(--wf-focus)" data-state="picker-none"><i data-i="search"></i><span>xyz</span></span>
+
+      <div class="dz-pk-groups" data-state="picker">
+        <section class="dz-pk-group" aria-labelledby="pk-layout"><h3 class="wf-panel__heading" id="pk-layout">Layout</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="columns"></i>Group</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-text"><h3 class="wf-panel__heading" id="pk-text">Text</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="text-input"></i>Short text</button></li>
+          <li><button class="wf-pal-item"><i data-i="align-left"></i>Long text</button></li>
+          <li><button class="wf-pal-item"><i data-i="mail"></i>Email</button></li>
+          <li><button class="wf-pal-item"><i data-i="phone"></i>Phone</button></li>
+          <li><button class="wf-pal-item"><i data-i="link"></i>Web address</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-numbers"><h3 class="wf-panel__heading" id="pk-numbers">Numbers and dates</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="calculator"></i>Number</button></li>
+          <li><button class="wf-pal-item"><i data-i="calendar"></i>Date</button></li>
+          <li><button class="wf-pal-item"><i data-i="clock"></i>Time</button></li>
+          <li><button class="wf-pal-item"><i data-i="calendar"></i>Date and time</button></li>
+          <li><button class="wf-pal-item"><i data-i="star"></i>Rating</button></li>
+          <li><button class="wf-pal-item"><i data-i="chart"></i>Scale</button></li>
+          <li><button class="wf-pal-item"><i data-i="gauge"></i>Slider</button></li>
+          <li><button class="wf-pal-item"><i data-i="zap"></i>Calculation</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-choices"><h3 class="wf-panel__heading" id="pk-choices">Choices</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="chevron-down"></i>Dropdown</button></li>
+          <li><button class="wf-pal-item"><i data-i="circle"></i>Radio buttons</button></li>
+          <li><button class="wf-pal-item"><i data-i="checkbox"></i>Checkboxes</button></li>
+          <li><button class="wf-pal-item"><i data-i="layout-list"></i>Grid</button></li>
+          <li><button class="wf-pal-item"><i data-i="ordered-list"></i>Ranking</button></li>
+          <li><button class="wf-pal-item"><i data-i="check"></i>Checkbox</button></li>
+          <li><button class="wf-pal-item"><i data-i="split"></i>Yes or no</button></li>
+          <li><button class="wf-pal-item"><i data-i="lock"></i>Consent</button></li>
+          <li><button class="wf-pal-item"><i data-i="globe"></i>Country</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-people"><h3 class="wf-panel__heading" id="pk-people">People</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="user"></i>Name</button></li>
+          <li><button class="wf-pal-item"><i data-i="house"></i>Address</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-files"><h3 class="wf-panel__heading" id="pk-files">Files</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="paperclip"></i>File upload</button></li>
+          <li><button class="wf-pal-item"><i data-i="pencil"></i>Signature</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-structure"><h3 class="wf-panel__heading" id="pk-structure">Structure</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="sync"></i>Repeatable group</button></li>
+          <li><button class="wf-pal-item"><i data-i="eye"></i>Hidden field</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-content"><h3 class="wf-panel__heading" id="pk-content">Content</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="heading"></i>Heading</button></li>
+          <li><button class="wf-pal-item"><i data-i="note"></i>Text block</button></li>
+          <li><button class="wf-pal-item"><i data-i="pause"></i>Divider</button></li>
+          <li><button class="wf-pal-item"><i data-i="image"></i>Image</button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-protection"><h3 class="wf-panel__heading" id="pk-protection">Protection</h3><ul>
+          <li><button class="wf-pal-item" aria-disabled="true" aria-describedby="pk-captcha-why"><i data-i="shield"></i>Captcha placement</button><p class="dz-pk-why" id="pk-captcha-why">No captcha provider has its keys yet. They go in the site's configuration.</p></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-saved"><h3 class="wf-panel__heading" id="pk-saved">Saved groups</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="layers"></i>Address group</button></li>
+          <li><button class="wf-pal-item"><i data-i="layers"></i>Member details</button></li>
+        </ul></section>
+      </div>
+
+      <!-- "em": the matches only, under their headings; the first is what Enter adds -->
+      <div class="dz-pk-groups" data-state="picker-search">
+        <section class="dz-pk-group" aria-labelledby="pk-s-text"><h3 class="wf-panel__heading" id="pk-s-text">Text</h3><ul>
+          <li><button class="wf-pal-item dz-pk-first" aria-keyshortcuts="Enter"><i data-i="mail"></i>Email<kbd class="wf-kbd" aria-hidden="true">Enter</kbd></button></li>
+        </ul></section>
+        <section class="dz-pk-group" aria-labelledby="pk-s-saved"><h3 class="wf-panel__heading" id="pk-s-saved">Saved groups</h3><ul>
+          <li><button class="wf-pal-item"><i data-i="layers"></i>Member details</button></li>
+        </ul></section>
+      </div>
+
+      <p class="dz-pk-none" role="status" data-state="picker-none">No field type matches "xyz".</p>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <div class="wf-sidebar__foot-start"><button class="wf-btn">Paste questions…</button></div>
+      <button class="wf-btn">Close</button>
+    </footer>
+  </aside>
+
+  <!-- The "?" overlay, also from the row's "…" -->
   <div class="wf-dialog" style="--wf-dialog-size: 540px" data-state="shortcuts" role="dialog" aria-labelledby="dz-keys-title">
     <div class="wf-dialog__head"><h2 class="wf-title" id="dz-keys-title">Keyboard shortcuts</h2></div>
     <div class="wf-dialog__body">
+      <p class="wf-help" style="margin-bottom: var(--wf-space-5)">They act on the field, group or page you are on, a page on its tab.</p>
       <dl class="dz-keylist">
         <div><dt><kbd class="wf-kbd">Ctrl</kbd><kbd class="wf-kbd">Z</kbd></dt><dd>Undo the last change</dd></div>
-        <div><dt><kbd class="wf-kbd">Ctrl</kbd><kbd class="wf-kbd">Y</kbd></dt><dd>Redo it</dd></div>
-        <div><dt><kbd class="wf-kbd">Ctrl</kbd><kbd class="wf-kbd">D</kbd></dt><dd>Duplicate the selected field</dd></div>
-        <div><dt><kbd class="wf-kbd">Delete</kbd></dt><dd>Delete the selected field</dd></div>
-        <div><dt><kbd class="wf-kbd">Alt</kbd><kbd class="wf-kbd">↑</kbd><span class="wf-small wf-muted">or</span><kbd class="wf-kbd">↓</kbd></dt><dd>Move the selected field one place up or down</dd></div>
-        <div><dt><kbd class="wf-kbd">F2</kbd></dt><dd>Edit the selected field's label in place</dd></div>
-        <div><dt><kbd class="wf-kbd">Esc</kbd></dt><dd>Clear the selection, close the palette, or cancel a drag</dd></div>
+        <div><dt><kbd class="wf-kbd">Ctrl</kbd><kbd class="wf-kbd">Y</kbd></dt><dd>Redo what was undone</dd></div>
+        <div><dt><kbd class="wf-kbd">Ctrl</kbd><kbd class="wf-kbd">D</kbd></dt><dd>Duplicate it</dd></div>
+        <div><dt><kbd class="wf-kbd">Delete</kbd></dt><dd>Delete it</dd></div>
+        <div><dt><kbd class="wf-kbd">Alt</kbd><kbd class="wf-kbd">↑</kbd><span class="wf-small wf-muted">or</span><kbd class="wf-kbd">↓</kbd></dt><dd>Move it one place up or down</dd></div>
+        <div><dt><kbd class="wf-kbd">F2</kbd></dt><dd>Edit a field's label in place, or rename a page</dd></div>
+        <div><dt><kbd class="wf-kbd">Esc</kbd></dt><dd>Clear the selection, or stop a drag</dd></div>
         <div><dt><kbd class="wf-kbd">?</kbd></dt><dd>Show these shortcuts</dd></div>
       </dl>
       <p class="wf-small wf-muted">On a Mac, use Cmd instead of Ctrl.</p>
@@ -551,7 +796,7 @@
     </div>
   </div>
 
-  <!-- Paste questions…, from the empty state or the end of the palette -->
+  <!-- Paste questions…, from the empty state or the picker's footer -->
   <div class="wf-dialog" style="--wf-dialog-size: 600px" data-state="paste" role="dialog" aria-labelledby="dz-paste-title">
     <div class="wf-dialog__head"><h2 class="wf-title" id="dz-paste-title">Paste questions</h2></div>
     <div class="wf-dialog__body">
@@ -569,7 +814,7 @@
               <tr><td>Your name</td><td>Short text</td></tr>
               <tr><td>Email address</td><td>Email</td></tr>
               <tr><td>Which workshop would you like to join?</td><td>Short text</td></tr>
-              <tr><td>Do you need step-free access?</td><td>Yes/No</td></tr>
+              <tr><td>Do you need step-free access?</td><td>Yes or no</td></tr>
               <tr><td>Anything else we should know?</td><td>Long text</td></tr>
             </tbody>
           </table>
@@ -608,9 +853,67 @@
     <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
   </aside>
 
+  <!-- The outcome's sidebar, from a row of After sending, with a live preview of the message. Delete outcome is a
+       draft change, so it acts at once and offers Undo. -->
+  <aside class="wf-sidebar wf-sidebar--medium" data-state="outcome" role="dialog" aria-labelledby="oc-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="oc-title">Outcome</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <div class="wf-box"><div class="wf-box__body">
+          <div class="wf-field" role="radiogroup" aria-labelledby="oc-kind">
+            <span class="wf-label" id="oc-kind">What visitors get</span>
+            <span class="wf-row" style="gap: var(--wf-space-3) var(--wf-space-6)">
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="oc-k1"></span><span id="oc-k1">A message</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k2"></span><span id="oc-k2">A redirect</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k3"></span><span id="oc-k3">A message, then a redirect</span></span>
+            </span>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label" id="oc-message">Message</span>
+            <div class="rte" aria-labelledby="oc-message">
+              <div class="rte__bar" role="toolbar" aria-label="Formatting">
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bold"><i data-i="type"></i></button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Link"><i data-i="link"></i></button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bulleted list"><i data-i="list"></i></button>
+                <button class="wf-btn wf-btn--text wf-btn--small" style="margin-left: auto"><span class="wf-tag">{{ }}</span>Insert merge tag</button>
+              </div>
+              <div class="rte__body"><p>Thank you, <span class="wf-tag">{{ field.firstName }}</span>. We have received your message and answer within two working days.</p></div>
+            </div>
+          </div>
+          <div class="wf-field">
+            <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="oc-copy"></span><span class="wf-label" id="oc-copy">Show a copy of the answers</span></span>
+            <span class="wf-help">Adds the answers below the message, with a print button and a link to fill in the form again.</span>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">Rule</span>
+            <span>Used when no earlier outcome applies · <a href="#">Add a rule</a></span>
+          </div>
+        </div></div>
+
+        <!-- Live preview: the message as visitors see it, with a sample entry made from the form's fields -->
+        <section aria-labelledby="oc-preview">
+          <h3 class="wf-strong" id="oc-preview" style="margin-bottom: var(--wf-space-3)">Preview with a sample entry</h3>
+          <div class="wf-box oc-preview">
+            <span class="oc-preview__mark" aria-hidden="true"><i data-i="check" class="wf-i--20"></i></span>
+            <p>Thank you, Alex. We have received your message and answer within two working days.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <div class="wf-sidebar__foot-start"><button class="wf-btn">Delete outcome</button></div>
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Update</button>
+    </footer>
+  </aside>
+
   <!-- Deleting is undone, not confirmed (§4.13, copy.md) -->
   <div class="wf-toast" data-state="undo" role="status">
     <span>Field deleted.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
+  <div class="wf-toast" data-state="outcome-deleted" role="status">
+    <span>Outcome deleted.</span>
     <button class="wf-btn wf-btn--small">Undo</button>
   </div>
 

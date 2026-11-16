@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Form settings · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x1100 more-options@1440x1300 outcome@1440x900 outcome-deleted@1440x1100 default@920x900 outcome@920x900">
+  <meta name="wf-shots" content="default@1440x1100 more-options@1440x1300 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .fs-group-head { display: flex; align-items: center; gap: var(--wf-space-3); width: 100%; padding: var(--wf-space-4) var(--wf-space-5); border: 0; background: none; font: inherit; color: inherit; text-align: left; }
@@ -13,39 +13,24 @@
     .fs-input-tag { display: flex; gap: var(--wf-space-3); }
     .fs-input-tag > .wf-input { flex: 1; min-width: 0; }
     .fs-more { margin-top: var(--wf-space-5); padding-top: var(--wf-space-5); border-top: 1px solid var(--uui-color-divider-standalone); }
-    /* An outcome row: the move handle (a real button, ADR-0016) shows on the hovered or focused row only (IA "Rules") */
-    .fs-outcome { display: grid; grid-template-columns: 28px 24px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: center; padding: var(--wf-space-3) var(--wf-space-4) var(--wf-space-3) var(--wf-space-2); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
-    .fs-outcome + .fs-outcome { margin-top: var(--wf-space-3); }
-    .fs-outcome a { text-decoration: none; }
-    .fs-outcome a:is(:hover, :focus-visible) { text-decoration: underline; }
-    .fs-move { cursor: grab; touch-action: none; opacity: 0; }
-    .fs-outcome:is(:hover, :focus-within) .fs-move { opacity: 1; }
-    /* The wireframe draws the first row as hovered in the default state */
-    html[data-wf-state='default'] .fs-outcome--hover { background: var(--uui-color-surface-emphasis); }
-    html[data-wf-state='default'] .fs-outcome--hover .fs-move { opacity: 1; }
-    .rte { border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
-    .rte__bar { display: flex; gap: var(--wf-space-1); padding: var(--wf-space-1) var(--wf-space-2); border-bottom: 1px solid var(--uui-color-border); }
-    .rte__body { min-height: 96px; padding: var(--wf-space-3) var(--wf-space-4); }
-    .fs-preview { display: flex; flex-direction: column; gap: var(--wf-space-3); padding: var(--wf-space-6); }
-    .fs-preview__mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--wf-radius-round); background: var(--uui-color-background); color: var(--uui-color-positive); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
 <body data-role="designer" data-active="form:contact">
   <!--
-    IA 5.2: one page with the groups of ROADMAP 4.3.4. Submission and After sending open; the others closed with a summary.
+    IA 5.2: one page with the groups of ROADMAP 4.3.4. Submission open; the others closed with a summary. Step 22.3
+    redraws this view (one group at a time).
 
     Submission shows five settings (the send button's label, Store entries, Manual approval, Email verification and the
     Entry title with its merge-tag picker, D24); "More options" holds the multi-page settings (the next and back labels,
     Summary page, Progress, Save and continue later) and the entry reference.
 
-    The outcomes reorder by a move handle: a button named "Move <outcome>" (ADR-0016) that shows on the hovered or
-    focused row; drawn on the first row as hovered. A row's name opens the outcome's editor, which has a live preview
-    and, at the start of its action bar, Delete outcome (a draft change, so it acts at once and offers Undo).
+    After sending is no longer a group here (ADR-0256): the outcomes are edited where they are shown, on the Design
+    view's After sending, and every "Fix it" and link that led here opens them there (designer.html, states after,
+    outcome and outcome-deleted).
 
-    States: default; more-options (Submission's More options open); outcome (the editor); outcome-deleted (the
-    message deleted: the list says what visitors get when no outcome matches, and the toast offers Undo).
+    States: default; more-options (Submission's More options open).
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -98,7 +83,7 @@
               <span class="wf-help">Names each entry in the lists. Sensitive fields are left out.</span>
             </div>
 
-            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="false" data-state="default outcome outcome-deleted"><i data-i="chevron-right"></i>More options</button>
+            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="false" data-state="default"><i data-i="chevron-right"></i>More options</button>
             <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="true" data-state="more-options"><i data-i="chevron-down"></i>More options</button>
 
             <!-- More options: the multi-page settings and the entry reference -->
@@ -132,30 +117,6 @@
           </div>
         </section>
 
-        <!-- After sending (open): the outcomes -->
-        <section class="wf-box" aria-labelledby="g-after">
-          <h2><button class="fs-group-head" aria-expanded="true" id="g-after"><i data-i="chevron-down"></i><span class="wf-strong">After sending</span></button></h2>
-          <div class="wf-box__body" style="border-top: 1px solid var(--uui-color-divider-standalone)">
-            <p class="wf-help" style="margin: 0 0 var(--wf-space-4)">Visitors get the first outcome whose rule matches.</p>
-            <ul aria-label="Outcomes">
-              <li class="fs-outcome fs-outcome--hover">
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small fs-move" aria-label="Move Redirect to /press/thanks" title="Move Redirect to /press/thanks"><i data-i="grip"></i></button>
-                <i data-i="external" class="wf-i--20"></i>
-                <span><a href="#" class="wf-strong">Redirect to /press/thanks</a><br><span class="wf-muted">When Topic is Press</span></span>
-                <i data-i="chevron-right"></i>
-              </li>
-              <li class="fs-outcome" data-state="default more-options outcome">
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small fs-move" aria-label="Move the message outcome" title="Move the message outcome"><i data-i="grip"></i></button>
-                <i data-i="note" class="wf-i--20"></i>
-                <span><a href="#" class="wf-strong">Message: "Thank you, {{ field.firstName }}. We have received…"</a><br><span class="wf-muted">Otherwise</span></span>
-                <i data-i="chevron-right"></i>
-              </li>
-            </ul>
-            <p class="wf-muted" style="margin-top: var(--wf-space-3)" data-state="outcome-deleted">Otherwise, visitors get the default message: "Thank you. We have received your message."</p>
-            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="plus"></i>Add outcome</button>
-          </div>
-        </section>
-
         <!-- The closed groups, each with its summary -->
         <section class="wf-box">
           <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Availability</span><span class="wf-disclosure__summary">Always open · No limit</span></button></h2>
@@ -183,65 +144,5 @@
       </div>
     </footer>
   </main>
-
-  <!-- The outcome's editor, with a live preview of the message -->
-  <div class="wf-backdrop" data-state="outcome"></div>
-  <aside class="wf-sidebar wf-sidebar--medium" data-state="outcome" role="dialog" aria-labelledby="oc-title">
-    <header class="wf-sidebar__head"><h2 class="wf-title" id="oc-title">Outcome</h2></header>
-    <div class="wf-sidebar__body">
-      <div class="wf-stack wf-stack--lg">
-        <div class="wf-box"><div class="wf-box__body">
-          <div class="wf-field" role="radiogroup" aria-labelledby="oc-kind">
-            <span class="wf-label" id="oc-kind">What visitors get</span>
-            <span class="wf-row" style="gap: var(--wf-space-3) var(--wf-space-6)">
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="oc-k1"></span><span id="oc-k1">A message</span></span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k2"></span><span id="oc-k2">A redirect</span></span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k3"></span><span id="oc-k3">A message, then a redirect</span></span>
-            </span>
-          </div>
-          <div class="wf-field">
-            <span class="wf-label" id="oc-message">Message</span>
-            <div class="rte" aria-labelledby="oc-message">
-              <div class="rte__bar" role="toolbar" aria-label="Formatting">
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bold"><i data-i="type"></i></button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Link"><i data-i="link"></i></button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bulleted list"><i data-i="list"></i></button>
-                <button class="wf-btn wf-btn--text wf-btn--small" style="margin-left: auto"><span class="wf-tag">{{ }}</span>Insert merge tag</button>
-              </div>
-              <div class="rte__body"><p>Thank you, <span class="wf-tag">{{ field.firstName }}</span>. We have received your message and answer within two working days.</p></div>
-            </div>
-          </div>
-          <div class="wf-field">
-            <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="oc-copy"></span><span class="wf-label" id="oc-copy">Show a copy of the answers</span></span>
-            <span class="wf-help">Adds the answers below the message, with a print button and a link to fill in the form again.</span>
-          </div>
-          <div class="wf-field">
-            <span class="wf-label">Rule</span>
-            <span>Used when no earlier outcome applies · <a href="#">Add a rule</a></span>
-          </div>
-        </div></div>
-
-        <!-- Live preview: the message as visitors see it, with a sample entry made from the form's fields -->
-        <section aria-labelledby="oc-preview">
-          <h3 class="wf-strong" id="oc-preview" style="margin-bottom: var(--wf-space-3)">Preview with a sample entry</h3>
-          <div class="wf-box fs-preview">
-            <span class="fs-preview__mark" aria-hidden="true"><i data-i="check" class="wf-i--20"></i></span>
-            <p>Thank you, Alex. We have received your message and answer within two working days.</p>
-          </div>
-        </section>
-      </div>
-    </div>
-    <footer class="wf-sidebar__foot">
-      <div class="wf-sidebar__foot-start"><button class="wf-btn">Delete outcome</button></div>
-      <button class="wf-btn">Cancel</button>
-      <button class="wf-btn wf-btn--primary">Update</button>
-    </footer>
-  </aside>
-
-  <!-- Deleting an outcome is a draft change: it acts at once, and Undo brings it back -->
-  <div class="wf-toast" data-state="outcome-deleted" role="status">
-    <span>Outcome deleted.</span>
-    <button class="wf-btn wf-btn--small">Undo</button>
-  </div>
 </body>
 </html>
