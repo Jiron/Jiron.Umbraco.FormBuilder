@@ -67,7 +67,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Repository, CI and dependencies
 
-- [ ] **Make the repository public** when ready. The Umbraco Marketplace reads the listings
+- [ ] **Make the repository public** when ready, after Phase 22 of the roadmap (a simpler backoffice), as you decided
+  on 2026-11-16 (ADR-0254). The Umbraco Marketplace reads the listings
   `umbraco-marketplace.json` (the product) and `umbraco-marketplace-jiron.umbraco.formbuilder.ai.json` (the AI
   add-on, shown with the product) from the repository's root, and their screenshots from GitHub's raw addresses, so
   the listings need this (ROADMAP 18.1, ADR-0246). Before that, run `node scripts/term-guard.mjs --history` with your

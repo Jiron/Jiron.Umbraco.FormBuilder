@@ -1119,3 +1119,29 @@ its reason, and a handover block at the end of every phase.
     at the moment of a shot; the review names the three that the walks met.
 - **Open owner items added:** one, to report the SQLite stall to Umbraco HQ (`docs/OWNER-TODO.md`, Real-world
   checks).
+
+### After Phase 21: the owner's notes (2026-11-16)
+
+- 2026-11-16 · The owner, after trying the demo: the functions stay, but the backoffice should be simpler to find a
+  way through: one way to do a thing, a click that opens something, a page that can be deleted from where the pages
+  are, the left side's settings behind one item with tabs, fewer columns in the designer. Asked for: a short, rough
+  roadmap of its own, not yet steps. Written as `docs/ux/simpler-backoffice.md` from the designer's code and the last
+  walk's screens (no other product looked at; Umbraco's own patterns are the measure). Nothing built; ROADMAP.md is
+  unchanged until the owner picks.
+- 2026-11-16 · The owner, the same day: build nothing yet; go through it once more, challenge the draft and refine it,
+  so the concept is sound before work starts. `docs/ux/simpler-backoffice.md` rewritten after reading the design
+  records behind the screens and about twenty screens of the last walk: each finding now names why the screen is as
+  it is, five things the first draft had wrong or missed are corrected (among them: the left side's fixed items lie
+  below the tree and out of sight, and taking the field list away costs a click per field), with four steps, a table
+  of what to measure, what it costs, and five decisions for the owner. Still nothing built; ROADMAP.md unchanged.
+- 2026-11-16 · The owner decided the draft's five questions, each as it proposed: the field list goes in favour of a
+  picker; the left side's fixed items come before the tree, cut into Inbox, Library, Settings, Privacy and Activity;
+  "After sending" is edited in the designer; the form's buttons show only on the views that change the form; and the
+  work is done before the repository goes public. Recorded as ADR-0254 and in `docs/ux/simpler-backoffice.md`.
+  Still to start nothing: the four steps become steps of ROADMAP.md when the owner says so.
+- 2026-11-16 · ROADMAP.md changed on the owner's word ("Yes, add them"): **Phase 22, a simpler backoffice,** with four
+  open steps, 22.1 the designer, 22.2 the section's left side, 22.3 a form's views, 22.4 the other screens, what
+  describes the section, and the phase review. They are the four steps of `docs/ux/simpler-backoffice.md` with its
+  findings by letter, the owner's words, and checks that can be run; section 4.13 gains the six rules of ADR-0254,
+  and "How to use" names Phase 22. Reason: the owner's decisions of the same day. No step is started: the owner said
+  to start nothing yet. STATUS.md and OWNER-TODO.md say that the phase comes before the repository goes public.
