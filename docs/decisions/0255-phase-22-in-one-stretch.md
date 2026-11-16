@@ -44,9 +44,9 @@ Option 2.
   step it belongs to, and the runs it touches are repeated.
 - **`main` is merged into `v18/main` after each step's work,** with the build and the unit and client tests there, so
   the two lines never drift far; the browser suite there is one of the long runs.
-- **One agent writes the code,** on Opus 5.5, one at a time. The main session draws the wireframes and writes each
-  step's record, briefs the agent, reads its whole diff, runs the checks itself, looks at the screens, and sends the
-  work back until it holds. Nothing is committed that was not judged so. This narrows the owner's word of 2026-11-15
+- **One agent writes the code,** on Opus 5.5, one at a time. The main session designs each step and writes its
+  record, which the agent draws as wireframes and then builds; it briefs the agent, reads its whole diff, runs the
+  checks itself, looks at the screens, and sends the work back until it holds. Nothing is committed that was not judged so. This narrows the owner's word of 2026-11-15
   (no waves of agents) to one.
 
 ## Consequences
