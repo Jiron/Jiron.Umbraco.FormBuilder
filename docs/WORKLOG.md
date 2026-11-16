@@ -1134,3 +1134,8 @@ its reason, and a handover block at the end of every phase.
   it is, five things the first draft had wrong or missed are corrected (among them: the left side's fixed items lie
   below the tree and out of sight, and taking the field list away costs a click per field), with four steps, a table
   of what to measure, what it costs, and five decisions for the owner. Still nothing built; ROADMAP.md unchanged.
+- 2026-11-16 · The owner decided the draft's five questions, each as it proposed: the field list goes in favour of a
+  picker; the left side's fixed items come before the tree, cut into Inbox, Library, Settings, Privacy and Activity;
+  "After sending" is edited in the designer; the form's buttons show only on the views that change the form; and the
+  work is done before the repository goes public. Recorded as ADR-0254 and in `docs/ux/simpler-backoffice.md`.
+  Still to start nothing: the four steps become steps of ROADMAP.md when the owner says so.

@@ -1,7 +1,8 @@
 # A simpler backoffice: a rough roadmap
 
-- Status: a draft the owner asked for on 2026-11-16, gone over a second time the same day. Nothing here is built, and
-  none of it is a step of [ROADMAP.md](../../ROADMAP.md) yet; the owner picks what becomes one.
+- Status: a draft the owner asked for on 2026-11-16, gone over a second time the same day. The owner then decided its
+  five open questions ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)). Nothing here is built, and none of it
+  is a step of [ROADMAP.md](../../ROADMAP.md) yet.
 - What it is: where the backoffice asks too much at once, a direction for each place, and an order to work through
   them. It is a concept, not a design: each step still starts with a wireframe and a decision record.
 
@@ -154,7 +155,7 @@ header, beside the type's name.
   Nothing is taken away; it moves one level down. A tab shows only to who may use it, as an item does today.
 
 ```text
-today                              after (one way to cut it)
+today                              after
 Forms            the tree, grows   Inbox            Inbox · Spam
 Entries          2 items           Library          Option lists · Themes · Email layouts · Templates
 Library          4 items           Settings         General · Email · Spam protection · Files · Access · Integrations
@@ -251,7 +252,8 @@ After each step the walk runs again and is compared with the one before.
 - **One screen for all site settings** has to say what Save saves: the tab that is open, or every tab.
 - **Much of what surrounds the screens follows:** the browser tests that click through the field list and the left
   side, the guides, the screenshots, the top tasks.
-- **Best before the first public release:** afterwards every moved screen is something an editor has to learn again.
+- **It is done before the repository goes public,** as the owner decided: afterwards every moved screen is something
+  an editor has to learn again.
 
 ## Kept on purpose
 
@@ -261,15 +263,14 @@ After each step the walk runs again and is compared with the one before.
 - **The inspector's column,** so the form does not jump.
 - **The screens found calm** under F.
 
-## For the owner to decide
+## Decided by the owner
 
-Each with what this draft would choose.
+On 2026-11-16, each as this draft proposed it ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)):
 
-1. **The field list (A3):** gone in favour of the picker, or kept closed with a pin to hold it open? *Gone; the pin
-   only if it is missed.*
-2. **The left side (D1):** the fixed items before the tree, or after it as now? And is the cut into Inbox, Library,
-   Settings, Privacy and Activity the right one? *Before the tree; that cut.*
-3. **"After sending" (B2):** edited in the designer, or in Settings? *In the designer.*
-4. **The form's buttons (C4):** only on the views that change the form, though Umbraco keeps its own everywhere?
-   *Only there.*
-5. **When:** before the repository goes public, or after? *Before.*
+1. **The field list (A3) goes** in favour of the picker. A pin to hold it open comes only if it is missed.
+2. **The left side (D1):** the fixed items come before the tree, cut into Inbox, Library, Settings, Privacy and
+   Activity.
+3. **"After sending" (B2)** is edited in the designer, where it is shown.
+4. **The form's buttons (C4)** show only on the views that change the form, though Umbraco keeps its own
+   everywhere.
+5. **When:** before the repository goes public.
