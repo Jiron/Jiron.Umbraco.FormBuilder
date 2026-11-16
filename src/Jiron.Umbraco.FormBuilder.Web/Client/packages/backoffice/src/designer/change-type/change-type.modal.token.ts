@@ -19,14 +19,14 @@ export interface ChangeTypeWords {
 export interface ChangeTypeTarget {
   readonly alias: string;
   readonly name: string;
-  /** The name of its palette group, which the list groups it under. */
+  /** The name of the group the type is listed under, which the list groups it under too. */
   readonly group: string;
   /** Why it can't be chosen, as the form or the site refuses it; null where it can. */
   readonly refusal: string | null;
   readonly words: ChangeTypeWords;
 }
 
-/** The field's name and type, and the types it may become in the palette's order. */
+/** The field's name and type, and the types it may become in the server's order. */
 export interface ChangeTypeModalData {
   readonly name: string;
   readonly type: string;

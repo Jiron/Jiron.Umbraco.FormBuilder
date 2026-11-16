@@ -10,8 +10,6 @@ export default {
     headingPage: 'Seite',
     fold: 'Inspektor einklappen',
     unfold: 'Inspektor öffnen',
-    nothingSelected: 'Nichts ausgewählt',
-    nothingSelectedHelp: 'Wählen Sie ein Feld, eine Gruppe oder eine Seite, um die Einstellungen zu ändern.',
     elementActions: 'Aktionen für dieses Element',
     editingLanguage: (language: string, standard: string) =>
       `Wo ein Text auf ${language} fehlt, sehen Besucher den auf ${standard}.`,

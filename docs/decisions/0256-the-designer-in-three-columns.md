@@ -124,8 +124,8 @@ in one place and changed in another.
 - **Measured by the step's checks:** at 1440 px the form's column has more than half the window under one row, in
   English and in German, for a form of two pages on a site with two languages; at 1920 px Desktop shows the form at
   its 960 px.
-- **Adding a field costs one click more** (the top tasks are counted again), and the designer's start loads less
-  code.
+- **Adding a field costs one click more** (the top tasks are counted again). The bundle keeps its size: the palette's
+  code left, and the picker's, loaded when it is first opened, and the row's came.
 - **The browser tests that added fields through the palette** add them through the picker; the walk, the journeys,
   the guides and the screenshots follow.
 - [information-architecture.md](../ux/information-architecture.md) section 5.1 and 5.2, the copy guide, the editor

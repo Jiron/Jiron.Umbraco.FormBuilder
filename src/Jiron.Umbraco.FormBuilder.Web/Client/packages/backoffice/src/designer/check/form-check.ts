@@ -113,8 +113,8 @@ export type FixTarget =
   | { readonly kind: 'element'; readonly key: string; readonly item?: InspectorItem; readonly culture?: string }
   /** The rules builder on a rule of the element, or on a validation rule that shows its message on it. */
   | { readonly kind: 'rule'; readonly key: string; readonly rule: string }
-  /** The palette, to add at the end of the page; to a new page where the form has none. */
-  | { readonly kind: 'palette'; readonly page: string | null }
+  /** The field picker, to add at the end of the page; to a new page where the form has none. */
+  | { readonly kind: 'picker'; readonly page: string | null }
   /**
    * A view of the form where the place is edited: its settings and outcomes, or its actions, with the problem's path,
    * which that view leads to (ADR-0184), and the key of the outcome the path is in, as the definition checked holds it,
@@ -226,8 +226,8 @@ function ruleAt(rules: unknown, rest: readonly PathStep[]): string | null {
 
 /**
  * Where Fix it leads for a problem at this path of the definition checked: the element it names, with its item, its
- * rule, or the palette for a page without fields; a view for the form's settings, outcomes and actions. Null where the
- * path names nothing the designer shows, or the whole form. The field types tell a text setting's language from a
+ * rule, or the field picker for a page without fields; a view for the form's settings, outcomes and actions. Null where
+ * the path names nothing the designer shows, or the whole form. The field types tell a text setting's language from a
  * nested setting's name.
  */
 export function fixOf(definition: DesignDefinition, path: string, types?: CheckTypes): FixTarget | null {
@@ -254,14 +254,14 @@ export function fixOf(definition: DesignDefinition, path: string, types?: CheckT
   if (top !== 'pages') return null;
   const [pageIndex, ...inPage] = after;
   // The form has no pages: a field added makes the first.
-  if (pageIndex === undefined) return { kind: 'palette', page: definition.pages[0]?.key ?? null };
+  if (pageIndex === undefined) return { kind: 'picker', page: definition.pages[0]?.key ?? null };
   if (typeof pageIndex !== 'number') return null;
   const page = definition.pages[pageIndex];
   if (!page) return null;
   const [pageStep, groupIndex, ...inGroup] = inPage;
   if (pageStep === 'groups') {
-    // The page has no groups, or a group no fields: the palette adds at the end of the page.
-    if (groupIndex === undefined) return { kind: 'palette', page: page.key };
+    // The page has no groups, or a group no fields: the field picker adds at the end of the page.
+    if (groupIndex === undefined) return { kind: 'picker', page: page.key };
     const group = typeof groupIndex === 'number' ? page.groups[groupIndex] : undefined;
     if (!group) return null;
     const [groupStep] = inGroup;
@@ -283,8 +283,8 @@ function fieldFix(
   types: CheckTypes | undefined,
 ): FixTarget | null {
   const [index, ...rest] = steps;
-  // A group without fields: the palette adds at the end of the page.
-  if (index === undefined) return { kind: 'palette', page };
+  // A group without fields: the field picker adds at the end of the page.
+  if (index === undefined) return { kind: 'picker', page };
   const field = typeof index === 'number' ? fields[index] : undefined;
   if (!field) return null;
   if (rest[0] === 'fields') {

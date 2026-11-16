@@ -1,8 +1,8 @@
-// Every scroll area of the backoffice positions its box (ROADMAP 16.6). An absolutely positioned helper inside it, such as
-// a visually hidden text or a drop line, then takes the scroll area as its containing block: the area clips it and it
-// scrolls with its content. In an area that is not positioned, the helper belongs to the next positioned box outside,
-// escapes the clip and stretches the workspace's own scroll area: the palette's hidden reasons once made the Design view
-// scroll by a thousand pixels at 1440 px.
+// Every scroll area of the backoffice positions its box (ROADMAP 16.6). An absolutely positioned helper inside it, such
+// as a visually hidden text or a drop line, then takes the scroll area as its containing block: the area clips it and
+// it scrolls with its content. In an area that is not positioned, the helper belongs to the next positioned box
+// outside, escapes the clip and stretches the workspace's own scroll area: the hidden reasons of the list of types once
+// beside the canvas made the Design view scroll by a thousand pixels at 1440 px.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';

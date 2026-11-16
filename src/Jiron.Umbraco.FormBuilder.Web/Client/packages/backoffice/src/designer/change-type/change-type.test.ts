@@ -1,6 +1,6 @@
 // The Change type dialog and its words (ROADMAP 9.4d, ADR-0174): a preview says each setting with the field's value,
 // a text property with its text, a message by what it answers and a condition by what holds it; the dialog lists the
-// types by palette group in the browser's own select, a refused one not to be chosen and why, shows the preview of the
+// types by their groups in the browser's own select, a refused one not to be chosen and why, shows the preview of the
 // type chosen, and changes only once one is chosen.
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';

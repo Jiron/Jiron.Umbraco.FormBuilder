@@ -118,7 +118,7 @@ describe('Publish...', () => {
     expect((await publishing({ fix: settings })).fixes).toEqual([settings]);
     expect(window.location.pathname).toBe(`${FORM}/view/settings`);
 
-    const element: FixTarget = { kind: 'palette', page: null };
+    const element: FixTarget = { kind: 'picker', page: null };
     const workspace = await publishing({ fix: element });
     expect([workspace.fixes, workspace.published]).toEqual([[element], []]);
     expect(window.location.pathname).toBe(`${FORM}/view/design`);

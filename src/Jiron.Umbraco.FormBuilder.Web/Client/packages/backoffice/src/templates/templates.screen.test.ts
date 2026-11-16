@@ -178,7 +178,7 @@ describe('Library > Templates', () => {
     const { root, screen, peek } = await screenOf();
     await choose(root, screen, 'Address block');
     expect(text(root.querySelector('.preview .muted'))).toBe(
-      "A group: the designer's palette inserts it into any form, under Saved groups.",
+      "A group: any form adds it from the designer's Add a field, under Saved groups.",
     );
     expect(root.querySelector('.preview uui-button[label="Use template"]')).toBeNull();
     await choose(root, screen, 'Enquiry');

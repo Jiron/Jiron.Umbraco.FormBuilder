@@ -69,7 +69,7 @@ describe("the form's views", () => {
     followFix(actions, (fix) => handed.push(fix));
     expect(handed).toEqual([settings, actions]);
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`]);
-    const element: FixTarget = { kind: 'palette', page: null };
+    const element: FixTarget = { kind: 'picker', page: null };
     followFix(element, (fix) => handed.push(fix));
     expect(handed).toEqual([settings, actions, element]);
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`, `${FORM}/view/design`]);

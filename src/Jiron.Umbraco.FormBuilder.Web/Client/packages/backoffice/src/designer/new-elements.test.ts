@@ -1,5 +1,5 @@
 // What the designer adds (ROADMAP 9.3b): a new field of each kind with what it starts with, a group, a page, where a
-// pick from the palette goes, several fields as one edit, and the questions a paste becomes with their guessed types.
+// pick from the field picker goes, several fields as one edit, and the questions a paste becomes with their guessed types.
 import { describe, expect, it } from 'vitest';
 import { allFields, locate, type DesignDefinition, type DesignField } from './definition';
 import type { EditorState, FieldTraits, ModelContext } from './editor-model';
@@ -127,7 +127,7 @@ describe('a new group and page', () => {
   });
 });
 
-describe('where a pick from the palette goes', () => {
+describe('where a pick from the field picker goes', () => {
   it('is the open insert point first', () => {
     expect(placeFor(DEFINITION, { container: 'g1', index: 0 }, 'c', 1)).toEqual({ container: 'g1', index: 0 });
   });

@@ -1,11 +1,13 @@
-// The canvas (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1, ADR-0168): the form as visitors see it, in
-// the default theme, one page at a time at the chosen width, with the designer's controls laid over it. Above it sit
-// the width switch with Undo and Redo in its menu, and the pages as steps with Add page and After sending. Every page, group
-// and field selects itself; an insert point between fields and the Add field at the end of a page open the palette
-// for that place. Fields, groups and pages are dragged by their handles and steps, and the palette's types onto the
-// page (ADR-0016, ADR-0169). On a site with more than one language the toolbar switches the language the canvas and
-// the inspector show, and a field, group or page without a text in it carries a chip (ADR-0170, ADR-0228). The canvas changes nothing itself:
-// it says what was asked in a request, which the Design view does.
+// The canvas (ROADMAP 9.3b and 22.1, docs/ux/information-architecture.md section 5.1, ADR-0168, ADR-0256): the form as
+// visitors see it, in the default theme, one page at a time at the chosen width, with the designer's controls laid over
+// it. One row stands above it: the pages as tabs, "+" (Add page) and After sending at its start; the width, the
+// language on a site with more than one, the form check's badge and "..." at its end. The row becomes two where the
+// pages need the room, and a tab shrinks before the tabs scroll. The open page's tab holds its menu: Rename, Duplicate
+// and Delete, which a form's only page doesn't offer. Every group and field selects itself, and a click on the sheet's
+// empty room clears the selection; an insert point between fields and the Add field at the end of a page open the field
+// picker for that place. Fields, groups and pages are dragged by their handles and tabs (ADR-0016, ADR-0169). A field,
+// group or page without a text in the language shown carries a chip (ADR-0170, ADR-0228), a page's describing its tab.
+// The canvas changes nothing itself: it says what was asked in a request, which the Design view does.
 import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldViewModel } from '@jfb/element/answer';
@@ -25,6 +27,7 @@ import {
 import type { CanvasLook } from '../preview/look';
 import { fragmentOf, safeHtml, showsText } from '../preview/rich-text';
 import { modifierTerm } from '../moves/keys';
+import { followedKeys } from '../moves/moves';
 import { CanvasDrag, type DragSource } from './canvas-drag';
 import { FarGroups } from './canvas-far';
 import { untranslated } from '../inspector/inspector-model';
@@ -33,10 +36,27 @@ import { withDictionary, type DictionaryLookups } from '../dictionary-texts';
 import { chipsOf } from '../rules/rule-list';
 import { inspectorRuleWords } from '../rules/rule-names';
 import { holdsAlways, outcomesOf, useRuleOf } from '../settings/outcome-model';
-import { FIELD_REQUEST, moreMenu, type FieldRequest, type FieldState, type FieldWords } from './canvas-field.element';
+import {
+  FIELD_REQUEST,
+  moreMenu,
+  popoverMenu,
+  type FieldRequest,
+  type FieldState,
+  type FieldWords,
+} from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
 import { CANVAS_WIDTHS, type CanvasWidth } from './widths';
+
+/** Umbraco's device icons for the widths, as its own preview shows them. */
+const WIDTH_ICONS: Readonly<Record<CanvasWidth, string>> = {
+  phone: 'icon-iphone',
+  tablet: 'icon-ipad',
+  desktop: 'icon-display',
+};
+
+/** The most problems the form check's badge counts; more read as this with a plus, so it keeps its width. */
+const MOST_COUNTED = 99;
 
 /** What the canvas shows: a page by its place, or what visitors get after sending. */
 export type CanvasShown = number | 'after';
@@ -44,7 +64,11 @@ export type CanvasShown = number | 'after';
 /** What the canvas asks the Design view to do. */
 export type CanvasRequest =
   | FieldRequest
+  /** A click on the sheet's empty room, which lets the selection go. */
+  | { readonly kind: 'clear' }
   | { readonly kind: 'addField'; readonly page: string }
+  /** Rename, from the open page's tab: the page's Title in the inspector. */
+  | { readonly kind: 'renamePage'; readonly key: string }
   | { readonly kind: 'show'; readonly shown: CanvasShown }
   | { readonly kind: 'addPage' }
   | { readonly kind: 'width'; readonly width: CanvasWidth }
@@ -55,7 +79,7 @@ export type CanvasRequest =
   | { readonly kind: 'changeOutcome'; readonly key: string | null }
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
-  /** A site's designer action from the toolbar's "...", by its manifest's alias (ADR-0018). */
+  /** A site's designer action from the row's "...", by its manifest's alias (ADR-0018). */
   | { readonly kind: 'designerAction'; readonly alias: string }
   | { readonly kind: 'formCheck' }
   /** A group saved as a template, from its "..." (ADR-0217). */
@@ -64,7 +88,7 @@ export type CanvasRequest =
   | { readonly kind: 'drop'; readonly source: DragSource; readonly place: Place }
   | { readonly kind: 'refused'; readonly source: DragSource; readonly reason: string };
 
-/** A site's designer action as the toolbar's "..." lists it. */
+/** A site's designer action as the row's "..." lists it. */
 export interface DesignerActionItem {
   readonly alias: string;
   /** Its label: a backoffice key such as `#acme_translate`, or the text. */
@@ -84,8 +108,8 @@ export interface InPlaceRefusal {
 export const CANVAS_REQUEST = 'jfb-canvas-request';
 
 /**
- * What the form check's badge says (ADR-0181): nothing before the first check; "Checking..." until the first answer;
- * the problems, errors and warnings, of the last answer; or that the check gave none.
+ * What the form check's badge says (ADR-0181): nothing before the first check; checking until the first answer; the
+ * problems, errors and warnings, of the last answer; or that the check gave none.
  */
 export type CheckBadge =
   | { readonly kind: 'none' }
@@ -149,7 +173,7 @@ export class FormCanvasElement extends UmbLitElement {
   /** The options of fields that take them from elsewhere, as the server resolved them, by the field's key (ADR-0172). */
   declare resolvedOptions: ReadonlyMap<string, readonly ResolvedOption[]>;
   declare width: CanvasWidth;
-  /** The insert point the palette is open for, which stays in sight. */
+  /** The insert point the field picker is open for, which stays marked. */
   declare insertAt: Place | null;
   /** The field whose label is edited in place. */
   declare editing: string | null;
@@ -229,15 +253,10 @@ export class FormCanvasElement extends UmbLitElement {
       this.#ask({ kind: 'drop', source, place });
       // The Design view changes the form as it hears the request, and the fields write themselves before the next
       // frame: what was dropped is where it lands by then.
-      requestAnimationFrame(() => this.#drag.settle(this.selection));
+      requestAnimationFrame(() => this.#drag.settle());
     },
     refused: (source, reason) => this.#ask({ kind: 'refused', source, reason }),
   });
-
-  /** Follows a press on one of the palette's types, which a drag onto the page adds where it lands. */
-  dragNew(event: PointerEvent, handle: Element, type: string, label: string) {
-    this.#drag.start(event, handle, { kind: 'new', type, label });
-  }
 
   #dragField(event: PointerEvent, handle: Element, key: string) {
     const field = this.#find(key);
@@ -327,7 +346,7 @@ export class FormCanvasElement extends UmbLitElement {
     return undefined;
   }
 
-  // Where a drop on a page's step lands: a field at the end of the page's last group, a group at the page's end.
+  // Where a drop on a page's tab lands: a field at the end of the page's last group, a group at the page's end.
   #pageEnd(source: DragSource, key: string): Place | null {
     const page = this.#drawn.pages.find((each) => each.key === key);
     if (!page) return null;
@@ -336,12 +355,12 @@ export class FormCanvasElement extends UmbLitElement {
     return group ? { container: group.key, index: group.fields.length } : null;
   }
 
-  /** The elements of the page shown in the order the keyboard goes through them: the page, each group, its fields. */
+  /** The elements of the page shown in the order the keyboard goes through them: each group, then its fields. */
   #order(): string[] {
     const index = typeof this.shown === 'number' ? Math.min(this.shown, this.#drawn.pages.length - 1) : -1;
     const page = index >= 0 ? this.#drawn.pages[index] : undefined;
     if (!page) return [];
-    const keys = [page.key];
+    const keys: string[] = [];
     const fields = (list: readonly DesignField[]) => {
       for (const field of list) {
         keys.push(field.key);
@@ -371,13 +390,14 @@ export class FormCanvasElement extends UmbLitElement {
   }
 
   /**
-   * Moves the focus to an element's control: the button that selects a field, group or page, or its handle; a page's
-   * step after a page moved by it. An element the canvas doesn't draw gives the focus to the page's Add field.
+   * Moves the focus to an element's control: the button that selects a field or group, or its handle; a page's tab, the
+   * page's one control. An element the canvas doesn't draw gives the focus to the page's Add field.
    */
-  focusElement(key: string, control: 'select' | 'handle' | 'step' = 'select') {
+  focusElement(key: string, control: 'select' | 'handle' | 'tab' = 'select') {
     const root = this.shadowRoot;
-    if (control === 'step') {
-      root?.querySelector<HTMLElement>(`.bo-step[data-page="${key}"]`)?.focus();
+    const tab = root?.querySelector<HTMLElement>(`.bo-tab-name[data-key="${key}"]`);
+    if (tab || control === 'tab') {
+      tab?.focus();
       return;
     }
     const field = root?.querySelector<HTMLElement & { focusField?: (control: 'select' | 'handle') => void }>(
@@ -614,7 +634,7 @@ export class FormCanvasElement extends UmbLitElement {
     >`;
   }
 
-  /** The ids of a page's or group's chips, which describe the button that selects it. */
+  /** The ids of a page's or group's chips, which describe the button that selects a group and a page's tab. */
   #chipIds(key: string, selected: boolean, untranslated: string | null): string | typeof nothing {
     if (selected) return nothing;
     const ids = [
@@ -656,8 +676,18 @@ export class FormCanvasElement extends UmbLitElement {
       : null;
   }
 
+  // What "Move what follows to a new page" is offered on, found once for each draft drawn.
+  #followed: { readonly of: DesignDefinition; readonly keys: ReadonlySet<string> } | undefined;
+
+  #follows(key: string): boolean {
+    const drawn = this.#drawn;
+    if (this.#followed?.of !== drawn) this.#followed = { of: drawn, keys: followedKeys(drawn) };
+    return this.#followed.keys.has(key);
+  }
+
   #wordsOf(field: DesignField, context: PreviewContext, model: FieldViewModel | null, label: string): FieldWords {
-    const parts = [context, model, this.localize.lang(), field.alias, this.types];
+    const follows = this.#follows(field.key);
+    const parts = [context, model, this.localize.lang(), field.alias, this.types, follows];
     const kept = this.#words.get(field);
     if (kept && kept.parts.every((part, at) => part === parts[at])) return kept.words;
     const words: FieldWords = {
@@ -672,10 +702,7 @@ export class FormCanvasElement extends UmbLitElement {
       delete: this.localize.term('jfbDesigner_delete'),
       deleteNamed: this.localize.term('jfbDesigner_deleteNamed', label),
       more: this.localize.term('jfbDesigner_moreElement'),
-      ...(Object.hasOwn(this.types, field.type) && this.types[field.type]?.mayChangeType
-        ? { changeType: this.localize.term('jfbDesigner_changeType') }
-        : {}),
-      newPageAfter: this.localize.term('jfbDesigner_newPageAfter'),
+      ...(follows ? { newPageAfter: this.localize.term('jfbDesigner_newPageAfter') } : {}),
       ...(field.alias ? { copyAlias: this.localize.term('jfbDesigner_copyAlias') } : {}),
       labelBox: this.localize.term('jfbDesigner_labelBox'),
       unseen: this.#unseen(field, model),
@@ -707,20 +734,18 @@ export class FormCanvasElement extends UmbLitElement {
     return false;
   }
 
-  #tools(key: string, name: string, group = false): TemplateResult {
+  // A selected group's bar: Move to..., Duplicate, Delete and its "...".
+  #tools(key: string, name: string): TemplateResult {
+    const follows = this.#follows(key);
     return html`<div class="bo-tools">
-      ${
-        group
-          ? html`<button
-              type="button"
-              aria-label=${this.localize.term('jfbDesigner_moveToNamed', name)}
-              @click=${() => this.#ask({ kind: 'moveTo', key })}
-            >
-              <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon
-              ><span class="bo-tool-text">${this.localize.term('jfbDesigner_moveTo')}</span>
-            </button>`
-          : nothing
-      }
+      <button
+        type="button"
+        aria-label=${this.localize.term('jfbDesigner_moveToNamed', name)}
+        @click=${() => this.#ask({ kind: 'moveTo', key })}
+      >
+        <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon
+        ><span class="bo-tool-text">${this.localize.term('jfbDesigner_moveTo')}</span>
+      </button>
       <button
         type="button"
         aria-label=${this.localize.term('jfbDesigner_duplicateNamed', name)}
@@ -738,12 +763,16 @@ export class FormCanvasElement extends UmbLitElement {
         ><span class="bo-tool-text">${this.localize.term('jfbDesigner_delete')}</span>
       </button>
       ${
-        group
+        follows || this.saveGroups
           ? moreMenu(`jfb-more-${key}`, this.localize.term('jfbDesigner_moreElement'), [
-              {
-                label: this.localize.term('jfbDesigner_newPageAfter'),
-                act: () => this.#ask({ kind: 'newPageAfter', key }),
-              },
+              ...(follows
+                ? [
+                    {
+                      label: this.localize.term('jfbDesigner_newPageAfter'),
+                      act: () => this.#ask({ kind: 'newPageAfter', key }),
+                    },
+                  ]
+                : []),
               ...(this.saveGroups
                 ? [
                     {
@@ -792,7 +821,7 @@ export class FormCanvasElement extends UmbLitElement {
       >
         <uui-icon name="icon-grip" aria-hidden="true"></uui-icon>
       </button>
-      ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name, true) : nothing}
+      ${this.#refusalAt(group.key)} ${selected ? this.#tools(group.key, name) : nothing}
       ${this.#chipsOf(group.key, selected, untranslated)}`;
     const help = showsText(description) ? html`<div class="jfb-help" inert>${fragmentOf(description)}</div>` : nothing;
     const fields = html`<div class="jfb-fields" data-fields=${group.key}>
@@ -837,30 +866,21 @@ export class FormCanvasElement extends UmbLitElement {
       : html`<div class=${classes} data-group=${group.key}>${select}${help}${fields}</div>`;
   }
 
+  /** A page's chip where it has no text in the language shown (ADR-0228). */
+  #pageUntranslated(page: DesignPage, culture: string): string | null {
+    return this.#containerUntranslated(pageLacks(this.#ownOf(page), culture), culture);
+  }
+
   #page(page: DesignPage, index: number, context: PreviewContext & ReturnType<typeof formSettings>): TemplateResult {
     const culture = context.culture;
     const title = textIn(page.title, culture);
     const description = safeHtml(textIn(page['description'] as LocalizedText | undefined, culture));
-    const name = this.#pageName(page, index, culture);
-    const selected = this.selection === page.key;
-    const untranslated = this.#containerUntranslated(pageLacks(this.#ownOf(page), culture), culture);
+    const untranslated = this.#pageUntranslated(page, culture);
     const bare = pageIsBare(page, culture);
     const formEmpty = this.#drawn.pages.every((each) => each.groups.every((group) => group.fields.length === 0));
     const navigation = this.#navigationOf(index, context);
-    return html`<section class="jfb-page bo-page${selected ? ' bo-selected' : ''}" data-groups=${page.key}>
-        <button
-          type="button"
-          class="bo-select bo-select-page"
-          data-select=${page.key}
-          data-key=${page.key}
-          data-control="select"
-          aria-label=${this.localize.term('jfbDesigner_pageName', name)}
-          aria-describedby=${this.#chipIds(page.key, selected, untranslated)}
-          aria-current=${selected ? 'true' : 'false'}
-          @click=${() => this.#ask({ kind: 'select', key: page.key })}
-        ></button>
-        ${this.#refusalAt(page.key)} ${selected ? this.#tools(page.key, name) : nothing}
-        ${this.#chipsOf(page.key, selected, untranslated)}
+    return html`<section class="jfb-page bo-page" data-groups=${page.key}>
+        ${this.#refusalAt(page.key)} ${this.#chipsOf(page.key, false, untranslated)}
         ${title ? html`<h2 class="jfb-title" inert>${title}</h2>` : nothing}
         ${showsText(description) ? html`<div class="jfb-intro" inert>${fragmentOf(description)}</div>` : nothing}
         ${
@@ -950,152 +970,86 @@ export class FormCanvasElement extends UmbLitElement {
     </div>`;
   }
 
-  #toolbar(): TemplateResult {
-    const held = this.localize.term(modifierTerm());
+  // The one row above the sheet (ADR-0256): the pages at its start, the tools at its end. It keeps the Desktop sheet's
+  // width whatever width is chosen, so the width buttons never move under the pointer; where the pages need the room,
+  // the tools go to a second row, at its end.
+  #row(culture: string): TemplateResult {
     return html`<div class="bo-bar">
-      <div class="bo-widths" role="group" aria-label=${this.localize.term('jfbDesigner_canvasWidth')}>
-        ${(Object.keys(CANVAS_WIDTHS) as CanvasWidth[]).map(
-          (width) =>
-            html`<button
-              type="button"
-              aria-pressed=${this.width === width ? 'true' : 'false'}
-              @click=${() => this.#ask({ kind: 'width', width })}
-            >
-              ${this.localize.term(`jfbDesigner_width_${width}`)}
-            </button>`,
-        )}
+      <div class="bo-row" style="--bo-row: ${CANVAS_WIDTHS.desktop}px">
+        ${this.#pages(culture)}
+        <div class="bo-end">${this.#widths()} ${this.#languages()} ${this.#checkBadge()} ${this.#more()}</div>
       </div>
-      ${this._narrowed ? html`<span class="bo-narrowed">${this.localize.term('jfbDesigner_narrowed')}</span>` : nothing}
-      ${this.#languages()} ${this.#checkBadge()}
-      <uui-button
-        class="bo-more"
-        compact
-        popovertarget="jfb-canvas-more"
-        label=${this.localize.term('jfbDesigner_moreCanvas')}
-      >
-        <uui-symbol-more></uui-symbol-more>
-      </uui-button>
-      <uui-popover-container
-        id="jfb-canvas-more"
-        placement="bottom-end"
-        @toggle=${(event: ToggleEvent) => {
-          // Open, the menu takes the focus on its first item it can do, as the element's "..." does.
-          if (event.newState === 'open')
-            (event.target as HTMLElement).querySelector<HTMLElement>('button:not(:disabled)')?.focus();
-        }}
-      >
-        <div class="bo-menu">
-          <button type="button" ?disabled=${!this.canUndo} @click=${() => this.#menu('undo')}>
-            <span>${this.localize.term('jfbDesigner_undo')}</span><kbd>${held}+Z</kbd>
-          </button>
-          <button type="button" ?disabled=${!this.canRedo} @click=${() => this.#menu('redo')}>
-            <span>${this.localize.term('jfbDesigner_redo')}</span><kbd>${held}+Y</kbd>
-          </button>
-          <button type="button" @click=${() => this.#menu('rulesOverview')}>
-            <span>${this.localize.term('jfbDesigner_rulesOverview')}</span>
-          </button>
-          <button type="button" @click=${() => this.#menu('shortcuts')}>
-            <span>${this.localize.term('jfbDesigner_shortcuts')}</span><kbd>?</kbd>
-          </button>
-          ${this.designerActions.map(
-            (action) =>
-              html`<button type="button" data-action=${action.alias} @click=${() => this.#act(action.alias)}>
-                <span>${this.localize.string(action.label)}</span>
-              </button>`,
-          )}
-        </div>
-      </uui-popover-container>
     </div>`;
   }
 
-  // The form check's badge (IA 5.1): how many problems the last check found, errors and warnings, which it opens in a
-  // sidebar. It changes after each change of the form, so it says it quietly: no motion, nothing said aloud.
-  #checkBadge(): TemplateResult | typeof nothing {
-    const check = this.check;
-    if (check.kind === 'none') return nothing;
-    const problems = check.kind === 'checked' ? check.errors + check.warnings : 0;
-    const state =
-      check.kind !== 'checked' ? check.kind : check.errors > 0 ? 'error' : check.warnings > 0 ? 'warning' : 'clear';
-    // A warning's icon differs from an error's in its shape, not only its colour, as in the sidebar.
-    const icon =
-      state === 'clear' ? 'icon-check' : state === 'warning' ? 'icon-info' : state === 'checking' ? null : 'icon-alert';
-    const text =
-      check.kind === 'checking'
-        ? this.localize.term('jfbDesigner_checkChecking')
-        : check.kind === 'failed'
-          ? this.localize.term('jfbDesigner_checkFailed')
-          : problems > 0
-            ? this.localize.term('jfbDesigner_checkProblems', problems)
-            : this.localize.term('jfbDesigner_checkNone');
-    return html`<button
-      type="button"
-      class="bo-check"
-      data-state=${state}
-      aria-haspopup="dialog"
-      @click=${() => this.#ask({ kind: 'formCheck' })}
-    >
-      ${icon ? html`<uui-icon name=${icon} aria-hidden="true"></uui-icon>` : nothing}<span>${text}</span>
-    </button>`;
-  }
-
-  // The language the canvas and the inspector show, on a site with more than one.
-  #languages(): TemplateResult | typeof nothing {
-    const languages = this.look?.languages ?? [];
-    if (languages.length < 2) return nothing;
-    const shown = this.#culture().toLowerCase();
-    return html`<label class="bo-language">
-      <span>${this.localize.term('jfbDesigner_language')}</span>
-      <select
-        @change=${(event: Event) => this.#ask({ kind: 'culture', culture: (event.target as HTMLSelectElement).value })}
+  // The pages as tabs, then "+" and After sending, which never leave the row. The open page's tab holds its menu, and a
+  // form's only page offers no Delete there. A tab drags its page among the tabs and takes a dropped field or group at
+  // that page's end; the keys on it act on its page (the Design view's).
+  #pages(culture: string): TemplateResult {
+    const pages = this.#drawn.pages;
+    return html`<nav class="bo-pages" aria-label=${this.localize.term('jfbDesigner_pages')}>
+      <div class="bo-tabs">
+        ${pages.map((page, index) => {
+          const name = this.#pageName(page, index, culture);
+          const open = this.shown === index;
+          const key = page.key;
+          return html`<span class="bo-tab" data-page=${key} ?data-open=${open}>
+            <button
+              type="button"
+              class="bo-tab-name"
+              data-key=${key}
+              data-control="tab"
+              title=${name}
+              aria-current=${open ? 'step' : 'false'}
+              aria-describedby=${open ? this.#chipIds(key, false, this.#pageUntranslated(page, culture)) : nothing}
+              @pointerdown=${(event: PointerEvent) =>
+                this.#drag.start(event, event.currentTarget as Element, { kind: 'page', key, label: name })}
+              @click=${() => this.#ask({ kind: 'show', shown: index })}
+            >
+              <span>${name}</span>
+            </button>
+            ${
+              open
+                ? moreMenu(
+                    `jfb-page-more-${key}`,
+                    this.localize.term('jfbDesigner_pageMore', name),
+                    [
+                      {
+                        label: this.localize.term('jfbDesigner_renamePage'),
+                        act: () => this.#ask({ kind: 'renamePage', key }),
+                      },
+                      {
+                        label: this.localize.term('jfbDesigner_duplicate'),
+                        act: () => this.#ask({ kind: 'duplicate', key }),
+                      },
+                      ...(pages.length > 1
+                        ? [
+                            {
+                              label: this.localize.term('jfbDesigner_delete'),
+                              act: () => this.#ask({ kind: 'delete', key }),
+                            },
+                          ]
+                        : []),
+                    ],
+                    'bottom-start',
+                  )
+                : nothing
+            }
+          </span>`;
+        })}
+      </div>
+      <button
+        type="button"
+        class="bo-add-page"
+        aria-label=${this.localize.term('jfbDesigner_addPage')}
+        title=${this.localize.term('jfbDesigner_addPage')}
+        @click=${() => this.#ask({ kind: 'addPage' })}
       >
-        ${languages.map(
-          (language) =>
-            html`<option value=${language.culture} ?selected=${language.culture.toLowerCase() === shown}>
-              ${language.name}
-            </option>`,
-        )}
-      </select>
-    </label>`;
-  }
-
-  #menu(kind: 'undo' | 'redo' | 'rulesOverview' | 'shortcuts') {
-    this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
-    this.#ask({ kind });
-  }
-
-  #act(alias: string) {
-    this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#jfb-canvas-more')?.hidePopover?.();
-    this.#ask({ kind: 'designerAction', alias });
-  }
-
-  #steps(culture: string): TemplateResult {
-    return html`<nav class="bo-steps" aria-label=${this.localize.term('jfbDesigner_pages')}>
-      ${this.#drawn.pages.map(
-        (page, index) =>
-          html`<button
-            type="button"
-            class="bo-step"
-            data-page=${page.key}
-            data-key=${page.key}
-            data-control="step"
-            aria-current=${this.shown === index ? 'step' : 'false'}
-            @pointerdown=${(event: PointerEvent) =>
-              this.#drag.start(event, event.currentTarget as Element, {
-                kind: 'page',
-                key: page.key,
-                label: this.#pageName(page, index, culture),
-              })}
-            @click=${() => this.#ask({ kind: 'show', shown: index })}
-          >
-            ${this.#pageName(page, index, culture)}
-          </button>`,
-      )}
-      <button type="button" class="bo-step bo-step-add" @click=${() => this.#ask({ kind: 'addPage' })}>
-        <uui-icon name="icon-add" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_addPage')}
+        <uui-icon name="icon-add" aria-hidden="true"></uui-icon>
       </button>
       <button
         type="button"
-        class="bo-step"
+        class="bo-after-step"
         aria-current=${this.shown === 'after' ? 'step' : 'false'}
         @click=${() => this.#ask({ kind: 'show', shown: 'after' })}
       >
@@ -1104,7 +1058,132 @@ export class FormCanvasElement extends UmbLitElement {
     </nav>`;
   }
 
-  // While the look is read: the sheet's shape, still, without the toolbar and the steps (IA 5.1).
+  // The width the form is shown at, as Umbraco's device icons, each named for screen readers and the pointer's tip.
+  #widths(): TemplateResult {
+    return html`<div class="bo-widths" role="group" aria-label=${this.localize.term('jfbDesigner_canvasWidth')}>
+      ${(Object.keys(CANVAS_WIDTHS) as CanvasWidth[]).map((width) => {
+        const name = this.localize.term(`jfbDesigner_width_${width}`);
+        return html`<button
+          type="button"
+          aria-label=${name}
+          title=${name}
+          aria-pressed=${this.width === width ? 'true' : 'false'}
+          @click=${() => this.#ask({ kind: 'width', width })}
+        >
+          <uui-icon name=${WIDTH_ICONS[width]} aria-hidden="true"></uui-icon>
+        </button>`;
+      })}
+    </div>`;
+  }
+
+  #more(): TemplateResult {
+    const held = this.localize.term(modifierTerm());
+    const ask = (kind: 'undo' | 'redo' | 'rulesOverview' | 'shortcuts') => () => this.#ask({ kind });
+    return html`<uui-button
+        class="bo-more"
+        compact
+        popovertarget="jfb-canvas-more"
+        label=${this.localize.term('jfbDesigner_moreCanvas')}
+      >
+        <uui-symbol-more></uui-symbol-more>
+      </uui-button>
+      ${popoverMenu('jfb-canvas-more', [
+        { label: this.localize.term('jfbDesigner_undo'), keys: `${held}+Z`, disabled: !this.canUndo, act: ask('undo') },
+        { label: this.localize.term('jfbDesigner_redo'), keys: `${held}+Y`, disabled: !this.canRedo, act: ask('redo') },
+        { label: this.localize.term('jfbDesigner_rulesOverview'), act: ask('rulesOverview') },
+        { label: this.localize.term('jfbDesigner_shortcuts'), keys: '?', act: ask('shortcuts') },
+        ...this.designerActions.map((action) => ({
+          label: this.localize.string(action.label),
+          alias: action.alias,
+          act: () => this.#ask({ kind: 'designerAction', alias: action.alias }),
+        })),
+      ])}`;
+  }
+
+  // The form check's badge (IA 5.1, ADR-0256): its icon and the number of problems the last check found, errors and
+  // warnings, a check mark alone where there are none, which it opens in a sidebar; its words are its name and its tip.
+  // It keeps one width through all it says, so the row never moves while the form is edited, and it changes quietly: no
+  // motion, nothing said aloud. Before the first check its place is kept empty.
+  #checkBadge(): TemplateResult {
+    const check = this.check;
+    if (check.kind === 'none') return html`<span class="bo-check" data-state="none" aria-hidden="true"></span>`;
+    const problems = check.kind === 'checked' ? check.errors + check.warnings : 0;
+    const state =
+      check.kind !== 'checked' ? check.kind : check.errors > 0 ? 'error' : check.warnings > 0 ? 'warning' : 'clear';
+    // A warning's icon differs from an error's in its shape, not only its colour, as in the sidebar.
+    const icon =
+      state === 'clear' ? 'icon-check' : state === 'warning' ? 'icon-info' : state === 'checking' ? null : 'icon-alert';
+    // Checking shows an ellipsis, quiet; a check that gave no answer its alert, quiet, without a number.
+    const shown = state === 'checking' ? '\u2026' : problems > MOST_COUNTED ? `${MOST_COUNTED}+` : problems || '';
+    const words =
+      check.kind === 'checking'
+        ? this.localize.term('jfbDesigner_checkBadgeChecking')
+        : check.kind === 'failed'
+          ? this.localize.term('jfbDesigner_checkBadgeFailed')
+          : this.localize.term('jfbDesigner_checkBadge', problems);
+    return html`<button
+      type="button"
+      class="bo-check"
+      data-state=${state}
+      aria-haspopup="dialog"
+      aria-label=${words}
+      title=${words}
+      @click=${() => this.#ask({ kind: 'formCheck' })}
+    >
+      ${
+        state === 'clear'
+          ? html`<span class="bo-check-disc" aria-hidden="true"><uui-icon name="icon-check"></uui-icon></span>`
+          : icon
+            ? html`<uui-icon name=${icon} aria-hidden="true"></uui-icon>`
+            : nothing
+      }<span aria-hidden="true">${shown}</span>
+    </button>`;
+  }
+
+  // The language the canvas and the inspector show, on a site with more than one: a button that shows its culture and
+  // opens the languages by name.
+  #languages(): TemplateResult | typeof nothing {
+    const languages = this.look?.languages ?? [];
+    if (languages.length < 2) return nothing;
+    const shown = this.#culture();
+    const current = languages.find((language) => language.culture.toLowerCase() === shown.toLowerCase());
+    const culture = current?.culture ?? shown;
+    const label = this.localize.term('jfbDesigner_languageButton', culture, current?.name ?? culture);
+    return html`<button
+        type="button"
+        class="bo-language"
+        popovertarget="jfb-canvas-languages"
+        aria-label=${label}
+        title=${label}
+      >
+        <span>${culture}</span><uui-icon name="icon-navigation-down" aria-hidden="true"></uui-icon>
+      </button>
+      ${popoverMenu(
+        'jfb-canvas-languages',
+        languages.map((language) => ({
+          label: language.name,
+          current: language === current,
+          act: () => {
+            if (language !== current) this.#ask({ kind: 'culture', culture: language.culture });
+          },
+        })),
+      )}`;
+  }
+
+  // A click on the sheet's empty room, or beside the sheet, lets the selection go; a click on a control is the control's.
+  readonly #onRoom = (event: MouseEvent) => {
+    if (this.selection === null) return;
+    const control = event
+      .composedPath()
+      .some(
+        (node) =>
+          node instanceof Element &&
+          node.matches('button, a, input, select, textarea, label, [contenteditable="true"]'),
+      );
+    if (!control) this.#ask({ kind: 'clear' });
+  };
+
+  // While the look is read: the sheet's shape, still, without the row above it (IA 5.1).
   #waiting() {
     return html`<div class="bo-viewport bo-waiting" aria-busy="true">
       <div class="bo-sheet" style="--bo-width: ${CANVAS_WIDTHS[this.width]}px">
@@ -1127,8 +1206,16 @@ export class FormCanvasElement extends UmbLitElement {
     const index = this.shown === 'after' ? -1 : Math.min(this.shown, pages.length - 1);
     const page = index >= 0 ? pages[index] : undefined;
     const width = CANVAS_WIDTHS[this.width];
-    return html`${this.#toolbar()} ${this.#steps(look.culture)}
-      <div class="bo-viewport" id="jfb-canvas-form" tabindex="-1">
+    return html`${this.#row(look.culture)}
+      <div class="bo-viewport" id="jfb-canvas-form" tabindex="-1" @click=${this.#onRoom}>
+        <p
+          class="bo-narrowed"
+          style="--bo-width: ${width}px"
+          ?data-shown=${this._narrowed}
+          aria-hidden=${this._narrowed ? 'false' : 'true'}
+        >
+          ${this.localize.term('jfbDesigner_narrowed')}
+        </p>
         <div class="bo-sheet" style="--bo-width: ${width}px">
           <div class="jfb-form jfb-theme-default" style="--jfb-size-form: ${width}px" lang=${look.culture}>
             ${page ? this.#page(page, index, context) : this.#after(look)}

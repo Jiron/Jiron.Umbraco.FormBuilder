@@ -5,9 +5,10 @@
 // (a hidden field, a heading without text) shows a quiet note in its place, so it can still be found and selected. A
 // repeatable group shows its first row with each of its fields as a canvas field of its own, so they can be chosen.
 // Its handle, "Move Email address", drags it and, with Alt+Up and Alt+Down, moves it (ADR-0016, ADR-0169); Move to...
-// in its bar opens the dialog of places, and a move the form refuses says why at the field. The bar's "..." starts a new
-// page after the field and copies its alias (ADR-0170); a field without a text in the language shown carries a chip,
-// and so does each rule in use on it, in words (ADR-0178), each describing the button that selects the field.
+// in its bar opens the dialog of places, and a move the form refuses says why at the field. The bar's "..." moves what
+// follows the field to a new page, where something follows it on its page, and copies its alias (ADR-0170, ADR-0256); a
+// field without a text in the language shown carries a chip, and so does each rule in use on it, in words (ADR-0178),
+// each describing the button that selects the field.
 import {
   html,
   LitElement,
@@ -31,7 +32,6 @@ export type FieldRequest =
   | { readonly kind: 'editLabel'; readonly key: string }
   | { readonly kind: 'label'; readonly key: string; readonly text: string | null }
   | { readonly kind: 'moveTo'; readonly key: string }
-  | { readonly kind: 'changeType'; readonly key: string }
   | { readonly kind: 'newPageAfter'; readonly key: string }
   | { readonly kind: 'copyAlias'; readonly key: string }
   | { readonly kind: 'drag'; readonly key: string; readonly event: PointerEvent; readonly handle: Element };
@@ -59,9 +59,8 @@ export interface FieldWords {
   readonly deleteNamed: string;
   /** The "..."'s name: "More actions". */
   readonly more: string;
-  /** Change type..., for a field whose type may become another (ADR-0059). */
-  readonly changeType?: string;
-  readonly newPageAfter: string;
+  /** "Move what follows to a new page", where something follows the field on its page. */
+  readonly newPageAfter?: string;
   /** Copy alias, for a field with an alias. */
   readonly copyAlias?: string;
   /** What the label's box says while it is edited in place. */
@@ -83,13 +82,13 @@ export interface FieldState {
   readonly editing: boolean;
   /** The text an edit in place starts from. */
   readonly labelText: string;
-  /** Whether the palette is open for the insert point below it, which then stays in sight. */
+  /** Whether the field picker is open for the insert point below it, which then stays marked. */
   readonly insertActive: boolean;
   /** Whether the field after it is selected, whose bar lies over the insert point below it. */
   readonly beforeSelected?: boolean;
   /** A repeatable group's fields, drawn in its first row. */
   readonly children?: readonly FieldState[];
-  /** Whether the palette is open for the place before a repeatable group's first field. */
+  /** Whether the field picker is open for the place before a repeatable group's first field. */
   readonly firstActive?: boolean;
   /** Why the form refused its last move, shown at the field until the next change. */
   readonly refusal?: string | null;
@@ -99,52 +98,86 @@ export interface FieldState {
   readonly rules?: readonly string[] | null;
 }
 
+/** One item of a menu: its words, what it does, and what it may also show. */
+export interface MenuItem {
+  readonly label: string;
+  readonly act: () => void;
+  /** The keys that do it too, shown at the item's end: "Ctrl+Z". */
+  readonly keys?: string;
+  readonly disabled?: boolean;
+  /** Whether it is what is shown now (the language), marked with a check. */
+  readonly current?: boolean;
+  /** A site's designer action's alias, which the item carries (ADR-0018). */
+  readonly alias?: string;
+}
+
 /**
- * The "..." of a selected element's bar and its menu. The menu takes the focus as it opens, Escape closes it and gives
- * the focus back to the "...", and a choice closes it first.
+ * A menu as the product draws its menus: buttons in a popover, which opens from the button that names it with
+ * `popovertarget`. It takes the focus as it opens, on the item shown now or else on the first it can do; Escape closes it
+ * and gives the focus back to that button; a choice closes it first.
  */
+export function popoverMenu(
+  id: string,
+  items: readonly MenuItem[],
+  placement: 'bottom-end' | 'bottom-start' = 'bottom-end',
+): TemplateResult {
+  return html`<uui-popover-container
+    id=${id}
+    placement=${placement}
+    @toggle=${(event: ToggleEvent) => {
+      if (event.newState !== 'open') return;
+      const menu = event.target as HTMLElement;
+      (
+        menu.querySelector<HTMLElement>('[aria-current="true"]') ??
+        menu.querySelector<HTMLElement>('button:not(:disabled)')
+      )?.focus();
+    }}
+    @keydown=${(event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // The menu closes, and the Design view's Escape, which clears the selection, waits for the next one.
+      event.stopPropagation();
+      event.preventDefault();
+      const menu = event.currentTarget as HTMLElement & { hidePopover?: () => void };
+      menu.hidePopover?.();
+      (menu.getRootNode() as ParentNode).querySelector<HTMLElement>(`[popovertarget="${id}"]`)?.focus();
+    }}
+  >
+    <div class="bo-menu">
+      ${items.map(
+        (item) =>
+          html`<button
+            type="button"
+            ?disabled=${item.disabled === true}
+            aria-current=${item.current ? 'true' : nothing}
+            data-action=${item.alias ?? nothing}
+            @click=${(event: Event) => {
+              (
+                (event.currentTarget as HTMLElement).closest('uui-popover-container') as
+                  (HTMLElement & { hidePopover?: () => void }) | null
+              )?.hidePopover?.();
+              item.act();
+            }}
+          >
+            <span>${item.label}</span>${item.keys ? html`<kbd>${item.keys}</kbd>` : nothing}${
+              item.current ? html`<uui-icon name="icon-check" aria-hidden="true"></uui-icon>` : nothing
+            }
+          </button>`,
+      )}
+    </div>
+  </uui-popover-container>`;
+}
+
+/** The "..." of a selected element's bar, or of the open page's tab, and its menu. */
 export function moreMenu(
   id: string,
   name: string,
-  items: readonly { readonly label: string; readonly act: () => void }[],
+  items: readonly MenuItem[],
+  placement: 'bottom-end' | 'bottom-start' = 'bottom-end',
 ): TemplateResult {
   return html`<button type="button" class="bo-more-element" popovertarget=${id} aria-label=${name}>
       <uui-symbol-more></uui-symbol-more>
     </button>
-    <uui-popover-container
-      id=${id}
-      placement="bottom-end"
-      @toggle=${(event: ToggleEvent) => {
-        if (event.newState === 'open') (event.target as HTMLElement).querySelector<HTMLElement>('button')?.focus();
-      }}
-      @keydown=${(event: KeyboardEvent) => {
-        if (event.key !== 'Escape') return;
-        // The menu closes, and the Design view's Escape, which clears the selection, waits for the next one.
-        event.stopPropagation();
-        event.preventDefault();
-        const menu = event.currentTarget as HTMLElement & { hidePopover?: () => void };
-        menu.hidePopover?.();
-        (menu.getRootNode() as ParentNode).querySelector<HTMLElement>(`[popovertarget="${id}"]`)?.focus();
-      }}
-    >
-      <div class="bo-menu">
-        ${items.map(
-          (item) =>
-            html`<button
-              type="button"
-              @click=${(event: Event) => {
-                (
-                  (event.currentTarget as HTMLElement).closest('uui-popover-container') as
-                    (HTMLElement & { hidePopover?: () => void }) | null
-                )?.hidePopover?.();
-                item.act();
-              }}
-            >
-              <span>${item.label}</span>
-            </button>`,
-        )}
-      </div>
-    </uui-popover-container>`;
+    ${popoverMenu(id, items, placement)}`;
 }
 
 /** The element down a path of children, each step the first child that matches its selector. */
@@ -485,15 +518,18 @@ export class CanvasFieldElement extends LitElement {
                   <uui-icon name="icon-trash" aria-hidden="true"></uui-icon
                   ><span class="bo-tool-text">${words.delete}</span>
                 </button>
-                ${moreMenu(`jfb-more-${key}`, words.more, [
-                  ...(words.changeType
-                    ? [{ label: words.changeType, act: () => this.#request({ kind: 'changeType', key }) }]
-                    : []),
-                  { label: words.newPageAfter, act: () => this.#request({ kind: 'newPageAfter', key }) },
-                  ...(words.copyAlias
-                    ? [{ label: words.copyAlias, act: () => this.#request({ kind: 'copyAlias', key }) }]
-                    : []),
-                ])}
+                ${
+                  words.newPageAfter || words.copyAlias
+                    ? moreMenu(`jfb-more-${key}`, words.more, [
+                        ...(words.newPageAfter
+                          ? [{ label: words.newPageAfter, act: () => this.#request({ kind: 'newPageAfter', key }) }]
+                          : []),
+                        ...(words.copyAlias
+                          ? [{ label: words.copyAlias, act: () => this.#request({ kind: 'copyAlias', key }) }]
+                          : []),
+                      ])
+                    : nothing
+                }
               </div>`
             : nothing
         }

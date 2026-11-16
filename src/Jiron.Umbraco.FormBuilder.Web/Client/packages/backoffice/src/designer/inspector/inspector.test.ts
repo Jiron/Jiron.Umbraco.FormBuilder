@@ -1,6 +1,7 @@
-// The inspector (ROADMAP 9.4a, IA 5.1, ADR-0170): what it is headed with, its sections that open and close as the user
-// left them, the one line a closed one says, the requests its boxes send (typing in one box one step to undo), why a
-// value can't be kept, locks, the language it edits, the alias, and its ways of showing.
+// The inspector (ROADMAP 9.4a and 22.1, IA 5.1, ADR-0170, ADR-0256): what it is headed with, the open page while nothing
+// is selected and After sending's heading, its sections that open and close as the user left them, the one line a closed
+// one says, the requests its boxes send (typing in one box one step to undo), why a value can't be kept, locks, the
+// language it edits, the alias, a page's Title with its text selected, and its ways of showing.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { all, must, registerEnglish, settle, shadow, text } from '../../testing';
 import type { DesignDefinition, DesignField } from '../definition';
@@ -75,18 +76,34 @@ afterEach(() => {
 });
 
 describe('the inspector', () => {
-  it('is headed with what the element is, and says how to choose one while nothing is selected', async () => {
+  it('is headed with what the element is, and shows the open page while nothing is selected, without Close', async () => {
     expect(text((await inspectorOf('name')).root.querySelector('h2'))).toBe('Short text field');
     expect(text((await inspectorOf('g')).root.querySelector('h2'))).toBe('Group');
     expect(text((await inspectorOf('p')).root.querySelector('h2'))).toBe('Page');
-    const none = (await inspectorOf(null)).root;
-    expect([text(none.querySelector('h2')), text(none.querySelector('.empty')), none.querySelector('.body')]).toEqual([
-      'Nothing selected',
-      'Select a field, group or page to change its settings.',
-      null,
+    const none = await inspectorOf(null, { page: 'p' });
+    expect(text(none.root.querySelector('h2'))).toBe('Page');
+    // The page's sections as they are today: its Title, and its rules.
+    expect(all(none.element, '.section-head button').map((button) => text(button))).toEqual([
+      'Essentials',
+      'Rules Always shown',
     ]);
-    // Its fold stays, so the column can give the canvas its room.
-    expect(none.querySelector('uui-button')?.getAttribute('label')).toBe('Fold the inspector');
+    // Its fold stays, so the column can give the canvas its room; nothing is selected, so nothing to close.
+    expect(all(none.element, '.head uui-button').map((button) => button.getAttribute('label'))).toEqual([
+      'Fold the inspector',
+    ]);
+    // A page selected beside the canvas shows the same; over a narrow canvas it has Close, which lets it go.
+    expect(
+      all((await inspectorOf('p')).element, '.head uui-button').map((button) => button.getAttribute('label')),
+    ).toEqual(['Fold the inspector']);
+    expect(
+      all((await inspectorOf('p', { mode: 'overlay' })).element, '.head uui-button').map((button) =>
+        button.getAttribute('label'),
+      ),
+    ).toEqual(['Close']);
+    // On After sending the column is headed so.
+    const after = await inspectorOf(null, { page: 'p', afterSending: true });
+    expect([text(after.root.querySelector('h2')), after.root.querySelector('.body')]).toEqual(['After sending', null]);
+    expect((await inspectorOf(null)).root.querySelector('h2')).toBeNull();
     expect((await inspectorOf(null, { mode: 'rail' })).root.querySelector('uui-button')?.getAttribute('label')).toBe(
       'Open the inspector',
     );
@@ -94,6 +111,18 @@ describe('the inspector', () => {
     expect(text(gone.root.querySelector('.body'))).toBe(
       'This site has no field type "gone" any more, so its settings can\'t be shown.',
     );
+  });
+
+  it("gives the focus to a page's Title with its text selected, as the page's Rename does", async () => {
+    const { element } = await inspectorOf(null, { page: 'p' });
+    element.focusItem({ kind: 'text', property: 'title' }, true);
+    await settle(element);
+    await settle(element);
+    let box = document.activeElement;
+    while (box?.shadowRoot?.activeElement) box = box.shadowRoot.activeElement;
+    expect(box).toBeInstanceOf(HTMLInputElement);
+    const input = box as HTMLInputElement;
+    expect([input.value, input.selectionStart, input.selectionEnd]).toEqual(['About you', 0, 'About you'.length]);
   });
 
   it('opens Essentials at first, says what a closed section holds, and keeps what the user opens', async () => {
@@ -608,6 +637,9 @@ describe('the inspector', () => {
     );
     expect(docked.requests).toEqual([{ kind: 'fold' }, { kind: 'close' }]);
     expect(docked.root.querySelector('.tools')).toBeNull();
+    // A field with nothing after it on its page offers no "Move what follows to a new page".
+    const last = await inspectorOf('arrival', { mode: 'overlay' });
+    expect(all(last.element, '.tools .menu button').map((button) => text(button))).toEqual(['Copy alias']);
 
     const rail = await inspectorOf('name', { mode: 'rail' });
     expect(rail.root.querySelector('h2')).toBeNull();
@@ -628,18 +660,18 @@ describe('the inspector', () => {
       { kind: 'element', action: 'newPageAfter', key: 'name' },
       { kind: 'element', action: 'copyAlias', key: 'name' },
     ]);
+    // A page's actions are at its tab, so it has no bar.
     const page = await inspectorOf('p', { mode: 'overlay' });
-    expect(all(page.element, '.tools button').map((button) => text(button))).toEqual(['Move to\u2026', 'Delete']);
-    // Over a narrow canvas a group's "..." offers Save group as template, to who may save groups only.
+    expect(page.root.querySelector('.tools')).toBeNull();
+    // Over a narrow canvas a group's "..." offers Save group as template, to who may save groups only; nothing follows
+    // the page's one group.
     const group = await inspectorOf('g', { mode: 'overlay', saveGroups: true });
     const menu = all<HTMLButtonElement>(group.element, '.tools .menu button');
-    expect(menu.map((button) => text(button))).toEqual(['Start a new page after this', 'Save group as template\u2026']);
-    menu[1]?.click();
+    expect(menu.map((button) => text(button))).toEqual(['Save group as template\u2026']);
+    menu[0]?.click();
     expect(group.requests).toEqual([{ kind: 'element', action: 'saveGroup', key: 'g' }]);
     const unsaving = await inspectorOf('g', { mode: 'overlay' });
-    expect(all(unsaving.element, '.tools .menu button').map((button) => text(button))).toEqual([
-      'Start a new page after this',
-    ]);
+    expect(unsaving.root.querySelector('.tools [popovertarget]')).toBeNull();
   });
 
   it('offers Change type by the type of a field that may change, in every way of showing, and once', async () => {

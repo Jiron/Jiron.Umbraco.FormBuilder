@@ -133,8 +133,8 @@ export class FormWorkspaceContext
   /** The field types by alias, as the views name and draw them; empty until they are read. */
   readonly fieldTypes = this.#types.asObservable();
 
-  /** The palette's groups, in its order; empty until the field types are read. */
-  readonly paletteGroups = this.#groups.asObservable();
+  /** The groups the field types are listed under, in the server's order; empty until the field types are read. */
+  readonly typeGroups = this.#groups.asObservable();
 
   readonly #check = new UmbObjectState<CheckState>(UNCHECKED);
   /** The form the check's answers are about, so another form read starts it over. */
@@ -260,7 +260,7 @@ export class FormWorkspaceContext
   }
 
   /**
-   * The changes of type a field of the type may make (ADR-0059), in the palette's order, with the host's locks of each
+   * The changes of type a field of the type may make (ADR-0059), in the server's order, with the host's locks of each
    * new type applied (ADR-0060); undefined when they can't be read.
    */
   // Each type's changes are read once while the form is open (ADR-0174), and again after a read that failed.

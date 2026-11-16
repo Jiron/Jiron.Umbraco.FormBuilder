@@ -340,8 +340,8 @@ const showsOn = (rule: Readonly<Record<string, unknown>>, keys: ReadonlySet<stri
   typeof rule['field'] === 'string' && keys.has(rule['field']);
 
 /**
- * Starts a new page at a place, as the palette's New page (under Layout) does: what follows the place on its page moves onto a
- * new page right after it. A place in a group splits the group there, its fields from that place on going into a group
+ * Starts a new page at a place, as an element's "Move what follows to a new page" does: what follows the place on its
+ * page moves onto a new page right after it. A place in a group splits the group there, its fields from that place on going into a group
  * of their own on the new page (the whole group when the place is its start); a place in a repeatable group splits
  * after it; a place on a page moves its groups from that place on. A page left without a group keeps an empty one, and
  * a new page with nothing to hold gets one. The new page is selected.

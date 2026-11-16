@@ -1,18 +1,35 @@
-// The site's saved groups (ROADMAP 12.1, ADR-0217): the palette lists them and inserts a fresh copy, and a group's "..."
-// on the canvas saves one, as the canvas shows it with the validation rules of its fields, for a user who may manage the
-// library.
+// The site's saved groups (ROADMAP 12.1, ADR-0217): the field picker lists them and inserts a fresh copy, and a group's
+// "..." on the canvas saves one, as the canvas shows it with the validation rules of its fields, for a user who may
+// manage the library.
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { templateList, templateSaveGroup, type TemplateResponseModel } from '../api';
 import { myPermissions } from '../section/my-permissions';
-import { allFields, normalise, validationRulesOf, type DesignDefinition, type DesignGroup } from './definition';
-import type { SavedGroup } from './palette/palette.element';
+import {
+  allFields,
+  normalise,
+  validationRulesOf,
+  type DesignDefinition,
+  type DesignGroup,
+  type DesignValidationRule,
+} from './definition';
 
 const quiet = { disableNotifications: true } as const;
 
 /**
- * A saved group as the palette lists it, read as the model reads a definition (the server's canonical form leaves out
- * every empty list), with the validation rules of its fields; none for a template that holds no group.
+ * A group the site saved as a template (ADR-0217): its name, the group as a definition holds it, and the validation rules
+ * of its fields.
+ */
+export interface SavedGroup {
+  readonly key: string;
+  readonly name: string;
+  readonly group: DesignGroup;
+  readonly checks: readonly DesignValidationRule[];
+}
+
+/**
+ * A saved group as the field picker lists it, read as the model reads a definition (the server's canonical form leaves
+ * out every empty list), with the validation rules of its fields; none for a template that holds no group.
  */
 export function savedGroupOf(template: TemplateResponseModel): SavedGroup[] {
   const definition = normalise(template.definition);

@@ -264,7 +264,7 @@ export default {
     templatesPart_forms: 'Gespeicherte Formulare',
     templatesPart_groups: 'Gespeicherte Gruppen',
     groupTemplateHelp:
-      'Eine Gruppe: Die Palette des Designers fügt sie unter „Gespeicherte Gruppen“ in jedes Formular ein.',
+      'Eine Gruppe: Jedes Formular fügt sie im Designer über „Feld hinzufügen“ unter „Gespeicherte Gruppen“ ein.',
     templateMore: (name: string) => `Aktionen für ${name}`,
     actionRenameTemplate: 'Umbenennen…',
     actionDeleteTemplate: 'Löschen…',
