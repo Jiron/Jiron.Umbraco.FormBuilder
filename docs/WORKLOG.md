@@ -1145,3 +1145,8 @@ its reason, and a handover block at the end of every phase.
   findings by letter, the owner's words, and checks that can be run; section 4.13 gains the six rules of ADR-0254,
   and "How to use" names Phase 22. Reason: the owner's decisions of the same day. No step is started: the owner said
   to start nothing yet. STATUS.md and OWNER-TODO.md say that the phase comes before the repository goes public.
+- 2026-11-16 · The owner wrote to finish Phase 22's four steps, and how: the very long runs wait until all four are
+  built, there is no hurry, and where possible one agent on Opus 5.5 writes the code while the main session judges it
+  and sends it back until it is good. Recorded as ADR-0255: each step is built on its quick checks and its own browser
+  specs, every long check (the walk, the journeys, the whole browser suite, `v18/main`, the gate) runs once on the
+  phase's final build, and the four ticks come after that, in order. No check is weakened.
