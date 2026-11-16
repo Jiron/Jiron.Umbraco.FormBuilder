@@ -99,15 +99,21 @@ in one place and changed in another.
 - **Columns:** the form and the inspector (320 px; 56 px folded; over the form in a view up to 700 px). The form takes
   the room the palette had: 820 px of a 1440 px window.
 - **The inspector is never empty.** With no field or group selected it shows the open page ("Page", then the page's
-  sections), and on After sending the outcomes. "Nothing selected" goes; the column still never comes or goes with a
-  selection, so the form never moves (ADR-0182 stands in that).
+  sections as they are today: its Title, and its rules), and on After sending the outcomes. "Nothing selected"
+  goes; the column still never comes or goes with a selection, so the form never moves (ADR-0182 stands in that).
 - **One row above the form:** the tabs, "+" and After sending at its start; at its end the width (three buttons with
   Umbraco's device icons, named Phone, Tablet and Desktop), the language on sites with more than one (a button
   showing the culture, "en-US", which opens the languages by name), the form check's badge and "…".
-  - The badge keeps one width through all it says, so the row never changes while the form is edited.
-  - Where the pages need the room, the row becomes two: the pages, then the tools at the end. The tabs scroll within
-    their own strip only when they alone are wider than the row, and "+" and After sending never leave it (the
-    fourth rule of ADR-0254).
+  - The badge is its icon and the number of problems, a check mark alone where there is none, at one width whatever
+    it says; its full words ("Form check: 2 problems") are its name for screen readers and the pointer's tip, and
+    the list it opens has them. With its words ("No problems", "Keine Probleme") the wireframe's row did not hold
+    two pages in German at 1440 px, and a badge whose width changed with every check would move the row.
+  - Where the pages need the room, the row becomes two: the pages, then the tools at the end. A tab alone on its row
+    first shrinks, its name cut with an ellipsis and whole in its tip, and the tabs scroll within their own strip
+    only when they are still wider than the row; "+" and After sending never leave it (the fourth rule of
+    ADR-0254).
+  - At a 1024 px window the form's column is 404 px beside the open inspector (348 px before), which shows the form
+    as a phone would; folding the inspector gives it 668 px.
 - **"Narrowed to fit"** stands at the sheet's top edge, in the room above the sheet, which is kept whether it shows or
   not. Desktop is offered at every width: section 4.13 asks for the three, and a switch that changes with the window
   would be one more thing to learn.
