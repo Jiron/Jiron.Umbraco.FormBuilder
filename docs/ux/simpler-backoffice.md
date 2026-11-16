@@ -1,8 +1,8 @@
 # A simpler backoffice: a rough roadmap
 
 - Status: a draft the owner asked for on 2026-11-16, gone over a second time the same day. The owner then decided its
-  five open questions ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)). Nothing here is built, and none of it
-  is a step of [ROADMAP.md](../../ROADMAP.md) yet.
+  five open questions ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)) and made its four steps Phase 22 of
+  [ROADMAP.md](../../ROADMAP.md), steps 22.1 to 22.4, which hold the checks. Nothing here is built yet.
 - What it is: where the backoffice asks too much at once, a direction for each place, and an order to work through
   them. It is a concept, not a design: each step still starts with a wireframe and a decision record.
 
@@ -185,8 +185,8 @@ every form. To check: a name for each that says whose settings they are.
 of them; the view, where the versions are.
 
 **E4. Six tabs** (Design, Settings, Actions, Entries, Insights, History) is many beside the two to four of Umbraco's
-own screens. Each is a clear word, so they stay; to check is only their order: what builds the form first, what it
-brought in after.
+own screens. Each is a clear word, and they already stand in a good order: what builds the form first, what it
+brought in after. They stay as they are.
 
 ### F. The other screens
 
@@ -209,8 +209,9 @@ People, Retention, Deliveries, the Audit log, Insights.
 
 ## Four steps
 
-Each is one step with as many commits as it needs: a wireframe first, then the decision record, then the code in
-English and German on `main`, merged into the Umbraco 18 line.
+They are steps 22.1 to 22.4 of [ROADMAP.md](../../ROADMAP.md), where each has its full list and its checks. Each is
+one step with as many commits as it needs: a wireframe first, then the decision record, then the code in English and
+German on `main`, merged into the Umbraco 18 line.
 
 1. **The designer (A, B, C1 to C3).** The path every editor walks daily, and where the owner stumbled first.
    Roughly done when: a field is added through the picker from "Add field" and from between two fields, by mouse and

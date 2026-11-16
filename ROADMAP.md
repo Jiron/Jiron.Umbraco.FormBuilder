@@ -6,7 +6,7 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
 
 ## How to use this roadmap
 
-- Work through Phase 0 to Phase 21 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
+- Work through Phase 0 to Phase 22 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
 - **There is no deadline.** Take the time each step needs. Read the relevant sections of this roadmap again before you start a step, check the result in a real browser before you call any UI done, and prefer the robust solution over the quick one.
 - Step markers (only steps use them, always at the start of a line):
   - `[ ]` open
@@ -1156,6 +1156,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
   - never losing answers (back, errors, refresh with save and resume);
   - progress shown on long forms;
   - no captcha puzzles by default.
+- **Simple to find a way through** (the owner, 2026-11-16, ADR-0254; built in Phase 22): one way to do a thing, in the place where the thing is; pick first, details after; in the designer the form is the widest thing on the screen, and no column stands empty; what is fixed in number is never pushed out of sight by what grows; one level of folding on a screen; Umbraco's pattern before an own one. Where Phase 22 changes something above (the palette as a side panel, the save bar on every view of a form), its step's ADR says so.
 - **Checked, not assumed.** Each UI phase ends with a review of every screen as every role, in light and dark, in English and German, with screenshots:
   - **Widths:** website screens at 375, 768 and 1440 px; backoffice screens at 1024, 1440 and 1920 px. Umbraco's own backoffice needs about 920 px (Tandem 7.9), so at narrower widths the review only checks that Jiron Form Builder's screens break no worse than Umbraco's.
   - **Making the pictures:** a UX-walk script (ported from Tandem's `ux` project) takes all of them in one run, so a review never skips a variant for time.
@@ -3342,6 +3343,95 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - every finding of the readers is in the review document, fixed with its test or kept with its reason;
     - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
     - `v18/main` has the pass merged in, and its unit and client tests and the integration and browser tests of what the pass touched pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+
+### Phase 22: A simpler backoffice
+
+The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much functionality, but it just has to be more intuitive than it currently is, more simple". What was seen, why each screen is as it is and a direction for each are in [docs/ux/simpler-backoffice.md](docs/ux/simpler-backoffice.md), whose letters (A1, D1) the steps name. The owner's five decisions are [ADR-0254](docs/decisions/0254-a-simpler-backoffice.md); the fifth is that this phase is done before the repository goes public.
+
+- **Six rules** join §4.13 for these steps, and every wireframe and review checks them:
+  1. one way to do a thing, in the place where the thing is; a second way stays only for the keyboard;
+  2. pick first, details after;
+  3. in the designer the form is the widest thing on the screen, and no column stands empty;
+  4. what is fixed in number is never pushed out of sight by what grows;
+  5. one level of folding on a screen, never a section that opens inside one;
+  6. Umbraco's pattern before an own one.
+- **No function goes.** Things move behind a pick. Dragging to move fields, groups and pages, every keyboard path and shortcut, WCAG 2.2 AA and the §4.12 budgets stay.
+- **Every step starts on paper:** the wireframes of the screens it changes (`docs/ux/wireframes/`), then its ADR, which names each earlier decision it turns round and answers the reason that decision had. The three design skills load first (ADR-0019, ADR-0020).
+- **Every step keeps true** what describes the screens it changed: `docs/ux/information-architecture.md`, the copy guide, the guides and their "Learn more" map, CHANGELOG, English and German. `main` is merged into `v18/main` after it, where the unit and client tests and the browser tests of what the step touched pass.
+- **Every step is measured** against the last walk before it (`JFB_UX_BEFORE`) and against `docs/ux/top-tasks.md`, counted again: no screen shows more words than before, and no task takes more than one click more. The step's WORKLOG line names each task that grew, and why.
+
+- [ ] **22.1 The designer: a picker to add with, pages at their tabs, three columns** (the owner, 2026-11-16, ADR-0254)
+  - The owner: "I don't want to be able to do something in multiple ways. I just want one specific button and at a specific place"; "when I click between two things, then it should open up a pop-up and not just tell me to pick from the left again"; "I have created a page and I don't see anywhere where I could delete that page".
+  - **Adding (A1 to A3):**
+    - **A picker** opens from every page's "Add field" and from every insert point, at every width, as the palette does over a narrow canvas today: its search with the focus, Group, the field types in their groups, the site's saved groups, and "Paste questions…". A pick puts the element where the click was and selects it; Esc closes the picker and gives the focus back to what opened it. It is a dialog as Umbraco's block picker is: named, with the focus kept inside. The wireframe decides whether "Recently used" stays, by the clicks it saves.
+    - **The palette's column and its rail go** (the first decision). Dragging a type from a list onto the form goes with them; dragging a field, a group or a page to move it stays, with "Move to…".
+    - **A page is added in one place:** "Add page" in the row of pages. "New page" leaves the list of types. "Start a new page after this" stays in an element's menu alone, under a name, in English and German, that says it moves what follows onto the new page.
+  - **Pages (B1, B2):**
+    - **The page's tab is its handle:** a click shows the page and selects it, and the tab's menu holds Rename, Duplicate and Delete. Delete is not offered for a form's only page, and a deleted page comes back with Undo, as now.
+    - **"After sending" is edited where it is shown** (the third decision): the outcomes, their order, their rules and their editor with its preview move from the Settings view to the row's last step. The Settings view loses the group, and every "Fix it" and link that led there leads here.
+  - **The layout (C1 to C3):**
+    - **Three columns:** the form takes the room the palette had. The inspector's column stays, so the form never moves when an element is selected (ADR-0182), and it is never empty: with no field or group selected it shows the open page, and on "After sending" the outcomes.
+    - **One row of controls above the form:** the pages at its start; the width switch, the language, the form check and "…" at its end. The wireframe decides what gives way first where the row has no room, never the pages, and whether "Desktop" is offered where the canvas cannot show it.
+    - **"Change type"** is offered once, in the inspector's header beside the type's name.
+  - Done when:
+    - by mouse, and by keyboard alone, a field is added at a page's end and between two fields through the picker, lands where the click was and is selected, and Esc gives the focus back (browser tests of both paths, in a 1440 px window and in a 620 px workspace);
+    - the Design view holds no list of types beside the form, one control that adds a page and one that offers "Change type" (a test reads the view's controls);
+    - a page is renamed, duplicated and deleted at its tab; a form's only page offers no Delete; Undo brings a deleted page back with its fields;
+    - an outcome is added, changed, moved and deleted in "After sending" on the Design view; the Settings view holds no such group; "Fix it" on an outcome's problem opens it there;
+    - the inspector shows the open page while nothing is selected, and selecting and clearing a field leaves the form's left edge and its width as they were (a layout test);
+    - layout tests: in a 1440 px window the form's column has more than half the window's width under one row of controls, and in a 1920 px window "Desktop" shows the form at its full 960 px;
+    - the walk reaches every screen with nothing of the section's own from axe, and no screen of the designer shows more words than in the walk before; the top tasks are counted again;
+    - the focused checks of "How to use" pass, with `node scripts/size-check.mjs`; `v18/main` has the step merged in, and its checks pass there.
+
+- [ ] **22.2 The section's left side: the fixed items first, each one screen with tabs** (the owner, 2026-11-16, ADR-0254)
+  - The owner: "Everything is listed at the left hand section. So you have to scroll a lot"; "at the left you can only click on settings", and "once you're in that page, you can select the sub categories of these settings".
+  - **The sidebar (D1, the second decision):** Inbox, with its count of unseen entries, Library, Settings, Privacy and Activity come first, without headings. The tree of forms follows under Umbraco's own header with its "+" and "…", the Recycle Bin last. An item shows to a user who may use any of its tabs.
+  - **Each item is one screen with tabs along its top,** in Umbraco's own way (a workspace's views or a section's; the ADR decides which):
+    - Inbox: Inbox · Spam;
+    - Library: Option lists · Themes · Email layouts · Templates, each a list whose row opens the item's own workspace, as now, and whose back arrow returns to its tab;
+    - Settings: General · Email · Spam protection · Files · Access · Integrations;
+    - Privacy: People · Retention · Data collection;
+    - Activity: Deliveries · Audit log.
+  - **Tabs follow the permissions** as the items did (ADR-0013): a tab shows only to who may use it, the screen opens on the first tab a user may use, and an address a user may not open is refused as now.
+  - **Saving:** the ADR decides what Save saves on a screen with several tabs, and the button says it. Leaving a tab, or the screen, with unsaved changes asks first, as every settings screen does today.
+  - **Every address stays good:** each old screen's address opens its tab, since mails already sent and bookmarks hold them, and every link the product builds (`BackofficeLinks`, the Overview's checklist and health lines, "Fix it", the links of the Audit log and of Deliveries) names the new place.
+  - **"Settings" (D2)** names Umbraco's own section, this item and a view of every form. The wireframe decides whether one of the section's two gets a name that says whose settings they are, and the copy guide records it.
+  - Done when:
+    - a layout test: in a window of 1440 by 900 px with fifty forms in the tree, all five items are on the screen without scrolling, and the Inbox shows its count;
+    - each persona of ADR-0013 sees the items and tabs it may use and no other, lands on its first tab, and is refused at a tab's address it may not open (the permission matrix, in the browser and at the endpoints as before);
+    - a test opens every old screen's address and lands on its tab, and one follows every link the product builds to a screen of the section;
+    - every setting is changed and saved on its tab as before (the settings' tests pass, moved), and leaving unsaved changes asks;
+    - a user without any permission still reads, in the tree's place, who can give access;
+    - the walk reaches every screen with nothing of the section's own from axe, and no screen shows more words than before; the top tasks are counted again;
+    - the focused checks pass, with the size check; `v18/main` has the step merged in, and its checks pass there.
+
+- [ ] **22.3 A form's views: its settings by group, an action's kind first, the form's buttons where they apply** (the owner, 2026-11-16, ADR-0254)
+  - The owner: "I don't want to be bombarded with everything at once. I just want to have to pick something, and then I go to that place, and then in that place I have the more detailed stuff".
+  - **A form's Settings (E1):** the view shows its groups to pick from, each with the line a closed group has today (what is set, and its problems counted), and then the group picked, alone. Six groups since 22.1: Submission, Availability, Spam protection, Privacy, Appearance, Developer. "Fix it" opens the group with the focus on its setting.
+  - **One level of folding (the fifth rule)** in a form's Settings, the inspector and an action's sheet, which draw their settings the same way: where a section that opens holds "More options" today, the wireframe decides which of the two stays, and §4.13's "at most seven settings" is kept by it.
+  - **An action's kind first (E2):** "Add action" opens the kinds to pick from, each with a line, as the Create dialog does; the sheet that follows holds that kind's settings only. When it runs is one choice, with the explanation of the moment chosen.
+  - **The form's buttons where they apply (C4, the fourth decision):** Preview, Save draft and Publish… show on Design, Settings and Actions, the views that change the form, and not on Entries, Insights and History. With an entry open, its own bar is the only one. Unsaved changes are kept across the views as now, and leaving the form with them asks first. The ADR answers the rule of `docs/ux/information-architecture.md` that a workspace's primary stays on every view.
+  - **One door to an earlier version (E3):** the History view. "Restore an earlier version…" leaves the form's "…".
+  - Done when:
+    - a form's Settings show one group at a time, each one pick away by mouse and by keyboard, and "Fix it" lands on its setting in every group (a test per group);
+    - an action of every kind is added by picking its kind first, and its sheet shows no other kind's settings; the actions' tests pass;
+    - on Entries, Insights and History the form's three buttons are not there, and with an entry open the screen holds one primary button (a test counts them); a change made on Design is still there after a visit to Entries, and leaving the form then asks;
+    - a version is restored from the History view, and the form's "…" offers no second way;
+    - no screen of the section opens a section inside a section (the walk checks every screen);
+    - the walk reaches every screen with nothing of the section's own from axe, and no screen shows more words than before; the top tasks are counted again;
+    - the focused checks pass, with the size check; `v18/main` has the step merged in, and its checks pass there.
+
+- [ ] **22.4 The other screens, what describes the section, and phase review** (the owner, 2026-11-16, ADR-0254)
+  - **The screens not yet looked at (F):** an entry's screen and panel, the entries' filters and exports, the option list editor, People, Retention, Deliveries, the Audit log and Insights, each asked four questions: is there a second way to do this; what could wait until something is picked; what is said twice; does the empty state say what to do next. The "Actions" column of the entries' lists speaks only where something did not go out. Every finding is in `docs/ux/review-22.md`, fixed with a test that fails without the fix or kept with its reason, with a section per design skill.
+  - **What describes the section:** `docs/ux/information-architecture.md` describes the section as it now is, with its wireframes, the copy guide and the top tasks; so do the editor guide and every guide that names a screen's place, the screenshots of every changed screen (the Marketplace listings' included), CHANGELOG and `docs/STATUS.md`. ADR-0021, ADR-0165 and ADR-0170 name the records that changed them. `docs/ux/simpler-backoffice.md` says for each of its findings what became of it, and its table "How to tell that it got simpler" holds the numbers measured before and after.
+  - **Phase review:** the handover note, with the wiring sweep over every screen, address and link the phase moved.
+  - Done when:
+    - every finding of the pass and of the draft (A1 to F) is in the review document or the draft, fixed with its test or kept with its reason, and the table's "after" column is measured, not estimated;
+    - the walk and the five journeys reach every screen in the twelve looks on the final build with nothing of the section's own from axe, and no screen shows more words than in the last walk of Phase 21;
+    - `node scripts/link-check.mjs` passes, and no guide names a place the section no longer has: the review document lists every place a guide names and where it is now;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the phase merged in, and its unit, client and integration tests and its whole browser suite pass there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
 ---

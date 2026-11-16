@@ -1139,3 +1139,9 @@ its reason, and a handover block at the end of every phase.
   "After sending" is edited in the designer; the form's buttons show only on the views that change the form; and the
   work is done before the repository goes public. Recorded as ADR-0254 and in `docs/ux/simpler-backoffice.md`.
   Still to start nothing: the four steps become steps of ROADMAP.md when the owner says so.
+- 2026-11-16 · ROADMAP.md changed on the owner's word ("Yes, add them"): **Phase 22, a simpler backoffice,** with four
+  open steps, 22.1 the designer, 22.2 the section's left side, 22.3 a form's views, 22.4 the other screens, what
+  describes the section, and the phase review. They are the four steps of `docs/ux/simpler-backoffice.md` with its
+  findings by letter, the owner's words, and checks that can be run; section 4.13 gains the six rules of ADR-0254,
+  and "How to use" names Phase 22. Reason: the owner's decisions of the same day. No step is started: the owner said
+  to start nothing yet. STATUS.md and OWNER-TODO.md say that the phase comes before the repository goes public.

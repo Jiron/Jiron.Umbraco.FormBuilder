@@ -7,7 +7,7 @@
   [information-architecture.md](../ux/information-architecture.md) (the field list beside the form, the footer on
   every view); until then those stand and describe the product
 - Date: 2026-11-16
-- Roadmap step: none yet (the owner wrote after the last step, so the message beats the plan)
+- Roadmap step: Phase 22, steps 22.1 to 22.4 (the owner wrote after the last step, so the message beats the plan)
 
 ## Context
 
@@ -37,9 +37,9 @@ is fixed never gives way to what grows; one level of folding; Umbraco's pattern 
 
 ## Consequences
 
-- **Nothing is built by this record.** The owner said to start nothing yet. The draft's four steps become steps of
-  ROADMAP.md when the owner says so; each then starts with a wireframe and its own record, which answers the reason
-  the earlier decision had.
+- **Nothing is built by this record.** The owner said to start nothing yet, and then, the same day, to add the
+  draft's four steps to ROADMAP.md: they are Phase 22, steps 22.1 to 22.4. Each starts with a wireframe and its own
+  record, which answers the reason the earlier decision had.
 - **What the owner accepted with it:** one more click for every field added and no dragging of a type from a list onto
   the form; a departure from Umbraco's footer; and that the browser tests, the guides, the screenshots and the top
   tasks follow each step.

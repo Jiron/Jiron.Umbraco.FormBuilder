@@ -7,6 +7,10 @@ This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbra
 `17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
 `18.0.0-alpha.0`. Nothing is published, and the repository is private.
 
+**Since this report** (2026-11-16) you asked for a backoffice that is simpler to find a way through. That is Phase 22
+of the roadmap: four steps, none started, to be done before the repository goes public
+([ADR-0254](decisions/0254-a-simpler-backoffice.md), [the concept](ux/simpler-backoffice.md)).
+
 ## Contents
 
 - [What was built](#what-was-built)
