@@ -56,3 +56,14 @@ Option 2.
 - A failure found by a long run is found later than a run per step would find it. The quick checks and each step's
   own browser specs keep that risk small, and the owner chose the trade.
 - After Phase 22 "How to use" stands as written.
+
+## Amendment, 2026-11-17: the phase pauses after 22.1
+
+While 22.1 was being built the owner wrote to finish that step only and to do the other three another time, to
+spare the session's usage. So:
+
+- **22.1 is finished on its own.** Every check of its "Done when" runs on its last work commit, the walk and the
+  checks on `v18/main` among them, and it is ticked then.
+- **22.2 to 22.4 wait for the owner's word.** When it comes they are the stretch this record describes: built one
+  after the other on their quick checks, the long runs once on the last work commit, the three ticks after that.
+- The design of 22.2 is written already ([ADR-0257](0257-five-places-before-the-tree.md)); nothing of it is built.
