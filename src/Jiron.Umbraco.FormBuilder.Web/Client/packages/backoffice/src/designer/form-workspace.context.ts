@@ -28,10 +28,12 @@ import {
   formPreviewTestEntry,
   formPreviewTicket,
   formPublish,
+  formSettingsChoices,
   type FieldGroupResponseModel,
   type FormDraftResponseModel,
   type FieldTypeChangeResponseModel,
   type FieldTypeResponseModel,
+  type FormSettingsChoicesResponseModel,
   type FormVersionResponseModel,
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
@@ -268,6 +270,16 @@ export class FormWorkspaceContext
     async (type) =>
       (await tryExecute(this, fieldTypeChanges({ path: { alias: type } }), { disableNotifications: true })).data
         ?.changes,
+  );
+
+  /**
+   * What the form's settings may choose from and the bounds of the save checks (ADR-0184), by the form's key: read once
+   * while the form is open, which the Settings view, the Actions view and After sending share, and again after a read
+   * that failed, so Try again reads again; undefined when it can't be read.
+   */
+  readonly choicesOf: (form: string) => Promise<FormSettingsChoicesResponseModel | undefined> = readOnce(
+    async (form) =>
+      (await tryExecute(this, formSettingsChoices({ path: { key: form } }), { disableNotifications: true })).data,
   );
 
   /** The field types by alias, as read; empty until they are. */

@@ -11,7 +11,6 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
   captchaProviderList,
-  formSettingsChoices,
   type CaptchaProviderResponseModel,
   type FieldSettingResponseModel,
   type FieldTypeResponseModel,
@@ -253,20 +252,20 @@ export class FormSettingsViewElement extends UmbLitElement {
     const form = this.#form;
     if (!form) return;
     const [choices, providers, look] = await Promise.all([
-      tryExecute(this, formSettingsChoices({ path: { key: form } }), { disableNotifications: true }),
+      this.#context?.choicesOf(form),
       tryExecute(this, captchaProviderList(), { disableNotifications: true }),
       readLook(this, culture ?? undefined),
     ]);
     // A language or a form chosen meanwhile wins over the answer for the one before it.
     if (culture !== this.#culture || form !== this.#form) return;
-    if (!choices.data || !providers.data || !look) {
+    if (!choices || !providers.data || !look) {
       this._failed = true;
       return;
     }
     // The default theme by its name in the language shown, wherever the view names a theme.
     this._choices = {
-      ...choices.data,
-      themes: choices.data.themes.map((theme) => withThemeLabel(theme, (key) => this.localize.term(key))),
+      ...choices,
+      themes: choices.themes.map((theme) => withThemeLabel(theme, (key) => this.localize.term(key))),
     };
     this._providers = providers.data;
     this._look = look;

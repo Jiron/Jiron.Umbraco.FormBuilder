@@ -5,13 +5,13 @@
 // (with Undo in the toast) and every move are each one step of the form's Undo, and a change that changes nothing says
 // nothing; on a published form a toast says when visitors get a change. The form check's problems count on each
 // outcome's row and those of the list itself show above Add outcome; an outcome whose message lacks the language the
-// designer shows says so. The most outcomes a form can have is read from the site.
+// designer shows says so. The most outcomes a form can have is the site's, read once for the open form by the
+// workspace, so a new instance (the inspector folded, the view narrowed) draws at once.
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { formSettingsChoices, type FieldTypeResponseModel, type FormSettingsLimitsResponseModel } from '../../api';
+import type { FieldTypeResponseModel, FormSettingsLimitsResponseModel } from '../../api';
 import { jfbBackofficeTokens } from '../../styles/tokens';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
 import { issueWords, type CheckWordsContext } from '../check/check-words';
@@ -171,9 +171,7 @@ export class FormOutcomesElement extends UmbLitElement {
     const form = this.#form;
     if (!form) return;
     this._failed = false;
-    const { data } = await tryExecute(this, formSettingsChoices({ path: { key: form } }), {
-      disableNotifications: true,
-    });
+    const data = await this.#context?.choicesOf(form);
     // A form opened meanwhile wins over the answer for the one before it.
     if (form !== this.#form) return;
     if (!data) {

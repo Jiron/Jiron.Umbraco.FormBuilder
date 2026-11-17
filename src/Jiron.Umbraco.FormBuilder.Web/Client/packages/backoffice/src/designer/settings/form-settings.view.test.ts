@@ -32,10 +32,6 @@ vi.mock('@umbraco-cms/backoffice/resources', () => ({
 
 vi.mock('../../api', async (original) => ({
   ...(await original<typeof import('../../api')>()),
-  formSettingsChoices: async () => {
-    server.asked++;
-    return server.fails ? undefined : server.choices;
-  },
   captchaProviderList: async () => (server.fails ? undefined : server.providers),
   visitorTextsGet: async ({ query }: { query: { culture: string } }) => ({ culture: query.culture, groups: [] }),
 }));
@@ -140,6 +136,11 @@ class StandIn {
   readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
   /** The form as the workspace read it: its alias is all this view shows of it. */
   readonly form = new UmbBasicState<{ alias: string } | undefined>({ alias: 'contact-us' }).asObservable();
+  /** The form's setting choices, as the workspace reads them once for the open form. */
+  choicesOf = async () => {
+    server.asked++;
+    return server.fails ? undefined : (server.choices as FormSettingsChoicesResponseModel);
+  };
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });

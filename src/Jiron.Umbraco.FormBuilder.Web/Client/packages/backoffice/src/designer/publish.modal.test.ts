@@ -165,9 +165,9 @@ describe('what the publish dialog says changed', () => {
     headline: 'Since the published version',
     parts: [
       { name: 'Fields', lines: ['Field added: Phone', 'Email address: Label and Required'], more: 'And 2 more.' },
-      { name: 'Settings', lines: ['After sending: Redirect page'], more: null },
+      { name: 'After sending', lines: ['Outcome 1: Redirect page'], more: null },
     ],
-    said: 'Changed since the published version: Fields and Settings.',
+    said: 'Changed since the published version: Fields and After sending.',
   };
 
   it('says the wait, then one sentence a screen reader hears, and lists the parts under their headline', async () => {
@@ -179,16 +179,16 @@ describe('what the publish dialog says changed', () => {
     await vi.waitFor(() => expect(root.querySelector('.changes h4')).not.toBeNull());
     // The region stays in place, and says which parts changed, for a screen reader alone.
     expect(root.querySelector('.changes [role="status"]')).toBe(region);
-    expect(text(region)).toBe('Changed since the published version: Fields and Settings.');
+    expect(text(region)).toBe('Changed since the published version: Fields and After sending.');
     expect(region.classList.contains('visually-hidden')).toBe(true);
     expect(region.querySelector('li')).toBeNull();
     const section = must(root.querySelector<HTMLElement>('.changes section'), 'section');
     expect(text(section.querySelector('h4'))).toBe('Since the published version');
     expect(section.getAttribute('aria-labelledby')).toBe(section.querySelector('h4')?.id);
-    expect([...section.querySelectorAll('dt')].map((one) => text(one))).toEqual(['Fields', 'Settings']);
+    expect([...section.querySelectorAll('dt')].map((one) => text(one))).toEqual(['Fields', 'After sending']);
     expect(
       [...section.querySelectorAll('dd')].map((one) => [...one.querySelectorAll('li')].map((li) => text(li))),
-    ).toEqual([['Field added: Phone', 'Email address: Label and Required'], ['After sending: Redirect page']]);
+    ).toEqual([['Field added: Phone', 'Email address: Label and Required'], ['Outcome 1: Redirect page']]);
     expect([...section.querySelectorAll('.more')].map((one) => text(one))).toEqual(['And 2 more.']);
   });
 

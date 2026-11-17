@@ -92,8 +92,6 @@ const dictionary = vi.hoisted(() => ({ asked: [] as { key: string[]; culture: st
 
 vi.mock('../api', async (original) => ({
   ...(await original<typeof import('../api')>()),
-  // The bounds of the save checks, which After sending reads for the most outcomes a form can have.
-  formSettingsChoices: async () => ({ data: { limits: { outcomes: 50, htmlLength: 50000 } } }),
   dictionaryTextGet: async ({ query }: { query: { key: string[]; culture: string } }) => {
     dictionary.asked.push(query);
     return {
@@ -185,6 +183,8 @@ class StandIn {
   /** The form's key and whether visitors get a published version, as After sending reads them. */
   readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
   readonly state = new UmbBasicState<string | undefined>('draft').asObservable();
+  /** The bounds of the save checks, which After sending reads for the most outcomes a form can have. */
+  choicesOf = async () => ({ limits: { outcomes: 50, htmlLength: 50000 } });
 
   /** The aliases entries know, by field: changing one asks first. */
   readonly kept: Record<string, string> = {};

@@ -446,8 +446,8 @@ export class FormCanvasElement extends UmbLitElement {
     if (!viewport) return;
     const style = getComputedStyle(viewport);
     const room = viewport.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
-    // The sheet's own padding on each side, as canvas.styles.ts sets it.
-    this._narrowed = room - 2 * 32 < CANVAS_WIDTHS[this.width];
+    // The sheet's own padding and border on each side, as canvas.styles.ts sets them.
+    this._narrowed = room - 2 * (32 + 1) < CANVAS_WIDTHS[this.width];
   }
 
   #ask(request: CanvasRequest) {

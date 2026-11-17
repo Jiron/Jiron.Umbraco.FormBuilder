@@ -49,14 +49,6 @@ const LIMITS: FormSettingsLimitsResponseModel = {
   actions: 50,
 };
 
-vi.mock('../../api', async (original) => ({
-  ...(await original<typeof import('../../api')>()),
-  formSettingsChoices: async () => {
-    server.asked++;
-    return server.fails ? { error: 'no' } : { data: { limits: LIMITS } };
-  },
-}));
-
 const { FormOutcomesElement, changedOutcome } = await import('./form-outcomes.element');
 
 const BASE: DesignDefinition = {
@@ -96,6 +88,11 @@ class StandIn {
   host: Element | undefined;
   checkOf = async () => [];
   previewOf = async () => undefined;
+  /** The form's setting choices, as the workspace reads them once for the open form. */
+  choicesOf: (form: string) => Promise<{ limits: FormSettingsLimitsResponseModel } | undefined> = async () => {
+    server.asked++;
+    return server.fails ? undefined : { limits: LIMITS };
+  };
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });
@@ -436,6 +433,31 @@ describe("a read of the site's bounds that fails", () => {
     await settle(element);
     expect(server.asked).toBe(2);
     expect(root.querySelector('jfb-outcome-list')).not.toBeNull();
+  });
+});
+
+describe("the site's bounds", () => {
+  it("are the open form's one read, so a new instance draws its list at once", async () => {
+    const { readOnce } = await import('../form-workspace.context');
+    const first = await outcomesOf(withOutcomes([message]));
+    first.workspace.choicesOf = readOnce(async () => {
+      server.asked++;
+      return { limits: LIMITS };
+    });
+    server.asked = 0;
+    const again = new FormOutcomesElement();
+    again.look = englishLook;
+    first.element.after(again);
+    const twice = new FormOutcomesElement();
+    twice.look = englishLook;
+    again.after(twice);
+    await settle(again);
+    await settle(twice);
+    expect(server.asked).toBe(1);
+    for (const one of [again, twice]) {
+      expect(shadow(one).querySelector('jfb-outcome-list')).not.toBeNull();
+      expect(shadow(one).querySelector('uui-loader')).toBeNull();
+    }
   });
 });
 

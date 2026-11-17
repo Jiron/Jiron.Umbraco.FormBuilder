@@ -142,6 +142,7 @@ export default {
     changes_rules: (number: number) => count(number, 'Regel', 'Regeln'),
     changes_checks: (number: number) => count(number, 'Prüfung', 'Prüfungen'),
 
+    part_after: 'Nach dem Senden',
     part_fields: 'Felder',
     part_settings: 'Einstellungen',
     part_actions: 'Aktionen',

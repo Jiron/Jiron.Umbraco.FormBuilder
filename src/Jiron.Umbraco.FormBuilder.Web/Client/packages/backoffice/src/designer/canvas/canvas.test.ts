@@ -381,6 +381,23 @@ describe('the canvas', () => {
     expect(styles).toMatch(/\.bo-tab uui-popover-container \{[^}]*color: var\(--uui-color-text\);/);
   });
 
+  it('gives the sheet room for the chosen width, its padding and its two borders, so Desktop is 960 px of form', () => {
+    const styles = (customElements.get('jfb-form-canvas') as unknown as { styles: { cssText: string }[] }).styles
+      .map((style) => style.cssText)
+      .join(' ');
+    // The rule whose selector is the part alone, not one that holds it (`.bo-waiting .bo-sheet`).
+    const rule = (part: string) =>
+      styles
+        .split('}')
+        .map((one) => one.replace(/\/\*[\s\S]*?\*\//g, '').trim())
+        .find((one) => one.startsWith(`${part} {`)) ?? '';
+    for (const part of ['.bo-sheet', '.bo-narrowed', '.bo-under'])
+      expect(rule(part)).toContain(
+        'inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));',
+      );
+    expect(rule('.bo-sheet')).toContain('border: 1px solid');
+  });
+
   it("holds the open page's menu in its tab: Rename, Duplicate and Delete, and no Delete for a form's only page", async () => {
     const { requests, root } = await canvasOf(DEFINITION, { shown: 0 });
     const more = must(root.querySelector<HTMLButtonElement>('.bo-tab[data-open] .bo-more-element'), 'the "..."');

@@ -249,10 +249,15 @@ describe('a comparison in words', () => {
     }
   });
 
-  it('says fields added, removed and moved, then what changed of each, before the settings, actions and rules', () => {
+  it('says fields added, removed and moved, then what changed of each, before After sending, the settings, actions and rules', () => {
     const parts = comparisonWords(CHANGES, context());
-    expect(parts.map((part) => part.name)).toEqual(['fields', 'settings', 'actions', 'rules']);
-    const [fields, settings, actions, rules] = parts;
+    // In the order the designer shows them: After sending is a part of its own (ADR-0256).
+    expect(parts.map((part) => part.name)).toEqual(['fields', 'after', 'settings', 'actions', 'rules']);
+    const [fields, after, settings, actions, rules] = parts;
+    expect([english('jfbHistory_part_after'), german('jfbHistory_part_after')]).toEqual([
+      'After sending',
+      'Nach dem Senden',
+    ]);
     expect(fields?.lines).toEqual(['Field moved: Email address', 'Field added: Order number', 'Field removed: Fax']);
     expect(fields?.rows).toEqual([
       { what: 'Email address, Label', older: 'Your email', newer: 'Email address' },
@@ -263,7 +268,8 @@ describe('a comparison in words', () => {
       // Each side's options by the labels that side gave them.
       { what: 'Topic, order of the options', older: 'Sales, Press', newer: 'Press office, Sales' },
     ]);
-    expect(settings?.lines).toEqual(['Outcome added: Redirect to /press/thanks']);
+    expect([after?.lines, after?.rows]).toEqual([['Outcome added: Redirect to /press/thanks'], []]);
+    expect(settings?.lines).toEqual([]);
     expect(settings?.rows).toEqual([
       { what: 'Submission, Store entries', older: 'Always', newer: 'For a number of days' },
       { what: 'Submission, Days entries are kept', older: 'none', newer: '30' },
@@ -397,7 +403,7 @@ describe('a comparison in words', () => {
     expect(words([twins])[0]?.rows).toEqual([
       { what: 'Topic, order of the options', older: 'First', newer: 'First, Second' },
     ]);
-    // An outcome's row names it by its place in After sending; its page by the page's name.
+    // An outcome's row, under After sending's own part, names it by its place; its page by the page's name.
     const moved = change({
       kind: 'outcome',
       key: OUTCOME,
@@ -406,9 +412,10 @@ describe('a comparison in words', () => {
         { path: ['redirect', 'content'], from: null, to: PAGE_KEY },
       ],
     });
+    expect(words([moved]).map((part) => part.name)).toEqual(['after']);
     expect(words([moved])[0]?.rows).toEqual([
-      { what: 'After sending, Outcome 1, Redirect, Address', older: '/press/thanks', newer: 'none' },
-      { what: 'After sending, Outcome 1, Redirect, Page', older: 'none', newer: 'Thank you' },
+      { what: 'Outcome 1, Redirect, Address', older: '/press/thanks', newer: 'none' },
+      { what: 'Outcome 1, Redirect, Page', older: 'none', newer: 'Thank you' },
     ]);
   });
 
@@ -595,8 +602,13 @@ describe('a comparison in a few words, as the publish dialog lists it (ROADMAP 1
   const [settings, email, topic] = CHANGES as [DefinitionChangeResponseModel, ...DefinitionChangeResponseModel[]];
 
   it('groups the changes in their parts: what came, went or moved, then each changed element once with what changed', () => {
-    const parts = said(CHANGES);
-    expect(parts.map((part) => part.name)).toEqual(['fields', 'settings', 'actions', 'rules']);
+    const outcome = change({
+      kind: 'outcome',
+      key: OUTCOME,
+      properties: [{ path: ['redirect', 'url'], from: '/press/thanks', to: '/thanks' }],
+    });
+    const parts = said([...CHANGES, outcome]);
+    expect(parts.map((part) => part.name)).toEqual(['fields', 'after', 'settings', 'actions', 'rules']);
     const names = (change: DefinitionChangeResponseModel | undefined) =>
       english(
         'jfbHistory_listOf',
@@ -617,13 +629,14 @@ describe('a comparison in a few words, as the publish dialog lists it (ROADMAP 1
     ]);
     // Its label changed in two languages, named once: the comparison says each.
     expect(parts[0]?.lines[3]).toBe('Email address: Label, Required and Message when no answer is given');
-    // An outcome is After sending's, in the Settings view.
+    // An outcome is After sending's own part, which names it by its place, not After sending again.
     expect(parts[1]?.lines).toEqual([
       expect.stringMatching(/^Outcome added: /) as unknown,
-      `Submission: ${names(settings)}`,
+      'Outcome 1: Redirect, Address',
     ]);
-    expect(parts[2]?.lines).toEqual(['Action added: Email the team']);
-    expect(parts[3]?.lines.map((line) => line.slice(0, line.indexOf(':')))).toEqual([
+    expect(parts[2]?.lines).toEqual([`Submission: ${names(settings)}`]);
+    expect(parts[3]?.lines).toEqual(['Action added: Email the team']);
+    expect(parts[4]?.lines.map((line) => line.slice(0, line.indexOf(':')))).toEqual([
       'Rule added to Order number',
       'Check added to Email address',
     ]);

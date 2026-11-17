@@ -400,7 +400,7 @@ export const canvasChrome = css`
   /* "Narrowed to fit" at the sheet's top edge, in room that is kept whether it shows or not, so nothing moves. */
   .bo-narrowed {
     box-sizing: border-box;
-    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
     margin: 0 auto;
     padding: var(--uui-size-space-2) 0;
     color: var(--jfb-bo-color-text-muted);
@@ -494,11 +494,14 @@ export const canvasChrome = css`
     outline-offset: -2px;
   }
 
-  /* The visitor's page: white, whatever the backoffice's theme, as the default theme's light scheme expects. */
+  /*
+   * The visitor's page: white, whatever the backoffice's theme, as the default theme's light scheme expects. Its box
+   * holds the chosen width, its padding and its two 1px borders, so Desktop shows the form at its full 960 px.
+   */
   .bo-sheet {
     container: bo-sheet / inline-size;
     box-sizing: border-box;
-    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
     margin-inline: auto;
     padding: var(--bo-sheet-padding);
     border: 1px solid var(--uui-color-border);
@@ -1245,7 +1248,7 @@ export const canvasChrome = css`
   /* After sending's outcomes, when the Design view slots them here: under the sheet, as wide as it. */
   .bo-under {
     box-sizing: border-box;
-    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
     margin-inline: auto;
   }
 

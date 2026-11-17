@@ -10,12 +10,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import {
-  actionTypeList,
-  formSettingsChoices,
-  type ActionTypeResponseModel,
-  type FieldTypeResponseModel,
-} from '../../api';
+import { actionTypeList, type ActionTypeResponseModel, type FieldTypeResponseModel } from '../../api';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { confirmText } from '../../ui/confirm';
 import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
@@ -292,18 +287,18 @@ export class FormActionsViewElement extends UmbLitElement {
         () => false,
       ),
       tryExecute(this, actionTypeList(), { disableNotifications: true }),
-      tryExecute(this, formSettingsChoices({ path: { key: form } }), { disableNotifications: true }),
+      this.#context?.choicesOf(form),
       readLook(this, culture),
     ]);
     // A form chosen meanwhile wins over the answer for the one before it.
     if (form !== this.#form) return;
-    if (!words || !types.data || !choices.data || !look) {
+    if (!words || !types.data || !choices || !look) {
       this._failed = true;
       return;
     }
     this._actionTypes = types.data.types;
-    this._limit = choices.data.limits.actions;
-    this._layouts = { items: choices.data.emailLayouts, defaultKey: choices.data.defaults.emailLayout };
+    this._limit = choices.limits.actions;
+    this._layouts = { items: choices.emailLayouts, defaultKey: choices.defaults.emailLayout };
     this._look = look;
     void this.#readRuns();
     await this.updateComplete;
