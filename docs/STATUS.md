@@ -8,8 +8,17 @@ This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbra
 `18.0.0-alpha.0`. Nothing is published, and the repository is private.
 
 **Since this report** (2026-11-16) you asked for a backoffice that is simpler to find a way through. That is Phase 22
-of the roadmap: four steps, none started, to be done before the repository goes public
+of the roadmap, four steps to be done before the repository goes public
 ([ADR-0254](decisions/0254-a-simpler-backoffice.md), [the concept](ux/simpler-backoffice.md)).
+
+- **Done: the designer (22.1, 2026-11-17).** A field is added through a picker that every "Add field" opens; a page
+  is renamed, duplicated and deleted at its tab; "After sending" is edited beside what visitors get; and the form has
+  57 % of a 1440 px window instead of 39 %, under one row of controls
+  ([ADR-0256](decisions/0256-the-designer-in-three-columns.md)). The backoffice bundle is now 506.40 KB of 512 KB.
+- **Waiting for your word:** the section's left side (22.2, designed in
+  [ADR-0257](decisions/0257-five-places-before-the-tree.md), not built), a form's views (22.3) and the pass over the
+  other screens with the phase review (22.4). You paused the phase after 22.1 on 2026-11-17. Until 22.4 the guides'
+  pictures of the designer show it as it was.
 
 ## Contents
 
