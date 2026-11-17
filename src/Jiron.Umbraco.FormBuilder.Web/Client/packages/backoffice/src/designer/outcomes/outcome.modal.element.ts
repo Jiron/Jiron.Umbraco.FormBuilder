@@ -1,12 +1,12 @@
-// An outcome's sidebar (ROADMAP 10.1b, IA 5.2, ADR-0185): what visitors get after sending (a message, a redirect, or a
-// message and then a redirect), the message in the language the Settings view shows, whether it shows a copy of the
-// answers, the page or the address the redirect leads to and the seconds before it, and the outcome's rule, which the
-// rules builder edits over it, and its place in the list, which a pointer can choose without dragging. The form check is
-// asked about the draft as Update would make it, once the changes pause, and its problems in the outcome show under
-// their setting: those it had at once, others once their setting is left or Update is pressed; Update keeps the outcome
-// once the check finds no error in it that the sidebar can fix, or gives no answer. Beside the settings, where the
-// sidebar has room, below them where it has not, the outcome's live preview shows it as visitors get it with the sample
-// entry, asked for as the check is (10.1c, ADR-0187).
+// An outcome's sidebar (ROADMAP 10.1b and 22.1, IA 5.2, ADR-0185, ADR-0256): what visitors get after sending (a
+// message, a redirect, or a message and then a redirect), the message in the language the designer shows, whether it
+// shows a copy of the answers, the page or the address the redirect leads to and the seconds before it, and the
+// outcome's rule, which the rules builder edits over it, and its place in the list, which a pointer can choose without
+// dragging. The form check is asked about the draft as Update would make it, once the changes pause, and its problems
+// in the outcome show under their setting: those it had at once, others once their setting is left or Update is
+// pressed; Update keeps the outcome once the check finds no error in it that the sidebar can fix, or gives no answer.
+// Beside the settings, where the sidebar has room, below them where it has not, the outcome's live preview shows it as
+// visitors get it with the sample entry, asked for as the check is (10.1c, ADR-0187).
 import {
   css,
   html,
@@ -36,7 +36,7 @@ import { RULE_BUILDER_MODAL } from '../rules/rule-builder.modal.token';
 import { plainText } from '../rules/rule-list';
 import { elementNames, inspectorRuleWords, typeFactsOf } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
-import { choiceStyles } from './choice.styles';
+import { choiceStyles } from '../settings/choice.styles';
 import {
   MOST_DELAY,
   MOST_URL,
@@ -56,8 +56,8 @@ import {
 import { NO_PREVIEW, OutcomePreviewer, type PreviewState } from './outcome-preview';
 import './outcome-preview.element';
 import type { OutcomeModalData, OutcomeModalValue } from './outcome.modal.token';
-import { described, whys, type Shown } from './problem-lines';
-import { parseWhole } from './settings-model';
+import { described, whys, type Shown } from '../settings/problem-lines';
+import { parseWhole } from '../settings/settings-model';
 
 /** The id of the box each setting is edited in, in the order the sidebar shows them. */
 const BOXES: Readonly<Record<OutcomeSetting, string>> = {
@@ -263,9 +263,9 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
 
   // ---- Words --------------------------------------------------------------------------------------------------------
 
-  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbSettings_${key}`, ...args);
+  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbOutcomes_${key}`, ...args);
 
-  #weight = (severity: CheckSeverity) => this.#term(`severity_${severity}`);
+  #weight = (severity: CheckSeverity) => this.localize.term(`jfbSettings_severity_${severity}`);
 
   #problemWords(problem: Problem): string {
     return problemText((key, ...args) => this.localize.term(`jfbInspector_${key}`, ...args), problem);
@@ -362,7 +362,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
         ...(found.get(setting) ?? []),
         language === null
           ? { text: said, severity: issue.severity, blocks: true }
-          : { text: this.#term('outcome_inLanguage', language, said), severity: issue.severity, blocks: false },
+          : { text: this.#term('inLanguage', language, said), severity: issue.severity, blocks: false },
       ]);
     }
     return found;
@@ -485,7 +485,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
   #kind(found: ReadonlyMap<OutcomeSetting, readonly Shown[]>): TemplateResult {
     const problems = this.#problemsAt('kind', found);
     return html`<fieldset class="item" id="kind" aria-describedby=${described('kind', false, problems) ?? nothing}>
-      <legend class="label">${this.#term('outcome_kind')}</legend>
+      <legend class="label">${this.#term('kind')}</legend>
       <div class="choices">
         ${OUTCOME_KINDS.map(
           (kind) =>
@@ -497,7 +497,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
                 .checked=${live(this._edit.kind === kind)}
                 @change=${() => this.#change({ ...this._edit, kind }, 'kind', true)}
               />
-              <span class="choice-name">${this.#term(`outcome_kind_${kind}`)}</span>
+              <span class="choice-name">${this.#term(`kind_${kind}`)}</span>
             </label>`,
         )}
       </div>
@@ -509,8 +509,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     const data = this.data;
     if (!data) return html``;
     const problems = this.#problemsAt('message', found);
-    const label = this.#term('outcome_message');
-    const help = this.#term('outcome_messageHelp');
+    const label = this.#term('message');
+    const help = this.#term('messageHelp');
     const texts = this._edit.message;
     const isDefault = this.#isDefault();
     const standard = plainText(textIn(texts, this.#defaultCulture()));
@@ -568,9 +568,9 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
               true,
             )}
         />
-        <label class="label" for="show-answers">${this.#term('outcome_showAnswers')}</label>
+        <label class="label" for="show-answers">${this.#term('showAnswers')}</label>
       </div>
-      <p class="help" id="show-answers-help">${this.#term('outcome_showAnswersHelp')}</p>
+      <p class="help" id="show-answers-help">${this.#term('showAnswersHelp')}</p>
       ${whys('show-answers', problems, this.#weight)}
     </div>`;
   }
@@ -580,7 +580,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     const leadsTo = this._edit.leadsTo;
     return html`<div class="with-detail">
       <fieldset class="item" id="leads-to" aria-describedby=${described('leads-to', false, problems) ?? nothing}>
-        <legend class="label">${this.#term('outcome_leadsTo')}</legend>
+        <legend class="label">${this.#term('leadsTo')}</legend>
         <div class="choices">
           ${(['page', 'address'] as const).map(
             (choice) =>
@@ -592,7 +592,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
                   .checked=${live(leadsTo === choice)}
                   @change=${() => this.#change({ ...this._edit, leadsTo: choice }, 'leadsTo', true)}
                 />
-                <span class="choice-name">${this.#term(`outcome_leadsTo_${choice}`)}</span>
+                <span class="choice-name">${this.#term(`leadsTo_${choice}`)}</span>
               </label>`,
           )}
         </div>
@@ -607,7 +607,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     const problems = this.#problemsAt('page', found);
     const content = this._edit.content;
     return html`<div class="item">
-      <p class="label" id="page-label">${this.#term('outcome_page')}</p>
+      <p class="label" id="page-label">${this.#term('page')}</p>
       <div role="group" aria-labelledby="page-label" aria-describedby=${described('page', false, problems) ?? nothing}>
         <umb-input-document
           id="page"
@@ -636,8 +636,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
       this.#change({ ...this._edit, url: text }, 'address', done);
     };
     return html`<div class="item">
-      <label class="label" for="address">${this.#term('outcome_address')}</label>
-      <p class="help" id="address-help">${this.#term('outcome_addressHelp')}</p>
+      <label class="label" for="address">${this.#term('address')}</label>
+      <p class="help" id="address-help">${this.#term('addressHelp')}</p>
       <input
         type="text"
         id="address"
@@ -688,7 +688,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
         if (done)
           this.#typedProblem(
             'delay',
-            this.#term('wholeNumber', this.localize.number(0), this.localize.number(MOST_DELAY)),
+            this.localize.term('jfbSettings_wholeNumber', this.localize.number(0), this.localize.number(MOST_DELAY)),
           );
         return;
       }
@@ -696,8 +696,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
       this.#change({ ...this._edit, delay: seconds }, 'delay', done);
     };
     return html`<div class="item">
-      <label class="label" for="delay">${this.#term('outcome_delay')}</label>
-      <p class="help" id="delay-help">${this.#term('outcome_delayHelp', this.localize.number(MOST_DELAY))}</p>
+      <label class="label" for="delay">${this.#term('delay')}</label>
+      <p class="help" id="delay-help">${this.#term('delayHelp', this.localize.number(MOST_DELAY))}</p>
       <input
         type="text"
         id="delay"
@@ -722,8 +722,8 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     if (count < 2) return nothing;
     const at = this.#at();
     return html`<div class="item">
-      <label class="label" for="place">${this.#term('outcome_place')}</label>
-      <p class="help" id="place-help">${this.#term('outcome_placeHelp')}</p>
+      <label class="label" for="place">${this.#term('place')}</label>
+      <p class="help" id="place-help">${this.#term('placeHelp')}</p>
       <select
         id="place"
         class="short"
@@ -739,7 +739,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
           { length: count },
           (_, place) =>
             html`<option value=${String(place)} ?selected=${place === at}>
-              ${this.#term('outcome_placeOf', place + 1, count)}
+              ${this.#term('placeOf', place + 1, count)}
             </option>`,
         )}
       </select>
@@ -761,13 +761,11 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
           ),
           rule,
         )
-      : this.#term('outcome_noRule');
+      : this.#term('noRule');
     return html`<div class="item">
-      <p class="label" id="rule-label">${this.#term('outcome_rule')}</p>
-      <p class="rule-words" id="rule-words">
-        ${rule && rule.enabled === false ? this.#term('outcome_ruleOff', words) : words}
-      </p>
-      ${never ? html`<p class="never" id="rule-never">${this.#term('outcome_reach_never')}</p>` : nothing}
+      <p class="label" id="rule-label">${this.#term('rule')}</p>
+      <p class="rule-words" id="rule-words">${rule && rule.enabled === false ? this.#term('ruleOff', words) : words}</p>
+      ${never ? html`<p class="never" id="rule-never">${this.#term('reach_never')}</p>` : nothing}
       <button
         type="button"
         id="rule"
@@ -777,7 +775,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
           .join(' ')}
         @click=${() => void this.#buildRule()}
       >
-        ${this.#term(rule ? 'outcome_changeRule' : 'outcome_addRule')}
+        ${this.#term(rule ? 'changeRule' : 'addRule')}
       </button>
       ${whys('rule', problems, this.#weight)}
     </div>`;
@@ -789,7 +787,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
     const found = this.#found();
     const kind = this._edit.kind;
     return html`<umb-body-layout
-      headline=${data.outcome ? this.#term('outcome_headline', data.number) : this.#term('outcome_headlineNew')}
+      headline=${data.outcome ? this.#term('headline', data.number) : this.#term('headlineNew')}
     >
       <div class="room">
         <div class="layout">
@@ -810,7 +808,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
               ? html`<div class="delete-body">
                   <uui-button
                     look="secondary"
-                    label=${this.#term('outcome_delete')}
+                    label=${this.#term('delete')}
                     @click=${() => this.#delete()}
                   ></uui-button>
                 </div>`
@@ -824,7 +822,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
               slot="footer-info"
               class="delete-footer"
               look="secondary"
-              label=${this.#term('outcome_delete')}
+              label=${this.#term('delete')}
               @click=${() => this.#delete()}
             ></uui-button>`
           : nothing
@@ -834,7 +832,7 @@ export class OutcomeModalElement extends UmbModalBaseElement<OutcomeModalData, O
         <uui-button
           look="primary"
           color="positive"
-          label=${this.#term(data.outcome ? 'outcome_update' : 'outcome_add')}
+          label=${this.#term(data.outcome ? 'update' : 'add')}
           .state=${this._checking ? 'waiting' : undefined}
           @click=${() => void this.#submit()}
         ></uui-button>

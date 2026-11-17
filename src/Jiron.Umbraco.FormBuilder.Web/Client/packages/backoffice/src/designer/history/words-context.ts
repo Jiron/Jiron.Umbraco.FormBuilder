@@ -8,7 +8,7 @@ import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { actionTypeList, type ActionTypeResponseModel, type FieldTypeResponseModel } from '../../api';
 import type { DesignDefinition } from '../definition';
 import { readLook, word } from '../preview/look';
-import { targetOf, type DesignOutcome } from '../settings/outcome-model';
+import { targetOf, type DesignOutcome } from '../outcomes/outcome-model';
 import type { ChangeWordsContext } from './change-words';
 
 /** The site's action types, read once per backoffice session; undefined when they can't be read, and tried again. */

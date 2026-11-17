@@ -71,11 +71,12 @@ a setting whose editor draws nothing for its kind, a theme whose stylesheet is n
 
 ### Field types
 
-A field type declares what it is (`FieldTypeDeclaration`: its alias, name, icon, palette group, how its answers are
-stored, which messages and features it has), reads its settings from a class (section 3), and takes part in each step of
-an answer's life. Derive from `FormBuilderFieldTypeBase<TSettings>` and override what your type needs; the colour
-sample's [`ColourFieldType.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Colour/ColourFieldType.cs) is a complete type
-with its settings check, answer limits, validation and display:
+A field type declares what it is (`FieldTypeDeclaration`: its alias, name, icon, `PaletteGroup` (the group the
+designer's field picker lists it under), how its answers are stored, which messages and features it has), reads its
+settings from a class (section 3), and takes part in each step of an answer's life. Derive from
+`FormBuilderFieldTypeBase<TSettings>` and override what your type needs; the colour sample's
+[`ColourFieldType.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Colour/ColourFieldType.cs) is a complete type with
+its settings check, answer limits, validation and display:
 
 | Override | When it runs |
 | --- | --- |

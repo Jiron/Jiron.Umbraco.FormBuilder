@@ -19,6 +19,18 @@ follows the Umbraco major).
 
 ### Changed
 
+- **The designer gives the form the room.** The list of field types beside the form is gone: every **Add field** and
+  **Add a field here** opens a field picker, with its search ready (type, then Enter) and the site's saved groups, and
+  what you pick lands where you opened it. The form and the inspector share the screen, under one row: the pages as
+  tabs with **+**, **After sending**, the widths, the language and the form check. With nothing selected the inspector
+  shows the open page.
+- **Pages are handled at their tabs:** the open page's tab has **Rename**, **Duplicate** and **Delete**. Splitting a
+  page is **Move what follows to a new page** in a field's **…**, and **Change type…** is offered in the inspector's
+  header alone.
+- **After sending is edited where it is shown:** the outcomes are listed beside what visitors get on the Design view,
+  and the form's Settings no longer have an After sending group. Fix it on an outcome's problem opens it there, and
+  History and the publish dialog list an outcome's changes under a part of their own, After sending.
+- The form check's badge shows its icon and the number of problems, its words in its tip.
 - The website runtime's budget with every feature is 100 KB gzip at most (was 60 KB); what every page with a form
   loads first stays within 16 KB.
 - **The screens say less.** About 350 texts of the backoffice are shorter or gone, in English and German: help lines
@@ -37,6 +49,7 @@ follows the Umbraco major).
 
 ### Fixed
 
+- At a wide window, **Desktop** shows the form at its full 960 px on the canvas, not 958 px.
 - The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.
 - Leaving a form for another screen of the backoffice no longer raises an error in the browser's console when the AI
   add-on is installed.

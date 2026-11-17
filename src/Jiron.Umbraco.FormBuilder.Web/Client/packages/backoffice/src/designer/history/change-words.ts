@@ -1,8 +1,9 @@
 // A comparison of two versions in words (ROADMAP 10.3a, ADR-0196): the server sends each element that differs with the
-// path and both values of every property that changed (ADR-0045), and the backoffice says them in the reader's language,
-// in four parts: fields (with pages and groups), settings (with After sending's outcomes), actions and rules. Every
-// property of schema v1 has a name here, its Settings view's or inspector's where it has one; a type's own settings are
-// named by the labels the type serves. Pure: what the words need comes in a context.
+// path and both values of every property that changed (ADR-0045), and the backoffice says them in the reader's
+// language, in five parts, in the order the designer shows them: fields (with pages and groups), After sending's
+// outcomes, settings, actions and rules (ADR-0256). Every property of schema v1 has a name here, its Settings view's or
+// inspector's where it has one; a type's own settings are named by the labels the type serves. Pure: what the words
+// need comes in a context.
 import type {
   ActionTypeResponseModel,
   DefinitionChangeResponseModel,
@@ -13,7 +14,7 @@ import type { DesignDefinition, LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
 import { elementNames, inspectorRuleWords } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
-import { outcomeName, type DesignOutcome } from '../settings/outcome-model';
+import { outcomeName, type DesignOutcome } from '../outcomes/outcome-model';
 import { megabytesOf } from '../../settings/settings-values';
 
 type Term = (key: string, ...args: unknown[]) => string;
@@ -48,7 +49,10 @@ export interface ChangeRow {
   readonly newer: string;
 }
 
-export type ChangePartName = 'fields' | 'settings' | 'actions' | 'rules';
+export type ChangePartName = 'fields' | 'after' | 'settings' | 'actions' | 'rules';
+
+/** The parts in the order the designer shows them: the pages, After sending, the settings, the actions, the rules. */
+const PART_ORDER: readonly ChangePartName[] = ['fields', 'after', 'settings', 'actions', 'rules'];
 
 /**
  * One difference of Review both versions in words (ROADMAP 10.3c, ADR-0200): what it is about, then a row for each
@@ -269,15 +273,15 @@ export const VOCABULARY: Readonly<Record<string, Readonly<Record<string, Propert
     settings: { term: 'jfbHistory_property_settings', value: 'any' },
   },
   FormOutcome: {
-    kind: { term: 'jfbSettings_outcome_kind', value: 'enum:OutcomeKind' },
-    message: { term: 'jfbSettings_outcome_message', value: 'html' },
-    showAnswers: { term: 'jfbSettings_outcome_showAnswers', value: 'flag' },
+    kind: { term: 'jfbOutcomes_kind', value: 'enum:OutcomeKind' },
+    message: { term: 'jfbOutcomes_message', value: 'html' },
+    showAnswers: { term: 'jfbOutcomes_showAnswers', value: 'flag' },
     redirect: { term: 'jfbHistory_property_redirect', value: 'any', holds: 'OutcomeRedirect' },
   },
   OutcomeRedirect: {
-    content: { term: 'jfbSettings_outcome_page', value: 'content' },
-    url: { term: 'jfbSettings_outcome_address', value: 'line' },
-    delaySeconds: { term: 'jfbSettings_outcome_delay', value: 'number' },
+    content: { term: 'jfbOutcomes_page', value: 'content' },
+    url: { term: 'jfbOutcomes_address', value: 'line' },
+    delaySeconds: { term: 'jfbOutcomes_delay', value: 'number' },
   },
 };
 
@@ -301,7 +305,7 @@ export const VALUE_TERMS: Readonly<Record<string, Readonly<Record<string, string
       `jfbHistory_value_ActionTrigger_${value}`,
     ]),
   ),
-  OutcomeKind: { message: 'jfbSettings_outcome_kind_message', redirect: 'jfbSettings_outcome_kind_redirect' },
+  OutcomeKind: { message: 'jfbOutcomes_kind_message', redirect: 'jfbOutcomes_kind_redirect' },
   ProgressIndicator: {
     steps: 'jfbSettings_progress_steps',
     bar: 'jfbSettings_progress_bar',
@@ -369,7 +373,7 @@ const PARTS: Readonly<Record<string, ChangePartName>> = {
   group: 'fields',
   field: 'fields',
   settings: 'settings',
-  outcome: 'settings',
+  outcome: 'after',
   action: 'actions',
   rule: 'rules',
   validationRule: 'rules',
@@ -454,7 +458,7 @@ class Words {
   }
 
   #outcomeName(outcome: DesignOutcome): string {
-    const term: Term = (key, ...args) => this.#context.term(`jfbSettings_${key}`, ...args);
+    const term: Term = (key, ...args) => this.#context.term(`jfbOutcomes_${key}`, ...args);
     return outcomeName(
       outcome,
       this.#context.culture,
@@ -471,7 +475,7 @@ class Words {
     if (change.kind === 'outcome') {
       const own = (change.after ?? change.before) as DesignOutcome | null | undefined;
       const outcome = own ? ({ ...own, key: change.key ?? '' } as DesignOutcome) : undefined;
-      return term('jfbHistory_what', term('jfbSettings_group_after'), outcome ? this.#outcomeName(outcome) : '');
+      return term('jfbHistory_what', term('jfbDesigner_afterSending'), outcome ? this.#outcomeName(outcome) : '');
     }
     if (change.kind === 'validationRule') {
       const own = (change.after ?? change.before) as Json | null | undefined;
@@ -850,7 +854,7 @@ class Words {
         // A former alias comes with its alias, which says the change once.
         if (change.kind === 'field' && path[0] === 'formerAliases') continue;
         const { name, say, list } = this.property(change, path);
-        const what = term('jfbHistory_what', this.#rowElement(change), name);
+        const what = term('jfbHistory_what', this.#rowElement(change, true), name);
         const listed = list ? this.#listChange(property.from, property.to) : null;
         if (listed) {
           add(lines, part, this.#listLine(what, listed));
@@ -872,10 +876,9 @@ class Words {
         ),
       );
     }
-    const order: ChangePartName[] = ['fields', 'settings', 'actions', 'rules'];
-    return order
-      .map((name) => ({ name, lines: lines.get(name) ?? [], rows: rows.get(name) ?? [] }))
-      .filter((part) => part.lines.length > 0 || part.rows.length > 0);
+    return PART_ORDER.map((name) => ({ name, lines: lines.get(name) ?? [], rows: rows.get(name) ?? [] })).filter(
+      (part) => part.lines.length > 0 || part.rows.length > 0,
+    );
   }
 
   /**
@@ -922,7 +925,7 @@ class Words {
       for (const property of change.properties) {
         // A former alias comes with its alias, which says the change once.
         if (change.kind === 'field' && property.path[0] === 'formerAliases') continue;
-        const entry = changed.get(id) ?? { part, element: this.#rowElement(change), what: [] };
+        const entry = changed.get(id) ?? { part, element: this.#rowElement(change, true), what: [] };
         // A text changed in several languages is named once: the comparison says each.
         const name = this.property(change, property.path, false).name;
         if (!entry.what.includes(name)) entry.what.push(name);
@@ -948,8 +951,7 @@ class Words {
     }
     for (const { part, element, what } of changed.values())
       add(part, term('jfbHistory_publish_changed', element, term('jfbHistory_listOf', ...what)));
-    const order: ChangePartName[] = ['fields', 'settings', 'actions', 'rules'];
-    return order.map((name) => ({ name, lines: lines.get(name) ?? [] })).filter((part) => part.lines.length > 0);
+    return PART_ORDER.map((name) => ({ name, lines: lines.get(name) ?? [] })).filter((part) => part.lines.length > 0);
   }
 
   /** One difference: its own change first, then those of what it holds, which come and go with it. */
@@ -1057,8 +1059,11 @@ class Words {
     );
   }
 
-  /** An element as a row names it: an outcome by its place in After sending, which its own cells say the rest of. */
-  #rowElement(change: DefinitionChangeResponseModel): string {
+  /**
+   * An element as a row names it: an outcome by its place, which its own cells say the rest of; with After sending
+   * named where no part heads it (`inPart` false).
+   */
+  #rowElement(change: DefinitionChangeResponseModel, inPart = false): string {
     if (change.kind !== 'outcome') return this.elementOf(change);
     const place = (side: Side) =>
       ((this.#definition(side)?.['outcomes'] ?? []) as readonly DesignOutcome[]).findIndex(
@@ -1066,7 +1071,8 @@ class Words {
       );
     const at = place('newer') >= 0 ? place('newer') : place('older');
     const term = this.#context.term;
-    return term('jfbHistory_what', term('jfbSettings_group_after'), term('jfbSettings_outcome_headline', at + 1));
+    const outcome = term('jfbOutcomes_headline', at + 1);
+    return inPart ? outcome : term('jfbHistory_what', term('jfbDesigner_afterSending'), outcome);
   }
 
   /** A list's change as the items added and removed; null where either side is no list of items with names. */

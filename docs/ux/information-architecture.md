@@ -37,8 +37,8 @@ paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape i
   types, the values they choose (a filter, a date, an option, a field's settings), the boxes they tick to pick the
   rows to act on, and the button that confirms that input (Save, Find, Add, Update, a dialog's Publish). Opening a row
   counts; ticking its box is input. Keyboard shortcuts exist for the frequent tasks, but no path needs them. Paths are
-  counted with the workspace at least 1024 px wide; at 620 px, where the designer's palette opens over the canvas
-  instead of staying open, a designer path may take one more click.
+  counted with the workspace at least 1024 px wide; the designer's paths are the same at 620 px, where the field
+  picker and the inspector open over the form.
 
 ## 1. The section at a glance
 
@@ -179,29 +179,32 @@ name; closing or reloading the tab asks the browser's own question, which Umbrac
 
 ### 5.1 Design
 
-**Layout:** the palette on the left, the canvas in the middle, the inspector on the right. The canvas shows the form
-as visitors with JavaScript will see it, drawn as the website draws it, in the default theme on a white sheet; Preview
-shows it in the form's own theme on the site's page (ADR-0168). A repeatable group shows its first row. The chosen
-width is the form's own width: Desktop 960 px, Tablet 768 px, Phone 375 px. The canvas leaves out the visitor's step
-progress, since the steps across its top stand in for it.
+**Layout** ([ADR-0256](../decisions/0256-the-designer-in-three-columns.md)): the canvas, and the inspector beside it
+on the right; one row of controls above the canvas. The canvas shows the form as visitors with JavaScript will see it,
+drawn as the website draws it, in the default theme on a white sheet; Preview shows it in the form's own theme on the
+site's page (ADR-0168). A repeatable group shows its first row. The chosen width is the form's own width: Desktop
+960 px, Tablet 768 px, Phone 375 px. The canvas leaves out the visitor's step progress, since the page tabs above it
+stand in for it.
 
-- **Beside the canvas, the inspector's column is always there,** with "Nothing selected" and a sentence on how to
-  choose an element until one is, so selecting or clearing never changes the canvas's width or moves the element just
-  clicked: a double-click on a field edits its label in place (ADR-0182).
-- **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed to rails.
-- **Between 620 and 1024 px,** the palette lies on its rail (its expand button and its search, which open it over the
-  canvas) whenever the view is that narrow, selected or not; folding the inspector gives the palette back as the user
-  left it. The widths are the Design view's own, as for the narrow view (ADR-0170): a 1024 px window gives it 724 px.
-  On a narrow sheet the selected element's bar shows its buttons' icons alone, still named for screen readers. The
-  wireframes of step 2.2 found that both panels open leave the canvas about 150 px at a 1024 px window.
+- **Beside the canvas, the inspector's column is always there** (320 px, 56 px folded to its rail), so selecting or
+  clearing never changes the canvas's width or moves the element just clicked: a double-click on a field edits its
+  label in place (ADR-0182). It is never empty: with no field or group selected it shows the open page (its Title and
+  its rules), and on After sending the outcomes.
+- **The canvas takes the rest:** 820 px of a 1440 px window, 404 px of a 1024 px one beside the open inspector, which
+  shows the form as a phone would; folding the inspector gives it 668 px. On a narrow sheet the selected element's bar
+  shows its buttons' icons alone, still named for screen readers.
+- **Fields and groups are added through the field picker,** a sidebar of Umbraco's that every page's "Add field" and
+  every insert point opens, at every width; nothing else adds them. Its place on the form stays marked while it is
+  open.
 - **The canvas keeps room of its own** above each field and group, a little more than the visitor's page has, so a
   selected element's bar and handle never lie over the element above it, and the form never shifts when one is
   selected (ADR-0182).
 - **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
   visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
   scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
-- **At 620 px** (and in any workspace up to 700 px), the canvas takes the width. The palette opens over it from an
-  insert point or a page's "Add field", and the inspector opens over it when an element is selected; Esc closes either.
+- **At 620 px** (and in any workspace up to 700 px), the canvas takes the width, and the inspector opens over it when
+  an element is selected; Esc gives the canvas back. The field picker opens from an insert point or a page's "Add
+  field" as at every width.
 - **The header** keeps its name, state chip and link on one line where they fit, the name never under 6rem; where the
   name's 6rem and the chip do not fit side by side, the chip goes under the name, both inside Umbraco's header, and
   its words take a second line inside it only where even the header's width is too short, never cut
@@ -209,16 +212,15 @@ progress, since the steps across its top stand in for it.
   room runs out, the views fold, from the last
   one and never the open view, into the form's own "…" ("Views and more actions for Contact us"), so the header always
   has one "…". If that isn't enough, the link ("Used on 3 pages") moves into the same "…".
-- **While the form loads,** the canvas is a skeleton, the toolbar and the steps are hidden, and the footer's buttons
-  can't be used yet.
+- **While the form loads,** the canvas is a skeleton, the row above it is hidden, and the footer's buttons can't be
+  used yet.
 
 | Part | Content | Actions |
 | --- | --- | --- |
-| Toolbar | the canvas width (Phone · Tablet · Desktop), the language (only on sites with more than one), and the form check badge | "…": Undo · Redo · Rules overview · Keyboard shortcuts · Translate with AI… (add-on) |
-| The steps | the pages by name across the top of the canvas (an unnamed page reads "Page 1"), then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
-| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector: one per rule in use, in words, at the element's top end beside its translation chip, and the description of the button that selects it; a click on one selects the element ([ADR-0178](../decisions/0178-seeing-rules-and-validation-rules-in-the-builder.md)). | An insert point opens the palette for that point, whose Layout › New page starts a page there. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its step, and a step takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
-| Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging a type from the palette beside the canvas places it. |
-| Inspector | shows the selected element: its type at the top ("Email field"), with Change type beside it for a field whose type may become another, then the sections; the label is the first field of Essentials | Change type opens the same dialog as the element's "…": the types the field may become, and what the one chosen takes from the field and what it then needs, before anything changes (ADR-0174) |
+| The row | at its start the pages as tabs (an unnamed page reads "Page 1"), "+" (Add page) and **After sending**; at its end the width (Phone · Tablet · Desktop, Umbraco's device icons), the language (only on sites with more than one: a button showing the culture, "en-US"), the form check badge and "…". Where the pages need the room, the row becomes two, the tools at the end of the second; a tab first shrinks, its name cut with an ellipsis and whole in its tip, and the tabs scroll in their own strip only when still wider than the row. | A tab shows its page; the open page's tab holds "More for Page 1": Rename (the page's Title in the inspector, its text selected) · Duplicate · Delete, which a form's only page doesn't offer. "+" adds an empty page at the end, shows it and puts the focus on its "Add field". After sending shows the outcome visitors get, read-only, and the outcomes beside it. The language button opens the site's languages by name, the one shown marked. "…": Undo · Redo · Rules overview · Keyboard shortcuts · Translate with AI… (add-on) · the site's designer actions. |
+| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field". Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector: one per rule in use, in words, at the element's top end beside its translation chip, and the description of the button that selects it; a click on one selects the element ([ADR-0178](../decisions/0178-seeing-rules-and-validation-rules-in-the-builder.md)). A page's chips stand at its top and describe its tab; the page has no button of its own on the sheet, and a click on the sheet's empty room clears the selection. | "Add field" and an insert point open the field picker for that place. Every field and group has a handle ("Move Email address") at its top left, shown on hover, on focus and while it is selected, which drags it; a page is dragged by its tab, and a tab takes a dropped field or group at that page's end (ADR-0169). On the selected element: Move to… · Duplicate · Delete · "…" (Move what follows to a new page, where something follows it on its page · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
+| Field picker | a sidebar headed "Add a field": the search, with the focus; **Layout** (Group: a set of fields, with optional columns), the field types under their groups, and the site's saved groups, in two columns where it has the room; in its footer "Paste questions…" and Close. A type the site can't offer stays in its place with its reason under its name. | A click on a type, Group or a saved group adds it where the picker was opened, selected, with the focus; Enter in the search adds the first match, which is marked while a search is typed, and Arrow down goes to the first item. Esc and Close add nothing and give the focus back to what opened it. "Paste questions…" opens its dialog for the same place. |
+| Inspector | shows the selected element: its type at the top ("Email field"), with Change type beside it for a field whose type may become another, then the sections; the label is the first field of Essentials. With nothing selected, the open page ("Page": its Title, its rules); on After sending, the outcomes. | Change type is offered here alone: the types the field may become, and what the one chosen takes from the field and what it then needs, before anything changes (ADR-0174) |
 
 **The inspector's sections,** each under a header that is a button opening or closing it (`aria-expanded`):
 
@@ -267,9 +269,10 @@ progress, since the steps across its top stand in for it.
 **The keyboard** (ADR-0016) reaches everything on the canvas, in the visual order:
 
 - **"Skip to the form"** is the workspace's first stop, so the canvas doesn't wait behind Umbraco's header, the tree
-  and the palette;
-- each field is a button that selects it (Enter or Space), and each page step is a button; Esc clears the
-  selection, closes the palette or cancels a drag;
+  and the row above the form;
+- each field is a button that selects it (Enter or Space), and each page's tab is a button; on a tab, Delete, Ctrl+D,
+  F2 (Rename), Alt+Up and Alt+Down act on its page; Esc clears the selection or cancels a drag, and closes the field
+  picker;
 - **F2** or a double click edits the selected field's label in place: Enter keeps it, Esc puts the old one back;
 - **Up** and **Down** go through the page's elements in reading order; **Ctrl+D** duplicates, **Delete** deletes, **F2**
   edits a label, and **Alt+Up** and **Alt+Down** move one place, a field into the next group at the end of its own and
@@ -288,15 +291,18 @@ progress, since the steps across its top stand in for it.
   another, are said instead (ADR-0169);
 - both are in "…" with their shortcuts.
 
-**Paste questions…** opens a dialog: one question per line, then the fields it will add with the type guessed for
-each, which can be changed afterwards; primary **Add 5 fields**.
+**Paste questions…** (in the field picker's footer, and the blank form's sentence) opens a dialog: one question per
+line, then the fields it will add with the type guessed for each, which can be changed afterwards; primary **Add 5
+fields**.
 
-**Translating** (on sites with more than one language): choosing another language in the toolbar shows that
-language's texts on the canvas and in the inspector, which says that visitors see the default language's text where
-one is empty, and shows that text in an empty box. A field without a text in the chosen language carries the chip "No
-German text yet".
+**Translating** (on sites with more than one language): choosing another language in the row's language list shows that
+language's texts on the canvas and in the inspector, which says that visitors see the default language's text where one
+is empty, and shows that text in an empty box. A field without a text in the chosen language carries the chip "No German
+text yet".
 
-**The form check badge** shows the number of problems ("2 problems"), or "No problems".
+**The form check badge** shows its icon and the number of problems, or a check mark on a disc where there is none,
+at one width whatever it says; its full words ("Form check: 2 problems") are its name for screen readers and the
+pointer's tip.
 
 - It opens a sidebar listing errors first, then warnings, each with **Fix it**, which selects the element and opens
   the setting.
@@ -331,31 +337,16 @@ German text yet".
   element and opens the builder on it for a new rule;
 - empty, one sentence on what most rules do.
 
-**A new blank form** shows one empty page with its "Add field" and a single sentence pointing to it and to "Paste
-questions…". The form check counts its one error ("Add at least one field", whose Fix it opens the
-palette for the end of the page), so an empty form never reads "No problems"; Publish… stays usable, and the publish
-dialog blocks it with Fix it.
+**After sending** (the row's last step): the sheet shows what visitors get, the first outcome every visitor gets, else
+the default message, read-only. The outcomes are edited beside it, in the inspector's column under its heading "After
+sending", or under what visitors get where the inspector is folded or the view narrow: the sentence on their order
+where there is more than one, the list (each row its handle, its name, when visitors get it and its problems; a row
+opens the outcome's sidebar with its live preview), the default message where some visitors get it, and "Add
+outcome". A change of the outcomes is a step of Undo as any other; "Fix it" on an outcome's problem, from the form
+check or the publish dialog of any view, opens its sidebar there on the setting named (ADR-0256).
 
-### 5.2 Settings
-
-One page with the groups of §4.3.4, in their order: Submission, After sending, Availability, Spam protection, Privacy,
-Appearance, Developer.
-
-- **Open or closed:** Submission and After sending are open. The others are closed, each with a summary line ("Open
-  until 30 November · 120 entries at most").
-- **Submission** shows five settings: the send button's label, Store entries, Manual approval, Email verification and
-  the entry title (with its merge-tag picker). Its "More options" holds the settings of forms with several pages (the
-  labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference: its prefix, the
-  year and the digits, with an example of a reference visitors get.
-- **Availability** names the site's time zone once, on whose clock the opening and the closing are shown and typed.
-- **Spam protection** is a list of choices with a line each: "Site default (Standard)" names what the site chooses, and a
-  captcha provider without its keys is dimmed, its line saying that a developer adds them. A chosen provider's own
-  settings follow it (reCAPTCHA v3's lowest score).
-- **Problems:** the form check's problems in the settings show under their setting, a closed group counts them on its
-  line, and Fix it opens the group, and More options where the setting is there, with the focus on it (ADR-0184).
-- **Help:** each setting has its help text below it and, where useful, "Learn more".
-- **The outcomes** (After sending) are an ordered list, each with an optional rule; visitors get the first one whose
-  rule matches. A row's move handle ("Move Redirect to /press/thanks") shows on hover and on focus (ADR-0016).
+- **The outcomes** are an ordered list, each with an optional rule; visitors get the first one whose rule matches. A
+  row's move handle ("Move Redirect to /press/thanks") shows on hover and on focus (ADR-0016).
   - A row opens the outcome's editor in a sidebar: a message (rich text with merge tags, optionally with a copy of the
     answers), a redirect (a page or an address), or a message and then a redirect, and its rule, beside a live preview
     with a sample entry. The action bar: Delete outcome at its start (it acts at once and the toast offers Undo),
@@ -379,6 +370,30 @@ Appearance, Developer.
     would never be used, until its place is chosen.
   - A new form has one outcome: the default thank-you message (copy.md). Without any outcome, visitors get that
     message, and the list says so.
+
+**A new blank form** shows one empty page with its "Add field" and a single sentence pointing to it and to "Paste
+questions…". The form check counts its one error ("Add at least one field", whose Fix it opens the
+field picker for the end of the page), so an empty form never reads "No problems"; Publish… stays usable, and the publish
+dialog blocks it with Fix it.
+
+### 5.2 Settings
+
+One page with the groups of §4.3.4, in their order: Submission, Availability, Spam protection, Privacy, Appearance,
+Developer. After sending, the form's outcomes, is the Design view's (§5.1, ADR-0256).
+
+- **Open or closed:** Submission is open. The others are closed, each with a summary line ("Open
+  until 30 November · 120 entries at most").
+- **Submission** shows five settings: the send button's label, Store entries, Manual approval, Email verification and
+  the entry title (with its merge-tag picker). Its "More options" holds the settings of forms with several pages (the
+  labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference: its prefix, the
+  year and the digits, with an example of a reference visitors get.
+- **Availability** names the site's time zone once, on whose clock the opening and the closing are shown and typed.
+- **Spam protection** is a list of choices with a line each: "Site default (Standard)" names what the site chooses, and a
+  captcha provider without its keys is dimmed, its line saying that a developer adds them. A chosen provider's own
+  settings follow it (reCAPTCHA v3's lowest score).
+- **Problems:** the form check's problems in the settings show under their setting, a closed group counts them on its
+  line, and Fix it opens the group, and More options where the setting is there, with the focus on it (ADR-0184).
+- **Help:** each setting has its help text below it and, where useful, "Learn more".
 - **Settings, outcomes and actions belong to the draft:** a sidebar's **Add** or **Update** changes the draft like any
   designer change, Save draft keeps it, and Publish puts it live. On a published form, the toast after Add or Update
   says that it applies once the form is published (copy.md, success); Publish… stays in the footer only.

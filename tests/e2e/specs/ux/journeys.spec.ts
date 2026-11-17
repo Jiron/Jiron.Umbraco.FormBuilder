@@ -6,6 +6,7 @@ import { formPages, pathOf } from '../../support/demo-content.ts';
 import { fillForm, press, submitForm } from '../../support/form.ts';
 import { API, created, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { addFieldOf, openPasteQuestions } from '../../support/picker.ts';
 import { openRowActions } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
 import { COMBOS, comboName, walkDir, wantedCombo, type Combo } from '../../support/ux-walk.ts';
@@ -42,22 +43,9 @@ async function personaPage(
   return page;
 }
 
-/** The palette, opened: from its rail when it is folded, or over the canvas from Add field in a narrow workspace. */
-async function openPalette(design: Locator): Promise<Locator> {
-  const palette = design.locator('jfb-designer-palette');
-  if (await palette.locator('uui-input input').isVisible()) return palette;
-  const rail = palette.locator('uui-button').first();
-  if (await rail.isVisible()) await rail.click();
-  else await design.locator('jfb-form-canvas .bo-add-field').first().click();
-  await expect(palette.locator('uui-input input')).toBeVisible();
-  return palette;
-}
-
-/** Adds the lines as questions through the palette's Paste questions, on the page the canvas shows. */
+/** Adds the lines as questions through the field picker's Paste questions, from the page's Add field. */
 async function pasteQuestions(page: Page, design: Locator, lines: readonly string[]): Promise<void> {
-  const palette = await openPalette(design);
-  await palette.locator('.paste').click();
-  const modal = page.locator('jfb-paste-questions-modal');
+  const modal = await openPasteQuestions(page, addFieldOf(design));
   await modal.locator('textarea').fill(lines.join('\n'));
   await modal.locator('uui-button[look="primary"]').click();
   await expect(modal).toHaveCount(0);
@@ -124,8 +112,8 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j1-3-second-page',
       async () => {
-        await design.locator('jfb-form-canvas .bo-step-add').first().click();
-        await expect(design.locator('jfb-form-canvas .bo-step[data-page]')).toHaveCount(2);
+        await design.locator('jfb-form-canvas .bo-add-page').first().click();
+        await expect(design.locator('jfb-form-canvas .bo-tab[data-page]')).toHaveCount(2);
         await pasteQuestions(editor, design, german ? ['Wann passt es Ihnen?'] : ['When suits you?']);
         await expect(design.locator('jfb-canvas-field')).toHaveCount(1);
         // One question pasted is selected to be edited; over a narrow canvas its inspector lies on top, and is closed.
@@ -137,7 +125,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j1-4-rule',
       async () => {
-        await design.locator('jfb-form-canvas .bo-step[data-page]').first().click();
+        await design.locator('jfb-form-canvas .bo-tab[data-page] .bo-tab-name').first().click();
         await selectField(design, 3);
         await openInspectorSection(design, 'rules');
         await design.locator('jfb-designer-inspector .add-rule').first().click();

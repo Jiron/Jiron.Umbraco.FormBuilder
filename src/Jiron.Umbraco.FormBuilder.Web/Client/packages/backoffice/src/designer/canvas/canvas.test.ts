@@ -1,8 +1,9 @@
-// The canvas (ROADMAP 9.3b, ADR-0168): a field drawn by the element's views with nothing of it taking input, the
-// designer's controls over it with their names, its label edited in place, a repeatable group's own fields, a note for
-// a field visitors don't see; and the canvas around them: the steps, a page's groups and its end, the empty states,
-// After sending, the width switch and the requests each control sends. Its moves (ROADMAP 9.3c): each element's
-// handle, a refusal shown at the element, the order Up and Down go through, and the focus on a handle or a step.
+// The canvas (ROADMAP 9.3b and 22.1, ADR-0168, ADR-0256): a field drawn by the element's views with nothing of it taking
+// input, the designer's controls over it with their names, its label edited in place, a repeatable group's own fields,
+// a note for a field visitors don't see; and the canvas around them: the row of tabs and tools above the sheet, the open
+// tab's menu, a page's groups and its end, the empty states, After sending, a click on the empty room, "Narrowed to
+// fit" and the requests each control sends. Its moves (ROADMAP 9.3c): each element's handle, a refusal shown at the
+// element, the order Up and Down go through, and the focus on a handle or a tab.
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { all, must, registerEnglish, settle, shadow, testHost, text } from '../../testing';
 import type { DesignDefinition, DesignField } from '../definition';
@@ -40,7 +41,7 @@ const WORDS: FieldWords = {
   delete: 'Delete',
   deleteNamed: 'Delete Email address',
   more: 'More actions',
-  newPageAfter: 'Start a new page after this',
+  newPageAfter: 'Move what follows to a new page',
   copyAlias: 'Copy alias',
   labelBox: 'Label',
   unseen: 'Hidden field: not shown to visitors',
@@ -125,7 +126,7 @@ describe('a field on the canvas', () => {
     expect(menu.id).toBe('jfb-more-e');
     for (const tool of tools) tool.click();
     const items = [...menu.querySelectorAll<HTMLButtonElement>('button')];
-    expect(items.map((item) => text(item))).toEqual(['Start a new page after this', 'Copy alias']);
+    expect(items.map((item) => text(item))).toEqual(['Move what follows to a new page', 'Copy alias']);
     for (const item of items) item.click();
     expect(requests).toEqual([
       { kind: 'moveTo', key: 'e' },
@@ -136,15 +137,16 @@ describe('a field on the canvas', () => {
     ]);
   });
 
-  it('offers Change type... first, for a field whose type may change', async () => {
-    const { element, requests } = await fieldOf({
-      ...stateOf(email, { selected: true }),
-      words: { ...WORDS, changeType: 'Change type...' },
-    });
-    const items = [...controls(element).querySelectorAll<HTMLButtonElement>('.bo-menu button')];
-    expect(items.map((item) => text(item))).toEqual(['Change type...', 'Start a new page after this', 'Copy alias']);
-    items[0]?.click();
-    expect(requests).toEqual([{ kind: 'changeType', key: 'e' }]);
+  it('offers no "..." where it would hold nothing: nothing follows the field, and it has no alias', async () => {
+    const words: FieldWords = Object.fromEntries(
+      Object.entries(WORDS).filter(([name]) => name !== 'copyAlias' && name !== 'newPageAfter'),
+    ) as unknown as FieldWords;
+    const { element } = await fieldOf({ ...stateOf(email, { selected: true }), words });
+    expect([...controls(element).querySelectorAll('.bo-tools > button')].map((tool) => text(tool))).toEqual([
+      'Move to...',
+      'Duplicate',
+      'Delete',
+    ]);
   });
 
   it('offers Copy alias only for a field with an alias', async () => {
@@ -153,7 +155,7 @@ describe('a field on the canvas', () => {
     ) as unknown as FieldWords;
     const { element } = await fieldOf({ ...stateOf(email, { selected: true }), words });
     expect([...controls(element).querySelectorAll('.bo-menu button')].map((item) => text(item))).toEqual([
-      'Start a new page after this',
+      'Move what follows to a new page',
     ]);
   });
 
@@ -334,27 +336,30 @@ async function canvasOf(definition: DesignDefinition, extra: Partial<FormCanvasE
 }
 
 describe('the canvas', () => {
-  it('shows the shape of the sheet while its look is read, busy, without the toolbar and the steps', async () => {
+  it('shows the shape of the sheet while its look is read, busy, without the row above it', async () => {
     const { root } = await canvasOf(DEFINITION, { look: undefined });
     expect(root.querySelector('.bo-waiting')?.getAttribute('aria-busy')).toBe('true');
     expect(root.querySelectorAll('.bo-waiting .bo-bone')).toHaveLength(7);
-    expect([root.querySelector('.bo-bar'), root.querySelector('.bo-steps'), root.querySelector('uui-loader')]).toEqual([
+    expect([root.querySelector('.bo-bar'), root.querySelector('.bo-pages'), root.querySelector('uui-loader')]).toEqual([
       null,
       null,
       null,
     ]);
   });
 
-  it('shows the pages as steps, then Add page and After sending, the page shown current', async () => {
+  it('shows the pages as tabs, then "+" and After sending, the page shown current, each name whole in its tip', async () => {
     const { element, requests, root } = await canvasOf(DEFINITION, { shown: 1 });
-    const steps = [...root.querySelectorAll<HTMLButtonElement>('.bo-steps button')];
-    expect(steps.map((step) => [text(step), step.getAttribute('aria-current')])).toEqual([
-      ['Your details', 'false'],
-      ['Page 2', 'step'],
-      ['Add page', null],
-      ['After sending', 'false'],
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('.bo-tab-name')];
+    expect(tabs.map((tab) => [text(tab), tab.title, tab.getAttribute('aria-current')])).toEqual([
+      ['Your details', 'Your details', 'false'],
+      ['Page 2', 'Page 2', 'step'],
     ]);
-    for (const step of steps) step.click();
+    expect(root.querySelector('.bo-tab[data-page="p2"]')?.hasAttribute('data-open')).toBe(true);
+    const add = must(root.querySelector<HTMLButtonElement>('.bo-add-page'), 'Add page');
+    expect([add.getAttribute('aria-label'), add.title, text(add)]).toEqual(['Add page', 'Add page', '']);
+    const after = must(root.querySelector<HTMLButtonElement>('.bo-after-step'), 'After sending');
+    expect([text(after), after.getAttribute('aria-current')]).toEqual(['After sending', 'false']);
+    for (const button of [...tabs, add, after]) button.click();
     expect(requests).toEqual([
       { kind: 'show', shown: 0 },
       { kind: 'show', shown: 1 },
@@ -362,6 +367,96 @@ describe('the canvas', () => {
       { kind: 'show', shown: 'after' },
     ]);
     expect(element.shown).toBe(1);
+    // One control adds a page; the row holds the pages, then the tools at its end.
+    expect(root.querySelectorAll('[aria-label="Add page"]')).toHaveLength(1);
+    expect([...root.querySelectorAll('.bo-row > *')].map((part) => part.className)).toEqual(['bo-pages', 'bo-end']);
+  });
+
+  it("keeps the open tab's bold to its name, so the menu in it looks as the row's own menu does", () => {
+    const styles = (customElements.get('jfb-form-canvas') as unknown as { styles: { cssText: string }[] }).styles
+      .map((style) => style.cssText)
+      .join('\n');
+    expect(styles).toMatch(/\.bo-tab\[data-open\] \.bo-tab-name \{[^}]*font-weight: 700;/);
+    expect(styles).not.toMatch(/\.bo-tab\[data-open\] \{[^}]*font-weight/);
+    expect(styles).toMatch(/\.bo-tab uui-popover-container \{[^}]*color: var\(--uui-color-text\);/);
+  });
+
+  it('gives the sheet room for the chosen width, its padding and its two borders, so Desktop is 960 px of form', () => {
+    const styles = (customElements.get('jfb-form-canvas') as unknown as { styles: { cssText: string }[] }).styles
+      .map((style) => style.cssText)
+      .join(' ');
+    // The rule whose selector is the part alone, not one that holds it (`.bo-waiting .bo-sheet`).
+    const rule = (part: string) =>
+      styles
+        .split('}')
+        .map((one) => one.replace(/\/\*[\s\S]*?\*\//g, '').trim())
+        .find((one) => one.startsWith(`${part} {`)) ?? '';
+    for (const part of ['.bo-sheet', '.bo-narrowed', '.bo-under'])
+      expect(rule(part)).toContain(
+        'inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));',
+      );
+    expect(rule('.bo-sheet')).toContain('border: 1px solid');
+  });
+
+  it("holds the open page's menu in its tab: Rename, Duplicate and Delete, and no Delete for a form's only page", async () => {
+    const { requests, root } = await canvasOf(DEFINITION, { shown: 0 });
+    const more = must(root.querySelector<HTMLButtonElement>('.bo-tab[data-open] .bo-more-element'), 'the "..."');
+    expect(more.getAttribute('aria-label')).toBe('More for Your details');
+    expect(root.querySelectorAll('.bo-tab .bo-more-element')).toHaveLength(1);
+    const menu = must(root.querySelector(`#${more.getAttribute('popovertarget') ?? ''}`), 'the menu');
+    const items = [...menu.querySelectorAll<HTMLButtonElement>('button')];
+    expect(items.map((item) => text(item))).toEqual(['Rename', 'Duplicate', 'Delete']);
+    for (const item of items) item.click();
+    expect(requests).toEqual([
+      { kind: 'renamePage', key: 'p1' },
+      { kind: 'duplicate', key: 'p1' },
+      { kind: 'delete', key: 'p1' },
+    ]);
+    document.body.replaceChildren();
+    const one = await canvasOf({ pages: [{ key: 'only', groups: [{ key: 'g', fields: [] }] }] });
+    expect([...one.root.querySelectorAll('.bo-tab .bo-menu button')].map((item) => text(item))).toEqual([
+      'Rename',
+      'Duplicate',
+    ]);
+    document.body.replaceChildren();
+    const after = await canvasOf(DEFINITION, { shown: 'after' });
+    expect(after.root.querySelector('.bo-tab .bo-more-element')).toBeNull();
+  });
+
+  it("lets the selection go with a click on the sheet's empty room, and leaves a click on a control to the control", async () => {
+    const { requests, root } = await canvasOf(DEFINITION, { selection: 'e' });
+    must(root.querySelector<HTMLElement>('.bo-page'), 'the page').click();
+    must(root.querySelector<HTMLElement>('.bo-viewport'), 'the room around the sheet').click();
+    must(root.querySelector<HTMLButtonElement>('.bo-add-field'), 'Add field').click();
+    root.querySelector<HTMLButtonElement>('[data-select="g1"]')?.click();
+    expect(requests).toEqual([
+      { kind: 'clear' },
+      { kind: 'clear' },
+      { kind: 'addField', page: 'p1' },
+      { kind: 'select', key: 'g1' },
+    ]);
+    document.body.replaceChildren();
+    const none = await canvasOf(DEFINITION, { selection: null });
+    must(none.root.querySelector<HTMLElement>('.bo-page'), 'the page').click();
+    expect(none.requests).toEqual([]);
+  });
+
+  it('keeps the room of "Narrowed to fit" at the sheet\'s top edge, showing the words only where the sheet is narrowed', async () => {
+    const { element, root } = await canvasOf(DEFINITION);
+    const narrowed = must(root.querySelector<HTMLElement>('.bo-viewport > .bo-narrowed'), 'Narrowed to fit');
+    expect(narrowed.nextElementSibling?.classList.contains('bo-sheet')).toBe(true);
+    // jsdom lays nothing out: the sheet has no room, so it is narrowed.
+    expect([text(narrowed), narrowed.hasAttribute('data-shown'), narrowed.getAttribute('aria-hidden')]).toEqual([
+      'Narrowed to fit',
+      true,
+      'false',
+    ]);
+    const viewport = must(root.querySelector<HTMLElement>('.bo-viewport'), 'the viewport');
+    Object.defineProperty(viewport, 'clientWidth', { value: 2000 });
+    element.width = 'phone';
+    await settle(element);
+    expect([narrowed.hasAttribute('data-shown'), narrowed.getAttribute('aria-hidden')]).toEqual([false, 'true']);
+    expect(root.querySelector('.bo-viewport > .bo-narrowed')).toBe(narrowed);
   });
 
   it('draws the page shown in the default theme: its title, its groups with their columns, its fields, and Next', async () => {
@@ -399,19 +494,19 @@ describe('the canvas', () => {
     }
   });
 
-  it("names each group's and page's button, and an empty group's place for a field", async () => {
+  it("names each group's button, gives the page none, and names an empty group's place for a field", async () => {
     const { requests, root } = await canvasOf(DEFINITION, { selection: 'g1' });
     const groups = [...root.querySelectorAll<HTMLButtonElement>('.bo-select-group')];
     expect(groups.map((group) => [group.getAttribute('aria-label'), group.getAttribute('aria-current')])).toEqual([
       ['About you, group', 'true'],
       ['Group 2, group', 'false'],
     ]);
-    expect(root.querySelector('.bo-select-page')?.getAttribute('aria-label')).toBe('Your details, page');
+    expect(root.querySelector('.bo-page > .bo-select')).toBeNull();
     expect(
       [...root.querySelectorAll('.bo-group > .bo-tools > button')].map((tool) => tool.getAttribute('aria-label')),
     ).toEqual(['Move to\u2026, About you', 'Duplicate About you', 'Delete About you', 'More actions']);
     const groupMenu = [...root.querySelectorAll<HTMLButtonElement>('.bo-group > .bo-tools .bo-menu button')];
-    expect(groupMenu.map((item) => text(item))).toEqual(['Start a new page after this']);
+    expect(groupMenu.map((item) => text(item))).toEqual(['Move what follows to a new page']);
     groupMenu[0]?.click();
     expect(root.querySelector('.bo-page > .bo-tools uui-popover-container')).toBeNull();
     const empty = must(root.querySelector<HTMLButtonElement>('.bo-empty-group'), "the empty group's place");
@@ -431,7 +526,7 @@ describe('the canvas', () => {
     const { requests, root } = await canvasOf(DEFINITION, { selection: 'g1', saveGroups: true });
     const groupMenu = [...root.querySelectorAll<HTMLButtonElement>('.bo-group > .bo-tools .bo-menu button')];
     expect(groupMenu.map((item) => text(item))).toEqual([
-      'Start a new page after this',
+      'Move what follows to a new page',
       'Save group as template\u2026',
     ]);
     groupMenu[1]?.click();
@@ -440,7 +535,7 @@ describe('the canvas', () => {
     const without = await canvasOf(DEFINITION, { selection: 'g1', saveGroups: false });
     expect(
       [...without.root.querySelectorAll('.bo-group > .bo-tools .bo-menu button')].map((item) => text(item)),
-    ).toEqual(['Start a new page after this']);
+    ).toEqual(['Move what follows to a new page']);
   });
 
   it('shows the insert point right above the selected field as its "+" alone, out from under its bar', async () => {
@@ -528,13 +623,37 @@ describe('the canvas', () => {
     };
     const german = await canvasOf(definition, { look: { ...englishLook, languages, culture: 'de-DE' } });
     expect(await chips(german.element, german.root)).toEqual([['b', 'No German text yet']]);
-    const select = must(german.root.querySelector<HTMLSelectElement>('.bo-language select'), 'the language');
-    expect([...select.options].map((option) => [option.value, option.selected])).toEqual([
-      ['en-US', false],
-      ['de-DE', true],
+    const button = must(german.root.querySelector<HTMLButtonElement>('.bo-language'), 'the language');
+    expect([text(button), button.getAttribute('aria-label'), button.title]).toEqual([
+      'de-DE',
+      'Language de-DE: Deutsch (Deutschland)',
+      'Language de-DE: Deutsch (Deutschland)',
     ]);
-    select.value = 'en-US';
-    select.dispatchEvent(new Event('change'));
+    // The product's own menu: buttons in a popover, no menu roles; the language shown marked, and checked.
+    const languagesMenu = must(
+      german.root.querySelector<HTMLElement>(`#${button.getAttribute('popovertarget') ?? ''}`),
+      'the languages',
+    );
+    expect(languagesMenu.querySelector('[role]')).toBeNull();
+    const items = [...languagesMenu.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    expect(
+      items.map((item) => [
+        text(item),
+        item.getAttribute('aria-current'),
+        item.querySelector('uui-icon')?.getAttribute('name') ?? null,
+      ]),
+    ).toEqual([
+      ['English (United States)', null, null],
+      ['Deutsch (Deutschland)', 'true', 'icon-check'],
+    ]);
+    // Open, it takes the focus on the language shown; Escape closes it and gives the focus back to its button.
+    languagesMenu.removeAttribute('popover');
+    languagesMenu.dispatchEvent(Object.assign(new Event('toggle'), { newState: 'open' }));
+    expect(german.root.activeElement).toBe(items[1]);
+    items[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+    expect(german.root.activeElement).toBe(button);
+    items[1]?.click();
+    items[0]?.click();
     expect(german.requests).toEqual([{ kind: 'culture', culture: 'en-US' }]);
     document.body.replaceChildren();
 
@@ -546,10 +665,11 @@ describe('the canvas', () => {
     const menu = [...english.root.querySelectorAll('jfb-canvas-field[key="c"] .bo-menu button')].map((item) =>
       text(item),
     );
-    expect(menu).toEqual(['Change type\u2026', 'Start a new page after this']);
+    // Nothing follows c on its page, and it has no alias: its "..." would hold nothing, and Change type is the inspector's.
+    expect(menu).toEqual([]);
   });
 
-  it('marks a page and a group whose title or description lacks the language shown, describing their buttons, and none while selected', async () => {
+  it("marks a page and a group whose title or description lacks the language shown, describing a group's button and a page's tab, a group's none while selected", async () => {
     const languages = [
       { culture: 'en-US', name: 'English (United States)', isDefault: true },
       { culture: 'de-DE', name: 'Deutsch (Deutschland)', isDefault: false },
@@ -586,9 +706,9 @@ describe('the canvas', () => {
       ['jfb-chip-p', 'No German text yet'],
       ['jfb-chip-g1', 'No German text yet'],
     ]);
-    expect(must(german.root.querySelector('[data-select="p"]'), 'the page').getAttribute('aria-describedby')).toBe(
-      'jfb-chip-p',
-    );
+    expect(
+      must(german.root.querySelector('.bo-tab-name[data-key="p"]'), 'the tab').getAttribute('aria-describedby'),
+    ).toBe('jfb-chip-p');
     expect(must(german.root.querySelector('[data-select="g1"]'), 'the group').getAttribute('aria-describedby')).toBe(
       'jfb-chip-g1',
     );
@@ -648,7 +768,7 @@ describe('the canvas', () => {
     expect(german.root.querySelectorAll('.bo-chip:not(.bo-rule-chip)')).toHaveLength(0);
   });
 
-  it('carries a chip for each rule in use on a page, a group or a field, each describing it, and none while it is selected', async () => {
+  it("carries a chip for each rule in use on a page, a group or a field, each describing it, a page's its tab, and a field's or group's none while it is selected", async () => {
     const definition: DesignDefinition = {
       pages: [
         {
@@ -700,7 +820,9 @@ describe('the canvas', () => {
       // A rule switched off changes nothing for visitors, so it has no chip.
       ['b', 'jfb-rule-chip-b-0', 'Shown when Name is "Ann"'],
     ]);
-    expect(root.querySelector('.bo-select-page')?.getAttribute('aria-describedby')).toBe('jfb-rule-chip-p-0');
+    expect(root.querySelector('.bo-tab-name[data-key="p"]')?.getAttribute('aria-describedby')).toBe(
+      'jfb-rule-chip-p-0',
+    );
     expect(root.querySelector('.bo-select-group')?.getAttribute('aria-describedby')).toBe('jfb-rule-chip-g-0');
     expect(root.querySelector('jfb-canvas-field[key="b"] .bo-select')?.getAttribute('aria-describedby')).toBe(
       'jfb-rule-chip-b-0',
@@ -719,11 +841,12 @@ describe('the canvas', () => {
     );
     document.body.replaceChildren();
 
+    // The canvas draws no selection for a page: its chips stay.
     const page = await canvasOf(definition, { selection: 'p' });
-    expect((await chips(page.element, page.root)).map(([key]) => key)).toEqual(['g', 'a', 'b']);
+    expect((await chips(page.element, page.root)).map(([key]) => key)).toEqual(['p', 'g', 'a', 'b']);
   });
 
-  it('points a new form to the palette and to pasting questions, and an empty later page to New page', async () => {
+  it('points a new form to Add field and to pasting questions, and says an empty later page has no fields yet', async () => {
     const blank: DesignDefinition = { pages: [{ key: 'p', groups: [{ key: 'g', fields: [] }] }] };
     const first = await canvasOf(blank);
     expect(text(first.root.querySelector('.bo-empty'))).toBe('Add your first field, or paste your questions.');
@@ -797,14 +920,23 @@ describe('the canvas', () => {
     expect(root.activeElement?.classList.contains('bo-add-field')).toBe(true);
   });
 
-  it("shows After sending as visitors see it, the message's markup without anything that runs, with Change", async () => {
-    const { requests, root } = await canvasOf(DEFINITION, { shown: 'after' });
+  it("shows After sending as visitors see it, the message's markup without anything that runs, the outcomes' place under it", async () => {
+    const { root } = await canvasOf(DEFINITION, { shown: 'after' });
     const outcome = must(root.querySelector<HTMLElement>('.jfb-outcome'), 'the outcome');
     expect(outcome.innerHTML).toBe('<p>Thanks, <strong>see you</strong>!</p>');
     expect(outcome.inert).toBe(true);
-    must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
-    // Change opens the outcome shown, in the Settings view (ADR-0185).
-    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'o' }]);
+    // Nothing to press on the sheet: the outcomes are edited beside it or under it (ADR-0256).
+    expect(root.querySelector('.bo-sheet uui-button, .bo-sheet button')).toBeNull();
+    const under = must(root.querySelector<HTMLElement>('.bo-under'), 'the place under the sheet');
+    expect([under.previousElementSibling?.classList.contains('bo-sheet'), under.querySelector('slot')?.name]).toEqual([
+      true,
+      'after',
+    ]);
+    expect(under.style.getPropertyValue('--bo-width')).toBe(
+      root.querySelector<HTMLElement>('.bo-sheet')?.style.getPropertyValue('--bo-width'),
+    );
+    const page = await canvasOf(DEFINITION);
+    expect(page.root.querySelector('.bo-under')).toBeNull();
   });
 
   it('shows the first outcome for every visitor: one whose rule is off counts, one with a rule that may not match does not', async () => {
@@ -819,23 +951,28 @@ describe('the canvas', () => {
         { key: 'o', kind: 'message', message: { '': '<p>Last</p>' } },
       ],
     };
-    const { requests, root } = await canvasOf(definition, { shown: 'after' });
+    const { root } = await canvasOf(definition, { shown: 'after' });
     expect(must(root.querySelector<HTMLElement>('.jfb-outcome'), 'the outcome').innerHTML).toBe('<p>Off</p>');
-    must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
-    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'off' }]);
   });
 
   it('switches the width, the chosen one pressed, and keeps Undo and Redo in its menu as they can be used', async () => {
     const { requests, root } = await canvasOf(DEFINITION, { width: 'tablet', canUndo: true });
     const widths = [...root.querySelectorAll<HTMLButtonElement>('.bo-widths button')];
-    expect(widths.map((width) => [text(width), width.getAttribute('aria-pressed')])).toEqual([
-      ['Phone', 'false'],
-      ['Tablet', 'true'],
-      ['Desktop', 'false'],
+    expect(
+      widths.map((width) => [
+        width.getAttribute('aria-label'),
+        width.title,
+        width.querySelector('uui-icon')?.getAttribute('name'),
+        width.getAttribute('aria-pressed'),
+      ]),
+    ).toEqual([
+      ['Phone', 'Phone', 'icon-iphone', 'false'],
+      ['Tablet', 'Tablet', 'icon-ipad', 'true'],
+      ['Desktop', 'Desktop', 'icon-display', 'false'],
     ]);
     expect(root.querySelector<HTMLElement>('.jfb-form')?.style.getPropertyValue('--jfb-size-form')).toBe('768px');
     widths[0]?.click();
-    const [undo, redo] = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    const [undo, redo] = [...root.querySelectorAll<HTMLButtonElement>('#jfb-canvas-more button')];
     expect([undo?.disabled, redo?.disabled]).toEqual([false, true]);
     undo?.click();
     expect(requests).toEqual([{ kind: 'width', width: 'phone' }, { kind: 'undo' }]);
@@ -851,7 +988,7 @@ describe('the canvas', () => {
     expect(root.activeElement?.textContent?.trim()).toBe('Rules overview');
   });
 
-  it('offers Change type... for a field whose type may change, and none for content', async () => {
+  it('offers "Move what follows to a new page" only where something follows, and Change type nowhere on the canvas', async () => {
     const definition: DesignDefinition = {
       pages: [
         {
@@ -871,10 +1008,14 @@ describe('the canvas', () => {
     const menuOf = (root: ShadowRoot, key: string) =>
       [...root.querySelectorAll(`jfb-canvas-field[key="${key}"] .bo-menu button`)].map((item) => text(item));
     const name = await canvasOf(definition, { selection: 'n' });
-    expect(menuOf(name.root, 'n')).toEqual(['Change type\u2026', 'Start a new page after this', 'Copy alias']);
+    expect(menuOf(name.root, 'n')).toEqual(['Move what follows to a new page', 'Copy alias']);
     document.body.replaceChildren();
     const heading = await canvasOf(definition, { selection: 'h' });
-    expect(menuOf(heading.root, 'h')).toEqual(['Start a new page after this']);
+    expect(menuOf(heading.root, 'h')).toEqual([]);
+    expect(heading.root.querySelector('jfb-canvas-field[key="h"] .bo-more-element')).toBeNull();
+    document.body.replaceChildren();
+    const group = await canvasOf(definition, { selection: 'g1' });
+    expect(group.root.querySelector('.bo-group > .bo-tools .bo-more-element')).toBeNull();
   });
 
   it('passes on what its fields ask, and moves the focus to an element', async () => {
@@ -885,7 +1026,6 @@ describe('the canvas', () => {
       { kind: 'moveTo', key: 'e' },
       { kind: 'duplicate', key: 'e' },
       { kind: 'delete', key: 'e' },
-      { kind: 'changeType', key: 'e' },
       { kind: 'newPageAfter', key: 'e' },
       { kind: 'copyAlias', key: 'e' },
     ]);
@@ -913,7 +1053,7 @@ describe('the canvas', () => {
     expect(field('e').state?.words).toBe(e?.words);
   });
 
-  it("gives each group a handle named with it, each step its page's key, and shows a refusal at a group or a page", async () => {
+  it("gives each group a handle named with it, each tab its page's key, and shows a refusal at a group or a page", async () => {
     const { element, requests, root } = await canvasOf(DEFINITION, { refusal: { key: 'g1', text: 'No.' } });
     const handles = [...root.querySelectorAll<HTMLButtonElement>('.bo-handle-group')];
     expect(
@@ -924,10 +1064,10 @@ describe('the canvas', () => {
     ]);
     handles[0]?.click();
     expect(requests).toEqual([{ kind: 'select', key: 'g1' }]);
-    const steps = [...root.querySelectorAll<HTMLButtonElement>('.bo-step[data-page]')];
-    expect(steps.map((step) => [step.dataset['key'], step.dataset['control']])).toEqual([
-      ['p1', 'step'],
-      ['p2', 'step'],
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('.bo-tab-name')];
+    expect(tabs.map((tab) => [tab.dataset['key'], tab.dataset['control']])).toEqual([
+      ['p1', 'tab'],
+      ['p2', 'tab'],
     ]);
     expect(text(root.querySelector('[data-group="g1"] > .bo-refusal'))).toBe('No.');
     element.refusal = { key: 'p1', text: 'Not here.' };
@@ -938,13 +1078,16 @@ describe('the canvas', () => {
     expect(root.querySelector('.jfb-fields[data-fields="g2"]')).not.toBeNull();
   });
 
-  it('moves the focus through the page with Up and Down in reading order: the page, each group, its fields', async () => {
+  it('moves the focus through the page with Up and Down in reading order: each group, its fields', async () => {
     const { element, root } = await canvasOf(DEFINITION);
     const focused = () => {
       const found = root.activeElement as HTMLElement | null;
       return found?.dataset['key'] ?? found?.closest('jfb-canvas-field')?.getAttribute('key') ?? 'none';
     };
+    // The page has no button on the sheet: it is not on the way.
     element.focusNext('p1', 1);
+    expect(focused()).toBe('none');
+    element.focusElement('g1');
     expect(focused()).toBe('g1');
     element.focusNext('g1', 1);
     expect(focused()).toBe('e');
@@ -952,7 +1095,7 @@ describe('the canvas', () => {
     expect(focused()).toBe('g2');
     element.focusNext('g2', 1);
     expect(focused()).toBe('g2');
-    element.focusNext('p1', -1);
+    element.focusNext('g1', -1);
     expect(focused()).toBe('g2');
     // An element of another page is not on the way.
     element.focusNext('g3', 1);
@@ -971,7 +1114,7 @@ describe('the canvas', () => {
     expect((root.activeElement as HTMLElement | null)?.dataset['key']).toBe('p');
   });
 
-  it("gives the focus to an element's handle, or to a page's step", async () => {
+  it("gives the focus to an element's handle, and to a page's tab for a page", async () => {
     const { element, root } = await canvasOf(DEFINITION, { shown: 0 });
     element.focusElement('e', 'handle');
     expect([
@@ -980,17 +1123,21 @@ describe('the canvas', () => {
     ]).toEqual(['e', 'handle']);
     element.focusElement('g1', 'handle');
     expect((root.activeElement as HTMLElement).dataset['handle']).toBe('g1');
-    element.focusElement('p2', 'step');
+    element.focusElement('p2', 'tab');
     expect([
       (root.activeElement as HTMLElement).dataset['key'],
       (root.activeElement as HTMLElement).dataset['control'],
-    ]).toEqual(['p2', 'step']);
+    ]).toEqual(['p2', 'tab']);
+    element.focusElement('p1');
+    expect((root.activeElement as HTMLElement).dataset['key']).toBe('p1');
   });
 
   it('opens the rules overview and the Keyboard shortcuts from its menu, and names the keys as this keyboard has them', async () => {
     const { requests, root } = await canvasOf(DEFINITION);
     // The items shown; one hidden would leave the list.
-    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')].filter((item) => !item.hidden);
+    const items = [...root.querySelectorAll<HTMLButtonElement>('#jfb-canvas-more button')].filter(
+      (item) => !item.hidden,
+    );
     expect(items.map((item) => [text(item.querySelector('span')), text(item.querySelector('kbd'))])).toEqual([
       ['Undo', 'Ctrl+Z'],
       ['Redo', 'Ctrl+Y'],
@@ -1009,7 +1156,7 @@ describe('the canvas', () => {
         { alias: 'Test.Count', label: '#jfbDesigner_undo' },
       ],
     });
-    const items = [...root.querySelectorAll<HTMLButtonElement>('.bo-menu button')];
+    const items = [...root.querySelectorAll<HTMLButtonElement>('#jfb-canvas-more button')];
     expect(items.map((item) => text(item.querySelector('span')))).toEqual([
       'Undo',
       'Redo',
@@ -1022,26 +1169,44 @@ describe('the canvas', () => {
     expect(requests).toEqual([{ kind: 'designerAction', alias: 'Test.Translate' }]);
   });
 
-  it("shows the form check's badge before its menu, which says what the check found and opens its sidebar (ADR-0181)", async () => {
+  it("shows the form check's badge before its menu: its icon and the number found, its words as its name and tip (ADR-0181, ADR-0256)", async () => {
     const none = await canvasOf(DEFINITION);
-    expect(none.root.querySelector('.bo-check')).toBeNull();
-    const cases: [Parameters<typeof canvasOf>[1], string, string, string | null][] = [
-      [{ check: { kind: 'checking' } }, 'checking', 'Checking\u2026', null],
-      [{ check: { kind: 'failed' } }, 'failed', 'Not checked', 'icon-alert'],
-      [{ check: { kind: 'checked', errors: 1, warnings: 1 } }, 'error', '2 problems', 'icon-alert'],
-      [{ check: { kind: 'checked', errors: 0, warnings: 1 } }, 'warning', '1 problem', 'icon-info'],
-      [{ check: { kind: 'checked', errors: 0, warnings: 0 } }, 'clear', 'No problems', 'icon-check'],
+    // Before the first check its place is kept, empty and out of reach.
+    const kept = must(none.root.querySelector<HTMLElement>('.bo-check'), 'the place');
+    expect([kept.localName, kept.dataset['state'], kept.getAttribute('aria-hidden'), text(kept)]).toEqual([
+      'span',
+      'none',
+      'true',
+      '',
+    ]);
+    const cases: [Parameters<typeof canvasOf>[1], string, string, string, string | null][] = [
+      [{ check: { kind: 'checking' } }, 'checking', '\u2026', 'Form check: checking\u2026', null],
+      [{ check: { kind: 'failed' } }, 'failed', '', 'Form check: not checked', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 1, warnings: 1 } }, 'error', '2', 'Form check: 2 problems', 'icon-alert'],
+      [{ check: { kind: 'checked', errors: 0, warnings: 1 } }, 'warning', '1', 'Form check: 1 problem', 'icon-info'],
+      [{ check: { kind: 'checked', errors: 0, warnings: 0 } }, 'clear', '', 'Form check: no problems', 'icon-check'],
+      // (no problems: its check stands on a round disc, a status rather than a box to tick, checked below)
+      [
+        { check: { kind: 'checked', errors: 150, warnings: 3 } },
+        'error',
+        '99+',
+        'Form check: 153 problems',
+        'icon-alert',
+      ],
     ];
-    for (const [extra, state, said, icon] of cases) {
+    for (const [extra, state, shown, words, icon] of cases) {
       document.body.replaceChildren();
       const { requests, root } = await canvasOf(DEFINITION, extra);
-      const badge = must(root.querySelector<HTMLButtonElement>('.bo-check'), 'the badge');
+      const badge = must(root.querySelector<HTMLButtonElement>('button.bo-check'), 'the badge');
       expect([
         badge.dataset['state'],
         text(badge),
+        badge.getAttribute('aria-label'),
+        badge.title,
         badge.querySelector('uui-icon')?.getAttribute('name') ?? null,
-      ]).toEqual([state, said, icon]);
+      ]).toEqual([state, shown, words, words, icon]);
       expect(badge.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(badge.querySelector('.bo-check-disc') !== null).toBe(state === 'clear');
       expect(badge.nextElementSibling?.classList.contains('bo-more')).toBe(true);
       badge.click();
       expect(requests).toEqual([{ kind: 'formCheck' }]);

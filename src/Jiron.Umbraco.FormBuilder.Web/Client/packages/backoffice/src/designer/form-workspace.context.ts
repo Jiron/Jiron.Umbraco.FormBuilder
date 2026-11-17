@@ -28,10 +28,12 @@ import {
   formPreviewTestEntry,
   formPreviewTicket,
   formPublish,
+  formSettingsChoices,
   type FieldGroupResponseModel,
   type FormDraftResponseModel,
   type FieldTypeChangeResponseModel,
   type FieldTypeResponseModel,
+  type FormSettingsChoicesResponseModel,
   type FormVersionResponseModel,
 } from '../api';
 import { codeOf, sayRefusal } from '../library/library-changes';
@@ -133,8 +135,8 @@ export class FormWorkspaceContext
   /** The field types by alias, as the views name and draw them; empty until they are read. */
   readonly fieldTypes = this.#types.asObservable();
 
-  /** The palette's groups, in its order; empty until the field types are read. */
-  readonly paletteGroups = this.#groups.asObservable();
+  /** The groups the field types are listed under, in the server's order; empty until the field types are read. */
+  readonly typeGroups = this.#groups.asObservable();
 
   readonly #check = new UmbObjectState<CheckState>(UNCHECKED);
   /** The form the check's answers are about, so another form read starts it over. */
@@ -260,7 +262,7 @@ export class FormWorkspaceContext
   }
 
   /**
-   * The changes of type a field of the type may make (ADR-0059), in the palette's order, with the host's locks of each
+   * The changes of type a field of the type may make (ADR-0059), in the server's order, with the host's locks of each
    * new type applied (ADR-0060); undefined when they can't be read.
    */
   // Each type's changes are read once while the form is open (ADR-0174), and again after a read that failed.
@@ -268,6 +270,16 @@ export class FormWorkspaceContext
     async (type) =>
       (await tryExecute(this, fieldTypeChanges({ path: { alias: type } }), { disableNotifications: true })).data
         ?.changes,
+  );
+
+  /**
+   * What the form's settings may choose from and the bounds of the save checks (ADR-0184), by the form's key: read once
+   * while the form is open, which the Settings view, the Actions view and After sending share, and again after a read
+   * that failed, so Try again reads again; undefined when it can't be read.
+   */
+  readonly choicesOf: (form: string) => Promise<FormSettingsChoicesResponseModel | undefined> = readOnce(
+    async (form) =>
+      (await tryExecute(this, formSettingsChoices({ path: { key: form } }), { disableNotifications: true })).data,
   );
 
   /** The field types by alias, as read; empty until they are. */
@@ -634,7 +646,8 @@ export class FormWorkspaceContext
 
   /**
    * Asks for a Fix it, from the publish dialog or from a view that leads to another: the view that makes it takes it up
-   * once it is shown, the Settings view a problem in the form's settings, the Design view any other.
+   * once it is shown, the Settings view a problem in the form's settings, the Actions view one in an action, the Design
+   * view any other.
    */
   requestFix(target: FixTarget) {
     this.#fix.setValue(target);

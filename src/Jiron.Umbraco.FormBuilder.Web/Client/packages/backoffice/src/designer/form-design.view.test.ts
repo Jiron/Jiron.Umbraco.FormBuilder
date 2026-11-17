@@ -1,13 +1,17 @@
-// The Design view (ROADMAP 9.3b): each request of the canvas and the palette becomes an edit of the editor model through
-// the workspace, with what it says for screen readers: a pick at the place the palette was opened for, after the
-// selection or at the end of the page; a label edited in place; a delete that Ctrl+Z takes back; a new page shown;
-// pasted questions as fields; Esc; and a refusal said in words. Its moves (ROADMAP 9.3c): a drop with Undo, a palette
-// type dropped, a refusal shown at the element, Alt+Up and Alt+Down with the focus kept, Up and Down between elements,
-// Move to... and the Keyboard shortcuts. The inspector (ROADMAP 9.4a): beside the canvas with the selection, its changes
-// as edits that typing in one box makes one step, the palette folded beside it up to 1024 px, an alias that entries know
-// changed only after a question, the element's "...", the language the canvas shows, and the keys from inside it.
-// Change type (ROADMAP 9.4d): the dialog with each type's preview, the change made with Undo, a type the site can't
-// offer refused, and a read that fails said. A stand-in workspace drives the real undo history.
+// The Design view (ROADMAP 9.3b and 22.1, ADR-0256): each request of the canvas and the inspector becomes an edit of
+// the editor model through the workspace, with what it says for screen readers. The field picker opens from every Add
+// field and insert point, the place marked while it is open, and lands its pick there: a field, a group, a saved group's
+// copy or Paste questions; Close gives the focus back to what opened it. A page is renamed, duplicated and deleted at its
+// tab, and a click on the sheet's empty room lets the selection go. A label edited in place; a delete that Ctrl+Z takes
+// back; a new page shown; pasted questions as fields; Esc; and a refusal said in words. Its moves (ROADMAP 9.3c): a drop
+// with Undo, a refusal shown at the element, Alt+Up and Alt+Down with the focus kept, Up and Down between elements,
+// Move to... and the Keyboard shortcuts. The inspector (ROADMAP 9.4a): beside the canvas with the selection, else the
+// open page, its changes as edits that typing in one box makes one step, an alias that entries know changed only after
+// a question, the element's "...", the language the canvas shows, and the keys from inside it. Change type (ROADMAP
+// 9.4d): the dialog with each type's preview, the change made with Undo, a type the site can't offer refused, and a read
+// that fails said. After sending (ROADMAP 22.1): its outcomes in the inspector's column or under the sheet, and a Fix
+// it, a rule of the rules overview and Undo leading to an outcome there. A stand-in workspace drives the real undo
+// history.
 import { FORMULAS } from '@jfb/logic/calc';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -18,11 +22,11 @@ import { CANVAS_REQUEST, type CanvasRequest } from './canvas/form-canvas.element
 import type { FixTarget } from './check/form-check';
 import { UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
-import { locate, type DesignDefinition, type DesignField, type DesignRule } from './definition';
+import { locate, type DesignDefinition, type DesignField, type DesignPage, type DesignRule } from './definition';
 import type { Edit, EditorState } from './editor-model';
 import { readOnce, traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
-import { PALETTE_PICK, type PalettePick } from './palette/palette.element';
+import type { FieldPick } from './picker/field-picker.modal.token';
 import { builtInChanges, builtInTypes, englishLook } from './preview/fixtures';
 import type { UndoNotificationData } from '../ui/undo-notification.element';
 import type { InspectorElement } from './inspector/inspector.element';
@@ -59,8 +63,10 @@ vi.mock('./preview/look', async (original) => ({
 
 vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
-  umbOpenModal: async (_host: unknown, token: unknown, args?: { data?: unknown }) => {
+  umbOpenModal: async (_host: unknown, token: unknown, args?: { data?: { closed?: () => void } }) => {
     opened.dialogs.push({ alias: String(token), data: args?.data });
+    // An outcome's sidebar is gone at once.
+    if (String(token) === 'Jiron.FormBuilder.Modal.Outcome') args?.data?.closed?.();
     // A function answers each dialog by its alias.
     return typeof opened.value === 'function'
       ? (opened.value as (alias: string) => unknown)(String(token))
@@ -115,13 +121,16 @@ vi.mock('@umbraco-cms/backoffice/imaging', () => ({
   },
 }));
 
-const { badgeOf, FormDesignViewElement, isCrowded, isNarrow, mediaOf, OPTIONS_PAUSE } =
-  await import('./form-design.view');
+const { badgeOf, FormDesignViewElement, isNarrow, mediaOf, OPTIONS_PAUSE } = await import('./form-design.view');
 const { readWidth } = await import('./canvas/widths');
 const { INSPECTOR_REQUEST } = await import('./inspector/inspector.element');
 const { MOVE_TO_MODAL_ALIAS } = await import('./moves/move-to.modal.token');
+const { FIELD_PICKER_MODAL_ALIAS } = await import('./picker/field-picker.modal.token');
+const { PASTE_QUESTIONS_MODAL_ALIAS } = await import('./picker/paste-questions.modal.token');
+type FieldPickerModalData = import('./picker/field-picker.modal.token').FieldPickerModalData;
 type ChangeTypeModalData = import('./change-type/change-type.modal.token').ChangeTypeModalData;
 type RuleBuilderModalData = import('./rules/rule-builder.modal.token').RuleBuilderModalData;
+type OutcomeModalData = import('./outcomes/outcome.modal.token').OutcomeModalData;
 
 const field = (key: string, type = 'text') => ({ key, type, alias: key, label: { '': key } });
 
@@ -148,7 +157,7 @@ class StandIn {
   readonly editor;
   readonly types = new UmbObjectState(builtInTypes);
   readonly fieldTypes = this.types.asObservable();
-  readonly paletteGroups = new UmbObjectState([{ alias: 'text', name: '#jfbFieldPalette_text' }]).asObservable();
+  readonly typeGroups = new UmbObjectState([{ alias: 'text', name: '#jfbFieldPalette_text' }]).asObservable();
   readonly model = {
     traitsOf: (type: string) => {
       const types = this.types.getValue();
@@ -171,6 +180,11 @@ class StandIn {
   getEntityType = () => 'jfb-form';
   getUnique = () => 'form1';
   getEditorState = (): EditorState => this.#history.state;
+  /** The form's key and whether visitors get a published version, as After sending reads them. */
+  readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
+  readonly state = new UmbBasicState<string | undefined>('draft').asObservable();
+  /** The bounds of the save checks, which After sending reads for the most outcomes a form can have. */
+  choicesOf = async () => ({ limits: { outcomes: 50, htmlLength: 50000 } });
 
   /** The aliases entries know, by field: changing one asks first. */
   readonly kept: Record<string, string> = {};
@@ -248,14 +262,37 @@ async function viewOf(definition = DEFINITION, language: string | null = null) {
   host.append(view);
   await settle(view);
   const canvas = must(shadow(view).querySelector<FormCanvasElement>('jfb-form-canvas'), 'the canvas');
-  const ask = async (request: CanvasRequest) => {
-    view.dispatchEvent(new CustomEvent(CANVAS_REQUEST, { detail: request, bubbles: true, composed: true }));
+  const ask = async (request: CanvasRequest | { readonly kind: 'changeType'; readonly key: string }) => {
+    // Change type is the inspector's (ADR-0256): asked as its header asks it.
+    const [name, detail] =
+      request.kind === 'changeType'
+        ? [INSPECTOR_REQUEST, { kind: 'element', action: 'changeType', key: request.key }]
+        : [CANVAS_REQUEST, request];
+    view.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
     await settle(view);
   };
-  const pick = async (palette: PalettePick) => {
-    view.dispatchEvent(new CustomEvent(PALETTE_PICK, { detail: palette, bubbles: true, composed: true }));
-    await settle(view);
+  /**
+   * Opens the field picker by a canvas request and answers it with a pick, or with nothing as Close does; every other
+   * dialog answers as `opened.value` says.
+   */
+  const pick = async (request: CanvasRequest, answer?: FieldPick) => {
+    const others = opened.value;
+    opened.value = (alias: string) =>
+      alias === FIELD_PICKER_MODAL_ALIAS
+        ? answer
+          ? { pick: answer }
+          : undefined
+        : typeof others === 'function'
+          ? (others as (one: string) => unknown)(alias)
+          : others;
+    try {
+      await ask(request);
+    } finally {
+      opened.value = others;
+    }
   };
+  /** Adds a field of a type at the end of the page shown, as Add field and a pick do. */
+  const add = async (type: string, page = 'p1') => pick({ kind: 'addField', page }, { kind: 'field', type });
   const press = async (key: string, init: KeyboardEventInit = {}) => {
     view.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, ...init }));
     await settle(view);
@@ -267,7 +304,7 @@ async function viewOf(definition = DEFINITION, language: string | null = null) {
     };
     return (element.fields ?? []).map((each) => each.key);
   };
-  return { workspace, toasts, view, canvas, ask, pick, press, state, keys };
+  return { workspace, toasts, view, canvas, ask, pick, add, press, state, keys };
 }
 
 beforeAll(registerEnglish);
@@ -289,8 +326,8 @@ async function heard(view: HTMLElement): Promise<string> {
   return shadow(view).querySelector('[role="status"]')?.textContent ?? '';
 }
 
-/** A canvas control by its element's key and kind: the button that selects it, its handle, or a page's step. */
-function control(canvas: HTMLElement, key: string, kind: 'select' | 'handle' | 'step'): HTMLElement {
+/** A canvas control by its element's key and kind: the button that selects it, its handle, or a page's tab. */
+function control(canvas: HTMLElement, key: string, kind: 'select' | 'handle' | 'tab'): HTMLElement {
   return must(
     shadow(canvas).querySelector<HTMLElement>(`[data-key="${key}"][data-control="${kind}"]`),
     `the ${kind} of ${key}`,
@@ -335,7 +372,7 @@ describe("the view's settings", () => {
     expect(readWidth()).toBe('desktop');
   });
 
-  it('put the palette over the canvas up to 700 px, the narrowest workspace among them, and beside it wider', () => {
+  it('put the inspector over the canvas up to 700 px, the narrowest workspace among them, and beside it wider', () => {
     expect([480, 620, 700, 701, 1024].map(isNarrow)).toEqual([true, true, true, false, false]);
   });
 
@@ -361,53 +398,122 @@ describe("the view's settings", () => {
   });
 });
 
-describe('the palette beside the canvas', () => {
-  it('keeps the focus on its rail when it folds, and on its search when it opens beside the canvas again', async () => {
-    const { view, pick } = await viewOf();
-    const palette = () =>
-      must(
-        shadow(view).querySelector<HTMLElement & { updateComplete: Promise<unknown> }>('jfb-designer-palette'),
-        'it',
-      );
-    await pick({ kind: 'fold' });
-    await settle(palette());
-    expect([palette().getAttribute('mode'), shadow(palette()).activeElement?.localName]).toEqual([
-      'rail',
-      'uui-button',
+describe('the field picker', () => {
+  it('opens from every Add field and insert point with the types, their groups and the saved groups', async () => {
+    const { ask } = await viewOf();
+    for (const request of [
+      { kind: 'addField', page: 'p1' },
+      { kind: 'insertAfter', key: 'name' },
+      { kind: 'insertFirst', container: 'g1' },
+    ] as const)
+      await ask(request);
+    expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(Array<string>(3).fill(FIELD_PICKER_MODAL_ALIAS));
+    const data = opened.dialogs[0]?.data as FieldPickerModalData;
+    expect(data.types.map((type) => type.alias)).toEqual(Object.keys(builtInTypes));
+    expect(data.groups).toEqual([{ alias: 'text', name: '#jfbFieldPalette_text' }]);
+    expect(data.saved).toEqual([]);
+  });
+
+  it('keeps the insert point marked on the canvas while it is open, and lets it go once it is closed', async () => {
+    const { view, canvas, ask } = await viewOf();
+    const marked: unknown[] = [];
+    opened.value = async () => {
+      await view.updateComplete;
+      marked.push(canvas.insertAt);
+      return undefined;
+    };
+    await ask({ kind: 'insertAfter', key: 'name' });
+    await ask({ kind: 'insertFirst', container: 'g2' });
+    await ask({ kind: 'addField', page: 'p1' });
+    expect(marked).toEqual([
+      { container: 'g1', index: 1 },
+      { container: 'g2', index: 0 },
+      { container: 'g1', index: 2 },
     ]);
-    await pick({ kind: 'unfold' });
-    await settle(palette());
-    expect([palette().getAttribute('mode'), shadow(palette()).activeElement?.localName]).toEqual([
-      'docked',
-      'uui-input',
-    ]);
+    expect(canvas.insertAt).toBeNull();
+  });
+
+  it('opens once for a second ask while it is opening or open, and the place stays the first one', async () => {
+    const { view, canvas } = await viewOf();
+    let answer: ((value: unknown) => void) | undefined;
+    opened.value = () => new Promise((done) => (answer = done));
+    for (const detail of [
+      { kind: 'insertAfter', key: 'name' },
+      { kind: 'insertFirst', container: 'g2' },
+      { kind: 'addField', page: 'p2' },
+    ])
+      view.dispatchEvent(new CustomEvent(CANVAS_REQUEST, { detail, bubbles: true, composed: true }));
+    await settle(view);
+    expect(opened.dialogs).toHaveLength(1);
+    expect(canvas.insertAt).toEqual({ container: 'g1', index: 1 });
+    answer?.(undefined);
+    await settle(view);
+    expect(canvas.insertAt).toBeNull();
+  });
+
+  it('gives the focus back to what opened it when it closes without a pick, where its dialog left the focus nowhere', async () => {
+    const { view, canvas, pick } = await viewOf();
+    canvas.focusAddField();
+    const opener = shadow(canvas).activeElement as HTMLElement;
+    opened.value = () => {
+      // Umbraco's dialog takes the focus while it is open.
+      opener.blur();
+      return undefined;
+    };
+    await view.dispatchEvent(
+      new CustomEvent(CANVAS_REQUEST, { detail: { kind: 'addField', page: 'p1' }, bubbles: true, composed: true }),
+    );
+    await settle(view);
+    expect(shadow(canvas).activeElement).toBe(opener);
+    // Where its dialog gave the focus back itself, it stays.
+    await pick({ kind: 'insertAfter', key: 'name' });
+    expect(shadow(canvas).activeElement).toBe(opener);
+  });
+
+  it('waits until it is gone before the element picked takes the focus, which its dialog gives back as it closes', async () => {
+    const { view, canvas, keys } = await viewOf();
+    canvas.focusAddField();
+    const opener = shadow(canvas).activeElement as HTMLElement;
+    opened.value = (alias: string) => {
+      const data = opened.dialogs.at(-1)?.data as FieldPickerModalData;
+      data.opened?.();
+      setTimeout(() => {
+        opener.focus();
+        data.closed?.();
+      }, 20);
+      return alias === FIELD_PICKER_MODAL_ALIAS ? { pick: { kind: 'field', type: 'phone' } } : undefined;
+    };
+    view.dispatchEvent(
+      new CustomEvent(CANVAS_REQUEST, { detail: { kind: 'addField', page: 'p1' }, bubbles: true, composed: true }),
+    );
+    await new Promise((done) => setTimeout(done, 60));
+    await settle(view);
+    expect(keys('g1')).toEqual(['name', 'email', 'new1']);
+    expect(focusedIn(canvas)).toBe('new1 select');
   });
 });
 
-describe('the palette over the canvas', () => {
-  it('leaves the canvas out of reach while it is open, and Esc gives the focus back to what opened it', async () => {
-    const { view, canvas, ask, press } = await viewOf();
-    Object.assign(view, { _narrow: true });
-    await settle(view);
-    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
-    canvas.focusAddField();
-    await ask({ kind: 'addField', page: 'p1' });
-    expect(shadow(view).querySelector('jfb-designer-palette')?.getAttribute('mode')).toBe('overlay');
-    expect(canvas.hasAttribute('inert')).toBe(true);
-    await press('Escape');
-    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
-    expect(canvas.hasAttribute('inert')).toBe(false);
-    expect(shadow(canvas).activeElement?.classList.contains('bo-add-field')).toBe(true);
-  });
+describe("the Design view's controls (ROADMAP 22.1)", () => {
+  /** Every element under a root, its shadow roots looked into. */
+  // Umbraco's own controls are counted once, as their hosts, not again by the buttons inside them.
+  const deep = (root: ParentNode): Element[] =>
+    [...root.querySelectorAll('*')].flatMap((element) => [
+      element,
+      ...(element.shadowRoot && !element.localName.startsWith('uui-') ? deep(element.shadowRoot) : []),
+    ]);
+  const named = (element: Element) =>
+    (element.getAttribute('aria-label') ?? element.getAttribute('label') ?? text(element)).trim();
 
-  it('closes with a click beside it', async () => {
+  it('hold no list of types beside the form, one control that adds a page and one that offers Change type', async () => {
     const { view, ask } = await viewOf();
-    Object.assign(view, { _narrow: true });
-    await settle(view);
-    await ask({ kind: 'addField', page: 'p1' });
-    must(shadow(view).querySelector<HTMLElement>('.scrim'), 'the scrim').click();
-    await settle(view);
-    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
+    await ask({ kind: 'select', key: 'email' });
+    for (const each of deep(shadow(view)))
+      if ('updateComplete' in each) await (each as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    const controls = deep(shadow(view)).filter((element) => element.matches('button, uui-button, [role="menuitem"]'));
+    const typeNames = Object.values(builtInTypes).map((type) => type.name);
+    expect(controls.filter((control) => typeNames.includes(named(control)))).toEqual([]);
+    expect(controls.filter((control) => named(control) === 'Add page')).toHaveLength(1);
+    expect(controls.filter((control) => named(control) === 'Change type\u2026')).toHaveLength(1);
   });
 });
 
@@ -427,6 +533,13 @@ describe("the view's look", () => {
     expect(shadow(view).querySelector('.failed')).toBeNull();
   });
 
+  it('lays the inspector over the whole of a narrow view, whose one column ends where a second would start', () => {
+    const view = customElements.get('jfb-form-design-view') as unknown as { styles: { cssText: string }[] };
+    expect(view.styles.map((style) => style.cssText).join('\n')).toMatch(
+      /jfb-designer-inspector\[mode='overlay'\] \{[^}]*grid-column: 1 \/ -1;/,
+    );
+  });
+
   it("stops the workspace's scrollbar fade at its edge, so a long form isn't restyled at each frame of it", () => {
     // The workspace's scroll container fades its scrollbar by a transition of this inherited property (section 4.12).
     const view = customElements.get('jfb-form-design-view') as unknown as { styles: { cssText: string }[] };
@@ -436,10 +549,10 @@ describe("the view's look", () => {
   });
 });
 
-describe('a pick from the palette', () => {
-  it('goes to the end of the page shown without a selection, selected, said, and kept as recently used', async () => {
-    const { workspace, pick, state, keys } = await viewOf();
-    await pick({ kind: 'field', type: 'phone' });
+describe('a pick', () => {
+  it('goes to the end of the page shown, selected, said, with the focus on it', async () => {
+    const { workspace, canvas, add, state, keys } = await viewOf();
+    await add('phone');
     expect(keys('g1')).toEqual(['name', 'email', 'new1']);
     expect(state().selection).toBe('new1');
     expect(locate(state().definition, 'new1')?.element).toEqual({
@@ -449,50 +562,141 @@ describe('a pick from the palette', () => {
       label: { '': 'Phone' },
     });
     expect(workspace.said).toEqual(['Added Phone']);
-    expect(JSON.parse(localStorage.getItem('jfb.designer.recent') ?? '[]')).toEqual(['phone']);
+    expect(focusedIn(canvas)).toBe('new1 select');
+    // No list of recent types is kept any more.
+    expect(localStorage.getItem('jfb.designer.recent')).toBeNull();
   });
 
-  it('goes to the insert point the palette was opened for, and after the selected field', async () => {
-    const { ask, pick, keys } = await viewOf();
-    await ask({ kind: 'insertFirst', container: 'g1' });
-    await pick({ kind: 'field', type: 'text' });
+  it('goes to the insert point it was opened from', async () => {
+    const { pick, keys } = await viewOf();
+    await pick({ kind: 'insertFirst', container: 'g1' }, { kind: 'field', type: 'text' });
     expect(keys('g1')).toEqual(['new1', 'name', 'email']);
-    // The new field is selected, so the next one follows it.
-    await pick({ kind: 'field', type: 'email' });
-    expect(keys('g1')).toEqual(['new1', 'new2', 'name', 'email']);
-    await ask({ kind: 'insertAfter', key: 'name' });
-    await pick({ kind: 'field', type: 'url' });
-    expect(keys('g1')).toEqual(['new1', 'new2', 'name', 'new3', 'email']);
+    await pick({ kind: 'insertAfter', key: 'name' }, { kind: 'field', type: 'url' });
+    expect(keys('g1')).toEqual(['new1', 'name', 'new2', 'email']);
   });
 
-  it("goes to the page shown, a group's or a new page, and a page's Add field to its end", async () => {
-    const { ask, pick, state, keys, canvas } = await viewOf();
+  it("goes to a page's end from its Add field, and adds a group or a saved group's copy there", async () => {
+    const { ask, pick, add, state, keys, canvas } = await viewOf();
     await ask({ kind: 'show', shown: 1 });
     expect(canvas.shown).toBe(1);
-    await ask({ kind: 'addField', page: 'p2' });
-    await pick({ kind: 'field', type: 'date' });
+    await add('date', 'p2');
     expect(keys('g2')).toEqual(['note', 'new1']);
-    await pick({ kind: 'group' });
+    await pick({ kind: 'addField', page: 'p2' }, { kind: 'group' });
     expect(locate(state().definition, 'p2')?.element).toMatchObject({ groups: [{ key: 'g2' }, { key: 'new2' }] });
+    const saved = {
+      key: 't',
+      name: 'Address block',
+      group: { key: 'sg', title: { '': 'Address' }, fields: [field('street')] },
+      checks: [],
+    };
+    await pick({ kind: 'addField', page: 'p2' }, { kind: 'savedGroup', saved });
+    const groups = (locate(state().definition, 'p2')?.element as DesignPage).groups;
+    expect(groups.map((group) => group.title ?? null)).toEqual([null, null, { '': 'Address' }]);
+    expect(groups[2]?.key).not.toBe('sg');
+  });
+
+  it('opens Paste questions for the place the picker was opened from', async () => {
+    const { pick, keys } = await viewOf();
+    opened.value = (alias: string) =>
+      alias === PASTE_QUESTIONS_MODAL_ALIAS ? { questions: [{ label: 'Your name', type: 'text' }] } : undefined;
+    await pick({ kind: 'insertFirst', container: 'g1' }, { kind: 'paste' });
+    expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual([
+      FIELD_PICKER_MODAL_ALIAS,
+      PASTE_QUESTIONS_MODAL_ALIAS,
+    ]);
+    expect(keys('g1')).toEqual(['new1', 'name', 'email']);
   });
 
   it('says why the model refuses it', async () => {
-    const { view, pick, workspace } = await viewOf();
-    await pick({ kind: 'field', type: 'captcha' });
-    await pick({ kind: 'field', type: 'captcha' });
+    const { view, add, workspace } = await viewOf();
+    await add('captcha');
+    await add('captcha');
     expect(workspace.said).toEqual(['Added Captcha placement']);
     await new Promise((done) => setTimeout(done, 50));
     expect(shadow(view).querySelector('[role="status"]')?.textContent).toBe(
       'A form holds one Captcha placement at most.',
     );
   });
+});
 
-  it('starts a page at the selected field with New page, and shows it', async () => {
-    const { ask, pick, state, canvas } = await viewOf();
+describe("a page's tab", () => {
+  it('renames its page: the Title in the inspector beside the canvas, its text selected, the selection let go', async () => {
+    const { view, ask, state, canvas } = await viewOf({
+      pages: [
+        { key: 'p1', title: { '': 'About you' }, groups: [{ key: 'g1', fields: [field('name')] }] },
+        { key: 'p2', title: { '': 'Your message' }, groups: [{ key: 'g2', fields: [field('note')] }] },
+      ],
+    });
     await ask({ kind: 'select', key: 'name' });
-    await pick({ kind: 'page' });
-    expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', state().selection, 'p2']);
+    await ask({ kind: 'renamePage', key: 'p2' });
+    await settle(view);
+    expect([state().selection, canvas.shown]).toEqual([null, 1]);
+    const inspector = must(shadow(view).querySelector('jfb-designer-inspector'), 'the inspector');
+    expect(shadow(inspector).querySelector('h2')?.textContent).toBe('Page');
+    let box = document.activeElement;
+    while (box?.shadowRoot?.activeElement) box = box.shadowRoot.activeElement;
+    expect([(box as HTMLInputElement).value, (box as HTMLInputElement).selectionEnd]).toEqual(['Your message', 12]);
+  });
+
+  it('unfolds a folded inspector to rename, and selects the page over a narrow canvas, the inspector over the form', async () => {
+    const { view, ask, state } = await viewOf();
+    view.dispatchEvent(new CustomEvent(INSPECTOR_REQUEST, { detail: { kind: 'fold' }, bubbles: true, composed: true }));
+    await settle(view);
+    await ask({ kind: 'renamePage', key: 'p1' });
+    expect(shadow(view).querySelector('jfb-designer-inspector')?.getAttribute('mode')).toBe('docked');
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    await ask({ kind: 'renamePage', key: 'p2' });
+    expect(state().selection).toBe('p2');
+    expect(shadow(view).querySelector('jfb-designer-inspector')?.getAttribute('mode')).toBe('overlay');
+  });
+
+  it('duplicates its page and shows the copy, with the focus on its tab and nothing selected', async () => {
+    const { ask, state, canvas } = await viewOf();
+    await ask({ kind: 'duplicate', key: 'p1' });
+    expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', 'new1', 'p2']);
+    expect([state().selection, canvas.shown]).toEqual([null, 1]);
+    expect(focusedIn(canvas)).toBe('new1 tab');
+  });
+
+  it('deletes its page with Undo, which brings it back with its fields, the focus on its tab', async () => {
+    const { ask, state, canvas, toasts, keys } = await viewOf();
+    await ask({ kind: 'delete', key: 'p1' });
+    expect(state().definition.pages.map((page) => page.key)).toEqual(['p2']);
+    expect([state().selection, canvas.shown]).toEqual([null, 0]);
+    expect(focusedIn(canvas)).toBe('p2 tab');
+    expect(toasts.shown.map((toast) => toast.data.message)).toEqual(['Page 1 deleted.']);
+    await toasts.shown[0]?.data.undo();
+    await settle(canvas);
+    await settle(canvas);
+    expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', 'p2']);
+    expect(keys('g1')).toEqual(['name', 'email']);
+    expect([state().selection, canvas.shown]).toEqual([null, 0]);
+    expect(focusedIn(canvas)).toBe('p1 tab');
+  });
+
+  it('acts on its page with Delete, Ctrl+D and F2, and keeps the focus on a tab', async () => {
+    const { view, canvas, state } = await viewOf();
+    await pressOn(view, control(canvas, 'p2', 'tab'), 'd', { ctrlKey: true });
+    expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', 'p2', 'new1']);
+    expect(focusedIn(canvas)).toBe('new1 tab');
+    await pressOn(view, control(canvas, 'new1', 'tab'), 'Delete');
+    expect(state().definition.pages.map((page) => page.key)).toEqual(['p1', 'p2']);
+    expect(focusedIn(canvas)).toBe('p2 tab');
+    await pressOn(view, control(canvas, 'p2', 'tab'), 'F2');
     expect(canvas.shown).toBe(1);
+    expect(canvas.editing).toBeNull();
+  });
+});
+
+describe('the sheet', () => {
+  it('lets the selection go with a click on its empty room', async () => {
+    const { ask, state } = await viewOf();
+    await ask({ kind: 'select', key: 'email' });
+    await ask({ kind: 'clear' });
+    expect(state().selection).toBeNull();
+    await ask({ kind: 'clear' });
+    expect(state().selection).toBeNull();
   });
 });
 
@@ -562,7 +766,7 @@ describe('the canvas requests', () => {
     expect(state().selection).toBeNull();
   });
 
-  it('select the one question a paste gives, to be edited as a field from the palette is', async () => {
+  it('select the one question a paste gives, to be edited as a picked field is', async () => {
     const { ask, keys, state } = await viewOf();
     opened.value = { questions: [{ label: 'Your name', type: 'text' }] };
     await ask({ kind: 'paste' });
@@ -643,7 +847,7 @@ describe('the moves', () => {
     expect([keys('g1'), keys('g2')]).toEqual([['name', 'email'], ['note']]);
   });
 
-  it('say a group and a page by their places on the page and among the pages, a page keeping the focus on its step', async () => {
+  it('say a group and a page by their places on the page and among the pages, a page keeping the focus on its tab', async () => {
     const { view, ask, state, canvas } = await viewOf();
     await ask({
       kind: 'drop',
@@ -659,31 +863,11 @@ describe('the moves', () => {
     });
     expect(state().definition.pages.map((page) => page.key)).toEqual(['p2', 'p1']);
     expect(await heard(view)).toBe('Moved. Page 1: page 1 of 2.');
-    expect(focusedIn(canvas)).toBe('p2 step');
-  });
-
-  it('add a field of a palette type dropped on the page, and keep the type as recently used', async () => {
-    const { ask, keys, state, workspace, toasts } = await viewOf();
-    await ask({
-      kind: 'drop',
-      source: { kind: 'new', type: 'phone', label: 'Phone' },
-      place: { container: 'g1', index: 1 },
-    });
-    expect(keys('g1')).toEqual(['name', 'new1', 'email']);
-    expect(state().selection).toBe('new1');
-    expect(workspace.said).toEqual(['Added Phone']);
-    expect(toasts.shown).toEqual([]);
-    expect(JSON.parse(localStorage.getItem('jfb.designer.recent') ?? '[]')).toEqual(['phone']);
+    expect(focusedIn(canvas)).toBe('p2 tab');
   });
 
   it('tell the canvas why the form refuses a place, and nothing for a place where it already is', async () => {
-    const { canvas, pick } = await viewOf();
-    const captcha = { kind: 'new', type: 'captcha', label: 'Captcha placement' } as const;
-    expect(canvas.refusalOf(captcha, { container: 'g1', index: 0 })).toBeNull();
-    await pick({ kind: 'field', type: 'captcha' });
-    expect(canvas.refusalOf(captcha, { container: 'g1', index: 0 })).toBe(
-      'A form holds one Captcha placement at most.',
-    );
+    const { canvas } = await viewOf();
     expect(canvas.refusalOf({ kind: 'field', key: 'name', label: 'name' }, { container: 'g1', index: 0 })).toBeNull();
     expect(canvas.refusalOf({ kind: 'group', key: 'g1', label: 'g1' }, { container: 'g1', index: 0 })).toBe(
       "It can't go there.",
@@ -699,10 +883,6 @@ describe('the moves', () => {
     expect(toasts.shown).toEqual([]);
     await ask({ kind: 'select', key: 'email' });
     expect(canvas.refusal).toBeNull();
-    // A palette type refused has no element to show it at: it is said.
-    await ask({ kind: 'refused', source: { kind: 'new', type: 'captcha', label: 'Captcha' }, reason: 'No.' });
-    expect(canvas.refusal).toBeNull();
-    expect(await heard(view)).toBe('No.');
   });
 
   it('move the field with Alt+Down into the next page, and keep the focus on the control the keys were pressed on', async () => {
@@ -732,11 +912,11 @@ describe('the moves', () => {
     expect(await heard(view)).toBe("It can't move any further.");
   });
 
-  it('move a page by its step, the focus staying on the step', async () => {
+  it('move a page by its tab, the focus staying on the tab', async () => {
     const { view, canvas, state } = await viewOf();
-    await pressOn(view, control(canvas, 'p2', 'step'), 'ArrowUp', { altKey: true });
+    await pressOn(view, control(canvas, 'p2', 'tab'), 'ArrowUp', { altKey: true });
     expect(state().definition.pages.map((page) => page.key)).toEqual(['p2', 'p1']);
-    expect(focusedIn(canvas)).toBe('p2 step');
+    expect(focusedIn(canvas)).toBe('p2 tab');
     expect(await heard(view)).toBe('Moved. Page 1: page 1 of 2.');
   });
 
@@ -777,12 +957,8 @@ describe('the moves', () => {
   });
 
   it('give the focus to Add field when Undo takes away the field that had it, with nothing left selected', async () => {
-    const { view, ask: request, press, canvas, keys } = await viewOf();
-    await request({
-      kind: 'drop',
-      source: { kind: 'new', type: 'phone', label: 'Phone' },
-      place: { container: 'g1', index: 2 },
-    });
+    const { view, add, press, canvas, keys } = await viewOf();
+    await add('phone');
     expect(keys('g1')).toEqual(['name', 'email', 'new1']);
     expect(focusedIn(canvas)).toBe('new1 select');
     await press('z', { ctrlKey: true });
@@ -794,10 +970,10 @@ describe('the moves', () => {
   it('change nothing with a key while a drag lasts', async () => {
     const { view, canvas, keys } = await viewOf();
     const handle = control(canvas, 'name', 'handle');
-    const event = new MouseEvent('pointerdown', { button: 0 });
+    const event = new MouseEvent('pointerdown', { button: 0, bubbles: true, composed: true });
     Object.defineProperty(event, 'pointerId', { value: 7 });
-    handle.dispatchEvent(new CustomEvent('noop'));
-    canvas.dragNew(event as PointerEvent, handle, 'phone', 'Phone');
+    Object.defineProperty(event, 'isPrimary', { value: true });
+    handle.dispatchEvent(event);
     const move = new MouseEvent('pointermove', { clientX: 0, clientY: 30 });
     Object.defineProperty(move, 'pointerId', { value: 7 });
     window.dispatchEvent(move);
@@ -812,8 +988,9 @@ describe('the moves', () => {
 
   it("go through the page's elements with Up and Down from the control the focus is on", async () => {
     const { view, canvas } = await viewOf();
-    await pressOn(view, control(canvas, 'p1', 'select'), 'ArrowDown');
-    expect(focusedIn(canvas)).toBe('g1 select');
+    // A page's tab is not on the way: Up and Down go through what the sheet shows.
+    await pressOn(view, control(canvas, 'p1', 'tab'), 'ArrowDown');
+    expect(focusedIn(canvas)).toBe('p1 tab');
     await pressOn(view, control(canvas, 'g1', 'select'), 'ArrowDown');
     expect(focusedIn(canvas)).toBe('name select');
     await pressOn(view, control(canvas, 'name', 'handle'), 'ArrowDown');
@@ -948,7 +1125,11 @@ describe('the moves', () => {
     opened.dialogs = [];
     for (let twice = 0; twice < 2; twice++)
       view.dispatchEvent(
-        new CustomEvent(CANVAS_REQUEST, { detail: { kind: 'changeType', key: 'note' }, bubbles: true, composed: true }),
+        new CustomEvent(INSPECTOR_REQUEST, {
+          detail: { kind: 'element', action: 'changeType', key: 'note' },
+          bubbles: true,
+          composed: true,
+        }),
       );
     await settle(view);
     await new Promise((done) => setTimeout(done, 50));
@@ -1044,15 +1225,6 @@ describe('the moves', () => {
     box.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true, composed: true }));
     await settle(view);
     expect(opened.dialogs).toHaveLength(1);
-  });
-
-  it('pass a palette type pressed on to the canvas, which follows the drag', async () => {
-    const { pick, canvas } = await viewOf();
-    const dragNew = vi.spyOn(canvas, 'dragNew').mockImplementation(() => undefined);
-    const event = new MouseEvent('pointerdown') as PointerEvent;
-    const handle = document.createElement('button');
-    await pick({ kind: 'drag', type: 'phone', label: 'Phone', event, handle });
-    expect(dragNew).toHaveBeenCalledWith(event, handle, 'phone', 'Phone');
   });
 });
 
@@ -1203,18 +1375,18 @@ describe('the inspector in the Design view', () => {
     expect((opened.dialogs[0]?.data as RuleBuilderModalData).rule).toEqual(kept);
   });
 
-  it('puts the palette on its rail beside it in a view up to 1024 px, and not in a wider or a narrow one', () => {
-    expect([620, 700, 701, 1024, 1025].map(isCrowded)).toEqual([false, false, true, true, false]);
-  });
-
-  it('shows the selected element beside the canvas in the column that says nothing is selected without one', async () => {
+  it('shows the selected element beside the canvas in the column that shows the open page without one', async () => {
     const { view, ask } = await viewOf();
     const empty = must(inspectorOf(view), 'the column with nothing selected');
     await (empty as unknown as { updateComplete: Promise<unknown> }).updateComplete;
-    expect([empty.getAttribute('mode'), shadow(empty).querySelector('h2')?.textContent]).toEqual([
-      'docked',
-      'Nothing selected',
-    ]);
+    expect([empty.getAttribute('mode'), shadow(empty).querySelector('h2')?.textContent]).toEqual(['docked', 'Page']);
+    expect((empty as unknown as { page: string }).page).toBe('p1');
+    await ask({ kind: 'show', shown: 1 });
+    expect((empty as unknown as { page: string }).page).toBe('p2');
+    await ask({ kind: 'show', shown: 'after' });
+    await (empty as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(shadow(empty).querySelector('h2')?.textContent).toBe('After sending');
+    await ask({ kind: 'show', shown: 0 });
     await ask({ kind: 'select', key: 'email' });
     // The same column: selecting draws nothing new beside the canvas, so the canvas keeps its width.
     const inspector = must(inspectorOf(view), 'the inspector');
@@ -1320,30 +1492,8 @@ describe('the inspector in the Design view', () => {
     expect(state().selection).toBeNull();
     const empty = must(inspectorOf(view), 'the column with nothing selected');
     await (empty as unknown as { updateComplete: Promise<unknown> }).updateComplete;
-    expect(shadow(empty).querySelector('h2')?.textContent).toBe('Nothing selected');
+    expect(shadow(empty).querySelector('h2')?.textContent).toBe('Page');
     expect(focusedIn(canvas)).toBe('email select');
-  });
-
-  it('keeps the palette on its rail beside it up to 1024 px, selected or not, opens it over the canvas from there, and docks it while the inspector is folded', async () => {
-    const { view, ask, pick, press } = await viewOf();
-    Object.assign(view, { _crowded: true });
-    await settle(view);
-    const palette = () => shadow(view).querySelector('jfb-designer-palette')?.getAttribute('mode');
-    expect(palette()).toBe('rail');
-    await ask({ kind: 'select', key: 'email' });
-    expect(palette()).toBe('rail');
-    await pick({ kind: 'unfold' });
-    expect(palette()).toBe('overlay');
-    expect(shadow(view).querySelector('.scrim')).not.toBeNull();
-    await press('Escape');
-    expect(palette()).toBe('rail');
-    await tell(view, { kind: 'fold' });
-    expect(palette()).toBe('docked');
-    await tell(view, { kind: 'unfold' });
-    expect(palette()).toBe('rail');
-    await ask({ kind: 'select', key: 'email' });
-    await press('Escape');
-    expect(palette()).toBe('rail');
   });
 
   it('opens over a narrow canvas with the focus on its heading, the canvas out of reach', async () => {
@@ -1360,11 +1510,10 @@ describe('the inspector in the Design view', () => {
     expect(shadow(inspector).activeElement?.localName).toBe('h2');
   });
 
-  it('takes the focus to its heading over a narrow canvas once a pick has closed the palette over it', async () => {
-    const { view, ask, pick } = await viewOf();
+  it('takes the focus to its heading over a narrow canvas once a pick has selected what it added', async () => {
+    const { view, add } = await viewOf();
     Object.assign(view, { _narrow: true });
     await settle(view);
-    await ask({ kind: 'addField', page: 'p1' });
     // A browser moves no focus into an inert element; jsdom does, so where the heading took it is read at the call.
     const reached: boolean[] = [];
     const focusHeading = vi
@@ -1376,7 +1525,7 @@ describe('the inspector in the Design view', () => {
         reached.push(!this.closest('[inert]') && !this.hasAttribute('inert'));
       });
     try {
-      await pick({ kind: 'field', type: 'phone' });
+      await add('phone');
       await settle(view);
       expect(inspectorOf(view)?.getAttribute('mode')).toBe('overlay');
       expect(reached).toContain(true);
@@ -1385,15 +1534,16 @@ describe('the inspector in the Design view', () => {
     }
   });
 
-  it('starts a new page after an element from its "..." and copies a field\'s alias', async () => {
-    const { view, ask, state } = await viewOf();
+  it('moves what follows an element to a new page from its "...", shown with the focus on its tab, and copies a field\'s alias', async () => {
+    const { view, ask, state, canvas } = await viewOf();
     await ask({ kind: 'select', key: 'name' });
     await ask({ kind: 'newPageAfter', key: 'name' });
     expect(
       state().definition.pages.map((page) => page.groups.flatMap((group) => group.fields.map((each) => each.key))),
     ).toEqual([['name'], ['email'], ['note']]);
-    expect(locate(state().definition, state().selection ?? '')?.kind).toBe('page');
-    expect(await heard(view)).toBe('Started a new page after name');
+    expect([state().selection, canvas.shown]).toEqual([null, 1]);
+    expect(focusedIn(canvas)).toBe(`${state().definition.pages[1]?.key ?? ''} tab`);
+    expect(await heard(view)).toBe('Moved what follows name to a new page');
     await ask({ kind: 'newPageAfter', key: 'g2' });
     expect(state().definition.pages).toHaveLength(4);
 
@@ -1725,8 +1875,8 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     expect(shadow(canvas).activeElement).toBe(control(canvas, 'note', 'select'));
   });
 
-  it('lets Add rule open the builder on the element chosen, selected, and an outcome lead to Settings', async () => {
-    const { view, ask, state, workspace } = await viewOf({
+  it('lets Add rule open the builder on the element chosen, selected, and an outcome open on After sending', async () => {
+    const { view, canvas, ask, state } = await viewOf({
       ...DEFINITION,
       outcomes: [{ key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } }],
     });
@@ -1744,17 +1894,17 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
     opened.dialogs = [];
-    opened.value = { go: 'outcomes', index: 0 };
+    opened.value = (alias: string) => (alias.endsWith('RulesOverview') ? { go: 'outcomes', index: 0 } : undefined);
     await ask({ kind: 'rulesOverview' });
-    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
-    // A rule of an outcome opens the outcome's sidebar on its rule, handed on to the Settings view (ADR-0185).
-    expect(workspace.fixes.getValue()).toEqual({
-      kind: 'view',
-      view: 'settings',
-      path: '$.outcomes[0].rules[0]',
-      key: 'o1',
-    });
-    workspace.fixes.setValue(null);
+    // A rule of an outcome opens the outcome's sidebar on its rule, on this view's After sending (ADR-0256).
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    expect([canvas.shown, state().selection, opened.dialogs[1]?.alias]).toEqual([
+      'after',
+      null,
+      'Jiron.FormBuilder.Modal.Outcome',
+    ]);
+    expect((opened.dialogs[1]?.data as OutcomeModalData).focus).toBe('rule');
     history.replaceState(null, '', before);
 
     // Closed, it changes nothing.
@@ -1854,7 +2004,7 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect([builder.origin, builder.rule?.key]).toEqual(['email', 'r1']);
   });
 
-  it('opens the palette for the end of a page without fields, the selection let go', async () => {
+  it('opens the field picker for the end of a page without fields, the selection let go', async () => {
     const definition: DesignDefinition = {
       pages: [
         { key: 'p1', groups: [{ key: 'g1', fields: [field('name')] }] },
@@ -1863,10 +2013,17 @@ describe('the form check in the Design view (ADR-0181)', () => {
     };
     const { view, canvas, ask, state } = await viewOf(definition);
     await ask({ kind: 'select', key: 'name' });
-    opened.value = answering({ kind: 'palette', page: 'p2' });
+    const fix = answering({ kind: 'picker', page: 'p2' });
+    let marked: unknown;
+    opened.value = async (alias: string) => {
+      if (alias !== FIELD_PICKER_MODAL_ALIAS) return fix(alias);
+      await view.updateComplete;
+      marked = canvas.insertAt;
+      return undefined;
+    };
     await ask({ kind: 'formCheck' });
     await settle(view);
-    expect([state().selection, canvas.shown, canvas.insertAt]).toEqual([null, 1, { container: 'g2', index: 0 }]);
+    expect([state().selection, canvas.shown, marked]).toEqual([null, 1, { container: 'g2', index: 0 }]);
   });
 
   it("leads to the views where the form's settings and actions are edited, and nowhere for an element gone", async () => {
@@ -1896,23 +2053,50 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(state()).toBe(now);
   });
 
-  it("leads the canvas's Change to the outcome it shows, and to Add outcome where visitors get the default", async () => {
+  it("leads an outcome's Fix it to After sending: the selection let go, its sidebar on the setting, in the message's language", async () => {
+    reading.german = true;
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
-    const { ask, workspace } = await viewOf({
+    const { canvas, ask, state, workspace } = await viewOf({
       ...DEFINITION,
       outcomes: [
         { key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } },
-        { key: 'o2', kind: 'message' },
+        { key: 'o2', kind: 'message', message: { '': '<p>Thanks</p>' } },
       ],
     });
-    await ask({ kind: 'changeOutcome', key: 'o2' });
-    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
-    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[1]', key: 'o2' });
-    workspace.fixes.setValue(null);
-    await ask({ kind: 'changeOutcome', key: null });
-    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
+    await ask({ kind: 'select', key: 'email' });
+    opened.value = answering({ kind: 'outcome', path: "$.outcomes[0].message['de-DE']", key: 'o2' });
+    await ask({ kind: 'formCheck' });
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    // No other view: the outcomes are this view's (ADR-0256).
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    expect([canvas.shown, state().selection, workspace.fixes.getValue()]).toEqual(['after', null, null]);
+    const data = opened.dialogs[1]?.data as OutcomeModalData;
+    expect([data.outcome?.key, data.focus, data.culture]).toEqual(['o2', 'message', 'de-DE']);
+    expect(workspace.language).toBe('de-DE');
     history.replaceState(null, '', before);
+  });
+
+  it("puts the focus on Add outcome for a Fix it at the list, and opens an outcome's sidebar handed on once the router stays still", async () => {
+    const { view, workspace } = await viewOf({ ...DEFINITION, outcomes: [{ key: 'o1', kind: 'message' }] });
+    opened.value = answering({ kind: 'outcome', path: '$.outcomes' });
+    await ask(view, { kind: 'formCheck' });
+    await settle(view);
+    const outcomes = must(shadow(view).querySelector<HTMLElement>('jfb-form-outcomes'), 'the outcomes');
+    await vi.waitFor(() =>
+      expect(
+        shadow(
+          must(shadow(outcomes).querySelector<HTMLElement>('jfb-outcome-list'), 'the list'),
+        ).activeElement?.classList.contains('add'),
+      ).toBe(true),
+    );
+    expect(opened.dialogs).toHaveLength(1);
+    workspace.fixes.setValue({ kind: 'outcome', path: '$.outcomes[0].showAnswers', key: 'o1' });
+    await settle(view);
+    expect(opened.dialogs).toHaveLength(1);
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    expect((opened.dialogs[1]?.data as OutcomeModalData).focus).toBe('showAnswers');
+    expect(workspace.fixes.getValue()).toBeNull();
   });
 
   it("shows the language of the text a problem is in, the default's for the default text", async () => {
@@ -1936,19 +2120,6 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect((canvas as unknown as { look: { culture: string } }).look.culture).toBe('en-US');
     expect(focusedIn(view)?.id).toBe('prop-label');
     expect(reading.cultures).toEqual([undefined, 'de-DE', 'en-US']);
-  });
-
-  it('closes the palette over a narrow canvas first, which would leave the inspector out of reach', async () => {
-    const { view, ask } = await viewOf();
-    Object.assign(view, { _narrow: true });
-    await settle(view);
-    await ask({ kind: 'addField', page: 'p1' });
-    expect(shadow(view).querySelector('jfb-designer-palette')).not.toBeNull();
-    opened.value = answering({ kind: 'element', key: 'name', item: { kind: 'text', property: 'label' } });
-    await ask({ kind: 'formCheck' });
-    await settle(view);
-    expect(shadow(view).querySelector('jfb-designer-palette')).toBeNull();
-    expect(focusedIn(view)?.id).toBe('prop-label');
   });
 
   it('makes a Fix it the publish dialog asked for, once', async () => {
@@ -1988,5 +2159,93 @@ describe('the form check in the Design view (ADR-0181)', () => {
       expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(['Jiron.FormBuilder.Modal.RuleBuilder']),
     );
     expect(workspace.fixes.getValue()).toBeNull();
+  });
+});
+
+describe('After sending in the Design view (ADR-0256)', () => {
+  const OUTCOMES: DesignDefinition = {
+    ...DEFINITION,
+    outcomes: [
+      { key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } },
+      { key: 'o2', kind: 'message', message: { '': '<p>Thanks</p>' } },
+    ],
+  };
+  const tell = async (view: HTMLElement & { updateComplete: Promise<unknown> }, detail: unknown) => {
+    view.dispatchEvent(new CustomEvent(INSPECTOR_REQUEST, { detail, bubbles: true, composed: true }));
+    await settle(view);
+  };
+  type Updating = HTMLElement & { updateComplete: Promise<unknown> };
+  const outcomesIn = (view: HTMLElement) => [...shadow(view).querySelectorAll<Updating>('jfb-form-outcomes')];
+  const listOf = (outcomes: HTMLElement) =>
+    must(
+      shadow(outcomes).querySelector<Updating & { move(from: number, to: number): void }>('jfb-outcome-list'),
+      'the list',
+    );
+
+  it("stands in the inspector's column beside the canvas, under its one heading, and only on After sending", async () => {
+    const { view, canvas, ask } = await viewOf(OUTCOMES);
+    expect(outcomesIn(view)).toEqual([]);
+    await ask({ kind: 'show', shown: 'after' });
+    const [outcomes, ...more] = outcomesIn(view);
+    expect(more).toEqual([]);
+    const inspector = must(shadow(view).querySelector<InspectorElement>('jfb-designer-inspector'), 'the inspector');
+    expect([outcomes?.parentElement, outcomes?.slot, outcomes?.hasAttribute('headed')]).toEqual([
+      inspector,
+      'after',
+      false,
+    ]);
+    await settle(must(outcomes, 'the outcomes'));
+    // The heading is the column's, once.
+    expect([...shadow(inspector).querySelectorAll('h2')].map((one) => text(one))).toEqual(['After sending']);
+    expect(shadow(must(outcomes, 'the outcomes')).querySelector('h2')).toBeNull();
+    expect(shadow(inspector).querySelector('slot[name="after"]')).not.toBeNull();
+    expect(shadow(canvas).querySelector('slot[name="after"]')).not.toBeNull();
+    await ask({ kind: 'show', shown: 0 });
+    expect(outcomesIn(view)).toEqual([]);
+    expect(shadow(canvas).querySelector('slot[name="after"]')).toBeNull();
+  });
+
+  it('lies under what visitors get, headed, with the inspector folded or over a narrow canvas', async () => {
+    const { view, canvas, ask } = await viewOf(OUTCOMES);
+    await ask({ kind: 'show', shown: 'after' });
+    await tell(view, { kind: 'fold' });
+    const [folded, ...more] = outcomesIn(view);
+    expect(more).toEqual([]);
+    expect([folded?.parentElement, folded?.hasAttribute('headed')]).toEqual([canvas, true]);
+    await settle(must(folded, 'the outcomes'));
+    expect(text(shadow(must(folded, 'the outcomes')).querySelector('h2'))).toBe('After sending');
+    await tell(view, { kind: 'unfold' });
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    const [narrow] = outcomesIn(view);
+    expect([narrow?.parentElement, narrow?.hasAttribute('headed'), outcomesIn(view).length]).toEqual([canvas, true, 1]);
+    expect(shadow(view).querySelector('jfb-designer-inspector')).toBeNull();
+  });
+
+  it('lets a selection go as After sending is shown', async () => {
+    const { ask, state } = await viewOf(OUTCOMES);
+    await ask({ kind: 'select', key: 'email' });
+    await ask({ kind: 'show', shown: 'after' });
+    expect(state().selection).toBeNull();
+  });
+
+  it('takes Ctrl+Z from inside the outcomes, and gives the focus to the outcome Undo brought back', async () => {
+    const { view, ask, state } = await viewOf(OUTCOMES);
+    await ask({ kind: 'show', shown: 'after' });
+    const outcomes = must(outcomesIn(view)[0], 'the outcomes');
+    await settle(outcomes);
+    const list = listOf(outcomes);
+    await settle(list);
+    list.move(0, 1);
+    await settle(view);
+    expect((state().definition['outcomes'] as { key: string }[]).map((one) => one.key)).toEqual(['o2', 'o1']);
+    const row = must(shadow(list).querySelector<HTMLElement>('.row-open'), 'a row');
+    row.focus();
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, composed: true }));
+    await settle(view);
+    expect((state().definition['outcomes'] as { key: string }[]).map((one) => one.key)).toEqual(['o1', 'o2']);
+    await vi.waitFor(() =>
+      expect(shadow(list).activeElement?.closest('.outcome-row')?.getAttribute('data-key')).toBe('o1'),
+    );
   });
 });

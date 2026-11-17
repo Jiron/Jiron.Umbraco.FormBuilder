@@ -1,8 +1,8 @@
 // The rules overview (ROADMAP 9.5c, IA 5.1, ADR-0178): a sidebar from the canvas's "..." that lists every rule of the
 // form by page, each element's rules said as the builder says them, then the outcomes' rules under After sending. Each
-// row leads to its element (an outcome's to Settings, where outcomes are edited); a field whose hide and require rules
-// hold for the same answers says so on its row. Add rule first asks what the rule affects, then the builder opens on
-// it. A form without rules says, in one sentence, what most rules do.
+// row leads to its element (an outcome's to its sidebar on After sending, ADR-0256); a field whose hide and require
+// rules hold for the same answers says so on its row. Add rule first asks what the rule affects, then the builder opens
+// on it. A form without rules says, in one sentence, what most rules do.
 import { conflictOf, formSight, type Conflict, type SearchScope } from '@jfb/logic';
 import { FORMULAS } from '@jfb/logic/calc';
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';

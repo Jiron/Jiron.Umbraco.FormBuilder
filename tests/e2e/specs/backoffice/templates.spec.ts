@@ -2,13 +2,14 @@ import type { APIRequestContext, Page, TestInfo } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, unique } from '../../support/forms-api.ts';
+import { addFieldOf, openPicker, pickerClosed, pickerItem, pickerOf } from '../../support/picker.ts';
 import { openRowActions, treeRow } from '../../support/tree.ts';
 
 // Templates (ROADMAP 12.1, IA 4, 5 and 7, ADR-0217): a group saved from its "..." on one form's canvas, with the
 // validation rule on its fields and without the rule and the validation rule that depended on a field outside it,
-// inserted from another form's palette as a copy with keys of its own, a free alias, its rule on its own fields and its
-// validation rule on the copy's; a form saved as a template from its "..." in the tree, then found, used, renamed and
-// deleted in Library > Templates; and the gallery's screens, wide and narrow, for the review of 12.3.
+// inserted from another form's field picker as a copy with keys of its own, a free alias, its rule on its own fields
+// and its validation rule on the copy's; a form saved as a template from its "..." in the tree, then found, used,
+// renamed and deleted in Library > Templates; and the gallery's screens, wide and narrow, for the review of 12.3.
 
 const SECTION = '/umbraco/section/jfb-forms';
 const workspaceOf = (key: string) => `${SECTION}/workspace/jfb-form/edit/${key}`;
@@ -155,11 +156,12 @@ test('a group saved on one form is inserted into another with keys of its own an
   ).toBeVisible();
 
   await page.goto(workspaceOf(target));
-  const palette = design.locator('jfb-designer-palette');
-  await expect(palette.getByRole('heading', { name: 'Saved groups' })).toBeVisible();
-  await palette.getByRole('button', { name: block }).scrollIntoViewIfNeeded();
-  await look(page, info, 'the palette with a saved group');
-  await palette.getByRole('button', { name: block }).click();
+  await openPicker(page, addFieldOf(design));
+  await expect(pickerOf(page).getByRole('heading', { name: 'Saved groups' })).toBeVisible();
+  await pickerItem(page, block).scrollIntoViewIfNeeded();
+  await look(page, info, 'the field picker with a saved group');
+  await pickerItem(page, block).click();
+  await pickerClosed(page);
   await expect(design.getByRole('button', { name: 'Delivery, group' })).toBeVisible();
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect.poll(async () => (await draftOf(api, target)).definition.pages[0]?.groups.length).toBe(2);

@@ -4,6 +4,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { API, blankForm, contactForm, created, formOf, KEY, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { addFieldOf, openPasteQuestions, openPicker, pickerOf } from '../../support/picker.ts';
 import { openSearch } from '../../support/search.ts';
 import { loadedIn } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
@@ -433,7 +434,7 @@ async function openDesign(page: Page, key: string): Promise<Locator> {
 
 /** Selects a field on the canvas, on its page, and waits for its inspector. */
 async function select(page: Page, design: Locator, wanted: WalkField): Promise<void> {
-  if (wanted.page > 0) await design.locator('jfb-form-canvas .bo-step:not(.bo-step-add)').nth(wanted.page).click();
+  if (wanted.page > 0) await design.locator('jfb-form-canvas .bo-tab[data-page] .bo-tab-name').nth(wanted.page).click();
   const field = design.locator(`jfb-canvas-field[key="${wanted.key}"] [data-control="select"]`).first();
   await field.scrollIntoViewIfNeeded();
   await field.click();
@@ -454,15 +455,19 @@ async function toolsOf(design: Locator): Promise<Locator> {
     : design.locator('jfb-canvas-field .bo-tools').filter({ visible: true }).first();
 }
 
-/** The palette, opened: from its rail when it is folded, or over the canvas from Add field in a narrow workspace. */
-async function openPalette(design: Locator): Promise<Locator> {
-  const palette = design.locator('jfb-designer-palette');
-  if (await palette.locator('uui-input input').isVisible()) return palette;
-  const rail = palette.locator('uui-button').first();
-  if (await rail.isVisible()) await rail.click();
-  else await design.locator('jfb-form-canvas .bo-add-field').first().click();
-  await expect(palette.locator('uui-input input')).toBeVisible();
-  return palette;
+/** Shows the form in the site's other language: the row's language button, then the language not shown in its list. */
+async function otherLanguage(design: Locator): Promise<void> {
+  const canvas = design.locator('jfb-form-canvas');
+  await canvas.locator('.bo-language').click();
+  await canvas.locator('#jfb-canvas-languages button:not([aria-current="true"])').first().click();
+}
+
+/** Shows After sending, whose outcomes stand in the inspector's column, or under the sheet in a narrow workspace. */
+async function openAfterSending(design: Locator): Promise<Locator> {
+  await design.locator('jfb-form-canvas .bo-after-step').click();
+  const outcomes = design.locator('jfb-form-outcomes');
+  await expect(outcomes.locator('jfb-outcome-list')).toBeVisible();
+  return outcomes;
 }
 
 /** Scrolls an editor into the middle of its scroll box; an editor drawn without a box of its own is never "visible". */
@@ -588,14 +593,31 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot('design', async () => {
       await openDesign(page, made.feedback);
     });
-    await walk.shot('palette-search', async () => {
-      const palette = await openPalette(await openDesign(page, made.feedback));
-      await palette.locator('uui-input input').fill('da');
+    // The field picker (22.1, ADR-0256), from the page's Add field: as it opens, and with a search typed.
+    await walk.shot('picker', async () => {
+      await openPicker(page, addFieldOf(await openDesign(page, made.feedback)));
+    });
+    await walk.shot('picker-search', async () => {
+      await openPicker(page, addFieldOf(await openDesign(page, made.feedback)));
+      await pickerOf(page).locator('uui-input input').fill('da');
     });
     await walk.shot('paste-questions', async () => {
-      const palette = await openPalette(await openDesign(page, made.feedback));
-      await palette.locator('.paste').click();
-      await page.locator('jfb-paste-questions-modal textarea').fill('Your name\nEmail address\nWhen can we call?');
+      const modal = await openPasteQuestions(page, addFieldOf(await openDesign(page, made.feedback)));
+      await modal.locator('textarea').fill('Your name\nEmail address\nWhen can we call?');
+    });
+    // The open page's tab: its menu, and its Rename, which shows the page in the inspector with its Title selected.
+    await walk.shot('tab-menu', async () => {
+      const design = await openDesign(page, made.feedback);
+      await design.locator('jfb-form-canvas .bo-tab[data-open] .bo-more-element').click();
+      await expect(
+        design.locator('jfb-form-canvas .bo-tab uui-popover-container:popover-open button').first(),
+      ).toBeVisible();
+    });
+    await walk.shot('page-inspector', async () => {
+      const design = await openDesign(page, made.feedback);
+      await design.locator('jfb-form-canvas .bo-tab[data-open] .bo-more-element').click();
+      await design.locator('jfb-form-canvas .bo-tab uui-popover-container:popover-open button').first().click();
+      await expect(design.locator('jfb-designer-inspector #prop-title')).toBeFocused();
     });
     await walk.shot('selected', async () => {
       const design = await openDesign(page, made.feedback);
@@ -676,7 +698,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     await walk.shot('content-language', async () => {
       const design = await openDesign(page, made.volunteer);
-      await design.locator('jfb-form-canvas .bo-language select').selectOption('de-DE');
+      await otherLanguage(design);
     });
     await walk.shot('form-check', async () => {
       const design = await openDesign(page, made.volunteer);
@@ -733,23 +755,21 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await expect(settingsView.locator('#member-groups-why-0')).toBeVisible();
       await scrollTo(settingsView.locator('#member-groups'));
     });
-    // After sending (10.1b): the list, a message's sidebar, and a redirect's with its rule, each with its preview (10.1c).
-    await walk.shot('settings-after', async () => {
-      await openSettings(made.grouped);
-      await openSettingsGroup('after');
+    // After sending (10.1b, on the Design view since 22.1): the list, a message's sidebar, and a redirect's with its
+    // rule, each with its preview (10.1c). The sidebars keep their names, as the screens they show are the same.
+    await walk.shot('after-sending', async () => {
+      await openAfterSending(await openDesign(page, made.grouped));
     });
     const outcomeSidebar = page.locator('jfb-outcome-modal');
     await walk.shot('settings-outcome', async () => {
-      await openSettings(made.grouped);
-      await openSettingsGroup('after');
-      await settingsView.locator('jfb-outcome-list .row-open').nth(1).click();
+      const outcomes = await openAfterSending(await openDesign(page, made.grouped));
+      await outcomes.locator('jfb-outcome-list .row-open').nth(1).click();
       await expect(outcomeSidebar.locator('#message')).toBeVisible();
       await expect(outcomeSidebar.locator('jfb-outcome-preview .jfb-summary')).toBeVisible();
     });
     await walk.shot('settings-outcome-redirect', async () => {
-      await openSettings(made.grouped);
-      await openSettingsGroup('after');
-      await settingsView.locator('jfb-outcome-list .row-open').first().click();
+      const outcomes = await openAfterSending(await openDesign(page, made.grouped));
+      await outcomes.locator('jfb-outcome-list .row-open').first().click();
       await expect(outcomeSidebar.locator('#address')).toBeVisible();
       await expect(outcomeSidebar.locator('jfb-outcome-preview .said')).toBeVisible();
     });
@@ -785,11 +805,11 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     }
     // Translating (14.1, ADR-0228): the English form's designer in German marks what is left on its fields, page and
     // group; the inspector holds the German text beside the dictionary's button, a dictionary item's label says what it
-    // shows, Umbraco's dictionary picker opens from the button, and the Settings view's outcome and the Actions view's
-    // mail are marked too. The language stays with the workspace, so the views are reached by their tabs.
+    // shows, Umbraco's dictionary picker opens from the button, and After sending's outcome and the Actions view's mail
+    // are marked too. The language stays with the workspace, so the views are reached by their tabs.
     const inGerman = async () => {
       const design = await openDesign(page, made.english);
-      await design.locator('jfb-form-canvas .bo-language select').selectOption('de-DE');
+      await otherLanguage(design);
       await expect(design.locator('jfb-form-canvas .bo-chip').first()).toBeVisible();
       return design;
     };
@@ -814,11 +834,9 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await design.locator('jfb-designer-inspector jfb-dictionary-pick button').first().click();
       await expect(page.locator('umb-tree-picker-modal')).toBeVisible();
     });
-    await walk.shot('translate-settings', async () => {
-      await inGerman();
-      await toView('settings');
-      await openSettingsGroup('after');
-      await expect(settingsView.locator('jfb-outcome-list .untranslated').first()).toBeVisible();
+    await walk.shot('translate-after', async () => {
+      const outcomes = await openAfterSending(await inGerman());
+      await expect(outcomes.locator('jfb-outcome-list .untranslated').first()).toBeVisible();
     });
     await walk.shot('translate-actions', async () => {
       await inGerman();

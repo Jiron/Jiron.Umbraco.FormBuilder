@@ -156,6 +156,10 @@ describe('every key is used', () => {
     expectHeld('jfbSettings', used);
   });
 
+  it("in the outcomes' area: by their code, on the Design view and in the History view", () => {
+    expectHeld('jfbOutcomes', usedKeys('jfbOutcomes', keysOf('jfbOutcomes'), {}, inFolders('designer/outcomes')));
+  });
+
   it("in the History view's area: by its code and its changes' kinds", () => {
     expectHeld('jfbHistory', usedKeys('jfbHistory', keysOf('jfbHistory'), {}, inFolders('designer')));
   });
@@ -287,6 +291,7 @@ describe('every area', () => {
     'jfbRules',
     'jfbMergeTags',
     'jfbSettings',
+    'jfbOutcomes',
     'jfbHistory',
     'jfbActions',
     'jfbGlobalSettings',

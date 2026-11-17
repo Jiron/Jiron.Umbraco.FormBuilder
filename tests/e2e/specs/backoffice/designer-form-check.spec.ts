@@ -2,12 +2,13 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, formOf, unique } from '../../support/forms-api.ts';
+import { pickerClosed, pickerItem, pickerSearch } from '../../support/picker.ts';
 
 // The form check in the designer (ROADMAP 9.5f, IA 5.1 and 5.7, ADR-0181). The toolbar's badge counts the errors and
 // warnings the server's check finds in the draft, and follows each change once the changes pause; its sidebar lists
 // errors first, which block publishing, then warnings, then suggestions, each said in words with Fix it, which selects
-// the element and puts the focus on its setting, opens the rules builder on a rule, or opens the palette for a form
-// without fields. The publish dialog shows the result: an error blocks Publish with Fix it, a warning doesn't.
+// the element and puts the focus on its setting, opens the rules builder on a rule, or opens the field picker for a
+// form without fields. The publish dialog shows the result: an error blocks Publish with Fix it, a warning doesn't.
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -95,7 +96,7 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   const design = await openForm(page, key);
 
   // The badge counts the error and the two warnings; the suggestion is listed, not counted.
-  await expect(badgeOf(design)).toHaveText('4 problems');
+  await expect(badgeOf(design)).toHaveAccessibleName('Form check: 4 problems');
   await expect(badgeOf(design)).toHaveAttribute('data-state', 'error');
   let sidebar = await openCheck(page, design);
   await expect(sidebar.locator('uui-box')).toHaveCount(3);
@@ -122,7 +123,7 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
     'true',
   );
   await label.fill('Order number');
-  await expect(badgeOf(design)).toHaveText('3 problems');
+  await expect(badgeOf(design)).toHaveAccessibleName('Form check: 3 problems');
   await expect(badgeOf(design)).toHaveAttribute('data-state', 'warning');
 
   // Fix it on a rule's warning opens the rules builder on that rule, its field selected.
@@ -154,7 +155,7 @@ test('the badge counts the problems, the sidebar lists them errors first, and Fi
   );
 });
 
-test("a blank form's one error opens the palette, blocks Publish with Fix it, and a warning alone publishes", async ({
+test("a blank form's one error opens the field picker, blocks Publish with Fix it, and a warning alone publishes", async ({
   page,
   loginAs,
   apiAs,
@@ -164,10 +165,9 @@ test("a blank form's one error opens the palette, blocks Publish with Fix it, an
   const key = await blankForm(api, unique('Empty'));
   await loginAs('designer');
   const design = await openForm(page, key);
-  const palette = design.locator('jfb-designer-palette');
-  const search = palette.getByRole('searchbox', { name: 'Search fields' });
+  const search = pickerSearch(page);
 
-  await expect(badgeOf(design)).toHaveText('1 problem');
+  await expect(badgeOf(design)).toHaveAccessibleName('Form check: 1 problem');
   const sidebar = await openCheck(page, design);
   await expect(sidebar.locator('uui-box')).toHaveAttribute('headline', '1 error');
   await expect(rowOf(sidebar, 'fields_missing').locator('.name')).toHaveText('Add at least one field');
@@ -176,8 +176,10 @@ test("a blank form's one error opens the palette, blocks Publish with Fix it, an
   await rowOf(sidebar, 'fields_missing').getByRole('button', { name: 'Fix it: Add at least one field' }).click();
   await expect(sidebar).toHaveCount(0);
   await expect(search).toBeFocused();
+  await page.keyboard.press('Escape');
+  await pickerClosed(page);
 
-  // Publish... shows the error, which blocks Publish, with Fix it, which leads to the palette again.
+  // Publish... shows the error, which blocks Publish, with Fix it, which leads to the field picker again.
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
   let dialog = page.locator('jfb-publish-modal');
   await expect(dialog.locator('[role="alert"] .lead')).toHaveText('1 error blocks publishing.');
@@ -190,10 +192,11 @@ test("a blank form's one error opens the palette, blocks Publish with Fix it, an
   await expect(search).toBeFocused();
 
   // A field asking for a card number: a warning, which doesn't block.
-  await palette.getByRole('button', { name: 'Short text' }).first().click();
+  await pickerItem(page, 'Short text').click();
+  await pickerClosed(page);
   const label = design.locator('jfb-designer-inspector #prop-label');
   await label.fill('Card number');
-  await expect(badgeOf(design)).toHaveText('1 problem');
+  await expect(badgeOf(design)).toHaveAccessibleName('Form check: 1 problem');
   await expect(badgeOf(design)).toHaveAttribute('data-state', 'warning');
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
   dialog = page.locator('jfb-publish-modal');

@@ -1,10 +1,10 @@
-// The canvas's drags (ADR-0016, ADR-0169) over a laid-out page whose boxes the test gives: where a field, a group, a
-// new field and a page land, a refusal shown at the line and asked once per place, a step's page end and the page shown
-// after resting on it, Escape, and the settle after a drop.
+// The canvas's drags (ADR-0016, ADR-0169, ADR-0256) over a laid-out page whose boxes the test gives: where a field, a
+// group and a page land, a refusal shown at the line and asked once per place, a tab's page end and the page shown after
+// resting on it, Escape, and the settle after a drop.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { must } from '../../testing';
 import type { Place } from '../editor-model';
-import { CanvasDrag, STEP_DWELL_MS, SETTLE_MS, type CanvasDragHost, type DragSource } from './canvas-drag';
+import { CanvasDrag, SETTLE_MS, TAB_DWELL_MS, type CanvasDragHost, type DragSource } from './canvas-drag';
 
 // The values ADR-0016 and ADR-0169 name, so a changed constant fails here.
 const DWELL = 600;
@@ -24,9 +24,9 @@ function lay(element: Element | null, left: number, top: number, right: number, 
       ({ left, top, right, bottom, width: right - left, height: bottom - top }) as DOMRect;
 }
 
-// Two steps; page one with the groups g1 (fields a, b) and g2 (field c) one below the other.
+// Two tabs; page one with the groups g1 (fields a, b) and g2 (field c) one below the other.
 const MARKUP = `
-  <nav class="bo-steps"><button class="bo-step" data-page="p1">One</button><button class="bo-step" data-page="p2">Two</button></nav>
+  <div class="bo-tabs"><span class="bo-tab" data-page="p1">One</span><span class="bo-tab" data-page="p2">Two</span></div>
   <div class="bo-viewport">
     <section data-groups="p1">
       <div data-group="g1"><div data-fields="g1"><jfb-canvas-field key="a"></jfb-canvas-field><jfb-canvas-field key="b"></jfb-canvas-field></div></div>
@@ -47,7 +47,7 @@ function canvasOf(refusal: (place: Place | null) => string | null = () => null) 
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = MARKUP;
   const find = (selector: string) => root.querySelector(selector);
-  lay(find('.bo-steps'), 0, 0, 400, 40);
+  lay(find('.bo-tabs'), 0, 0, 400, 40);
   lay(find('[data-page="p1"]'), 0, 0, 100, 40);
   lay(find('[data-page="p2"]'), 120, 0, 220, 40);
   lay(find('.bo-viewport'), 0, 60, 400, 600);
@@ -135,7 +135,7 @@ describe('a drag on the canvas', () => {
     expect(heard.drops).toEqual([[field('a'), { container: 'g1', index: 1 }]]);
   });
 
-  it('drops a group among the groups of the page, and a new field where a field would land', () => {
+  it('drops a group among the groups of the page', () => {
     const { drag, heard } = canvasOf();
     const group: DragSource = { kind: 'group', key: 'g2', label: 'g2' };
     dragAlong(drag, group, [
@@ -143,16 +143,7 @@ describe('a drag on the canvas', () => {
       [10, 230],
       [10, 70],
     ]);
-    const made: DragSource = { kind: 'new', type: 'text', label: 'Short text' };
-    dragAlong(drag, made, [
-      [500, 500],
-      [480, 500],
-      [100, 270],
-    ]);
-    expect(heard.drops).toEqual([
-      [group, { container: 'p1', index: 0 }],
-      [made, { container: 'g2', index: 0 }],
-    ]);
+    expect(heard.drops).toEqual([[group, { container: 'p1', index: 0 }]]);
   });
 
   it('shows the line in the colour of a refusal with why, asks once per place, and says the refusal on a drop', () => {
@@ -185,7 +176,7 @@ describe('a drag on the canvas', () => {
     expect(root.querySelector('[data-dragged]')).toBeNull();
   });
 
-  it("drops on a page's step at that page's end, and shows the page after the pointer rests there", () => {
+  it("drops on a page's tab at that page's end, and shows the page after the pointer rests there", () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const { drag, heard, find } = canvasOf();
     dragAlong(
@@ -199,7 +190,7 @@ describe('a drag on the canvas', () => {
       false,
     );
     expect(find('[data-page="p2"]')?.getAttribute('data-drop')).toBe('');
-    expect(STEP_DWELL_MS).toBe(DWELL);
+    expect(TAB_DWELL_MS).toBe(DWELL);
     vi.advanceTimersByTime(DWELL - 1);
     expect(heard.shown).toEqual([]);
     vi.advanceTimersByTime(1);
@@ -238,7 +229,7 @@ describe('a drag on the canvas', () => {
     expect(heard.shown).toEqual([]);
   });
 
-  it('moves a page among the steps, before the step it comes before, the line upright between them', () => {
+  it('moves a page among the tabs, before the tab it comes before, the line upright between them', () => {
     const { drag, heard, root } = canvasOf();
     const page: DragSource = { kind: 'page', key: 'p2', label: 'Two' };
     dragAlong(
@@ -252,7 +243,7 @@ describe('a drag on the canvas', () => {
       false,
     );
     expect(root.querySelector('.bo-line')?.hasAttribute('data-upright')).toBe(true);
-    // A page's place is among the steps, in Umbraco's colours; a field's, below, on the sheet.
+    // A page's place is among the tabs, in Umbraco's colours; a field's, below, on the sheet.
     expect(root.querySelector('.bo-slot')?.hasAttribute('data-sheet')).toBe(false);
     window.dispatchEvent(pointer('pointerup', 20, 20));
     expect(heard.drops).toEqual([[page, { container: null, index: 0 }]]);
@@ -270,7 +261,7 @@ describe('a drag on the canvas', () => {
     expect(root.querySelector('.bo-slot')?.hasAttribute('data-sheet')).toBe(true);
   });
 
-  it('shows why beside the copy that follows the pointer, also over a step', () => {
+  it('shows why beside the copy that follows the pointer, also over a tab', () => {
     const { drag, root } = canvasOf((place) => (place?.container === 'p2-last' ? 'Not there.' : null));
     dragAlong(
       drag,
@@ -289,7 +280,7 @@ describe('a drag on the canvas', () => {
     expect(root.querySelector('.bo-follow .bo-ghost')?.textContent).toBe('a');
   });
 
-  it('leaves a page where it is when it is let go away from the steps', () => {
+  it('leaves a page where it is when it is let go away from the tabs', () => {
     const { drag, heard } = canvasOf();
     dragAlong(drag, { kind: 'page', key: 'p2', label: 'Two' }, [
       [150, 20],
@@ -331,8 +322,8 @@ describe('a drag on the canvas', () => {
     const animate = vi.fn();
     element.animate = animate as unknown as typeof element.animate;
     lay(element, 0, 160, 400, 220);
-    drag.settle(null);
-    drag.settle(null);
+    drag.settle();
+    drag.settle();
     expect(animate).toHaveBeenCalledTimes(1);
     // The copy has no layout here, so it was at 0, 0.
     expect(animate.mock.calls[0]?.[0]).toEqual([{ transform: 'translate(0px, -160px)' }, { transform: 'none' }]);
@@ -340,31 +331,23 @@ describe('a drag on the canvas', () => {
     expect(animate.mock.calls[0]?.[1]).toMatchObject({ duration: SETTLE, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
   });
 
-  it('settles a new field by the key the drop selected, and nothing with reduced motion', () => {
+  it('settles nothing with reduced motion', () => {
     const { drag, find } = canvasOf();
-    const made: DragSource = { kind: 'new', type: 'text', label: 'Short text' };
-    dragAlong(drag, made, [
-      [500, 500],
-      [480, 500],
-      [200, 300],
-    ]);
-    const element = find('[key="b"]') as HTMLElement;
+    const element = find('[key="c"]') as HTMLElement;
     const animate = vi.fn();
     element.animate = animate as unknown as typeof element.animate;
-    drag.settle('b');
-    expect(animate).toHaveBeenCalledTimes(1);
-
     window.matchMedia = ((query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
     })) as typeof window.matchMedia;
     try {
-      dragAlong(drag, made, [
-        [500, 500],
-        [480, 500],
-        [200, 300],
+      dragAlong(drag, field('c'), [
+        [200, 290],
+        [200, 270],
+        [200, 150],
       ]);
-      drag.settle('b');
-      expect(animate).toHaveBeenCalledTimes(1);
+      lay(element, 0, 160, 400, 220);
+      drag.settle();
+      expect(animate).not.toHaveBeenCalled();
     } finally {
       Reflect.deleteProperty(window, 'matchMedia');
     }

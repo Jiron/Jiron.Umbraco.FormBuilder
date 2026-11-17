@@ -2,6 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { chooseLanguage } from '../../support/designer-row.ts';
 
 // The AI add-on in the designer (ROADMAP 15.3, ADR-0018), on the fake provider whose chat profile this host chooses in
 // Settings > AI (Testing.AI; no real key, ever): "Draft a form with AI" in the library's create menu turns a pasted
@@ -174,7 +175,7 @@ test('Suggest help text lists what the AI suggests beside the help text, and wri
   await expect(inspector.getByLabel('Help text', { exact: true })).toHaveValue('Fake help for DOB.');
 
   // Not offered while the designer shows another language: suggestions start in the default one.
-  await design.locator('jfb-form-canvas').getByRole('combobox', { name: 'Language' }).selectOption('de-DE');
+  await chooseLanguage(design, 'de-DE');
   await expect(inspector.getByRole('button', { name: 'Suggest help text' })).toHaveCount(0);
 
   await saveDraft(page);

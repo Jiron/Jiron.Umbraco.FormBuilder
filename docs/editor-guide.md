@@ -103,19 +103,21 @@ and [insights.md](insights.md).
 
 ## The Design view
 
-The palette is on the left, the form in the middle and the inspector on the right. On a smaller screen the palette and
-inspector fold to the side; below 700 pixels they open over the form, and Esc closes them.
+The form takes the screen, with the inspector beside it on the right and one row of controls above it: the pages and
+**After sending** at its start, the width, the language, the form check and **…** at its end. You can fold the
+inspector to a narrow rail; below 700 pixels it opens over the form when you select something, and Esc closes it.
 
-![The Design view of a contact form: the palette on the left, the form on the canvas, and the inspector of the selected Email address field on the right](screenshots/designer.png)
+![The Design view of a contact form: the form on the canvas, and the inspector of the selected Email address field on the right](screenshots/designer.png)
 
 ### Adding fields
 
-The **palette** lists, in order: the field types you used most recently, **Layout** (a **Group** and **New page**), the
-field types by kind, your site's **Saved groups**, and **Paste questions…**. Its search finds a type by name.
+Every page ends with **Add field**, and between any two elements **Add a field here** appears when you point at the
+gap or reach it with the keyboard. Either opens the **field picker**, headed "Add a field": its search, ready to type
+in, then **Layout** (a **Group**), the field types by kind and your site's **Saved groups**, with **Paste questions…**
+at its foot. Type a few letters and press Enter to add the first match, or click any type.
 
-A field you pick lands at the insertion point you opened, else after what is selected, else at the end of the page.
-Between any two elements, **Add a field here** appears when you point at the gap or reach it with the keyboard, and
-every page ends with **Add field**. You can also drag a type from the palette onto the form.
+What you pick lands where you opened the picker, selected, so you can set it up at once. Esc or **Close** adds nothing
+and takes you back to where you were.
 
 [field-types.md](field-types.md) describes every field type and its settings.
 
@@ -125,20 +127,23 @@ change any type in the list before you add them.
 
 ### Pages, groups and After sending
 
-The steps across the top of the form are its pages, then **Add page**, then **After sending**.
+The row above the form shows its pages as tabs, then **+** (Add page), then **After sending**.
 
-- **A page** is shown by choosing its step, and moved by dragging its step. **New page** in the palette, or **Start a
-  new page after this** on a field, splits a page at that point.
+- **A page** is shown by choosing its tab, and moved by dragging its tab; a field dropped on a tab goes to the end of
+  that page. The open page's tab has a **…** menu: **Rename** (the page's title in the inspector), **Duplicate** and
+  **Delete**, which a form's only page doesn't offer.
+- **+** adds an empty page at the end. To split a page at a field, choose **Move what follows to a new page** in that
+  field's **…**.
 - **A group** holds fields side by side in one to four columns, plainly or as a card. A **repeatable group** lets
   visitors add the same set of fields more than once.
 - **After sending** shows what visitors get once they have sent the form: its first outcome, or the standard thank-you
-  message. **Change** opens it in the Settings view ([After sending](#after-sending)).
+  message. Its outcomes are edited right beside it ([After sending](#after-sending)).
 
 ### Selecting, moving and deleting
 
 Choose an element to select it; Esc clears the selection. The selected element shows its actions: **Move to…**,
-**Duplicate**, **Delete** and, under **…**, **Change type…**, **Start a new page after this**, **Copy alias** or, for a
-group, **Save group as template…**.
+**Duplicate**, **Delete** and, under **…**, **Move what follows to a new page**, **Copy alias** or, for a group, **Save
+group as template…**. **Change type…** is in the inspector, beside the field's type.
 
 To move an element, drag its handle at the top left. A line shows where it lands; where it can't go, the line changes
 colour and says why, for example because a rule would then wait on its own answer, or because a form holds only one
@@ -159,15 +164,16 @@ They act on the field, group or page you are on. **?** shows them in the designe
 | Delete | Delete it |
 | Alt+↑ / Alt+↓ | Move it one place up or down |
 | ↑ / ↓ | Go up or down the page |
-| F2 | Edit a field's label in place (a double click does too) |
-| Esc | Clear the selection, close the palette, or stop a drag |
+| F2 | Edit a field's label in place (a double click does too), or rename the page whose tab you are on |
+| Esc | Clear the selection, or stop a drag |
 | ? | Show these shortcuts |
 
 Inside a text box, the box keeps its own undo and the shortcuts don't apply.
 
 ### The inspector
 
-The inspector shows the selected element's settings in sections, from what most forms need to what few do:
+The inspector shows the selected element's settings in sections, from what most forms need to what few do; with
+nothing selected, it shows the open page's title and rules:
 
 - **Essentials:** the label, help text, whether an answer is required, the placeholder and, for choice fields, the
   options.
@@ -190,16 +196,33 @@ need. Answers already sent keep their values.
 
 ### The form check
 
-The badge in the canvas's toolbar shows how many problems the form check finds, and opens its list. **Errors** block
+The badge in the row above the form shows how many problems the form check finds, or a check mark when there are
+none, and opens its list. **Errors** block
 publishing; **warnings** and **suggestions** don't. Each problem names the element and what is wrong, and **Fix it**
 selects the element and opens the setting. Typical ones: a field without a label, personal data asked for without a
 consent field, a card number asked for, a field whose option list this site lacks (an error, since it would offer no
 choices), or outcomes that leave some visitors without one.
 
+### After sending
+
+Choose **After sending** in the row above the form. The form shows what visitors get, and the list of outcomes
+stands beside it in the inspector's place, or under it when the inspector is folded or the screen is narrow. A row
+opens its outcome; **Add outcome** adds one, and you drag a row by its handle to change the order.
+
+What visitors get once they have sent the form is its **outcomes**: a message in place of the form, a redirect to a page
+or address, or a message and then a redirect. **Visitors get the first outcome whose rule matches,** so put the outcomes
+with rules first and leave the last without a rule; the list says for each one when it is used. A form placed with a
+form picker whose **Page after a send** is set goes to that page instead
+([multi-site.md](multi-site.md#the-form-picker)). Without any outcome, visitors get the standard message, "Thank you. We
+have received your message."
+
+An outcome's message can **show a copy of the answers** below it, with a print button. A redirect waits a few seconds
+first if it follows a message (5 by default). **Preview with a sample entry** shows the outcome with sample answers.
+
 ## The Settings view
 
-The form's settings, in groups: **Submission**, **After sending**, **Availability**, **Spam protection**,
-**Privacy**, **Appearance** and **Developer**. A closed group sums up its settings in one line. A setting offered as
+The form's settings, in groups: **Submission**, **Availability**, **Spam protection**, **Privacy**, **Appearance** and
+**Developer**. A closed group sums up its settings in one line. A setting offered as
 **Site default (…)** follows the site's own setting, also when that changes later.
 
 ### Submission
@@ -226,18 +249,6 @@ Under **More options**:
   are not saved, so the form asks for them again. It needs entries to be stored.
 - **Entry reference:** a prefix, the number of digits and whether the year is included. Visitors see the reference
   after they send, and the merge tag `{{ entry.reference }}` writes it.
-
-### After sending
-
-What visitors get once they have sent the form is its **outcomes**: a message in place of the form, a redirect to a page
-or address, or a message and then a redirect. **Visitors get the first outcome whose rule matches,** so put the outcomes
-with rules first and leave the last without a rule; the list says for each one when it is used. A form placed with a
-form picker whose **Page after a send** is set goes to that page instead
-([multi-site.md](multi-site.md#the-form-picker)). Without any outcome, visitors get the standard message, "Thank you. We
-have received your message."
-
-An outcome's message can **show a copy of the answers** below it, with a print button. A redirect waits a few seconds
-first if it follows a message (5 by default). **Preview with a sample entry** shows the outcome with sample answers.
 
 ### Availability
 
@@ -325,16 +336,16 @@ A template is a starting point for new forms, or a group of fields that any form
   The template holds the form as last saved.
 - **A group as a template:** a selected group's "…" › **Save group as template…**. It keeps the group's fields and
   their validation; rules that depend on fields outside the group are left out. The group then appears under **Saved
-  groups** in every form's palette.
+  groups** in every form's field picker.
 
 **Library › Templates** shows the built-in templates, saved forms and saved groups, with a preview of each. Saved ones
 can be renamed or deleted there; forms already made from a template stay as they are.
 
 ## Languages
 
-On a site with more than one language, **Language** in the canvas's toolbar and in the Settings view switches the texts
-you see and edit. In another language, an empty box shows the default language's text, which visitors get until it is
-translated, and elements with a missing translation say so.
+On a site with more than one language, the language button in the row above the form (it shows "en-US") and **Language**
+in the Settings view switch the texts you see and edit. In another language, an empty box shows the default language's
+text, which visitors get until it is translated, and elements with a missing translation say so.
 
 A text written as `#key` takes its words from Umbraco's dictionary item of that key, in each visitor's language. Users
 who can open Umbraco's Translation section get **Use a dictionary item** beside labels, help texts, placeholders,

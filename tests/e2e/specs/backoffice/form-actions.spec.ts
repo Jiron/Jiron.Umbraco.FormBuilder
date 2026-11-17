@@ -301,7 +301,7 @@ test("the form check's Fix it of an action's setting opens its sidebar on that s
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
   const design = page.locator('jfb-form-design-view');
-  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveText('1 problem');
+  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveAccessibleName('Form check: 1 problem');
   await design.locator('jfb-form-canvas .bo-check').click();
   const check = page.locator('jfb-form-check-modal');
   await check.getByRole('button', { name: /^Fix it: .*Send to the CRM/ }).click();

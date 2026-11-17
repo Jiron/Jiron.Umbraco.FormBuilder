@@ -212,17 +212,22 @@ test("in the dark theme, the section's focus rings and status colours keep 3:1, 
   });
   expect(contrast(label, fill), "the state chip's label on its fill").toBeGreaterThanOrEqual(4.5);
 
-  // The form check's badge: its icon says the form is clear, beside its words.
-  const icon = design.locator('.bo-check uui-icon').first();
-  await expect(icon).toBeVisible();
-  const iconColour = await icon.evaluate((element) => getComputedStyle(element).color);
-  expect(contrast(iconColour, surfaceColour), "the check badge's icon").toBeGreaterThanOrEqual(3);
+  // The form check's badge: its check on a disc says the form is clear, the disc on the surface and the check on the
+  // disc each at least 3:1 (ADR-0256).
+  const disc = design.locator('.bo-check .bo-check-disc').first();
+  await expect(disc).toBeVisible();
+  const [discColour, checkColour] = await disc.evaluate((element) => [
+    getComputedStyle(element).backgroundColor,
+    getComputedStyle(element).color,
+  ]);
+  expect(contrast(discColour, surfaceColour), "the check badge's disc").toBeGreaterThanOrEqual(3);
+  expect(contrast(checkColour, discColour), "the check badge's check on its disc").toBeGreaterThanOrEqual(3);
 
-  // Rings, after a key so that the browser draws them: a palette item, an inspector section's head, the toolbar's
-  // widths and UUI's own Close in the inspector.
+  // Rings, after a key so that the browser draws them: a page's tab, an inspector section's head, the row's widths and
+  // UUI's own Close in the inspector.
   await page.keyboard.press('Shift+Tab');
   const places = [
-    design.locator('jfb-designer-palette .item'),
+    design.locator('jfb-form-canvas .bo-tab-name'),
     design.locator('jfb-designer-inspector .section-head button'),
     design.locator('jfb-form-canvas .bo-widths button:not([aria-pressed="true"])'),
     design.locator('jfb-designer-inspector .head > uui-button').last(),

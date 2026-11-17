@@ -160,8 +160,8 @@ describe('the Keyboard shortcuts dialog', () => {
       'Delete it',
       'Move it one place up or down',
       'Go up or down the page',
-      "Edit a field's label in place",
-      'Clear the selection, close the palette, or stop a drag',
+      "Edit a field's label in place, or rename the page whose tab you are on",
+      'Clear the selection, or stop a drag',
       'Show these shortcuts',
     ]);
     const buttons = [...root.querySelectorAll('uui-button')];

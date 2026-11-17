@@ -4,6 +4,7 @@ import { fillForm } from '../../support/form.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 import { bodyOf, headerOf, visibleText, type Mail } from '../../support/mail.ts';
 import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
+import { chooseLanguage, showAfterSending } from '../../support/designer-row.ts';
 
 // A form in English and German, end to end (ROADMAP 14.1, ADR-0228): a designer switches the designer to German, finds
 // what is left by its marks on the fields, the outcome's row and the action's card, writes the German texts there, and
@@ -103,7 +104,7 @@ test('a form translated in the designer runs in English and German, its messages
   const design = page.locator('jfb-form-design-view');
   const canvas = design.locator('jfb-form-canvas');
   await expect(design.locator('jfb-canvas-field').first()).toBeVisible();
-  await canvas.getByRole('combobox', { name: 'Language' }).selectOption('de-DE');
+  await chooseLanguage(design, 'de-DE');
   await expect(canvas.locator('jfb-canvas-field .bo-chip')).toHaveText([UNTRANSLATED, UNTRANSLATED]);
   const inspector = design.locator('jfb-designer-inspector');
   for (const [english, german] of [
@@ -117,11 +118,10 @@ test('a form translated in the designer runs in English and German, its messages
   await expect(canvas.locator('jfb-canvas-field .bo-chip')).toHaveCount(0);
   await saveDraft(page);
 
-  // The Settings view, still in German: the outcome's row says what is left, and its sidebar takes the German message.
-  // The views' tabs, not a new page: the language chosen stays with the workspace (ADR-0184).
-  await page.getByRole('tab', { name: 'Settings', exact: true }).click();
-  const settings = page.locator('jfb-form-settings-view');
-  const row = settings.locator('jfb-outcome-list .outcome-row').first();
+  // After sending, still in German: the outcome's row says what is left, and its sidebar takes the German message
+  // (ADR-0256).
+  const outcomes = await showAfterSending(design);
+  const row = outcomes.locator('jfb-outcome-list .outcome-row').first();
   await expect(row.locator('.untranslated')).toHaveText(UNTRANSLATED);
   await row.locator('.row-open').click();
   const outcome = page.locator('jfb-outcome-modal');
@@ -130,7 +130,8 @@ test('a form translated in the designer runs in English and German, its messages
   await expect(outcome).toHaveCount(0);
   await expect(row.locator('.untranslated')).toHaveCount(0);
 
-  // The Actions view: the mail's card is marked until its subject and body are German too.
+  // The Actions view, by the views' tabs, not a new page: the language chosen stays with the workspace (ADR-0184). The
+  // mail's card is marked until its subject and body are German too.
   await page.getByRole('tab', { name: 'Actions', exact: true }).click();
   const actions = page.locator('jfb-form-actions-view');
   const card = actions.locator('jfb-action-list').locator('.open').first();

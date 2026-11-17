@@ -1,5 +1,5 @@
-// The canvas's own rules (ROADMAP 9.3b, ADR-0168), after the default theme's in the canvas's shadow root: the toolbar,
-// the steps and the sheet in Umbraco's colours, and the designer's controls laid over the form, each prefixed bo- so
+// The canvas's own rules (ROADMAP 9.3b and 22.1, ADR-0168, ADR-0256), after the default theme's in the canvas's shadow
+// root: the row above the sheet and the sheet in Umbraco's colours, and the designer's controls laid over the form, each prefixed bo- so
 // that none reaches the form's own look. The form itself keeps the theme's light colours in every backoffice theme, as
 // visitors see it. The controls over a field are positioned out of the flow, so the theme's grid of a group's fields,
 // its rows shared between columns and its spacing between a field's parts hold as on the website; only the room above
@@ -81,13 +81,197 @@ export const canvasChrome = css`
     white-space: nowrap;
   }
 
-  .bo-bar,
-  .bo-steps {
+  /*
+   * The one row above the sheet (ADR-0256), as wide as the Desktop sheet whatever width is chosen: the pages at its
+   * start, the tools at its end, which go to a second row where the pages need the room.
+   */
+  .bo-bar {
+    padding: var(--uui-size-space-4) var(--uui-size-layout-1) 0;
+  }
+
+  .bo-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--uui-size-space-3);
-    padding: var(--uui-size-space-4) var(--uui-size-layout-1) 0;
+    gap: var(--uui-size-space-3) var(--uui-size-space-4);
+    max-inline-size: calc(var(--bo-row) + 2 * var(--bo-sheet-padding));
+    margin-inline: auto;
+  }
+
+  /* The pages take their own width, up to the row's; then their tabs shrink, and only then scroll. */
+  .bo-pages {
+    display: flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .bo-pages > :not(.bo-tabs) {
+    flex: none;
+  }
+
+  .bo-tabs {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    min-width: 0;
+    /* Room for the focus ring, which the scrolling strip would cut off. */
+    margin: -4px;
+    padding: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  /*
+   * A tab shrinks before the tabs scroll, its name cut with an ellipsis and whole in its tip, never under 5rem; a tab
+   * whose name is shorter keeps its own width where the browser can say so.
+   */
+  .bo-tab {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    min-width: 5rem;
+    min-width: calc-size(max-content, min(size, 5rem));
+    min-height: 36px;
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--jfb-bo-radius-round);
+    background: var(--uui-color-surface);
+    color: var(--uui-color-text);
+  }
+
+  /* A page's tab drags it among the tabs; the row still scrolls the page up and down under a finger. */
+  .bo-tab-name {
+    display: inline-flex;
+    flex: 1 1 auto;
+    align-items: center;
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 var(--uui-size-space-4);
+    border: 0;
+    border-radius: var(--jfb-bo-radius-round);
+    background: none;
+    color: inherit;
+    font: inherit;
+    touch-action: pan-y;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  .bo-tab-name > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bo-tab[data-open] {
+    border-color: var(--bo-accent);
+    background: var(--bo-accent);
+    color: var(--bo-on-accent);
+  }
+
+  /* The open tab's name is bold; its menu, which lies in the tab, keeps the menus' own look. */
+  .bo-tab[data-open] .bo-tab-name {
+    padding-inline-end: var(--uui-size-space-2);
+    font-weight: 700;
+  }
+
+  .bo-tab uui-popover-container {
+    color: var(--uui-color-text);
+  }
+
+  /* The open tab's "..." for its menu, inside the tab's box. */
+  .bo-tab .bo-more-element {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin-inline-end: 3px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--jfb-bo-radius-round);
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bo-tab:not([data-open]):hover,
+    .bo-tab .bo-more-element:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
+
+    .bo-tab[data-open] .bo-more-element:hover {
+      background: color-mix(in srgb, var(--bo-on-accent) 18%, transparent);
+    }
+  }
+
+  .bo-pages button:focus-visible {
+    outline: 2px solid var(--bo-focus);
+    outline-offset: 2px;
+  }
+
+  /* Inside the open tab, the ring stands clear of the accent behind it. */
+  .bo-tab[data-open] button:focus-visible {
+    outline-color: var(--bo-on-accent);
+    outline-offset: -3px;
+  }
+
+  .bo-add-page {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--jfb-bo-radius-round);
+    background: none;
+    color: var(--uui-color-interactive);
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bo-add-page:hover {
+      background: var(--uui-color-surface-emphasis);
+      color: var(--uui-color-interactive-emphasis);
+    }
+  }
+
+  .bo-after-step {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    min-height: 36px;
+    padding: 0 var(--uui-size-space-4);
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--jfb-bo-radius-round);
+    background: var(--uui-color-surface);
+    color: var(--uui-color-text);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bo-after-step:hover {
+      background: var(--uui-color-surface-emphasis);
+    }
+  }
+
+  .bo-after-step[aria-current='step'] {
+    border-color: var(--bo-accent);
+    background: var(--bo-accent);
+    color: var(--bo-on-accent);
+    font-weight: 700;
+  }
+
+  .bo-end {
+    display: flex;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    margin-inline-start: auto;
   }
 
   .bo-widths {
@@ -98,8 +282,11 @@ export const canvasChrome = css`
   }
 
   .bo-widths button {
-    min-height: 36px;
-    padding: 0 var(--uui-size-space-4);
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    min-height: 34px;
+    padding: 0;
     border: 0;
     border-inline-start: 1px solid var(--jfb-bo-color-control-border);
     background: var(--uui-color-surface);
@@ -121,12 +308,6 @@ export const canvasChrome = css`
   .bo-widths button[aria-pressed='true'] {
     background: var(--bo-accent);
     color: var(--bo-on-accent);
-    font-weight: 700;
-  }
-
-  .bo-steps button:focus-visible {
-    outline: 2px solid var(--bo-focus);
-    outline-offset: 2px;
   }
 
   /* Inside a box that clips its buttons, the ring lies inside the button, white on the width shown. */
@@ -140,42 +321,53 @@ export const canvasChrome = css`
     outline-color: var(--bo-on-accent);
   }
 
-  .bo-narrowed {
-    color: var(--jfb-bo-color-text-muted);
-    font-size: var(--uui-type-small-size);
-  }
-
-  .bo-more {
-    margin-inline-start: auto;
-  }
-
-  /* The form check's badge sits at the bar's end, before its "...". */
-  .bo-check {
+  /* The language shown, as its culture; a menu of the site's languages by name. */
+  .bo-language {
     display: inline-flex;
     align-items: center;
-    gap: var(--uui-size-space-2);
+    gap: var(--uui-size-space-1);
     min-height: 36px;
-    margin-inline-start: auto;
-    padding: 0 var(--uui-size-space-4);
+    padding: 0 var(--uui-size-space-3);
     border: 1px solid var(--jfb-bo-color-control-border);
     border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface);
     color: var(--uui-color-text);
     font: inherit;
+    white-space: nowrap;
     cursor: pointer;
   }
 
-  .bo-check + .bo-more {
-    margin-inline-start: 0;
+  /* The form check's badge: one width for two digits, whatever it says, so the row never moves. */
+  .bo-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--uui-size-space-2);
+    box-sizing: border-box;
+    inline-size: 4rem;
+    min-height: 36px;
+    padding: 0 var(--uui-size-space-3);
+    border: 1px solid var(--jfb-bo-color-control-border);
+    border-radius: var(--uui-border-radius);
+    background: var(--uui-color-surface);
+    color: var(--uui-color-text);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .bo-check[data-state='none'] {
+    visibility: hidden;
   }
 
   @media (hover: hover) {
-    .bo-check:hover {
+    :is(.bo-check, .bo-language):hover {
       background: var(--uui-color-surface-emphasis);
     }
   }
 
-  .bo-check:focus-visible {
+  :is(.bo-check, .bo-language):focus-visible {
     outline: 2px solid var(--bo-focus);
     outline-offset: 2px;
   }
@@ -193,31 +385,33 @@ export const canvasChrome = css`
     color: var(--jfb-bo-color-warning-text);
   }
 
-  .bo-check[data-state='clear'] uui-icon {
-    color: var(--jfb-bo-color-positive-text);
-  }
-
-  .bo-language {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--uui-size-space-2);
+  /* No problems: a status, not a box to tick, so its check stands on a round disc of the positive colour. */
+  .bo-check-disc {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 20px;
+    block-size: 20px;
+    border-radius: var(--jfb-bo-radius-round);
+    background: var(--jfb-bo-color-positive-text);
+    color: var(--uui-color-surface);
     font-size: var(--uui-type-small-size);
   }
 
-  .bo-language select {
-    min-height: 36px;
-    padding: 0 var(--uui-size-space-3);
-    border: 1px solid var(--jfb-bo-color-control-border);
-    border-radius: var(--uui-border-radius);
-    background: var(--uui-color-surface);
-    color: var(--uui-color-text);
-    font: inherit;
-    font-size: var(--uui-type-default-size);
+  /* "Narrowed to fit" at the sheet's top edge, in room that is kept whether it shows or not, so nothing moves. */
+  .bo-narrowed {
+    box-sizing: border-box;
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
+    margin: 0 auto;
+    padding: var(--uui-size-space-2) 0;
+    color: var(--jfb-bo-color-text-muted);
+    font-size: var(--uui-type-small-size);
+    line-height: 1.5;
+    text-align: end;
+    visibility: hidden;
   }
 
-  .bo-language select:focus-visible {
-    outline: 2px solid var(--bo-focus);
-    outline-offset: 2px;
+  .bo-narrowed[data-shown] {
+    visibility: visible;
   }
 
   .bo-menu {
@@ -272,55 +466,9 @@ export const canvasChrome = css`
     font-size: var(--uui-type-small-size);
   }
 
-  .bo-steps {
-    padding-block: var(--uui-size-space-4);
-  }
-
-  .bo-step {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--uui-size-space-2);
-    min-height: 36px;
-    max-width: 100%;
-    padding: 0 var(--uui-size-space-4);
-    border: 1px solid var(--jfb-bo-color-control-border);
-    border-radius: var(--jfb-bo-radius-round);
-    background: var(--uui-color-surface);
-    color: var(--uui-color-text);
-    font: inherit;
-    overflow-wrap: anywhere;
-    cursor: pointer;
-  }
-
-  /* A page's step drags it among the steps; the steps still scroll the page up and down under a finger. */
-  .bo-step[data-page] {
-    touch-action: pan-y;
-    user-select: none;
-  }
-
-  @media (hover: hover) {
-    .bo-step:hover {
-      background: var(--uui-color-surface-emphasis);
-    }
-  }
-
-  .bo-step[aria-current='step'] {
-    border-color: var(--bo-accent);
-    background: var(--bo-accent);
-    color: var(--bo-on-accent);
-    font-weight: 700;
-  }
-
-  .bo-step-add {
-    border-color: transparent;
-    background: none;
-    color: var(--uui-color-interactive);
-  }
-
-  @media (hover: hover) {
-    .bo-step-add:hover {
-      color: var(--uui-color-interactive-emphasis);
-    }
+  /* The item shown now (the language) carries a check at its end. */
+  .bo-menu uui-icon {
+    flex: none;
   }
 
   /* A layer of its own, so the browser scrolls it without painting the sheet again (ADR-0169). The host's colour shows
@@ -346,11 +494,14 @@ export const canvasChrome = css`
     outline-offset: -2px;
   }
 
-  /* The visitor's page: white, whatever the backoffice's theme, as the default theme's light scheme expects. */
+  /*
+   * The visitor's page: white, whatever the backoffice's theme, as the default theme's light scheme expects. Its box
+   * holds the chosen width, its padding and its two 1px borders, so Desktop shows the form at its full 960 px.
+   */
   .bo-sheet {
     container: bo-sheet / inline-size;
     box-sizing: border-box;
-    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
     margin-inline: auto;
     padding: var(--bo-sheet-padding);
     border: 1px solid var(--uui-color-border);
@@ -426,11 +577,6 @@ export const canvasChrome = css`
   .jfb-form .bo-select-group {
     inset: -12px;
     z-index: 1;
-  }
-
-  .jfb-form .bo-select-page {
-    inset: -20px;
-    z-index: 0;
   }
 
   @media (hover: hover) {
@@ -797,7 +943,7 @@ export const canvasChrome = css`
 
   /* A press answers at once, as Umbraco's own buttons do: a wide place to add a field sinks, a button shrinks. */
   .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button),
-  :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])) {
+  :is(.bo-widths button, .bo-check, .bo-language, .bo-add-page, .bo-after-step) {
     transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
@@ -806,7 +952,7 @@ export const canvasChrome = css`
   }
 
   .jfb-form .bo-tools button:active,
-  :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])):active {
+  :is(.bo-widths button, .bo-check, .bo-language, .bo-add-page, .bo-after-step):active {
     transform: scale(0.97);
   }
 
@@ -943,7 +1089,7 @@ export const canvasChrome = css`
 
   .jfb-form .bo-page > .bo-refusal {
     inset-block: -16px auto;
-    inset-inline-start: 16px;
+    inset-inline-start: 0;
   }
 
   /*
@@ -1038,7 +1184,7 @@ export const canvasChrome = css`
     inset-inline-end: -4px;
   }
 
-  /* Between the steps the line stands upright, its dots at its top and bottom. */
+  /* Between the tabs the line stands upright, its dots at its top and bottom. */
   .bo-line[data-upright]::before,
   .bo-line[data-upright]::after {
     inset-inline-start: -3px;
@@ -1090,30 +1236,35 @@ export const canvasChrome = css`
     text-overflow: ellipsis;
   }
 
-  .bo-step[data-drop] {
+  .bo-tab[data-drop] {
     outline: 2px solid var(--bo-accent);
     outline-offset: 3px;
   }
 
-  .bo-step[data-drop='refused'] {
+  .bo-tab[data-drop='refused'] {
     outline-color: var(--uui-color-danger);
   }
 
-  .bo-after {
-    display: grid;
-    gap: var(--uui-size-space-5);
-    justify-items: start;
+  /* After sending's outcomes, when the Design view slots them here: under the sheet, as wide as it. */
+  .bo-under {
+    box-sizing: border-box;
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding) + 2px));
+    margin-inline: auto;
+  }
+
+  .bo-under ::slotted(*) {
+    margin-block-start: var(--uui-size-space-5);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button, .bo-pill),
-    :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])) {
+    :is(.bo-widths button, .bo-check, .bo-language, .bo-add-page, .bo-after-step) {
       transition: none;
     }
 
     .jfb-form :is(.bo-empty-group, .bo-add-field, .bo-tools button):active,
     .jfb-form .bo-insert:active > .bo-pill,
-    :is(.bo-widths button, .bo-check, .bo-step-add, .bo-step:not([data-page])):active {
+    :is(.bo-widths button, .bo-check, .bo-language, .bo-add-page, .bo-after-step):active {
       transform: none;
     }
 
@@ -1153,8 +1304,8 @@ export const canvasChrome = css`
       border: 1px solid CanvasText;
     }
 
-    .bo-step[data-drop],
-    .bo-step[data-drop='refused'] {
+    .bo-tab[data-drop],
+    .bo-tab[data-drop='refused'] {
       outline-color: Highlight;
     }
   }

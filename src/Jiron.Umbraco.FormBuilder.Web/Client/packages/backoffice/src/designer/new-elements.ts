@@ -1,6 +1,6 @@
 // What the designer adds (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1): a field of a type with what a
 // new one starts with, a group, a page, the fields of pasted questions with a type guessed from their words, and the
-// place a pick from the palette goes. Each goes through the editor model, which checks it as it checks every edit.
+// place a pick from the field picker goes. Each goes through the editor model, which checks it as it checks every edit.
 import type { DesignDefinition, DesignField, DesignGroup, DesignPage, DesignValidationRule } from './definition';
 import { locate, validationRulesOf } from './definition';
 import { insert, type Edit, type EditorState, type ModelContext, type Place } from './editor-model';
@@ -89,8 +89,9 @@ export function newPage(newKey: () => string): DesignPage {
 }
 
 /**
- * Where a pick from the palette goes: the open insert point; else after the selected field, at the end of the selected
- * group, or at the end of the selected page; else at the end of the page shown. Null when that page has no group.
+ * Where a pick from the field picker goes: the insert point it was opened for; else after the selected field, at the end
+ * of the selected group, or at the end of the selected page; else at the end of the page shown. Null when that page has
+ * no group.
  */
 export function placeFor(
   definition: DesignDefinition,

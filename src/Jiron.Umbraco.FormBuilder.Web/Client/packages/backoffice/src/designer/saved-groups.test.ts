@@ -1,8 +1,9 @@
-// A saved group (ROADMAP 12.1, ADR-0217): the palette lists the API's group templates by name, read as the model reads a
-// definition (the canonical form leaves out empty lists), with the validation rules of the group's fields. One inserts
-// as a copy with new keys, each field with a free alias, its rules naming the copy's own fields, its calculations and
-// merge tags the new aliases, and its validation rules on the copy's fields, after the group of the place given, in one
-// step; the form it came from is never touched. A save sends the validation rules on the group's fields, and no others.
+// A saved group (ROADMAP 12.1, ADR-0217): the field picker lists the API's group templates by name, read as the model
+// reads a definition (the canonical form leaves out empty lists), with the validation rules of the group's fields. One
+// inserts as a copy with new keys, each field with a free alias, its rules naming the copy's own fields, its
+// calculations and merge tags the new aliases, and its validation rules on the copy's fields, after the group of the
+// place given, in one step; the form it came from is never touched. A save sends the validation rules on the group's
+// fields, and no others.
 import { FORMULAS } from '@jfb/logic/calc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TemplateResponseModel } from '../api';

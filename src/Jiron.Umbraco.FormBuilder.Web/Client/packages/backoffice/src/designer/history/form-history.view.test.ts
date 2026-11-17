@@ -369,8 +369,10 @@ describe("a form's History", () => {
     must(rows()[1]?.querySelector<HTMLElement>('button.name'), 'Version 12').click();
     await vi.waitFor(() => expect(opened.modals).toHaveLength(1));
     const read = await (opened.modals[0]?.data as ComparisonModalData).read();
-    expect(read.kind === 'compared' ? read.parts[0]?.rows : read).toEqual([
-      { what: 'After sending, Outcome 1, Redirect, Page', older: 'Thank you', newer: 'none' },
+    // After sending is a part of its own, which names an outcome by its place (ADR-0256).
+    expect(read.kind === 'compared' ? [read.parts[0]?.name, read.parts[0]?.rows] : read).toEqual([
+      'after',
+      [{ what: 'Outcome 1, Redirect, Page', older: 'Thank you', newer: 'none' }],
     ]);
     expect(pages.asked).toEqual([[PAGE]]);
   });

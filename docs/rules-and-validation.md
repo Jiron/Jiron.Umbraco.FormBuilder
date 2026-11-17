@@ -34,8 +34,8 @@ and [calculations](field-types.md#calculation).
 
 ## Writing a rule
 
-Select the element and open **Rules** in the inspector, then **Add a rule**. For an outcome, the rule is in its
-editor under Settings › After sending; for an action, in the action's editor. The **Rules overview** in the canvas's
+Select the element and open **Rules** in the inspector, then **Add a rule**. For an outcome, the rule is in its editor
+under After sending, on the Design view; for an action, in the action's editor. The **Rules overview** in the canvas's
 **…** menu lists every rule of the form by page, and **Add rule** there starts by asking what the rule should affect.
 
 ![The rule builder: what the rule shows, the condition it looks at and its value](screenshots/rule-builder.png)

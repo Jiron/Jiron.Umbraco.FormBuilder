@@ -1,10 +1,10 @@
-// The inspector (ROADMAP 9.4a, IA 5.1, ADR-0170): what the selected field, group or page is ("Email field") and its
-// sections, each a button that opens or closes it, Essentials open and the others as the user left them last. A closed
-// section says in one line what is set; an open one shows seven items at most before "More options". It edits texts in
-// the language the canvas shows, and says so where that is not the default. Every change goes to the Design view as a
-// request, which makes it an edit of the form: typing in one box is one step to undo. Beside the canvas it folds to a
-// rail, and with nothing selected says how to choose what it shows (ADR-0182); over a narrow canvas it carries the
-// element's own bar.
+// The inspector (ROADMAP 9.4a and 22.1, IA 5.1, ADR-0170, ADR-0256): what the selected field or group is ("Email
+// field"), else the open page, and its sections, each a button that opens or closes it, Essentials open and the others
+// as the user left them last. A closed section says in one line what is set; an open one shows seven items at most
+// before "More options". It edits texts in the language the canvas shows, and says so where that is not the default.
+// Every change goes to the Design view as a request, which makes it an edit of the form: typing in one box is one step
+// to undo. Beside the canvas it folds to a rail, and it is never empty, so the form never moves with a selection
+// (ADR-0182); on After sending it is headed so. Over a narrow canvas it carries the element's own bar.
 import { compilePattern, LogicError, type Pattern } from '@jfb/logic';
 import { html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -45,6 +45,7 @@ import { boxValue } from './box-value';
 import { dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
 import './dictionary-pick.element';
 import '../../extending/field-text-actions.element';
+import { followsOnPage } from '../moves/moves';
 import { inspectorStyles } from './inspector.styles';
 import { boxesOf, focusableIn, isItem } from './item-focus';
 import { insertTagInto } from './merge-tag-picker.element';
@@ -155,6 +156,8 @@ export class InspectorElement extends UmbLitElement {
   static override properties = {
     definition: { attribute: false },
     selection: { attribute: false },
+    page: { attribute: false },
+    afterSending: { attribute: false },
     types: { attribute: false },
     culture: { attribute: false },
     languages: { attribute: false },
@@ -174,6 +177,10 @@ export class InspectorElement extends UmbLitElement {
 
   declare definition: DesignDefinition;
   declare selection: string | null;
+  /** The page the canvas shows, which the inspector shows while nothing is selected. */
+  declare page: string | null;
+  /** Whether the canvas shows After sending, whose outcomes the view slots into the column, under its heading (ADR-0256). */
+  declare afterSending: boolean;
   declare types: Readonly<Record<string, FieldTypeResponseModel>>;
   /** The language the canvas shows, which the inspector edits texts in. */
   declare culture: string;
@@ -216,6 +223,8 @@ export class InspectorElement extends UmbLitElement {
     super();
     this.definition = { pages: [] };
     this.selection = null;
+    this.page = null;
+    this.afterSending = false;
     this.types = {};
     this.culture = '';
     this.languages = [];
@@ -258,10 +267,11 @@ export class InspectorElement extends UmbLitElement {
 
   /**
    * Opens the section that holds an item of the element shown, and its More options where the item is among them, and
-   * moves the focus to the item's first box (the form check's Fix it, ADR-0181); to the section's header where the box
-   * takes no focus, and to the heading where the element shows no such item.
+   * moves the focus to the item's first box (the form check's Fix it, ADR-0181), its text selected with `select` (a
+   * page's Rename); to the section's header where the box takes no focus, and to the heading where the element shows no
+   * such item.
    */
-  focusItem(wanted: InspectorItem) {
+  focusItem(wanted: InspectorItem, select = false) {
     const subject = this.#subject();
     const section = subject
       ? this.#sections(subject).find((one) => one.items.some((item) => isItem(item, wanted)))
@@ -281,6 +291,7 @@ export class InspectorElement extends UmbLitElement {
           .find((found) => found !== null) ?? null;
       const target = box ? focusableIn(box) : null;
       (target ?? root?.querySelector<HTMLElement>(`[data-section="${section.id}"] .section-head button`))?.focus();
+      if (select && target instanceof HTMLInputElement) target.select();
     });
   }
 
@@ -291,14 +302,15 @@ export class InspectorElement extends UmbLitElement {
 
   protected override willUpdate(changed: PropertyValues) {
     super.willUpdate(changed);
-    if (changed.has('selection')) this._sample = '';
-    if (changed.has('selection') || changed.has('culture')) this._problems = new Map();
+    const shows = changed.has('selection') || changed.has('page');
+    if (shows) this._sample = '';
+    if (shows || changed.has('culture')) this._problems = new Map();
   }
 
   protected override updated(changed: PropertyValues) {
     super.updated(changed);
-    // Each element selected is shown from its top, not where the last one was scrolled to.
-    if (changed.has('selection')) this.shadowRoot?.querySelector('.body')?.scrollTo?.(0, 0);
+    // Each element shown is shown from its top, not where the last one was scrolled to.
+    if (changed.has('selection') || changed.has('page')) this.shadowRoot?.querySelector('.body')?.scrollTo?.(0, 0);
   }
 
   get #defaultCulture(): string {
@@ -323,8 +335,9 @@ export class InspectorElement extends UmbLitElement {
 
   #say = (text: string | null | undefined) => (text ? this.localize.string(text) : '');
 
+  // The selected element, else the open page.
   #subject(): Subject | null {
-    const key = this.selection;
+    const key = this.selection ?? this.page;
     const found = key ? locate(this.definition, key) : undefined;
     if (!found) return null;
     if (found.kind === 'page') return { kind: 'page', page: found.element };
@@ -1371,22 +1384,21 @@ export class InspectorElement extends UmbLitElement {
     </section>`;
   }
 
-  #bar(subject: Subject): TemplateResult {
+  // A field's or group's bar over a narrow canvas; a page's actions are at its tab.
+  #bar(subject: Subject): TemplateResult | typeof nothing {
+    if (subject.kind === 'page') return nothing;
     const key = this.#keyOf(subject);
     const act = (action: ElementAction) => this.#request({ kind: 'element', action, key });
-    const menu = subject.kind !== 'page';
+    const follows = followsOnPage(this.definition, key);
+    const menu =
+      follows || (subject.kind === 'field' && !!subject.field.alias) || (subject.kind === 'group' && this.saveGroups);
     return html`<div class="tools" role="group" aria-label=${this.#term('elementActions')}>
       <button type="button" @click=${() => act('moveTo')}>
         <uui-icon name="icon-navigation" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_moveTo')}
       </button>
-      ${
-        subject.kind === 'page'
-          ? nothing
-          : html`<button type="button" @click=${() => act('duplicate')}>
-              <uui-icon name="icon-documents" aria-hidden="true"></uui-icon
-              >${this.localize.term('jfbDesigner_duplicate')}
-            </button>`
-      }
+      <button type="button" @click=${() => act('duplicate')}>
+        <uui-icon name="icon-documents" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_duplicate')}
+      </button>
       <button type="button" @click=${() => act('delete')}>
         <uui-icon name="icon-trash" aria-hidden="true"></uui-icon>${this.localize.term('jfbDesigner_delete')}
       </button>
@@ -1408,9 +1420,13 @@ export class InspectorElement extends UmbLitElement {
                 }}
               >
                 <div class="menu">
-                  <button type="button" @click=${() => this.#menu('newPageAfter', key)}>
-                    ${this.localize.term('jfbDesigner_newPageAfter')}
-                  </button>
+                  ${
+                    follows
+                      ? html`<button type="button" @click=${() => this.#menu('newPageAfter', key)}>
+                          ${this.localize.term('jfbDesigner_newPageAfter')}
+                        </button>`
+                      : nothing
+                  }
                   ${
                     subject.kind === 'field' && subject.field.alias
                       ? html`<button type="button" @click=${() => this.#menu('copyAlias', key)}>
@@ -1443,15 +1459,6 @@ export class InspectorElement extends UmbLitElement {
     </uui-button>`;
   }
 
-  // Beside the canvas with nothing selected: what the column is for, and its fold.
-  #nothingSelected() {
-    return html`<div class="head">
-        <h2 tabindex="-1">${this.#term('nothingSelected')}</h2>
-        ${this.mode === 'docked' ? this.#fold() : nothing}
-      </div>
-      <p class="empty">${this.#term('nothingSelectedHelp')}</p>`;
-  }
-
   override render() {
     const subject = this.#subject();
     if (this.mode === 'rail')
@@ -1463,8 +1470,17 @@ export class InspectorElement extends UmbLitElement {
       >
         <uui-icon name="icon-navigation-left"></uui-icon>
       </uui-button>`;
-    if (!subject) return this.#nothingSelected();
+    // After sending: the column headed so, the outcomes the view slots in under the heading.
+    if (this.afterSending)
+      return html`<div class="head">
+          <h2 tabindex="-1">${this.localize.term('jfbDesigner_afterSending')}</h2>
+          ${this.mode === 'docked' ? this.#fold() : nothing}
+        </div>
+        <div class="body"><slot name="after"></slot></div>`;
+    if (!subject) return nothing;
     const sections = this.#sections(subject);
+    // Close lets a selection go; the open page shown without one has none, nor a page selected beside the canvas.
+    const closes = this.selection !== null && (subject.kind !== 'page' || this.mode === 'overlay');
     return html`<div class="head">
         <h2 tabindex="-1">${this.#heading(subject)}</h2>
         ${
@@ -1480,13 +1496,17 @@ export class InspectorElement extends UmbLitElement {
             : nothing
         }
         ${this.mode === 'docked' ? this.#fold() : nothing}
-        <uui-button
-          compact
-          label=${this.localize.term('general_close')}
-          @click=${() => this.#request({ kind: 'close' })}
-        >
-          <uui-icon name="icon-wrong"></uui-icon>
-        </uui-button>
+        ${
+          closes
+            ? html`<uui-button
+                compact
+                label=${this.localize.term('general_close')}
+                @click=${() => this.#request({ kind: 'close' })}
+              >
+                <uui-icon name="icon-wrong"></uui-icon>
+              </uui-button>`
+            : nothing
+        }
         ${this.mode === 'overlay' ? this.#bar(subject) : nothing}
       </div>
       ${

@@ -167,13 +167,15 @@ describe('where a path is in the view', () => {
     for (const [path, anchor] of cases) expect(anchorOf(path), path).toEqual(anchor);
   });
 
-  it("puts the outcomes' problems in After sending, the list's own at the list", () => {
-    for (const path of ['$.outcomes', '$.outcomes[0]', '$.outcomes[1].redirect.url'])
-      expect(anchorOf(path), path).toEqual({ group: 'after', more: false, boxes: ['outcomes'] });
-  });
-
-  it('is nowhere for a setting this view does not show yet, or a path outside the settings', () => {
-    for (const path of ['$.settings.submission.unknown', '$.settings', '$.pages[0].label', 'nonsense'])
+  it("is nowhere for a setting this view does not show yet, or a path outside the settings, an outcome's too", () => {
+    for (const path of [
+      '$.settings.submission.unknown',
+      '$.settings',
+      '$.pages[0].label',
+      'nonsense',
+      '$.outcomes',
+      '$.outcomes[1].redirect.url',
+    ])
       expect(anchorOf(path), path).toBeNull();
   });
 });

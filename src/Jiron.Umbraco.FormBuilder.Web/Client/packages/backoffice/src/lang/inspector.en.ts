@@ -9,8 +9,6 @@ export default {
     headingPage: 'Page',
     fold: 'Fold the inspector',
     unfold: 'Open the inspector',
-    nothingSelected: 'Nothing selected',
-    nothingSelectedHelp: 'Select a field, group or page to change its settings.',
     elementActions: 'Actions for this element',
     editingLanguage: (language: string, standard: string) =>
       `Where a ${language} text is empty, visitors see the ${standard} one.`,

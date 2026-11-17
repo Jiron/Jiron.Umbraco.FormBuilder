@@ -1,10 +1,10 @@
-// The designer's moves (ROADMAP 9.3c, ADR-0169): a drop's edit, where an element is after a move, the places Move
-// to... offers with the edit each makes, and the keys' names.
+// The designer's moves (ROADMAP 9.3c, ADR-0169): where an element is after a move, the places Move to... offers with the
+// edit each makes, what follows an element on its page (ADR-0256), and the keys' names.
 import { describe, expect, it } from 'vitest';
 import type { DesignDefinition, DesignField } from '../definition';
 import type { EditorState, FieldTraits, ModelContext } from '../editor-model';
 import { modifierTerm, onMac } from './keys';
-import { dropEdit, endOf, moveToPlaces, positionOf } from './moves';
+import { endOf, followedKeys, followsOnPage, moveToPlaces, positionOf } from './moves';
 
 const TRAITS: Record<string, FieldTraits> = {
   text: { kind: 'text', onePerForm: false, childFields: false },
@@ -43,59 +43,44 @@ const DEFINITION: DesignDefinition = {
 
 const state: EditorState = { definition: DEFINITION, selection: null };
 
-describe("a drop's edit", () => {
-  it('moves what is dragged to the place', () => {
-    const edit = dropEdit(
-      state,
-      { kind: 'field', key: 'name', label: 'name' },
-      { container: 'notes', index: 1 },
-      contextOf(),
-      () => null,
-    );
-    expect(edit?.ok && edit.state.definition.pages[1]?.groups[0]?.fields.map((each) => each.key)).toEqual([
-      'note',
-      'name',
-      'captcha',
-    ]);
+describe('what follows an element on its page', () => {
+  it('is a field after it in its group, or a group after its group', () => {
+    expect(followsOnPage(DEFINITION, 'name')).toBe(true);
+    expect(followsOnPage(DEFINITION, 'kids')).toBe(false);
+    expect(followsOnPage(DEFINITION, 'captcha')).toBe(false);
+    const two: DesignDefinition = {
+      pages: [
+        {
+          key: 'one',
+          groups: [
+            { key: 'a', fields: [field('last')] },
+            { key: 'b', fields: [] },
+          ],
+        },
+      ],
+    };
+    expect(followsOnPage(two, 'last')).toBe(true);
+    expect(followsOnPage(two, 'a')).toBe(true);
+    expect(followsOnPage(two, 'b')).toBe(false);
   });
 
-  it('adds a new field of the type dragged, and is refused as an insert is', () => {
-    const made = dropEdit(
-      state,
-      { kind: 'new', type: 'text', label: 'Short text' },
-      { container: 'contact', index: 0 },
-      contextOf(),
-      () => field('fresh'),
-    );
-    expect(made?.ok && made.state.selection).toBe('fresh');
-    const second = dropEdit(
-      state,
-      { kind: 'new', type: 'captcha', label: 'Captcha' },
-      { container: 'contact', index: 0 },
-      contextOf(),
-      () => field('another', 'captcha'),
-    );
-    expect(second).toEqual({ ok: false, refusal: 'onePerForm' });
-    const inRepeater = dropEdit(
-      state,
-      { kind: 'new', type: 'repeater', label: 'Repeatable group' },
-      { container: 'kids', index: 0 },
-      contextOf(),
-      () => field('inner', 'repeater', { fields: [] }),
-    );
-    expect(inRepeater).toEqual({ ok: false, refusal: 'notInRepeater' });
+  it("is what follows a repeatable group for one of its fields, and nothing for a page or a key it doesn't hold", () => {
+    expect(followsOnPage(DEFINITION, 'kidName')).toBe(false);
+    const more: DesignDefinition = {
+      pages: [
+        {
+          key: 'one',
+          groups: [{ key: 'g', fields: [field('kids', 'repeater', { fields: [field('kidName')] }), field('after')] }],
+        },
+      ],
+    };
+    expect(followsOnPage(more, 'kidName')).toBe(true);
+    expect(followsOnPage(DEFINITION, 'one')).toBe(false);
+    expect(followsOnPage(DEFINITION, 'gone')).toBe(false);
   });
 
-  it('is none for a type the site no longer has', () => {
-    expect(
-      dropEdit(
-        state,
-        { kind: 'new', type: 'gone', label: 'Gone' },
-        { container: 'contact', index: 0 },
-        contextOf(),
-        () => null,
-      ),
-    ).toBeNull();
+  it('is found for every field and group of the form in one pass', () => {
+    expect([...followedKeys(DEFINITION)].sort()).toEqual(['email', 'name', 'note']);
   });
 });
 

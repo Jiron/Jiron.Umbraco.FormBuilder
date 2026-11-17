@@ -382,7 +382,7 @@ describe('the dictionaries', () => {
 
   it("hold the form workspace's own areas apart from the start, asked for only inside the workspace (ADR-0201)", () => {
     const areas = Object.keys(workspaceEn).sort();
-    expect(areas).toEqual(['jfbCheck', 'jfbInspector', 'jfbPreview', 'jfbRules', 'jfbSettings']);
+    expect(areas).toEqual(['jfbCheck', 'jfbInspector', 'jfbOutcomes', 'jfbPreview', 'jfbRules', 'jfbSettings']);
     expect(Object.keys(workspaceDe).sort()).toEqual(areas);
     expect([...Object.keys(startEn), ...Object.keys(startDe)].filter((area) => areas.includes(area))).toEqual([]);
     const source = join(dirname(fileURLToPath(import.meta.url)), '..');

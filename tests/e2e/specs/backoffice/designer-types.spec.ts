@@ -2,11 +2,13 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { addFieldOf, openPicker, pick, pickerClosed, pickerItem } from '../../support/picker.ts';
 
 // Every built-in type and changing a field's type (ROADMAP 9.4d, ADR-0174): a field of every built-in type is added
-// from the palette and configured in its inspector, axe clean with every section open, and saved; the captcha
-// placement, which the palette offers only once a provider has its keys, comes from the API and is looked at. A text
-// field with a placeholder and a condition using "contains" becomes a dropdown through Change type..., after a preview
+// through the field picker and configured in its inspector, axe clean with every section open, and saved; the captcha
+// placement, which the picker offers only once a provider has its keys, comes from the API and is looked at. A text
+// field with a placeholder and a condition using "contains" becomes a dropdown through the inspector's Change type...,
+// after a preview
 // that names the placeholder, the condition and the options it needs. A lock of the new type needs a host of its own
 // (designer-locks.spec.ts).
 
@@ -62,7 +64,7 @@ async function saveDraft(page: Page) {
 interface TypeCase {
   /** The type's alias. */
   readonly type: string;
-  /** Its name in the palette. */
+  /** Its name in the picker. */
   readonly name: string;
   /** What the journey sets in its inspector, besides its help text where it has one. */
   readonly configure: (inspector: Locator, page: Page) => Promise<void>;
@@ -72,7 +74,7 @@ interface TypeCase {
 
 const settingsOf = (field: DraftField) => field.settings ?? {};
 
-/** Every built-in type the palette offers here, in its order, each with one of its own settings set. */
+/** Every built-in type the picker offers here, in its order, each with one of its own settings set. */
 const TYPES: readonly TypeCase[] = [
   {
     type: 'text',
@@ -287,35 +289,34 @@ const TYPES: readonly TypeCase[] = [
   },
 ];
 
-test('a field of every built-in type is added from the palette and configured in its inspector, axe clean', async ({
+test('a field of every built-in type is added through the picker and configured in its inspector, axe clean', async ({
   page,
   loginAs,
   apiAs,
 }) => {
   test.setTimeout(600_000);
   const api = await apiAs('designer');
-  // The palette offers the captcha placement only once a captcha provider has its keys, which this host's have not.
+  // The picker offers the captcha placement only once a captcha provider has its keys, which this host's have not.
   const key = await formWithFields(api, unique('Every type'), [{ type: 'captcha' }]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
   await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
   const design = page.locator('jfb-form-design-view');
-  const palette = design.locator('jfb-designer-palette');
   const inspector = design.locator('jfb-designer-inspector');
 
   await design.getByRole('button', { name: /, captcha placement field$/ }).click();
   await expect(inspector.getByRole('heading', { name: 'Captcha placement field' })).toBeVisible();
-  await expect(palette.getByRole('button', { name: /^Captcha placement/ }).first()).toHaveAttribute(
-    'aria-disabled',
-    'true',
-  );
+  await openPicker(page, addFieldOf(design));
+  await expect(pickerItem(page, /^Captcha placement/)).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Escape');
+  await pickerClosed(page);
   await openAll(inspector);
   await axeInside(page, 'jfb-designer-inspector');
 
   for (const each of TYPES) {
     await test.step(each.name, async () => {
-      // A pick goes after the field selected, and selects the new one.
-      await palette.getByRole('button', { name: each.name, exact: true }).first().click();
+      // A pick from Add field goes to the page's end, and selects the new one.
+      await pick(page, addFieldOf(design), each.name);
       await expect(inspector.getByRole('heading', { name: `${each.name} field` })).toBeVisible();
       await openAll(inspector);
       const help = inspector.getByLabel('Help text', { exact: true });
@@ -380,11 +381,11 @@ test('a text field with a placeholder and a condition using contains becomes a d
   await expect(dialog).toHaveCount(0);
   await expect(name).toBeFocused();
 
-  // The element's "...": Change type... first.
+  // The element's "..." offers no Change type: it is the inspector's alone (ADR-0256).
   await design.locator('.bo-tools').getByRole('button', { name: 'More actions' }).click();
-  const items = design.locator('.bo-tools .bo-menu button');
-  await expect(items.first()).toContainText('Change type');
-  await items.first().click();
+  await expect(design.locator('.bo-tools .bo-menu button').filter({ hasText: 'Change type' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await inspector.getByRole('button', { name: 'Change type' }).click();
   await expect(dialog.getByText('Now: Short text')).toBeVisible();
   const change = dialog.getByRole('button', { name: 'Change type', exact: true });
   await expect(change).toBeDisabled();

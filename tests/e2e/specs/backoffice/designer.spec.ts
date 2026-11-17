@@ -2,14 +2,15 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
+import { addFieldOf, openPicker, pick, pickerClosed, pickerOf } from '../../support/picker.ts';
 import { openSearch } from '../../support/search.ts';
 
 // The form workspace (ROADMAP 9.3a, ADR-0166, docs/ux/information-architecture.md section 5): it loads a form's draft, renames
 // the form in its header and saves through the API, publishes after asking, asks before leaving unsaved changes, opens a
 // field's search result with that field selected, and shows each user the views and actions their permissions allow.
-// Its Design view (ROADMAP 9.3b, ADR-0168): a form of three pages built with the mouse, from the palette and an insert
-// point; five fields from a pasted list; and, in the narrowest workspace, the palette over the canvas, the skip link,
-// and a delete that Undo brings back.
+// Its Design view (ROADMAP 9.3b and 22.1, ADR-0168, ADR-0256): a form of three pages built with the mouse through the
+// field picker, from a page's Add field and an insert point; five fields from a pasted list; and, in the narrowest
+// workspace, the picker from Add field, the skip link, and a delete that Undo brings back.
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -123,14 +124,14 @@ test('the Design view keeps to its workspace: only its own columns scroll, never
   loginAs,
   apiAs,
 }) => {
-  // ROADMAP 16.6, carried from 15.3: the palette's hidden reasons once escaped its list and made the workspace scroll by
-  // a thousand pixels at 1440 px. Each box around the view, up to the page, now holds no more than it shows.
+  // ROADMAP 16.6, carried from 15.3: a list's hidden reasons once escaped it and made the workspace scroll by a
+  // thousand pixels at 1440 px. Each box around the view, up to the page, holds no more than it shows.
   const key = await blankForm(await apiAs('designer'), unique('Height'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
   await page.goto(workspaceOf(key));
   const design = page.locator('jfb-form-design-view');
-  await expect(design.locator('jfb-designer-palette button.item').first()).toBeVisible();
+  await expect(design).toContainText('Add your first field');
 
   const measured = await design.evaluate((view) => {
     const up = (node: Element): Element | null =>
@@ -142,16 +143,14 @@ test('the Design view keeps to its workspace: only its own columns scroll, never
         over: node.scrollHeight - node.clientHeight,
       });
     }
-    const list = view.shadowRoot!.querySelector('jfb-designer-palette')!.shadowRoot!.querySelector('.scroll')!;
-    return { around, list: list.scrollHeight - list.clientHeight };
+    return { around };
   });
 
-  expect(measured.list, "the palette's own list is longer than its column and scrolls").toBeGreaterThan(0);
   expect(measured.around.filter((box) => box.over > 1)).toEqual([]);
   expect(measured.around.map((box) => box.name)).toContain('uui-scroll-container#main');
 });
 
-test('a form of three pages is built with the mouse, from the palette and an insert point', async ({
+test('a form of three pages is built with the mouse, through the picker from Add field and an insert point', async ({
   page,
   loginAs,
   apiAs,
@@ -162,32 +161,33 @@ test('a form of three pages is built with the mouse, from the palette and an ins
   await loginAs('designer');
   await page.goto(workspaceOf(key));
   const design = page.locator('jfb-form-design-view');
-  // Recently used comes first once a type is picked, so a type's first button may be that one.
-  const pick = (type: string) => design.locator('jfb-designer-palette').getByRole('button', { name: type }).first();
   const steps = design.getByRole('navigation', { name: 'Pages' });
   const fields = design.locator('jfb-canvas-field');
   await expect(design).toContainText('Add your first field');
 
-  // Page 1: two fields from the palette, each after the one selected, then a third at the insert point between them.
-  await pick('Short text').click();
-  await pick('Email').click();
+  // Page 1: two fields from Add field, each at the page's end, then a third at the insert point between them.
+  await pick(page, addFieldOf(design), 'Short text');
+  await pick(page, addFieldOf(design), 'Email');
   await expect(fields).toHaveCount(2);
   // Right above the selected Email, under its bar, the insert point shows its "+" alone at its start.
-  await design.getByRole('button', { name: 'Add a field here, after Short text' }).locator('.bo-pill').click();
-  await pick('Number').click();
+  await pick(
+    page,
+    design.getByRole('button', { name: 'Add a field here, after Short text' }).locator('.bo-pill'),
+    'Number',
+  );
   await expect(design.getByRole('button', { name: 'Number, number field' })).toHaveAttribute('aria-current', 'true');
 
   // Pages 2 and 3, each with a field.
   await steps.getByRole('button', { name: 'Add page' }).click();
-  await expect(steps.getByRole('button', { name: 'Page 2' })).toHaveAttribute('aria-current', 'step');
-  await pick('Long text').click();
+  await expect(steps.getByRole('button', { name: 'Page 2', exact: true })).toHaveAttribute('aria-current', 'step');
+  await pick(page, addFieldOf(design), 'Long text');
   await steps.getByRole('button', { name: 'Add page' }).click();
-  await expect(steps.getByRole('button', { name: 'Page 3' })).toHaveAttribute('aria-current', 'step');
-  await pick('Date').click();
+  await expect(steps.getByRole('button', { name: 'Page 3', exact: true })).toHaveAttribute('aria-current', 'step');
+  await pick(page, addFieldOf(design), 'Date');
   await expect(fields).toHaveCount(1);
   await axeInside(page, 'jfb-form-design-view');
 
-  await steps.getByRole('button', { name: 'Page 1' }).click();
+  await steps.getByRole('button', { name: 'Page 1', exact: true }).click();
   await expect(fields).toHaveCount(3);
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect.poll(() => draftTypes(api, key)).toEqual([['text', 'number', 'email'], ['textarea'], ['date']]);
@@ -219,8 +219,11 @@ test('five fields come from a pasted list, each with the type its words suggest'
   await dialog.getByRole('button', { name: 'Add 5 fields' }).click();
 
   await expect(design.locator('jfb-canvas-field')).toHaveCount(5);
-  // Several are left to be looked over: nothing selected, the focus on the first of them (16.6, ADR-0241).
-  await expect(design.locator('jfb-designer-inspector')).toContainText('Nothing selected');
+  // Several are left to be looked over: nothing selected, so the inspector shows the page, and the focus is on the
+  // first of them (16.6, ADR-0241, ADR-0256).
+  await expect(
+    design.locator('jfb-designer-inspector').getByRole('heading', { name: 'Page', exact: true }),
+  ).toBeVisible();
   await expect(design.locator('jfb-canvas-field').first().locator('[data-control="select"]').first()).toBeFocused();
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect.poll(() => draftTypes(api, key)).toEqual([['text', 'email', 'number', 'yesno', 'textarea']]);
@@ -265,7 +268,7 @@ test('fields side by side in two columns are each selected by a click on them', 
   }
 });
 
-test('in the narrowest workspace the palette opens over the canvas, and a delete comes back with Undo', async ({
+test('in the narrowest workspace the picker opens from Add field, and a delete comes back with Undo', async ({
   page,
   loginAs,
   apiAs,
@@ -276,27 +279,25 @@ test('in the narrowest workspace the palette opens over the canvas, and a delete
   await loginAs('designer');
   await page.goto(workspaceOf(key));
   const design = page.locator('jfb-form-design-view');
-  const palette = design.locator('jfb-designer-palette');
   const fields = design.locator('jfb-canvas-field');
   await expect(fields).toHaveCount(3);
-  await expect(palette).toHaveCount(0);
+  // No list of types beside the form (ADR-0256).
+  await expect(pickerOf(page)).toHaveCount(0);
 
-  // The skip link takes the keyboard past the palette to the form.
+  // The skip link takes the keyboard past the row of controls to the form.
   const skip = design.getByRole('button', { name: 'Skip to the form' });
   await skip.focus();
   await page.keyboard.press('Enter');
   await expect(design.locator('jfb-form-canvas #jfb-canvas-form')).toBeFocused();
 
-  // Add field opens the palette over the canvas; Esc closes it, and a pick adds the field and closes it.
-  await design.getByRole('button', { name: 'Add field' }).click();
-  await expect(palette).toHaveAttribute('mode', 'overlay');
-  await expect(palette.getByRole('searchbox', { name: 'Search fields' })).toBeFocused();
-  await axeInside(page, 'jfb-form-design-view');
+  // Add field opens the picker with its search focused; Esc closes it with the focus back on Add field, and a pick adds
+  // the field and closes it.
+  await openPicker(page, addFieldOf(design));
+  await axeInside(page, 'jfb-field-picker-modal');
   await page.keyboard.press('Escape');
-  await expect(palette).toHaveCount(0);
-  await design.getByRole('button', { name: 'Add field' }).click();
-  await palette.getByRole('button', { name: 'Phone' }).first().click();
-  await expect(palette).toHaveCount(0);
+  await pickerClosed(page);
+  await expect(addFieldOf(design)).toBeFocused();
+  await pick(page, addFieldOf(design), 'Phone');
   await expect(fields).toHaveCount(4);
 
   // The new field is selected, so the inspector lies over the canvas with the focus on its heading (9.4a); Escape
@@ -375,7 +376,7 @@ test("a field's result of the header search opens the form with that field selec
 
   await expect(page).toHaveURL(new RegExp(`jfb-form/edit/${key}.*\\?field=${field}`));
   // The button that selects the field lies over it, named with its label.
-  const selected = page.locator('jfb-form-design-view [aria-current="true"]');
+  const selected = page.locator('jfb-form-design-view [data-control="select"][aria-current="true"]');
   await expect(selected).toHaveCount(1);
   await expect(selected).toHaveAttribute('aria-label', new RegExp(`^${label}, `));
   await expect(selected).toBeInViewport();

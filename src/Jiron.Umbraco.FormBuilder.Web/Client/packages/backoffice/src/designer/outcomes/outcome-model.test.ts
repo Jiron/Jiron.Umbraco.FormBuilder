@@ -1,5 +1,5 @@
-// The outcomes as the Settings view edits them (ROADMAP 10.1b, ADR-0185): their kinds, which visitors can get, an
-// outcome edited and written back as the server keeps it, and where a new one goes.
+// The outcomes as After sending edits them (ROADMAP 10.1b and 22.1, ADR-0185, ADR-0256): their kinds, which visitors
+// can get, an outcome edited and written back as the server keeps it, and where a new one goes.
 import { describe, expect, it } from 'vitest';
 import type { DesignDefinition, DesignRule } from '../definition';
 import {

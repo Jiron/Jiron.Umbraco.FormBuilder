@@ -1,22 +1,35 @@
-// The designer's moves (ROADMAP 9.3c, ADR-0169): the edit a drop makes, where an element is after a move, as the live
-// region says it, and the places Move to... offers, each with the edit it would make, so the dialog shows the ones the
-// form refuses with why before anything is chosen. Pure over the definition, as the editor model is.
-import type { DragSource } from '../canvas/canvas-drag';
+// The designer's moves (ROADMAP 9.3c, ADR-0169): where an element is after a move, as the live region says it, the
+// places Move to... offers, each with the edit it would make, so the dialog shows the ones the form refuses with why
+// before anything is chosen, and whether "Move what follows to a new page" has anything to move (ADR-0256). Pure over
+// the definition, as the editor model is.
 import { locate, pageOf, type DesignDefinition, type DesignField } from '../definition';
-import { insert, move, type Edit, type EditorState, type ModelContext, type Place } from '../editor-model';
+import { move, type Edit, type EditorState, type ModelContext, type Place } from '../editor-model';
 
-/** The edit a drop makes: a move of what is dragged, or a new field of the type dragged; null for a type gone. */
-export function dropEdit(
-  state: EditorState,
-  source: DragSource,
-  place: Place,
-  context: ModelContext,
-  newField: (type: string) => DesignField | null,
-): Edit | null {
-  if (source.kind !== 'new') return move(state, source.key, place, context);
-  const field = newField(source.type);
-  return field ? insert(state, 'field', field, place, context) : null;
+/**
+ * The fields and groups that something follows on their page, which "Move what follows to a new page" moves there: a
+ * field after one in its group, or a group after its group; a group after a group. A repeatable group's field splits
+ * the page after its repeatable group, so what follows that counts. A page has nothing of the kind. One pass over the
+ * form, so the canvas asks it once for all its fields (section 4.12).
+ */
+export function followedKeys(definition: DesignDefinition): ReadonlySet<string> {
+  const keys = new Set<string>();
+  const addAll = (field: DesignField) => {
+    keys.add(field.key);
+    for (const child of field.fields ?? []) addAll(child);
+  };
+  for (const page of definition.pages)
+    page.groups.forEach((group, at) => {
+      const later = at < page.groups.length - 1;
+      if (later) keys.add(group.key);
+      group.fields.forEach((field, index) => {
+        if (later || index < group.fields.length - 1) addAll(field);
+      });
+    });
+  return keys;
 }
+
+/** Whether something follows an element on its page (`followedKeys`). */
+export const followsOnPage = (definition: DesignDefinition, key: string): boolean => followedKeys(definition).has(key);
 
 /** Where an element is: its place from 1 among its container's elements, how many there are, its container and page. */
 export interface Position {

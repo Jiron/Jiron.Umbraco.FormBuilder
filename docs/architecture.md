@@ -230,13 +230,14 @@ flowchart LR
   with its store), whose views and footer actions show by the user's permissions on the open form, and the editor model,
   pure functions over the definition and the selection with an undo history (`editor-model.ts`, `history.ts`), whose
   moves the form engine's own `hasCycle` from `@jfb/logic` checks. From 9.3b the Design view (`form-design.view.ts`,
-  ADR-0168) holds the palette (`palette/`, with the Paste questions dialog) and the canvas (`canvas/`): each field a
+  ADR-0168) holds the canvas (`canvas/`) and, since 22.1 (ADR-0256), the field picker every Add field and insert point
+  opens, a sidebar (`picker/`, with the Paste questions dialog) in the place the palette had: each field a
   `jfb-canvas-field` that is the field's wrapper, written by the element's own views (`@jfb/element/views`) from the
   view models `preview/field-models.ts` builds from the draft, with the words, classes and stylesheets of the
   management API's `canvas` endpoint; the template gallery shows a template with the same drawing
   (`preview/form-preview.element.ts`). From 9.3c the moves (ADR-0016, ADR-0169): the backoffice's one pointer drag
   (`drag/pointer-drag.ts`) and its drop arithmetic (`drag/drop-place.ts`), put on the canvas by `canvas/canvas-drag.ts`
-  for fields, groups, pages by their steps and the palette's types, each place's refusal asked of the editor model (a
+  for fields, groups and pages by their tabs, each place's refusal asked of the editor model (a
   group a view away from sight is not drawn until it comes near, `canvas/canvas-far.ts`, ADR-0176); and
   in `moves/` the pure helpers the Design view moves with (a drop's edit, where an element is, Move to…'s places), the
   Move to… and Keyboard shortcuts dialogs, and the keys' names. From 9.4a the inspector (`inspector/`, ADR-0170):
@@ -244,10 +245,11 @@ flowchart LR
   `inspector-model.ts` makes from a type's features and settings schema, whose plain setting editors are
   `setting-editor.ts` and whose values `setting-values.ts` reads, checks as the server does and writes back; it sends
   each change to the Design view as an edit of the editor model, typing in one box one step of the undo history. The
-  canvas endpoint serves the site's languages, which the toolbar switches between, and the draft endpoint whether the
-  form has entries, which an alias change asks about first. From 14.1 (ADR-0228): `translations.ts` finds the texts the
-  language shown lacks, which the canvas marks on a field, group or page and the Settings and Actions views on a box, an
-  outcome's row, an action's card and a closed group's line; `dictionary-texts.ts` finds the dictionary items a draft's
+  canvas endpoint serves the site's languages, which the row's language list switches between, and the draft endpoint
+  whether the form has entries, which an alias change asks about first. From 14.1 (ADR-0228): `translations.ts` finds
+  the texts the
+  language shown lacks, which the canvas marks on a field, group or page, After sending on an outcome's row, and the
+  Settings and Actions views on a box, an action's card and a closed group's line; `dictionary-texts.ts` finds the dictionary items a draft's
   texts name (`#key`), reads their texts from the management API's `dictionary-text` endpoint once per language and
   key, and maps the draft the canvas draws to them, the inspector and the sidebars saying under a `#key` box what
   visitors see; `inspector/dictionary-pick.element.ts` opens Umbraco's dictionary picker for a user with the
@@ -296,17 +298,22 @@ flowchart LR
   `form-settings.view.ts` draws the groups with the boxes' look the inspector has (`inspector/control.styles.ts`) and
   its editors for a captcha provider's own settings. The site's choices come from the management API:
   `form/{key}/setting-choices` for who may design the form (the defaults "Site default" names, the site's button
-  labels, the time zone, the themes, the member groups and the save checks' bounds) and `captcha-provider` (each
+  labels, the time zone, the themes, the member groups and the save checks' bounds), read once while the form is open
+  by the workspace (`choicesOf`), which the Settings view, the Actions view and After sending share, and
+  `captcha-provider` (each
   provider's label, whether it has its keys, never a key, and its settings). The workspace keeps the language either
   view's switch chose, and hands each Fix it to the view that makes it (`FIXING_VIEWS`, `followFix`); a view that
   opens a sidebar for one handed on waits until the router stays still (`routerSettled`), as Umbraco closes such
   sidebars when a navigation ends (ADR-0227). From 10.1b
-  (ADR-0185): After sending lists the outcomes (`outcome-list.element.ts`), each edited in a sidebar of its own
+  (ADR-0185), on the Design view since 22.1 (ADR-0256: `designer/outcomes/`, whose `jfb-form-outcomes` the view puts
+  in the inspector's column, or under the sheet where the inspector is folded or the view narrow): After sending lists
+  the outcomes (`outcome-list.element.ts`), each edited in a sidebar of its own
   (`outcome.modal.element.ts`), `outcome-model.ts` holding, pure, what an outcome gives visitors and whether one can get
   it at all, the outcome as its sidebar edits it and as Update writes it back, and where a new one goes. The sidebar asks
   the form check (`checkOf`) about the draft as Update would make it and says its problems under their setting; the
-  rules builder edits an outcome's `use` rule when its data says it is an outcome's. A view Fix it carries the outcome's
-  key, as the canvas's Change and the rules overview's outcome rows do. From 10.1c (ADR-0187): the sidebar, Umbraco's
+  rules builder edits an outcome's `use` rule when its data says it is an outcome's. An outcome's Fix it
+  (`kind: 'outcome'`) carries its key, which the rules overview's outcome rows hand on too. From 10.1c (ADR-0187):
+  the sidebar, Umbraco's
   large one, shows the outcome's live preview beside the settings (`outcome-preview.element.ts`), asked for once the
   changes pause (`OutcomePreviewer` in `outcome-preview.ts`, as the form checker) from
   `form/{key}/outcome-preview`, which needs `design`: the server renders the outcome of the draft for Core's sample
@@ -455,8 +462,8 @@ flowchart LR
   opens) and, for a saved one, Rename… and Delete… in its "…". Save as template… in a form's "…"
   (`library/actions/save-as-template.action.ts`) and Save group as template… in a group's "…" on the canvas or in the
   inspector over a narrow one share one dialog of a name and a description
-  (`library/modals/template-name.modal.element.ts`). A group goes with the validation rules on its fields. The palette
-  lists the saved groups (`designer/saved-groups.ts`), and one inserts as Duplicate copies (`freshCopyWith` in
+  (`library/modals/template-name.modal.element.ts`). A group goes with the validation rules on its fields. The field
+  picker lists the saved groups (`designer/saved-groups.ts`), and one inserts as Duplicate copies (`freshCopyWith` in
   `editor-model.ts`): new keys, references inside it pointing at the copy, free aliases, and calculations and merge
   tags repointed, its validation rules on the copy's fields in the same step.
   From 12.4a (ADR-0218): one settings screen (`settings/settings-screen.element.ts`) serves Settings › General, Email,
@@ -599,9 +606,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   pause (`FormChecker` in the workspace, the last ask's answer only), shows it in the canvas's badge, its sidebar and the
   publish dialog, says each problem in the user's language from its code (`check-words.ts`, the server's sentence for the
   six codes whose words only it has), and reads each path against the definition checked for Fix it (`form-check.ts`):
-  the element with the inspector on the item, the rules builder on a rule, the palette for a page without fields, or
-  the Settings and Actions views with the problem's path, which the Settings view leads to its setting (10.1a,
-  ADR-0184) or to the outcome's sidebar on it, by the outcome's key (10.1b, ADR-0185); a captcha provider's own settings are held to what it describes (`CaptchaPublishCheck`).
+  the element with the inspector on the item, the rules builder on a rule, the field picker for a page without fields,
+  After sending on the Design view with the outcome's sidebar on the setting, by the outcome's key (10.1b, ADR-0185,
+  ADR-0256), or the Settings and Actions views with the problem's path, which the Settings view leads to its setting
+  (10.1a, ADR-0184); a captcha provider's own settings are held to what it describes (`CaptchaPublishCheck`).
 - **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
   version, newest first, each with what changed since the version before it (a publish since the publish before).
   The comparison matches elements by key, settings groups by name, and gives each change its path of properties with

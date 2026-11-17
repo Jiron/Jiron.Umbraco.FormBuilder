@@ -91,17 +91,6 @@ vi.mock('../../api', async (original) => ({
                 },
           ),
         },
-  formSettingsChoices: async () =>
-    server.fails
-      ? undefined
-      : {
-          limits: { actions: server.limit },
-          defaults: { emailLayout: 'card' },
-          emailLayouts: [
-            { key: 'card', name: '#jfbEmailLayouts_card' },
-            { key: 'brand', name: 'Brand mail' },
-          ],
-        },
 }));
 
 vi.mock('../preview/look', async (original) => ({
@@ -196,6 +185,18 @@ class StandIn {
     this.runReads++;
     return this.runs;
   };
+  /** The form's setting choices, as the workspace reads them once for the open form. */
+  choicesOf = async () =>
+    server.fails
+      ? undefined
+      : {
+          limits: { actions: server.limit },
+          defaults: { emailLayout: 'card' },
+          emailLayouts: [
+            { key: 'card', name: '#jfbEmailLayouts_card' },
+            { key: 'brand', name: 'Brand mail' },
+          ],
+        };
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });

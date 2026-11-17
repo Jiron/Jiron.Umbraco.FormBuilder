@@ -1,9 +1,9 @@
 // Library > Templates (ROADMAP 12.1, IA 7, ADR-0217): the built-in templates, the site's saved form templates and its
-// saved groups, as cards in one radio group beside the chosen one's preview. A form template's preview has Use template,
-// for who may design forms at the top of the forms, which creates the form there and opens it; a group's says the
-// palette inserts it. A saved template's "..." renames or deletes it, and the focus stays on the "..." or moves to the
-// card that takes the deleted one's place. There is no create button: templates come from Save as template on a form or
-// a group.
+// saved groups, as cards in one radio group beside the chosen one's preview. A form template's preview has Use
+// template, for who may design forms at the top of the forms, which creates the form there and opens it; a group's says
+// the field picker adds it. A saved template's "..." renames or deletes it, and the focus stays on the "..." or moves
+// to the card that takes the deleted one's place. There is no create button: templates come from Save as template on a
+// form or a group.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';

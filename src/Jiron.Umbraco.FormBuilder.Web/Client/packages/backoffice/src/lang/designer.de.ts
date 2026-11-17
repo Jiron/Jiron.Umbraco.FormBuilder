@@ -1,5 +1,5 @@
 // Die Texte des Formular-Arbeitsbereichs auf Deutsch (ROADMAP 9.3a und 9.3b, docs/ux/copy.md): Ansichten, Kopfzeile und
-// Fußzeile, die Arbeitsfläche, die Palette und der Dialog „Fragen einfügen“.
+// Fußzeile, die Arbeitsfläche, die Feldauswahl und der Dialog „Fragen einfügen“.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
 export default {
@@ -61,13 +61,13 @@ export default {
     redo: 'Erneut anwenden',
     pages: 'Seiten',
     addPage: 'Seite hinzufügen',
+    pageMore: (name: string) => `Mehr für ${name}`,
+    renamePage: 'Umbenennen',
     afterSending: 'Nach dem Senden',
     afterRedirect: 'Nach dem Senden gehen Besucher auf eine andere Seite.',
-    changeOutcome: 'Ändern',
 
     fieldName: (label: string, type: string) => `${label}, Feld vom Typ ${type}`,
     groupName: (name: string) => `${name}, Gruppe`,
-    pageName: (name: string) => `${name}, Seite`,
     insertHere: 'Hier ein Feld hinzufügen',
     insertAfter: (label: string) => `Hier ein Feld hinzufügen, nach ${label}`,
     insertBefore: (label: string) => `Hier ein Feld hinzufügen, vor ${label}`,
@@ -81,13 +81,14 @@ export default {
     move: (name: string) => `${name} verschieben`,
     moveTo: 'Verschieben nach…',
     moreElement: 'Weitere Aktionen',
-    newPageAfter: 'Danach eine neue Seite beginnen',
+    newPageAfter: 'Folgendes auf eine neue Seite verschieben',
     saveGroupAsTemplate: 'Gruppe als Vorlage speichern…',
     copyAlias: 'Alias kopieren',
-    saidNewPage: (name: string) => `Neue Seite nach ${name} begonnen`,
+    saidNewPage: (name: string) => `Was auf ${name} folgt, auf eine neue Seite verschoben`,
     saidCopied: (alias: string) => `${alias} kopiert`,
     copyFailed: 'Der Alias konnte nicht kopiert werden.',
     language: 'Sprache',
+    languageButton: (culture: string, name: string) => `Sprache ${culture}: ${name}`,
     untranslated: (language: string) => `Noch kein Text auf ${language}`,
     useDictionary: 'Wörterbucheintrag verwenden',
     useDictionaryFor: (label: string) => `Wörterbucheintrag für ${label} verwenden`,
@@ -135,10 +136,14 @@ export default {
     pageRef: (number: number, title: string) => (title ? `Seite ${number}: ${title}` : `Seite ${number}`),
     shortcuts: 'Tastenkürzel',
     rulesOverview: 'Regelübersicht',
-    checkChecking: 'Wird geprüft…',
-    checkFailed: 'Nicht geprüft',
-    checkProblems: (count: number) => (count === 1 ? '1 Problem' : `${count} Probleme`),
-    checkNone: 'Keine Probleme',
+    checkBadge: (count: number) =>
+      count === 0
+        ? 'Formularprüfung: keine Probleme'
+        : count === 1
+          ? 'Formularprüfung: 1 Problem'
+          : `Formularprüfung: ${count} Probleme`,
+    checkBadgeChecking: 'Formularprüfung: wird geprüft…',
+    checkBadgeFailed: 'Formularprüfung: nicht geprüft',
     shortcutUndo: 'Die letzte Änderung zurücknehmen',
     shortcutRedo: 'Zurückgenommenes erneut anwenden',
     shortcutsLead: 'Die Kürzel wirken auf das gewählte Feld, die Gruppe oder die Seite.',
@@ -146,8 +151,9 @@ export default {
     shortcutDelete: 'Es löschen',
     shortcutStep: 'Es um eine Stelle nach oben oder unten verschieben',
     shortcutArrows: 'Auf der Seite nach oben oder unten gehen',
-    shortcutRename: 'Die Beschriftung eines Felds direkt bearbeiten',
-    shortcutEscape: 'Die Auswahl aufheben, die Palette schließen oder ein Ziehen abbrechen',
+    shortcutRename:
+      'Die Beschriftung eines Felds direkt bearbeiten oder die Seite umbenennen, auf deren Reiter Sie sind',
+    shortcutEscape: 'Die Auswahl aufheben oder ein Ziehen abbrechen',
     shortcutHelp: 'Diese Tastenkürzel zeigen',
     keyCtrl: 'Strg',
     keyCmd: 'Cmd',
@@ -170,16 +176,14 @@ export default {
     tryAgain: 'Erneut versuchen',
     previewFailed: 'Die Vorschau konnte nicht geladen werden.',
 
-    paletteHeading: 'Feld hinzufügen',
-    paletteSearch: 'Felder suchen',
-    paletteFold: 'Palette einklappen',
-    paletteUnfold: 'Palette öffnen',
-    paletteRecent: 'Zuletzt verwendet',
-    paletteLayout: 'Layout',
-    paletteGroup: 'Gruppe',
-    paletteNewPage: 'Neue Seite',
-    paletteSavedGroups: 'Gespeicherte Gruppen',
-    paletteNone: (query: string) => `Kein Feldtyp passt zu „${query}“.`,
+    pickerHeading: 'Feld hinzufügen',
+    pickerSearch: 'Feldtypen suchen',
+    pickerLayout: 'Layout',
+    pickerGroup: 'Gruppe',
+    pickerSavedGroups: 'Gespeicherte Gruppen',
+    pickerNone: (query: string) => `Kein Feldtyp passt zu „${query}“.`,
+    pickerEnter: 'Eingabe',
+    pickerEnterAdds: (name: string) => `Die Eingabetaste fügt ${name} hinzu.`,
     unavailable: 'Dieser Feldtyp kann auf dieser Website noch nicht verwendet werden.',
     pasteQuestions: 'Fragen einfügen…',
     pasteHeadline: 'Fragen einfügen',
@@ -200,7 +204,8 @@ export default {
     saidSavedGroupAdded: (name: string) => `${name} hinzugefügt`,
     saveGroupHeadline: (name: string) => `${name} als Vorlage speichern`,
     saveGroupNote: 'Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor.',
-    savedGroup: (name: string) => `${name} wurde gespeichert. Jedes Formular kann die Gruppe aus der Palette einfügen.`,
+    savedGroup: (name: string) =>
+      `${name} wurde gespeichert. Jedes Formular kann die Gruppe über „Feld hinzufügen“ unter „Gespeicherte Gruppen“ einfügen.`,
     savedGroupLeftOut: (name: string, rules: number, checks: number) => {
       const parts = [
         rules === 0 ? '' : rules === 1 ? '1 Regel' : `${rules} Regeln`,

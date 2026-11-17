@@ -246,7 +246,7 @@ export default {
     templatesPart_builtIn: 'Built in',
     templatesPart_forms: 'Saved forms',
     templatesPart_groups: 'Saved groups',
-    groupTemplateHelp: "A group: the designer's palette inserts it into any form, under Saved groups.",
+    groupTemplateHelp: "A group: any form adds it from the designer's Add a field, under Saved groups.",
     templateMore: (name: string) => `Actions for ${name}`,
     actionRenameTemplate: 'Rename…',
     actionDeleteTemplate: 'Delete…',

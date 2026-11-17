@@ -1,14 +1,17 @@
-// The Design view (ROADMAP 9.3b, docs/ux/information-architecture.md section 5.1): the palette beside the canvas. It
-// takes the canvas's and the palette's requests and makes each an edit of the editor model through the workspace, says
-// what happened for screen readers, offers Undo after a delete, and moves the focus to what an edit left selected. A
-// link that names a field (`?field=`, ADR-0166) opens the view on that field's page with the field selected. Moves
-// (ADR-0016, ADR-0169) come from a drop, Move to... and Alt+Up and Alt+Down; each says where the element is now, a move
-// the form refuses says why at the element, and the focus stays on the element moved. Up and Down go through the
-// elements of the page, and ? opens the Keyboard shortcuts. The inspector (ADR-0170) shows the selected element beside
-// the canvas, its column there with nothing selected too, or over it up to 700 px; up to 1024 px the palette lies on its
-// rail beside it (ADR-0182), so selecting moves nothing. Its changes are edits
-// too, typing in one box one step to undo, and an alias that entries know changes only after a question. A field that
-// takes its options from elsewhere shows them as the server resolves the draft's (ADR-0172).
+// The Design view (ROADMAP 9.3b and 22.1, docs/ux/information-architecture.md section 5.1, ADR-0256): the canvas and
+// the inspector beside it. It takes the canvas's and the inspector's requests and makes each an edit of the editor
+// model through the workspace, says what happened for screen readers, offers Undo after a delete, and moves the focus
+// to what an edit left selected. Every Add field and insert point opens the field picker, whose pick lands where it was
+// opened. A page is renamed, duplicated and deleted at its tab. A link that names a field (`?field=`, ADR-0166) opens
+// the view on that field's page with the field selected. Moves (ADR-0016, ADR-0169) come from a drop, Move to... and
+// Alt+Up and Alt+Down; each says where the element is now, a move the form refuses says why at the element, and the
+// focus stays on the element moved. Up and Down go through the elements of the page, and ? opens the Keyboard
+// shortcuts. The inspector (ADR-0170) shows the selected element, else the open page, in its column beside the canvas,
+// so selecting moves nothing (ADR-0182), or over the canvas up to 700 px. Its changes are edits too, typing in one box
+// one step to undo, and an alias that entries know changes only after a question. A field that takes its options from
+// elsewhere shows them as the server resolves the draft's (ADR-0172). After sending's outcomes stand in the inspector's
+// column beside the canvas, else under what visitors get; a Fix it in an outcome, and a rule of one in the rules
+// overview, open its sidebar there.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { ImageCropModeModel } from '@umbraco-cms/backoffice/external/backend-api';
@@ -29,11 +32,12 @@ import {
   type CheckBadge,
   type InPlaceRefusal,
 } from './canvas/form-canvas.element';
-import { bySeverity, type FixTarget } from './check/form-check';
+import { bySeverity, parsePath, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
 import { followFix, routerSettled } from './form-views';
-import { outcomesOf } from './settings/outcome-model';
+import './outcomes/form-outcomes.element';
+import type { FormOutcomesElement } from './outcomes/form-outcomes.element';
 import { keepWidth, readWidth, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -66,23 +70,14 @@ import { CHANGE_TYPE_MODAL, type ChangeTypeTarget } from './change-type/change-t
 import { changeWords } from './change-type/change-type-words';
 import { changedField, previewChange } from './change-type/type-change';
 import { MOVE_TO_MODAL, type MoveToModalData } from './moves/move-to.modal.token';
-import { dropEdit, endOf, moveToPlaces, positionOf, type MovePlace } from './moves/moves';
+import { endOf, moveToPlaces, positionOf, type MovePlace } from './moves/moves';
 import { SHORTCUTS_MODAL } from './moves/shortcuts.modal.token';
 import { addFields, addGroup, newField, newPage, placeFor } from './new-elements';
-import {
-  keepRecent,
-  PALETTE_PICK,
-  readRecent,
-  type PaletteElement,
-  type PaletteMode,
-  type PalettePick,
-} from './palette/palette.element';
-import './palette/palette.element';
-import type { SavedGroup } from './palette/palette.element';
-import { maySaveGroups, readSavedGroups, saveGroup } from './saved-groups';
+import { FIELD_PICKER_MODAL, type FieldPick } from './picker/field-picker.modal.token';
+import { maySaveGroups, readSavedGroups, saveGroup, type SavedGroup } from './saved-groups';
 import { sayRefusal } from '../library/library-changes';
 import { TEMPLATE_NAME_MODAL } from '../library/modals/tokens';
-import { PASTE_QUESTIONS_MODAL } from './palette/paste-questions.modal.token';
+import { PASTE_QUESTIONS_MODAL } from './picker/paste-questions.modal.token';
 import { RULE_BUILDER_MODAL } from './rules/rule-builder.modal.token';
 import { builderEffectsOf, clashOf, sameRule, type Effect } from './rules/rule-draft';
 import { dropBuilt, landBuilt } from './rules/rule-edits';
@@ -103,22 +98,14 @@ import './inspector/inspector.element';
 import type { InspectorElement } from './inspector/inspector.element';
 
 /**
- * Up to this width, the palette opens over the canvas; wider, it stays beside it (IA 5.1). The narrowest workspace,
- * 620 px, is in this range; Umbraco's own header keeps the view from getting narrower.
+ * Up to this width the canvas is alone, and the inspector lies over it for a selection (IA 5.1); wider, the inspector's
+ * column stands beside it. The narrowest workspace, 620 px, is in this range; Umbraco's own header keeps the view from
+ * getting narrower.
  */
 export const NARROW = 700;
 
-/** Whether a view this wide puts the palette over the canvas. */
+/** Whether a view this wide puts the inspector over the canvas. */
 export const isNarrow = (width: number) => width <= NARROW;
-
-/**
- * Up to this width, beside the inspector's column, the palette lies on its rail, whose buttons open it over the canvas
- * (IA 5.1, ADR-0182): whatever is selected, the canvas keeps its width. Folding the inspector gives the palette back.
- */
-export const CROWDED = 1024;
-
-/** Whether a view this wide, but not narrow, puts the palette on its rail beside the inspector. */
-export const isCrowded = (width: number) => width > NARROW && width <= CROWDED;
 
 /**
  * How long the canvas waits after a field's options change before it asks for them: typing in a source's settings
@@ -142,8 +129,8 @@ const NOT_TEXT: ReadonlySet<string> = new Set([
   'image',
 ]);
 
-/** The control of an element the focus goes back to: the button that selects it, its handle, or a page's step. */
-type Control = 'select' | 'handle' | 'step';
+/** The control of an element the focus goes back to: the button that selects it, its handle, or a page's tab. */
+type Control = 'select' | 'handle' | 'tab';
 
 /** What an edit is applied with: the type a refusal names, what the live region says instead, the control focused. */
 interface Applied {
@@ -199,13 +186,9 @@ export class FormDesignViewElement extends UmbLitElement {
     _width: { state: true },
     _insertAt: { state: true },
     _editing: { state: true },
-    _folded: { state: true },
-    _open: { state: true },
     _narrow: { state: true },
-    _crowded: { state: true },
     _inspectorFolded: { state: true },
     _culture: { state: true },
-    _recent: { state: true },
     _said: { state: true },
     _failed: { state: true },
     _refusal: { state: true },
@@ -222,10 +205,10 @@ export class FormDesignViewElement extends UmbLitElement {
       :host {
         position: relative;
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         grid-template-rows: minmax(0, 1fr);
         height: 100%;
-        /* The view takes the width it is given, so it can measure when that is too narrow for the docked palette. */
+        /* The view takes the width it is given, so it can measure when that is too narrow for the inspector beside it. */
         min-width: 0;
         min-height: 0;
         /*
@@ -237,44 +220,20 @@ export class FormDesignViewElement extends UmbLitElement {
         scrollbar-color: var(--uui-color-disabled-standalone) transparent;
       }
 
-      jfb-designer-palette {
-        grid-column: 1;
-        grid-row: 1;
-        width: 264px;
-        min-height: 0;
-      }
-
-      jfb-designer-palette[mode='rail'] {
-        width: 56px;
-      }
-
-      jfb-designer-palette[mode='overlay'] {
-        position: absolute;
-        inset-block: 0;
-        inset-inline-start: 0;
-        z-index: 10;
-        width: min(320px, 100%);
-        box-shadow: var(--uui-shadow-depth-3);
-      }
-
       :host([narrow]) {
         grid-template-columns: minmax(0, 1fr);
       }
 
       jfb-form-canvas,
       .failed {
-        grid-column: 2;
+        grid-column: 1;
         grid-row: 1;
         min-width: 0;
         min-height: 0;
       }
 
-      :host([narrow]) :is(jfb-form-canvas, .failed) {
-        grid-column: 1;
-      }
-
       jfb-designer-inspector {
-        grid-column: 3;
+        grid-column: 2;
         grid-row: 1;
         width: 320px;
         min-height: 0;
@@ -287,18 +246,12 @@ export class FormDesignViewElement extends UmbLitElement {
       /* Over a narrow canvas the inspector takes the view, with the element's bar in its header. */
       jfb-designer-inspector[mode='overlay'] {
         position: absolute;
+        /* The whole view: in its one column, line 2 is the view's end edge, which would leave the inspector no width. */
+        grid-column: 1 / -1;
         inset: 0;
         z-index: 10;
         width: auto;
         border-inline-start: 0;
-      }
-
-      /* Over the canvas while the palette lies on it: a click on it closes the palette. */
-      .scrim {
-        position: absolute;
-        inset: 0;
-        z-index: 9;
-        background: color-mix(in srgb, var(--uui-color-text) 16%, transparent);
       }
 
       .failed {
@@ -361,15 +314,10 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _width: CanvasWidth;
   declare private _insertAt: Place | null;
   declare private _editing: string | null;
-  declare private _folded: boolean;
-  declare private _open: boolean;
   declare private _narrow: boolean;
-  /** Whether the view is up to 1024 px wide, but not narrow: the palette lies on its rail beside the inspector. */
-  declare private _crowded: boolean;
   declare private _inspectorFolded: boolean;
   /** The language the canvas and the inspector show; null for the site's default. */
   declare private _culture: string | null;
-  declare private _recent: readonly string[];
   declare private _said: string;
   /** Whether what the canvas draws with could not be read. */
   declare private _failed: boolean;
@@ -377,19 +325,21 @@ export class FormDesignViewElement extends UmbLitElement {
   declare private _refusal: InPlaceRefusal | null;
   /** What the form check's badge says, which changes only with the check's answers. */
   declare private _badge: CheckBadge;
-  /** The site's saved groups, which the palette offers (ADR-0217). */
+  /** The site's saved groups, which the field picker offers (ADR-0217). */
   declare private _saved: readonly SavedGroup[];
   /** Whether a group's "..." saves it as a template: the user may manage the library. */
   declare private _saveGroups: boolean;
   declare private _actions: readonly DesignerActionItem[];
 
   #context: FormWorkspaceContext | undefined;
-  /** The page the palette adds to when it was opened from a page's Add field and the page has no group. */
+  /** The page the picker adds to when it was opened from a page's Add field and the page has no group. */
   #addTo: string | null = null;
   /** Whether the selection a link named was brought into sight, or the user changed something first. */
   #shownLink = false;
   /** Whether Change type's dialog is opening or open, so a second ask does nothing. */
   #changingType = false;
+  /** Whether the field picker is opening or open, so a second ask does nothing. */
+  #picking = false;
   /** Whether the rules builder is open, so a second ask does nothing. */
   #buildingRule = false;
   /** The field selected whose changes of type were read ahead, with its type. */
@@ -405,22 +355,10 @@ export class FormDesignViewElement extends UmbLitElement {
   #imaging: UmbImagingRepository | undefined;
   /** The toast that offers Undo after a delete, closed by the next change: its Undo would take back another. */
   #undoToast: { close(): void } | undefined;
-  /** What opened the palette over the canvas, where the focus goes back when it closes without a pick. */
-  #opener: HTMLElement | null = null;
-  /** The palette's types, the same list while the types stay the same, so the palette isn't drawn again for nothing. */
-  #typeList: {
-    readonly of: Readonly<Record<string, FieldTypeResponseModel>>;
-    readonly list: FieldTypeResponseModel[];
-  } = {
-    of: {},
-    list: [],
-  };
   #resize = new ResizeObserver(([entry]) => {
     const width = entry?.contentRect.width;
     const narrow = width !== undefined && isNarrow(width);
-    const crowded = width !== undefined && isCrowded(width);
     if (narrow !== this._narrow) this._narrow = narrow;
-    if (crowded !== this._crowded) this._crowded = crowded;
   });
 
   constructor() {
@@ -435,13 +373,9 @@ export class FormDesignViewElement extends UmbLitElement {
     this._width = readWidth();
     this._insertAt = null;
     this._editing = null;
-    this._folded = false;
-    this._open = false;
     this._narrow = false;
-    this._crowded = false;
     this._inspectorFolded = false;
     this._culture = null;
-    this._recent = readRecent();
     this._said = '';
     this._failed = false;
     this._refusal = null;
@@ -459,7 +393,7 @@ export class FormDesignViewElement extends UmbLitElement {
       }
       this.observe(context?.editor, (view) => this.#viewChanged(view), 'editor');
       this.observe(context?.fieldTypes, (types) => (this._types = types ?? {}), 'types');
-      this.observe(context?.paletteGroups, (groups) => (this._groups = groups ?? []), 'groups');
+      this.observe(context?.typeGroups, (groups) => (this._groups = groups ?? []), 'groups');
       this.observe(
         context?.check,
         (check) => {
@@ -480,7 +414,6 @@ export class FormDesignViewElement extends UmbLitElement {
     });
     void this.#readLook();
     this.addEventListener(CANVAS_REQUEST, (event) => void this.#onCanvas((event as CustomEvent<CanvasRequest>).detail));
-    this.addEventListener(PALETTE_PICK, (event) => void this.#onPalette((event as CustomEvent<PalettePick>).detail));
     this.addEventListener(
       INSPECTOR_REQUEST,
       (event) => void this.#onInspector((event as CustomEvent<InspectorRequest>).detail),
@@ -496,7 +429,7 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#readActions();
   }
 
-  // The site's designer actions, as the toolbar's "..." lists them after its own (ADR-0018).
+  // The site's designer actions, as the row's "..." lists them after its own (ADR-0018).
   readonly #readActions = () => {
     this._actions = designerActions().map((manifest) => ({ alias: manifest.alias, label: manifest.meta.label }));
   };
@@ -658,12 +591,12 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.shadowRoot?.querySelector('jfb-form-canvas') ?? null;
   }
 
-  get #palette(): PaletteElement | null {
-    return this.shadowRoot?.querySelector('jfb-designer-palette') ?? null;
-  }
-
   get #inspector(): InspectorElement | null {
     return this.shadowRoot?.querySelector('jfb-designer-inspector') ?? null;
+  }
+
+  get #outcomes(): FormOutcomesElement | null {
+    return this.shadowRoot?.querySelector('jfb-form-outcomes') ?? null;
   }
 
   async #focus(key: string, control: Control = 'select') {
@@ -722,28 +655,44 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#closeUndo();
     const announced = applied.announce?.(result.state) ?? said;
     if (announced) this.#say(announced);
-    const { selection, dropped } = this.#settle(result.state);
+    const { selection, dropped, page } = this.#settle(result.state);
     if (selection) {
-      const page = pageOf(result.state.definition, selection);
-      const index = result.state.definition.pages.findIndex((each) => each.key === page?.key);
+      const index = result.state.definition.pages.findIndex(
+        (each) => each.key === pageOf(result.state.definition, selection)?.key,
+      );
       if (index >= 0) this._shown = index;
       await this.#focus(selection, applied.control);
+    } else if (page) {
+      await this.#showPage(page);
     } else if (dropped) {
       await this.#focusAddField();
     }
     return true;
   }
 
+  /** Shows a page, with the focus on its tab. */
+  async #showPage(key: string) {
+    const index = this.#state()?.definition.pages.findIndex((each) => each.key === key) ?? -1;
+    if (index >= 0) this._shown = index;
+    await this.#focus(key, 'tab');
+  }
+
   // A page without fields draws its one bare group as the page's sentence, so a selection on that group, which a
-  // delete of the page's last field leaves, is let go: Delete would take a group the user can't see.
-  #settle(state: EditorState): { selection: string | null; dropped: boolean } {
+  // delete of the page's last field leaves, is let go: Delete would take a group the user can't see. A page an edit
+  // leaves selected (a page duplicated or deleted, and Undo of one) is let go too and shown instead: the canvas draws no
+  // selection for a page, and over a narrow canvas its inspector would cover the form (ADR-0256).
+  #settle(state: EditorState): { selection: string | null; dropped: boolean; page: string | null } {
     const selection = state.selection;
-    if (!selection) return { selection: null, dropped: false };
+    if (!selection) return { selection: null, dropped: false, page: null };
     const found = locate(state.definition, selection);
+    if (found?.kind === 'page') {
+      this.#context?.edit(select(state, null), '');
+      return { selection: null, dropped: false, page: selection };
+    }
     if (found?.kind !== 'group' || !pageIsBare(found.container, this._look?.culture ?? ''))
-      return { selection, dropped: false };
+      return { selection, dropped: false, page: null };
     this.#context?.edit(select(state, null), '');
-    return { selection: null, dropped: true };
+    return { selection: null, dropped: true, page: null };
   }
 
   async #focusAddField() {
@@ -782,40 +731,36 @@ export class FormDesignViewElement extends UmbLitElement {
     );
   }
 
-  /** Whether the palette opens over the canvas: in a narrow view, or folded beside the inspector. */
-  #paletteOverlays(): boolean {
-    return this._narrow || this.#crowded();
-  }
-
-  #openPalette() {
-    const over = this.#paletteOverlays();
-    if (over && !this._open) this.#opener = deepFocus();
-    if (over) this._open = true;
-    else this._folded = false;
-    this.#palette?.focusSearch();
-    void this.updateComplete.then(() => this.#palette?.focusSearch());
-  }
-
-  /** Closes the palette over the canvas; without a pick, the focus goes back to what opened it. */
-  #closePalette(giveBack = false) {
-    const open = this._open;
-    this._open = false;
-    this._insertAt = null;
-    this.#addTo = null;
-    const opener = this.#opener;
-    this.#opener = null;
-    if (!open) return;
-    if (!giveBack) {
-      // A pick over a narrow canvas selected what it added, whose inspector the palette kept out of reach until now.
-      void this.updateComplete.then(() => {
-        if (this.#inspectorMode() === 'overlay' && this._view?.state.selection) this.#inspector?.focusHeading();
-      });
-      return;
+  /**
+   * Opens the field picker for the place set, and lands its pick there (ADR-0256). The place stays marked on the canvas
+   * while the picker is open. Close and Esc land nothing, and the focus is back on what opened the picker.
+   */
+  async #pick() {
+    this.#picking = true;
+    const opener = deepFocus();
+    try {
+      let shown = false;
+      let gone: (() => void) | undefined;
+      const closed = new Promise<void>((done) => (gone = done));
+      const value = await umbOpenModal(this, FIELD_PICKER_MODAL, {
+        data: {
+          types: Object.values(this._types),
+          groups: this._groups,
+          saved: this._saved,
+          opened: () => (shown = true),
+          closed: () => gone?.(),
+        },
+      }).catch(() => undefined);
+      // The sidebar answers before it slides out, and its dialog, as it closes, gives the focus back to what opened it:
+      // the focus a pick sets waits until it is gone, so it stays.
+      if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
+      if (value) await this.#place(value.pick);
+      else if (opener?.isConnected && [null, document.body].includes(deepFocus())) opener.focus();
+    } finally {
+      this.#picking = false;
+      this._insertAt = null;
+      this.#addTo = null;
     }
-    void this.updateComplete.then(() => {
-      if (opener?.isConnected) opener.focus();
-      else this.#canvas?.shadowRoot?.querySelector<HTMLElement>('#jfb-canvas-form')?.focus();
-    });
   }
 
   async #onCanvas(request: CanvasRequest) {
@@ -827,25 +772,33 @@ export class FormDesignViewElement extends UmbLitElement {
         this._insertAt = null;
         await this.#apply(select(state, request.key), '');
         return;
+      case 'clear':
+        if (state.selection) this.#context?.edit(select(state, null), '');
+        return;
       case 'insertAfter': {
         const found = locate(state.definition, request.key);
-        if (found?.kind !== 'field') return;
+        if (found?.kind !== 'field' || this.#picking) return;
         this._insertAt = { container: found.container.key, index: found.index + 1 };
-        this.#openPalette();
+        await this.#pick();
         return;
       }
       case 'insertFirst':
+        if (this.#picking) return;
         this._insertAt = { container: request.container, index: 0 };
-        this.#openPalette();
+        await this.#pick();
         return;
       case 'addField': {
+        if (this.#picking) return;
         const page = state.definition.pages.find((each) => each.key === request.page);
         const last = page?.groups.at(-1);
         this._insertAt = last ? { container: last.key, index: last.fields.length } : null;
         this.#addTo = request.page;
-        this.#openPalette();
+        await this.#pick();
         return;
       }
+      case 'renamePage':
+        await this.#renamePage(request.key);
+        return;
       case 'duplicate': {
         const name = this.#label(request.key);
         await this.#apply(duplicate(state, request.key, model), this.localize.term('jfbDesigner_saidDuplicated', name));
@@ -863,10 +816,13 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'show':
         this._shown = request.shown;
         this._insertAt = null;
-        if (state.selection && request.shown !== 'after') {
-          const page = pageOf(state.definition, state.selection);
-          if (page?.key !== state.definition.pages[request.shown]?.key) this.#context?.edit(select(state, null), '');
-        }
+        // A selection on another page is let go, and on After sending, whose column holds the outcomes.
+        if (
+          state.selection &&
+          (request.shown === 'after' ||
+            pageOf(state.definition, state.selection)?.key !== state.definition.pages[request.shown]?.key)
+        )
+          this.#context?.edit(select(state, null), '');
         return;
       case 'addPage': {
         const page = newPage(model.newKey);
@@ -895,20 +851,14 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'paste':
         await this.#paste();
         return;
-      case 'changeOutcome':
-        this.#toOutcome(request.key);
-        return;
       case 'drop':
         await this.#drop(request.source, request.place);
         return;
       case 'refused':
-        this.#refuseInPlace(request.source.kind === 'new' ? null : request.source.key, request.reason);
+        this.#refuseInPlace(request.source.key, request.reason);
         return;
       case 'moveTo':
         await this.#moveTo(request.key);
-        return;
-      case 'changeType':
-        await this.#changeType(request.key);
         return;
       case 'shortcuts':
         await this.#shortcuts();
@@ -1141,13 +1091,6 @@ export class FormDesignViewElement extends UmbLitElement {
     }
   }
 
-  #newFieldOf(alias: string): DesignField | null {
-    const type = Object.hasOwn(this._types, alias) ? this._types[alias] : undefined;
-    const model = this.#context?.model;
-    if (!type || !model) return null;
-    return newField(type, this.localize.string(type.name), model.newKey, this.#newWords());
-  }
-
   /**
    * Why the form can't take what is dragged where it would land, asked as the pointer goes from place to place; it
    * changes nothing. A drop where it already is is no refusal: it just stays.
@@ -1157,25 +1100,20 @@ export class FormDesignViewElement extends UmbLitElement {
     const model = this.#context?.model;
     if (!state || !model) return null;
     if (!place) return this.#refusalText('wrongPlace');
-    const edit = dropEdit(state, source, place, model, (type) => this.#newFieldOf(type));
-    if (!edit || edit.ok || edit.refusal === 'unchanged') return null;
-    return this.#refusalText(edit.refusal, source.kind === 'new' ? source.label : undefined);
+    const edit = move(state, source.key, place, model);
+    if (edit.ok || edit.refusal === 'unchanged') return null;
+    return this.#refusalText(edit.refusal);
   };
 
-  // A drop where the form takes it: what is dragged moves there, or a field of the type dragged is added there.
+  // A drop where the form takes it: what is dragged moves there. A page dragged by its tab keeps the focus on its tab.
   async #drop(source: DragSource, place: Place) {
-    const state = source.kind === 'new' ? this.#state() : this.#selectFirst(source.key);
+    const state = this.#selectFirst(source.key);
     const model = this.#context?.model;
     if (!state || !model) return;
-    const edit = dropEdit(state, source, place, model, (type) => this.#newFieldOf(type));
-    if (!edit) return;
-    if (source.kind !== 'new') {
-      // A page dragged by its step keeps the focus on its step.
-      await this.#moved(source.key, edit, { toast: true, control: source.kind === 'page' ? 'step' : 'select' });
-      return;
-    }
-    const said = this.localize.term('jfbDesigner_saidAdded', source.label);
-    if (await this.#apply(edit, said, { type: source.label })) this._recent = keepRecent(source.type);
+    await this.#moved(source.key, move(state, source.key, place, model), {
+      toast: true,
+      control: source.kind === 'page' ? 'tab' : 'select',
+    });
   }
 
   /**
@@ -1468,7 +1406,7 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   // The rules overview (ADR-0178): every rule of the form by page. A row selects its element on its page, with the
-  // focus on it; an outcome's opens Settings, where outcomes are edited; Add rule selects the element chosen and opens
+  // focus on it; an outcome's opens it on After sending; Add rule selects the element chosen and opens
   // the builder on it for a new rule. Its sidebar answers before it slides out and gives the focus back to the "..."
   // as it closes, so the focus set here waits until it is gone.
   async #rulesOverview() {
@@ -1495,8 +1433,7 @@ export class FormDesignViewElement extends UmbLitElement {
     if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
     if (value.go === 'outcomes') {
       // A rule of an outcome opens the outcome on its rule.
-      const key = outcomesOf(this.#state()?.definition ?? { pages: [] })[value.index]?.key ?? null;
-      this.#toOutcome(key, key ? `$.outcomes[${value.index}].rules[0]` : undefined);
+      await this.#fixOutcome(`$.outcomes[${value.index}].rules[0]`);
       return;
     }
     const now = this.#selectFirst(value.key);
@@ -1546,19 +1483,21 @@ export class FormDesignViewElement extends UmbLitElement {
 
   /**
    * Fix it: the element selected on its page, with the inspector on the setting the problem is about; the rules builder
-   * on a rule; the palette for the end of a page without fields; or the view where the form's settings, outcomes or
-   * actions are edited. An element gone since the check leads nowhere.
+   * on a rule; the field picker for the end of a page without fields; After sending for an outcome; or the view where
+   * the form's settings or actions are edited. An element gone since the check leads nowhere.
    */
   async #fix(target: FixTarget, handedOn = false) {
-    // The user's own choice ends the wait for a link's selection, so its focus never takes this one's; and the palette
-    // over the canvas, which would leave the inspector out of reach, closes.
+    // The user's own choice ends the wait for a link's selection, so its focus never takes this one's.
     this.#shownLink = true;
-    if (this._open) this.#closePalette();
     if (target.kind === 'view') {
       followFix(target, (fix) => this.#context?.requestFix(fix));
       return;
     }
-    if (target.kind === 'palette') {
+    if (target.kind === 'outcome') {
+      await this.#fixOutcome(target.path, target.key, handedOn);
+      return;
+    }
+    if (target.kind === 'picker') {
       if (target.page === null) await this.#onCanvas({ kind: 'addPage' });
       else if (this.#state()?.definition.pages.some((page) => page.key === target.page)) {
         const state = this.#state();
@@ -1702,6 +1641,7 @@ export class FormDesignViewElement extends UmbLitElement {
   #travel(way: 'undo' | 'redo', stay = false) {
     const context = this.#context;
     if (!context) return;
+    const before = context.getEditorState().definition;
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
     this.#inspector?.forget();
@@ -1710,11 +1650,21 @@ export class FormDesignViewElement extends UmbLitElement {
     this.#say(this.localize.term(way === 'undo' ? 'jfbDesigner_saidUndone' : 'jfbDesigner_saidRedone', said));
     const state = context.getEditorState();
     const { definition } = state;
-    const { selection, dropped } = this.#settle(state);
-    if (selection) {
-      const index = definition.pages.findIndex((page) => page.key === pageOf(definition, selection)?.key);
+    const { selection, dropped, page } = this.#settle(state);
+    if (this._shown === 'after' && !selection && !page) {
+      // On After sending, the focus goes to the outcome brought back or changed, as the toast's Undo puts it.
+      void this.#outcomes?.focusChange(before);
+    } else if (selection) {
+      const index = definition.pages.findIndex((each) => each.key === pageOf(definition, selection)?.key);
       if (index >= 0) this._shown = index;
       if (!stay) void this.#focus(selection);
+    } else if (page) {
+      if (stay)
+        this._shown = Math.max(
+          0,
+          definition.pages.findIndex((each) => each.key === page),
+        );
+      else void this.#showPage(page);
     } else if (dropped) {
       void this.#focusAddField();
     } else {
@@ -1722,7 +1672,7 @@ export class FormDesignViewElement extends UmbLitElement {
     }
   }
 
-  // Where a pick from the palette goes, and the page it goes on.
+  // Where a pick from the field picker goes, and the page it goes on.
   #target(): { place: Place | null; page: string } | undefined {
     const state = this.#state();
     if (!state) return undefined;
@@ -1735,89 +1685,42 @@ export class FormDesignViewElement extends UmbLitElement {
     return page ? { place, page } : undefined;
   }
 
-  async #onPalette(pick: PalettePick) {
+  // A pick lands where the picker was opened: it is added there, selected and given the focus; Paste questions...
+  // opens its dialog for the same place.
+  async #place(pick: FieldPick) {
     const state = this.#state();
     const model = this.#context?.model;
-    if (!state || !model) return;
+    const target = this.#target();
+    if (!state || !model || !target) return;
     switch (pick.kind) {
-      case 'fold':
-        this._folded = true;
-        void this.updateComplete.then(() => this.#palette?.focusUnfold());
-        return;
-      case 'unfold':
-        // Folded beside the inspector, the palette opens over the canvas; folded by its own button, beside it again.
-        if (this.#crowded()) this.#openPalette();
-        else {
-          this._folded = false;
-          void this.updateComplete.then(() => this.#palette?.focusSearch());
-        }
-        return;
-      case 'close':
-        this.#closePalette(true);
-        return;
-      case 'unavailable':
-        (await this.#notifications())?.peek('warning', { data: { message: pick.reason } });
-        return;
       case 'paste':
         await this.#paste();
         return;
-      case 'drag':
-        this.#canvas?.dragNew(pick.event, pick.handle, pick.type, pick.label);
-        return;
       case 'field': {
-        const type = Object.hasOwn(this._types, pick.type) ? this._types[pick.type] : undefined;
-        const target = this.#target();
-        if (!type || !target) return;
+        const type = this.#fieldType(pick.type);
+        if (!type) return;
         const name = this.localize.string(type.name);
-        const field = newField(type, name, model.newKey, this.#newWords());
-        const done = await this.#apply(
-          addFields(state, [field], target.place, target.page, model),
+        await this.#apply(
+          addFields(state, [newField(type, name, model.newKey, this.#newWords())], target.place, target.page, model),
           this.localize.term('jfbDesigner_saidAdded', name),
           { type: name },
         );
-        if (done) {
-          this._recent = keepRecent(pick.type);
-          this.#closePalette();
-        }
         return;
       }
       case 'savedGroup': {
-        const target = this.#target();
-        if (!target) return;
         const copy = freshCopyWith(state.definition, pick.saved.group, pick.saved.checks, model);
-        if (
-          await this.#apply(
-            addGroup(state, target.place, target.page, model, copy.element, copy.checks),
-            this.localize.term('jfbDesigner_saidSavedGroupAdded', pick.saved.name),
-          )
-        )
-          this.#closePalette();
+        await this.#apply(
+          addGroup(state, target.place, target.page, model, copy.element, copy.checks),
+          this.localize.term('jfbDesigner_saidSavedGroupAdded', pick.saved.name),
+        );
         return;
       }
-      case 'group': {
-        const target = this.#target();
-        if (!target) return;
-        if (
-          await this.#apply(
-            addGroup(state, target.place, target.page, model),
-            this.localize.term('jfbDesigner_saidGroupAdded'),
-          )
-        )
-          this.#closePalette();
+      case 'group':
+        await this.#apply(
+          addGroup(state, target.place, target.page, model),
+          this.localize.term('jfbDesigner_saidGroupAdded'),
+        );
         return;
-      }
-      case 'page': {
-        const target = this.#target();
-        if (!target) return;
-        const index = state.definition.pages.findIndex((page) => page.key === target.page);
-        const place =
-          this._insertAt ?? (state.selection ? placeFor(state.definition, null, state.selection, index) : null);
-        const edit = place
-          ? splitPage(state, place, model)
-          : insert(state, 'page', newPage(model.newKey), { container: null, index: index + 1 }, model);
-        if (await this.#apply(edit, this.localize.term('jfbDesigner_saidPageAdded'))) this.#closePalette();
-        return;
-      }
     }
   }
 
@@ -1844,31 +1747,33 @@ export class FormDesignViewElement extends UmbLitElement {
       return type ? [newField(type, question.label, model.newKey, this.#newWords())] : [];
     });
     const added = addFields(state, fields, target.place, target.page, model);
-    // One question is selected to be edited, as a field from the palette is; several are left to be looked over, so no
-    // inspector over a narrow canvas hides them, and the focus goes to the first of them (16.6, ADR-0241).
+    // One question is selected to be edited, as a picked field is; several are left to be looked over, so no inspector
+    // over a narrow canvas hides them, and the focus goes to the first of them (16.6, ADR-0241).
     const several = fields.length > 1;
     const done = await this.#apply(
       several && added.ok ? { ...added, state: { ...added.state, selection: null } } : added,
       this.localize.term('jfbDesigner_saidAddedMany', fields.length),
     );
     if (!done) return;
-    this.#closePalette();
     const first = fields[0];
     if (several && first) await this.#focus(first.key);
   }
 
   /**
-   * The Settings view, where a form's outcomes are edited, on an outcome's sidebar (at the setting `path` names), or on
-   * Add outcome for none: handed on as a Fix it without a problem, which the Settings view takes up (ADR-0185).
+   * After sending, on the sidebar of the outcome a path names (by its key where given, as the definition checked held
+   * it) at the setting it names, in the language of its message; on Add outcome for a path at the list itself or an
+   * outcome gone since (ADR-0185, ADR-0256). A selection is let go, so no inspector over a narrow canvas hides the list.
    */
-  #toOutcome(key: string | null, path?: string) {
-    const index = key ? outcomesOf(this.#state()?.definition ?? { pages: [] }).findIndex((one) => one.key === key) : -1;
-    followFix(
-      key && index >= 0
-        ? { kind: 'view', view: 'settings', path: path ?? `$.outcomes[${index}]`, key }
-        : { kind: 'view', view: 'settings', path: '$.outcomes' },
-      (fix) => this.#context?.requestFix(fix),
-    );
+  async #fixOutcome(path: string, key?: string, handedOn = false) {
+    const steps = parsePath(path) ?? ['outcomes'];
+    const state = this.#state();
+    if (state?.selection) this.#context?.edit(select(state, null), '');
+    this._shown = 'after';
+    this._insertAt = null;
+    const [, , property, language] = steps;
+    if (property === 'message') await this.#showLanguage(typeof language === 'string' ? language : '');
+    await this.updateComplete;
+    await this.#outcomes?.fix(key, steps, handedOn);
   }
 
   #onKey(event: KeyboardEvent) {
@@ -1882,7 +1787,12 @@ export class FormDesignViewElement extends UmbLitElement {
       target instanceof HTMLTextAreaElement ||
       target?.isContentEditable === true;
     const typing = entry || target instanceof HTMLSelectElement;
-    const inInspector = path.some((node) => node instanceof HTMLElement && node.localName === 'jfb-designer-inspector');
+    // The outcomes are the inspector's column's even where they lie under the sheet.
+    const inInspector = path.some(
+      (node) =>
+        node instanceof HTMLElement &&
+        (node.localName === 'jfb-designer-inspector' || node.localName === 'jfb-form-outcomes'),
+    );
     const ctrl = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
     const state = this.#state();
@@ -1890,9 +1800,7 @@ export class FormDesignViewElement extends UmbLitElement {
     if (key === 'escape') {
       // An open menu closes itself and gives the focus back to its button.
       if (path.some((node) => node instanceof HTMLElement && node.matches('[popover]:popover-open'))) return;
-      if (this._open) this.#closePalette(true);
-      else if (this._insertAt) this._insertAt = null;
-      else if (state && selection && !typing && inInspector) this.#letGo();
+      if (state && selection && !typing && inInspector) this.#letGo();
       else if (state && selection && !typing) this.#context?.edit(select(state, null), '');
       else return;
       event.preventDefault();
@@ -1917,7 +1825,7 @@ export class FormDesignViewElement extends UmbLitElement {
       if (event.altKey) {
         if (!acted) return;
         void this.#step(acted, vertical, control?.control ?? 'select');
-      } else if (control && control.control !== 'step') this.#canvas?.focusNext(control.key, vertical);
+      } else if (control && control.control !== 'tab') this.#canvas?.focusNext(control.key, vertical);
       else return;
       event.preventDefault();
       return;
@@ -1927,6 +1835,7 @@ export class FormDesignViewElement extends UmbLitElement {
     else if (ctrl && (key === 'y' || (key === 'z' && event.shiftKey))) this.#travel('redo');
     else if (ctrl && key === 'd' && acted && this.#selectFirst(acted))
       void this.#onCanvas({ kind: 'duplicate', key: acted });
+    else if (event.key === 'F2' && control?.control === 'tab') void this.#renamePage(control.key);
     else if (event.key === 'F2' && acted && this.#selectFirst(acted))
       void this.#onCanvas({ kind: 'editLabel', key: acted });
     else if (event.key === 'Delete' && acted) void this.#delete(acted);
@@ -1934,13 +1843,32 @@ export class FormDesignViewElement extends UmbLitElement {
     event.preventDefault();
   }
 
-  // The canvas control a key was pressed on: the button that selects an element, its handle, or a page's step.
+  // The canvas control a key was pressed on: the button that selects an element, its handle, or a page's tab.
   #controlOf(event: Event): { key: string; control: Control } | null {
     const target = event.composedPath()[0];
     if (!(target instanceof HTMLElement)) return null;
     const key = target.dataset['key'];
     const control = target.dataset['control'];
-    return key && (control === 'select' || control === 'handle' || control === 'step') ? { key, control } : null;
+    return key && (control === 'select' || control === 'handle' || control === 'tab') ? { key, control } : null;
+  }
+
+  // Rename, at a page's tab: the page's Title in the inspector, its text selected (ADR-0256). Beside the canvas the
+  // inspector shows the page as the open one, unfolded; over a narrow canvas the page is selected, so the inspector opens
+  // over the form.
+  async #renamePage(key: string) {
+    const state = this.#state();
+    const index = state?.definition.pages.findIndex((page) => page.key === key) ?? -1;
+    if (!state || index < 0) return;
+    this.#shownLink = true;
+    this._shown = index;
+    this._insertAt = null;
+    if (this._narrow) {
+      if (state.selection !== key) this.#context?.edit(select(state, key), '');
+    } else if (state.selection) this.#context?.edit(select(state, null), '');
+    this._inspectorFolded = false;
+    await this.updateComplete;
+    await this.#inspector?.updateComplete;
+    this.#inspector?.focusItem({ kind: 'text', property: 'title' }, true);
   }
 
   #failed() {
@@ -1954,34 +1882,31 @@ export class FormDesignViewElement extends UmbLitElement {
     </div>`;
   }
 
-  #paletteTypes(): FieldTypeResponseModel[] {
-    if (this.#typeList.of !== this._types) this.#typeList = { of: this._types, list: Object.values(this._types) };
-    return this.#typeList.list;
-  }
-
-  /** Whether the palette lies on its rail for the inspector beside it: in a view up to 1024 px, selected or not. */
-  #crowded(): boolean {
-    return this._crowded && !this._narrow && !this._inspectorFolded;
-  }
-
-  #mode(): PaletteMode {
-    if (this._narrow) return 'overlay';
-    if (this.#crowded()) return this._open ? 'overlay' : 'rail';
-    return this._folded ? 'rail' : 'docked';
-  }
-
   #inspectorMode(): InspectorMode {
     if (this._narrow) return 'overlay';
     return this._inspectorFolded ? 'rail' : 'docked';
   }
 
+  /** The key of the page the canvas shows; none after sending. */
+  #openPage(): string | null {
+    const pages = this._view?.state.definition.pages ?? [];
+    return typeof this._shown === 'number' ? (pages[Math.min(this._shown, pages.length - 1)]?.key ?? null) : null;
+  }
+
   override render() {
     const view = this._view;
-    const mode = this.#mode();
     const selection = view?.state.selection ?? null;
     const inspector = this.#inspectorMode();
     // Beside the canvas the inspector's column is always there, so a selection moves nothing; over it, only for one.
     const inspects = this._look !== undefined && !this._failed && (selection !== null || inspector !== 'overlay');
+    // After sending's outcomes: in the inspector's column beside the canvas, else under what visitors get (ADR-0256).
+    const after = this._shown === 'after' && this._look !== undefined && !this._failed;
+    const inColumn = after && inspects && inspector === 'docked';
+    const outcomes = html`<jfb-form-outcomes
+      slot="after"
+      .look=${this._look}
+      ?headed=${!inColumn}
+    ></jfb-form-outcomes>`;
     // A button, not a link: Umbraco's router takes every link's click for a move to another place.
     return html`<button
         type="button"
@@ -1990,26 +1915,10 @@ export class FormDesignViewElement extends UmbLitElement {
       >
         ${this.localize.term('jfbDesigner_skipToForm')}
       </button>
-      ${
-        mode === 'overlay' && this._open
-          ? html`<div class="scrim" @click=${() => this.#closePalette(true)}></div>`
-          : nothing
-      }
-      ${
-        mode !== 'overlay' || this._open
-          ? html`<jfb-designer-palette
-              .types=${this.#paletteTypes()}
-              .groups=${this._groups}
-              .recent=${this._recent}
-              .saved=${this._saved}
-              mode=${mode}
-            ></jfb-designer-palette>`
-          : nothing
-      }
       ${this._failed ? this.#failed() : nothing}
       <jfb-form-canvas
         ?hidden=${this._failed}
-        ?inert=${(mode === 'overlay' && this._open) || (inspects && inspector === 'overlay')}
+        ?inert=${inspects && inspector === 'overlay'}
         .definition=${view?.state.definition ?? { pages: [] }}
         .selection=${view?.state.selection ?? null}
         .shown=${this._shown}
@@ -2029,13 +1938,15 @@ export class FormDesignViewElement extends UmbLitElement {
         .check=${this._badge}
         .saveGroups=${this._saveGroups}
         .designerActions=${this._actions}
-      ></jfb-form-canvas>
+        >${after && !inColumn ? outcomes : nothing}</jfb-form-canvas
+      >
       ${
         inspects
           ? html`<jfb-designer-inspector
-              ?inert=${mode === 'overlay' && this._open}
               .definition=${view?.state.definition ?? { pages: [] }}
               .selection=${selection}
+              .page=${this.#openPage()}
+              .afterSending=${inColumn}
               .types=${this._types}
               .culture=${this._look?.culture ?? ''}
               .languages=${this._look?.languages ?? []}
@@ -2045,7 +1956,8 @@ export class FormDesignViewElement extends UmbLitElement {
               .forgetDictionary=${() => this.#forgetDictionary()}
               .saveGroups=${this._saveGroups}
               mode=${inspector}
-            ></jfb-designer-inspector>`
+              >${inColumn ? outcomes : nothing}</jfb-designer-inspector
+            >`
           : nothing
       }
       <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>`;

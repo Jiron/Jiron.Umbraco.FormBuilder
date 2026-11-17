@@ -127,13 +127,6 @@ export const inspectorStyles = css`
     border-color: transparent;
   }
 
-  /* Nothing selected: one quiet sentence under the heading. */
-  .empty {
-    margin: 0;
-    padding: var(--uui-size-space-5);
-    color: var(--jfb-bo-color-text-muted);
-  }
-
   .note {
     margin: 0;
     padding: var(--uui-size-space-3) var(--uui-size-space-5);

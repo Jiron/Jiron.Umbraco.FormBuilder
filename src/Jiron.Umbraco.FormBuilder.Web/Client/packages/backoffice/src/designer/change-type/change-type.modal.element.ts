@@ -1,5 +1,5 @@
 // The Change type dialog (ROADMAP 9.4d, ADR-0174): the types the selected field may become, in the browser's own select
-// by palette group, and what the type chosen takes from the field and what it then needs, before anything changes. A
+// by the type's group, and what the type chosen takes from the field and what it then needs, before anything changes. A
 // type the form or the site refuses is marked unavailable and, chosen, says why, so the keys and screen readers reach
 // the reason too. Change type stays off until a type it may become is chosen.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';

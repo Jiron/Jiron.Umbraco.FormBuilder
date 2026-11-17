@@ -1,30 +1,31 @@
-// The canvas's drags (ADR-0016, ADR-0169). A field moves between the fields of the groups and repeatable groups of the
-// page shown, a group between the groups of that page, a page between the steps, and a field type from the palette
-// lands where a field would. Over a page's step, a field or group lands at the end of that page, and resting there
-// shows the page. While it lasts, a dashed slot keeps the dragged element's place, a copy with its name follows the
+// The canvas's drags (ADR-0016, ADR-0169, ADR-0256). A field moves between the fields of the groups and repeatable
+// groups of the page shown, a group between the groups of that page, and a page between the tabs. Over a page's tab, a
+// field or group lands at the end of that page, and resting there shows the page. While it lasts, a dashed slot keeps the dragged element's place, a copy with its name follows the
 // pointer, and a line shows where it would land, in the colour of a refusal and with the reason beside it where the
 // form can't take it there. The drop itself is the Design view's, through the canvas's request.
 import { containerAt, holds, indexAt, lineAt, type Box } from '../drag/drop-place';
 import { dragFrom } from '../drag/pointer-drag';
 import type { Place } from '../editor-model';
 
-/** What is dragged: an element of the form by its key, or a new field of a type. */
-export type DragSource =
-  | { readonly kind: 'field' | 'group' | 'page'; readonly key: string; readonly label: string }
-  | { readonly kind: 'new'; readonly type: string; readonly label: string };
+/** What is dragged: an element of the form by its key. */
+export interface DragSource {
+  readonly kind: 'field' | 'group' | 'page';
+  readonly key: string;
+  readonly label: string;
+}
 
-/** How long the pointer rests on a page's step before that page shows. */
-export const STEP_DWELL_MS = 600;
+/** How long the pointer rests on a page's tab before that page shows. */
+export const TAB_DWELL_MS = 600;
 
 /** How long a drop takes to settle from where the dragged copy was. */
 export const SETTLE_MS = 150;
 
-/** How far above or below the steps a dragged page still lands among them. */
-const STEP_REACH = 24;
+/** How far above or below the tabs a dragged page still lands among them. */
+const TAB_REACH = 24;
 
 /** What the canvas gives its drags. */
 export interface CanvasDragHost {
-  /** The canvas's shadow root, which holds the steps, the page shown and the overlay. */
+  /** The canvas's shadow root, which holds the tabs, the page shown and the overlay. */
   root(): ShadowRoot;
   /** The key of the page shown, or null after sending. */
   shownPage(): string | null;
@@ -32,7 +33,7 @@ export interface CanvasDragHost {
   pageEnd(source: DragSource, page: string): Place | null;
   /** Why the form can't take it there, in words; null when it can. */
   refusalOf(source: DragSource, place: Place | null): string | null;
-  /** Shows a page, whose step the pointer rests on. */
+  /** Shows a page, whose tab the pointer rests on. */
   show(page: string): void;
   /** It was dropped where the form takes it. */
   drop(source: DragSource, place: Place): void;
@@ -43,15 +44,15 @@ export interface CanvasDragHost {
 interface Target {
   readonly place: Place | null;
   readonly reason: string | null;
-  /** The line across a container, or down between the steps; none for a step's page end. */
+  /** The line across a container, or down between the tabs; none for a tab's page end. */
   readonly line: {
     readonly left: number;
     readonly top: number;
     readonly width: number;
     readonly height: number;
   } | null;
-  /** The step the pointer is over, or null. */
-  readonly step: Element | null;
+  /** The tab the pointer is over, or null. */
+  readonly tab: Element | null;
   /** The area the marks stay inside. */
   readonly area: Box | null;
 }
@@ -82,7 +83,7 @@ export class CanvasDrag {
     return this.#source !== null;
   }
 
-  /** Follows a press on a handle, a step or a palette item; a press that never moves stays a click. */
+  /** Follows a press on a handle or a tab; a press that never moves stays a click. */
   start(event: PointerEvent, handle: Element, source: DragSource): void {
     dragFrom(event, handle, {
       begin: (x, y) => this.#begin(source, x, y),
@@ -95,20 +96,15 @@ export class CanvasDrag {
 
   /**
    * Settles what a drop just placed from where the dragged copy was, over 150 ms with a strong ease-out, so the eye
-   * follows where it landed; at once with reduced motion, and never after a keyboard move. A new field is found by its
-   * key, which the drop selected; an element the form didn't move settles back into its place.
+   * follows where it landed; at once with reduced motion, and never after a keyboard move. An element the form didn't
+   * move settles back into its place.
    */
-  settle(selected: string | null): void {
+  settle(): void {
     const dropped = this.#dropped;
     this.#dropped = null;
     if (!dropped) return;
     const { from, source } = dropped;
-    const element =
-      source.kind === 'new'
-        ? selected
-          ? this.#host.root().querySelector(`jfb-canvas-field[key="${selected}"]`)
-          : null
-        : this.#elementOf(source);
+    const element = this.#elementOf(source);
     if (!element || typeof element.animate !== 'function') return;
     const view = element.ownerDocument.defaultView;
     if (view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
@@ -136,7 +132,7 @@ export class CanvasDrag {
     marks.className = 'bo-marks';
     const slot = document.createElement('div');
     slot.className = 'bo-slot';
-    // A field's or a group's place lies on the white sheet, a page's among the steps on Umbraco's surface.
+    // A field's or a group's place lies on the white sheet, a page's among the tabs on Umbraco's surface.
     slot.toggleAttribute('data-sheet', source.kind !== 'page');
     const line = document.createElement('div');
     line.className = 'bo-line';
@@ -147,7 +143,7 @@ export class CanvasDrag {
     const ghost = document.createElement('div');
     ghost.className = 'bo-ghost';
     const grip = document.createElement('uui-icon');
-    grip.setAttribute('name', source.kind === 'new' ? 'icon-add' : 'icon-grip');
+    grip.setAttribute('name', 'icon-grip');
     const name = document.createElement('span');
     name.textContent = source.label;
     ghost.append(grip, name);
@@ -166,8 +162,7 @@ export class CanvasDrag {
     const root = this.#host.root();
     if (source.kind === 'field') return root.querySelector(`jfb-canvas-field[key="${source.key}"]`);
     if (source.kind === 'group') return root.querySelector(`[data-group="${source.key}"]`);
-    if (source.kind === 'page') return root.querySelector(`[data-page="${source.key}"]`);
-    return null;
+    return root.querySelector(`[data-page="${source.key}"]`);
   }
 
   #over(x: number, y: number) {
@@ -176,31 +171,29 @@ export class CanvasDrag {
     if (!source || !layer) return;
     const target = this.#targetAt(source, x, y);
     this.#target = target;
-    this.#rest(source, target.step);
+    this.#rest(source, target.tab);
     this.#draw(layer, x, y, target);
   }
 
-  // A page's step the pointer rests on shows that page, so a drop can go exactly where it should.
-  #rest(source: DragSource, step: Element | null) {
-    const page = source.kind === 'page' ? null : (step?.getAttribute('data-page') ?? null);
+  // A page's tab the pointer rests on shows that page, so a drop can go exactly where it should.
+  #rest(source: DragSource, tab: Element | null) {
+    const page = source.kind === 'page' ? null : (tab?.getAttribute('data-page') ?? null);
     if (page === this.#dwellOn) return;
     clearTimeout(this.#dwell);
     this.#dwellOn = page;
     if (page && page !== this.#host.shownPage())
-      this.#dwell = window.setTimeout(() => this.#host.show(page), STEP_DWELL_MS);
+      this.#dwell = window.setTimeout(() => this.#host.show(page), TAB_DWELL_MS);
   }
 
   #targetAt(source: DragSource, x: number, y: number): Target {
     const root = this.#host.root();
-    const steps = root.querySelector('.bo-steps');
-    if (source.kind === 'page') return this.#pageTarget(source, steps, x, y);
+    const tabs = root.querySelector('.bo-tabs');
+    if (source.kind === 'page') return this.#pageTarget(source, tabs, x, y);
 
-    const step = steps
-      ? (childrenMatching(steps, '[data-page]').find((each) => holds(rect(each), x, y)) ?? null)
-      : null;
-    if (step) {
-      const place = this.#host.pageEnd(source, step.getAttribute('data-page') ?? '');
-      return { place, reason: this.#reason(source, place), line: null, step, area: null };
+    const tab = tabs ? (childrenMatching(tabs, '[data-page]').find((each) => holds(rect(each), x, y)) ?? null) : null;
+    if (tab) {
+      const place = this.#host.pageEnd(source, tab.getAttribute('data-page') ?? '');
+      return { place, reason: this.#reason(source, place), line: null, tab, area: null };
     }
 
     const viewport = root.querySelector('.bo-viewport');
@@ -213,7 +206,7 @@ export class CanvasDrag {
       .filter((container) => !(dragged && dragged.contains(container)) && !container.closest('[data-far]'))
       .map((element) => ({ element, box: rect(element) }));
     const container = containerAt(containers, x, y);
-    if (!container) return { place: null, reason: null, line: null, step: null, area };
+    if (!container) return { place: null, reason: null, line: null, tab: null, area };
     const key = container.element.getAttribute(source.kind === 'group' ? 'data-groups' : 'data-fields') ?? '';
     const children = childrenMatching(container.element, source.kind === 'group' ? '[data-group]' : 'jfb-canvas-field');
     const boxes = children.map(rect);
@@ -225,32 +218,32 @@ export class CanvasDrag {
       place,
       reason: this.#reason(source, place),
       line: { left: line.left, top: line.y - 1, width: line.right - line.left, height: 2 },
-      step: null,
+      tab: null,
       area,
     };
   }
 
-  // A page moves among the steps, before the step it comes before; the line stands between them. Let go away from the
-  // steps, it stays where it is.
-  #pageTarget(source: DragSource, steps: Element | null, x: number, y: number): Target {
-    const near = steps ? rect(steps) : null;
-    if (!steps || !near || y < near.top - STEP_REACH || y > near.bottom + STEP_REACH)
-      return { place: null, reason: null, line: null, step: null, area: null };
-    const others = childrenMatching(steps, '[data-page]')
+  // A page moves among the tabs, before the tab it comes before; the line stands between them. Let go away from the
+  // tabs, it stays where it is.
+  #pageTarget(source: DragSource, tabs: Element | null, x: number, y: number): Target {
+    const near = tabs ? rect(tabs) : null;
+    if (!tabs || !near || y < near.top - TAB_REACH || y > near.bottom + TAB_REACH)
+      return { place: null, reason: null, line: null, tab: null, area: null };
+    const others = childrenMatching(tabs, '[data-page]')
       .filter((element) => element !== this.#dragged)
       .map(rect);
     const index = indexAt(others, x, y, true);
     const before = others[index];
     const last = others[others.length - 1];
-    const edge = before ? before.left - 5 : last ? last.right + 5 : rect(steps).left;
-    const box = before ?? last ?? rect(steps);
+    const edge = before ? before.left - 5 : last ? last.right + 5 : rect(tabs).left;
+    const box = before ?? last ?? rect(tabs);
     const place: Place = { container: null, index };
     return {
       place,
       reason: this.#reason(source, place),
       line: { left: edge - 1, top: box.top, width: 2, height: box.bottom - box.top },
-      step: null,
-      area: rect(steps),
+      tab: null,
+      area: rect(tabs),
     };
   }
 
@@ -285,9 +278,9 @@ export class CanvasDrag {
       if (target.line) place(line, target.line.left, target.line.top, target.line.width, target.line.height);
     }
     if (why) why.textContent = target.reason ?? '';
-    for (const step of this.#host.root().querySelectorAll('[data-drop]'))
-      if (step !== target.step) step.removeAttribute('data-drop');
-    if (target.step) target.step.setAttribute('data-drop', target.reason === null ? '' : 'refused');
+    for (const tab of this.#host.root().querySelectorAll('[data-drop]'))
+      if (tab !== target.tab) tab.removeAttribute('data-drop');
+    if (target.tab) target.tab.setAttribute('data-drop', target.reason === null ? '' : 'refused');
   }
 
   #drop(x: number, y: number) {
@@ -318,7 +311,7 @@ export class CanvasDrag {
     this.#target = null;
     this.#reasons.clear();
     this.#host.root().host.removeAttribute('data-dragging');
-    for (const step of this.#host.root().querySelectorAll('[data-drop]')) step.removeAttribute('data-drop');
+    for (const tab of this.#host.root().querySelectorAll('[data-drop]')) tab.removeAttribute('data-drop');
   }
 }
 
