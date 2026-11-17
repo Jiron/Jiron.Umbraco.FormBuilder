@@ -3,10 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '../../fixtures.ts';
 import { API, contactForm, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { addFieldOf, pickerClosed, pickerItem, pickerSearch } from '../../support/picker.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { shownRow } from '../../support/tree.ts';
 
-// The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer, the
+// The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer and
+// the two that the designer's redraw changed (7 and 10, ROADMAP 22.1), the
 // entry handler, the viewer and the privacy officer, and the three of a user without grants, each done with the mouse
 // from the section's start page at 1440 px, and each path's clicks counted as the document counts them and held to the
 // document's number. The administrator's tasks change what the whole site reads, so the site-wide specs that change
@@ -87,7 +89,7 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   await expect(page).toHaveURL(/workspace\/jfb-form\/edit\/[0-9a-f-]{36}$/, { timeout: 60_000 });
   expectTaskClicks(clicks, 'Designer', 2);
 
-  // 3. An email field, from the palette, at the end of the form.
+  // 3. An email field, through the field picker from Add field, at the end of the form.
   const name = unique('Top designer');
   await contactForm(api, name);
   await start(page);
@@ -97,9 +99,10 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   await clicks.click(await shownRow(page, name));
   const fields = design.locator('jfb-canvas-field');
   await expect(fields).toHaveCount(3, { timeout: 60_000 });
-  const palette = design.locator('jfb-designer-palette');
-  await expect(palette.locator('uui-input input')).toBeVisible();
-  await clicks.click(palette.getByRole('button', { name: 'Email', exact: true }));
+  await clicks.click(addFieldOf(design));
+  await expect(pickerSearch(page)).toBeFocused();
+  await clicks.click(pickerItem(page, 'Email'));
+  await pickerClosed(page);
   await expect(fields).toHaveCount(4);
   expectTaskClicks(clicks, 'Designer', 3);
 
@@ -123,6 +126,36 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   await required.check();
   await expect(required).toBeChecked();
   expectTaskClicks(clicks, 'Designer', 5);
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(page.locator('jfb-form-workspace-editor uui-tag')).toHaveText('Draft');
+
+  // 7. The form split into two steps: the field the new page follows, its "...", Move what follows to a new page.
+  await start(page);
+  clicks = new ClickCounter();
+  await clicks.click(await shownRow(page, name));
+  await clicks.click(fields.nth(1).locator('[data-control="select"]').first());
+  await clicks.click(fields.nth(1).locator('.bo-tools').getByRole('button', { name: 'More actions' }));
+  await clicks.click(
+    design.locator('.bo-tools .bo-menu').getByRole('button', { name: 'Move what follows to a new page' }),
+  );
+  await expect(
+    design.getByRole('navigation', { name: 'Pages' }).getByRole('button', { name: 'Page 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'step');
+  expectTaskClicks(clicks, 'Designer', 7);
+
+  // 10. What visitors read after they send: After sending, the outcome's row, its message in the sidebar, Update.
+  await start(page);
+  clicks = new ClickCounter();
+  await clicks.click(await shownRow(page, name));
+  await expect(fields.first()).toBeVisible({ timeout: 60_000 });
+  await clicks.click(design.getByRole('navigation', { name: 'Pages' }).getByRole('button', { name: 'After sending' }));
+  await clicks.click(design.locator('jfb-form-outcomes jfb-outcome-list .row-open').first());
+  const outcome = page.locator('jfb-outcome-modal');
+  await expect(outcome).toBeVisible();
+  await outcome.locator('#message [contenteditable="true"]').fill('Thank you. We answer within a day.');
+  await outcome.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect(outcome).toHaveCount(0);
+  expectTaskClicks(clicks, 'Designer', 10);
 });
 
 test('the entry handler opens the Inbox, reads, approves, rejects and moves an entry to Spam in the clicks the document says', async ({

@@ -1,13 +1,15 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
+import { showAfterSending } from '../../support/designer-row.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 
-// After sending in the form's Settings view (ROADMAP 10.1b, IA 5.2, ADR-0185). The outcomes are a list, each opened in a
-// sidebar of its own: a message with merge tags and a copy of the answers, a redirect to a page or an address, or a
-// message and then a redirect; its rule in the rules builder; what the server can't keep refused at its box and the
-// form check's problems said under their setting. Rows move with Alt and the arrows, Delete outcome offers Undo, and
-// Save draft keeps them. The form check's Fix it and the canvas's After sending lead to an outcome's sidebar.
+// After sending on the Design view (ROADMAP 10.1b and 22.1, IA 5.1, ADR-0185, ADR-0256). The outcomes are a list in the
+// inspector's column, each opened in a sidebar of its own: a message with merge tags and a copy of the answers, a
+// redirect to a page or an address, or a message and then a redirect; its rule in the rules builder; what the server
+// can't keep refused at its box and the form check's problems said under their setting. Rows move with Alt and the
+// arrows, Delete outcome offers Undo, and Save draft keeps them; the Settings view holds no After sending. The form
+// check's Fix it, from the badge and from the publish dialog of another view, leads to an outcome's sidebar there.
 
 const SECTION = '/umbraco/section/jfb-forms';
 const DEFAULT = 'Thank you. We have received your message.';
@@ -35,12 +37,13 @@ const newForm = (api: APIRequestContext, name: string) =>
     { type: 'email', alias: 'email', label: { '': 'Email' } },
   ]);
 
-async function openSettings(page: Page, key: string) {
+/** The Design view on After sending, whose outcomes stand in the inspector's column at 1440 px. */
+async function openAfterSending(page: Page, key: string) {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
-  const view = page.locator('jfb-form-settings-view');
-  await expect(view.locator('#group-after')).toHaveAttribute('aria-expanded', 'true');
-  return view;
+  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
+  const design = page.locator('jfb-form-design-view');
+  await expect(design.locator('jfb-canvas-field').first()).toBeVisible({ timeout: 60_000 });
+  return showAfterSending(design);
 }
 
 /** Types into a box and leaves it, as a person does: what can't be kept, and the check's problems, show once it is left. */
@@ -71,7 +74,7 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
   const api = await apiAs('designer');
   const key = await newForm(api, 'Outcomes');
   await loginAs('designer');
-  const view = await openSettings(page, key);
+  const view = await openAfterSending(page, key);
   const list = view.locator('jfb-outcome-list');
   const rows = list.locator('.outcome-row');
   const names = rows.locator('.row-name');
@@ -80,7 +83,7 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
   // A new form's one outcome gives every visitor the default message.
   await expect(names).toHaveText([`Message: "${DEFAULT}"`]);
   await expect(lines).toHaveText(['Used for every visitor']);
-  await axeInside(page, 'jfb-form-settings-view');
+  await axeInside(page, 'jfb-form-design-view');
 
   // Its message, written with a merge tag, and a copy of the answers.
   await rowOf(list, `Message: "${DEFAULT}"`).click();
@@ -180,9 +183,7 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
   // The toast is gone with its Undo: the focus is on the outcome back in the list.
   await expect(rowOf(list, 'Redirect to /press/thanks')).toBeFocused();
 
-  // Closed, the group says how many outcomes there are; Save draft keeps them as the server writes them.
-  await view.locator('#group-after').click();
-  await expect(view.locator('#group-after .summary')).toHaveText('2 outcomes');
+  // Save draft keeps them as the server writes them.
   await saveDraft(page, key);
   const outcomes = (await draftOf(api, key)).definition.outcomes ?? [];
   expect(outcomes.map((one) => [one.kind, one.redirect?.url ?? null, one.showAnswers ?? null])).toEqual([
@@ -193,9 +194,17 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
     ['use', [expect.objectContaining({ op: 'isNotEmpty' })]],
   ]);
   expect(outcomes[1]?.message?.['']).toContain('Thanks, {{ field.name }}');
+
+  // The Settings view holds no After sending: its groups are the form's settings alone (ADR-0256).
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click();
+  const settings = page.locator('jfb-form-settings-view');
+  await expect(settings.locator('.group').first()).toBeVisible();
+  await expect(settings.locator('.group')).toHaveCount(6);
+  await expect(settings.locator('#group-after')).toHaveCount(0);
+  await expect(settings.locator('jfb-outcome-list')).toHaveCount(0);
 });
 
-test("the form check's Fix it of an outcome opens its sidebar on the setting, as the canvas's After sending does", async ({
+test("the form check's Fix it of an outcome opens its sidebar on the setting on After sending, from the badge and from another view", async ({
   page,
   loginAs,
   apiAs,
@@ -219,12 +228,14 @@ test("the form check's Fix it of an outcome opens its sidebar on the setting, as
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
   const design = page.locator('jfb-form-design-view');
-  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveText('1 problem');
+  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveAccessibleName('Form check: 1 problem');
   await design.locator('jfb-form-canvas .bo-check').click();
   const check = page.locator('jfb-form-check-modal');
   await check.getByRole('button', { name: 'Fix it: After sending: outcome 1' }).click();
   await expect(check).toHaveCount(0);
-  await expect(page).toHaveURL(/\/view\/settings$/);
+  // The outcomes are the Design view's: no other view opens (ADR-0256).
+  await expect(page).not.toHaveURL(/\/view\/settings$/);
+  await expect(design.locator('jfb-form-outcomes')).toHaveCount(1);
   const sidebar = page.locator('jfb-outcome-modal');
   await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
   const address = sidebar.getByLabel('Address', { exact: true });
@@ -236,19 +247,23 @@ test("the form check's Fix it of an outcome opens its sidebar on the setting, as
   // The row counts the problem, said in the sidebar.
   await sidebar.getByRole('button', { name: 'Cancel' }).click();
   await expect(sidebar).toHaveCount(0);
-  const list = page.locator('jfb-form-settings-view jfb-outcome-list');
+  const list = design.locator('jfb-form-outcomes jfb-outcome-list');
   await expect(list.locator('.outcome-row').first().locator('.row-line')).toHaveText(
     /^1 problem\s+\S\s+Used for every visitor$/,
   );
 
-  // The canvas's After sending shows the outcome for every visitor, the redirect, whose Change opens its sidebar.
-  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
-  await design.locator('jfb-form-canvas').getByRole('button', { name: 'After sending' }).click();
-  await design.locator('jfb-form-canvas').getByRole('button', { name: 'Change' }).click();
-  await expect(page).toHaveURL(/\/view\/settings$/);
+  // From the publish dialog on the Settings view, Fix it leads to the Design view's After sending, the sidebar opening
+  // once the router stays still (ADR-0227).
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click();
+  await expect(page.locator('jfb-form-settings-view .group').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Publish\u2026' }).click();
+  const dialog = page.locator('jfb-publish-modal');
+  await dialog.getByRole('button', { name: 'Fix it: After sending: outcome 1' }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(sidebar.getByRole('heading', { name: 'Outcome 1' })).toBeVisible();
-  await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeChecked();
-  await expect(sidebar.getByRole('radio', { name: 'A redirect', exact: true })).toBeFocused();
+  await expect(page).not.toHaveURL(/\/view\/settings$/);
+  await expect(design.locator('jfb-form-canvas .bo-after-step')).toHaveAttribute('aria-current', 'step');
+  await expect(address).toBeFocused();
 });
 
 test("an outcome's preview shows it as visitors get it, the sample entry's answers in place of its tags, a sensitive one masked", async ({
@@ -264,7 +279,7 @@ test("an outcome's preview shows it as visitors get it, the sample entry's answe
   ]);
   const before = (await draftOf(api, key)).definition.outcomes;
   await loginAs('designer');
-  const view = await openSettings(page, key);
+  const view = await openAfterSending(page, key);
   const list = view.locator('jfb-outcome-list');
   await rowOf(list, `Message: "${DEFAULT}"`).click();
   const sidebar = page.locator('jfb-outcome-modal');

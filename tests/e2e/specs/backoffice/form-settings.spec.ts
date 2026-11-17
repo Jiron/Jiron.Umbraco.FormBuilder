@@ -4,9 +4,10 @@ import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 
 // The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184). Submission is open and the other groups are closed, each
-// with the line of what is set; each setting changes the draft, which Save draft keeps, and a value the view can't keep
-// is said under its box once the box is left. The form check's problems in the settings show under their setting, and
-// its Fix it, from the Design view's check and from the publish dialog, opens the group with the focus on the setting.
+// with the line of what is set, and After sending is no group of it (ADR-0256); each setting changes the draft, which
+// Save draft keeps, and a value the view can't keep is said under its box once the box is left. The form check's
+// problems in the settings show under their setting, and its Fix it, from the Design view's check and from the publish
+// dialog, opens the group with the focus on the setting.
 
 const SECTION = '/umbraco/section/jfb-forms';
 const ELLIPSIS = String.fromCharCode(0x2026);
@@ -113,7 +114,9 @@ test('the submission group and its More options set what they say, refuse what t
   await loginAs('designer');
   const view = await openSettings(page, key);
 
-  // Submission open, the others closed, each with its line.
+  // Submission open, the others closed, each with its line; the outcomes are the Design view's (ADR-0256).
+  await expect(view.locator('.group')).toHaveCount(6);
+  await expect(headOf(view, 'after')).toHaveCount(0);
   await expect(headOf(view, 'submission')).toHaveAttribute('aria-expanded', 'true');
   for (const group of ['availability', 'protection', 'appearance', 'developer'])
     await expect(headOf(view, group)).toHaveAttribute('aria-expanded', 'false');
@@ -444,7 +447,7 @@ test("the form check's problems in the settings show under their setting, and Fi
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
   const design = page.locator('jfb-form-design-view');
-  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveText('2 problems');
+  await expect(design.locator('jfb-form-canvas .bo-check')).toHaveAccessibleName('Form check: 2 problems');
   await design.locator('jfb-form-canvas .bo-check').click();
   const sidebar = page.locator('jfb-form-check-modal');
   await sidebar.locator('li[data-code="part_missing"]').getByRole('button', { name: 'Fix it: Form settings' }).click();

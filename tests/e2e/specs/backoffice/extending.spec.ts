@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { addFieldOf, openPicker, pickerClosed, pickerItem } from '../../support/picker.ts';
 
 // A site's own extensions of the designer (ROADMAP 15.1, ADR-0233), from the samples this host turns on (ADR-0234): the
 // colour sample's field type draws its colours with the site's own setting editor, under the setting's label in the
@@ -50,9 +51,10 @@ test("a site's setting editor draws the colours under their label, and its previ
   await expect(field).toContainText('Favourite colour');
 
   // The inspector draws the colours with the site's editor, under the setting's label in the backoffice's words.
-  await expect(
-    design.locator('jfb-designer-palette').getByRole('button', { name: 'Colour', exact: true }),
-  ).toBeVisible();
+  await openPicker(page, addFieldOf(design));
+  await expect(pickerItem(page, 'Colour')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await pickerClosed(page);
   await design.getByRole('button', { name: 'Favourite colour, colour field' }).click();
   const inspector = design.locator('jfb-designer-inspector');
   await expect(inspector.getByRole('heading', { name: 'Colour field' })).toBeVisible();

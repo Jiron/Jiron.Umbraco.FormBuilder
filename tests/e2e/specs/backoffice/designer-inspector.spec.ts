@@ -2,11 +2,12 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { chooseLanguage } from '../../support/designer-row.ts';
 
 // The inspector (ROADMAP 9.4a, ADR-0170): every setting of the text, number and date types set with the plain editors
-// and saved, axe clean with each section open; at a 1024 px window its column and the palette's rail stay as they are
-// whatever is selected, so a double-click edits a label (ADR-0182); a new page started
-// from the selected field's "..." with the keyboard only; a field's German label edited on the site's two languages,
+// and saved, axe clean with each section open; at a 1024 px window its column stays as it is whatever is selected,
+// showing the open page while nothing is, so a double-click edits a label (ADR-0182, ADR-0256); what follows a field
+// moved to a new page from its "..." with the keyboard only; a field's German label edited on the site's two languages,
 // with the mark of a field that has no German text; and an alias changed. The designer locks need a host of their own
 // (designer-locks.spec.ts).
 
@@ -219,13 +220,11 @@ test('at a 1024 px window, selecting and clearing moves nothing, and a double-cl
   await page.setViewportSize({ width: 1024, height: 768 });
   await loginAs('designer');
   const design = await open(page, key);
-  const palette = design.locator('jfb-designer-palette');
   const inspector = design.locator('jfb-designer-inspector');
   const canvas = design.locator('jfb-form-canvas');
-  // The inspector's column is there with nothing selected, and the palette on its rail beside it (ADR-0182).
-  await expect(palette).toHaveAttribute('mode', 'rail');
+  // The inspector's column is there with nothing selected, showing the open page (ADR-0182, ADR-0256).
   await expect(inspector).toHaveAttribute('mode', 'docked');
-  await expect(inspector.getByRole('heading', { name: 'Nothing selected' })).toBeVisible();
+  await expect(inspector.getByRole('heading', { name: 'Page', exact: true })).toBeVisible();
   const name = design.getByRole('button', { name: /^Name, / });
   const town = design.getByRole('button', { name: /^Town, / });
   const before = { canvas: await canvas.boundingBox(), town: await town.boundingBox() };
@@ -236,16 +235,9 @@ test('at a 1024 px window, selecting and clearing moves nothing, and a double-cl
   await expect(inspector.getByRole('heading', { name: 'Short text field' })).toBeVisible();
   expect(await canvas.boundingBox(), 'the canvas while a field is selected').toEqual(before.canvas);
   expect(await town.boundingBox(), 'the field below while one is selected').toEqual(before.town);
-  await expect(palette).toHaveAttribute('mode', 'rail');
-  // Its search opens it over the canvas, and Escape gives the focus back.
-  await palette.getByRole('button', { name: 'Search fields' }).click();
-  await expect(palette).toHaveAttribute('mode', 'overlay');
-  await page.keyboard.press('Escape');
-  await expect(palette).toHaveAttribute('mode', 'rail');
   await name.focus();
   await page.keyboard.press('Escape');
-  await expect(inspector.getByRole('heading', { name: 'Nothing selected' })).toBeVisible();
-  await expect(palette).toHaveAttribute('mode', 'rail');
+  await expect(inspector.getByRole('heading', { name: 'Page', exact: true })).toBeVisible();
   expect(await canvas.boundingBox(), 'the canvas once nothing is selected').toEqual(before.canvas);
   await expect.poll(() => holdsFocus(name)).toBe(true);
 
@@ -257,7 +249,7 @@ test('at a 1024 px window, selecting and clearing moves nothing, and a double-cl
   await expect(box).toHaveValue('Town');
 });
 
-test('a new page starts after a selected field from its "...", with the keyboard only', async ({
+test('what follows a selected field moves to a new page from its "...", with the keyboard only', async ({
   page,
   loginAs,
   apiAs,
@@ -279,18 +271,19 @@ test('a new page starts after a selected field from its "...", with the keyboard
   for (let presses = 0; presses < 8 && !(await holdsFocus(more)); presses++) await page.keyboard.press('Tab');
   expect(await holdsFocus(more)).toBe(true);
   await page.keyboard.press('Enter');
-  // The menu takes the focus on its first item, Change type... (9.4d); Tab goes to the next.
-  const first = design.locator('jfb-canvas-field[key] .bo-menu').getByRole('button', { name: /^Change type/ });
-  await expect.poll(() => holdsFocus(first)).toBe(true);
-  await page.keyboard.press('Tab');
-  const item = design.getByRole('button', { name: 'Start a new page after this' });
+  // The menu takes the focus on its first item; Change type is the inspector's (ADR-0256).
+  const item = design
+    .locator('jfb-canvas-field[key] .bo-menu')
+    .getByRole('button', { name: 'Move what follows to a new page' });
   await expect.poll(() => holdsFocus(item)).toBe(true);
   await page.keyboard.press('Enter');
-  await expect(steps.getByRole('button', { name: 'Page 2' })).toHaveAttribute('aria-current', 'step');
-  await expect(design.getByRole('button', { name: 'Page 2, page' })).toBeFocused();
+  // The new page is shown, with the focus on its tab.
+  const tab = steps.getByRole('button', { name: 'Page 2', exact: true });
+  await expect(tab).toHaveAttribute('aria-current', 'step');
+  await expect.poll(() => holdsFocus(tab)).toBe(true);
   await expect(design.getByRole('button', { name: /^Third, / })).toBeVisible();
   await expect(design.getByRole('button', { name: /^Second, / })).toHaveCount(0);
-  await expect(design.locator('[role="status"]')).toHaveText('Started a new page after Second');
+  await expect(design.locator('[role="status"]')).toHaveText('Moved what follows Second to a new page');
   await saveDraft(page);
   const { pages } = await draftOf(api, key);
   expect(pages.map((each) => each.groups.flatMap((group) => group.fields.map((field) => field.alias)))).toEqual([
@@ -313,7 +306,7 @@ test("on the site's two languages, a field's German label is edited in the inspe
   await loginAs('designer');
   const design = await open(page, key);
   const canvas = design.locator('jfb-form-canvas');
-  await canvas.getByRole('combobox', { name: 'Language' }).selectOption('de-DE');
+  await chooseLanguage(design, 'de-DE');
   await expect(canvas.locator('.bo-chip')).toHaveCount(1);
   await expect(canvas.locator('.bo-chip')).toHaveText('No German text yet');
   await design.getByRole('button', { name: /^Name, / }).click();

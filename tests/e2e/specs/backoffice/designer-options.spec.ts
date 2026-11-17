@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { chooseLanguage } from '../../support/designer-row.ts';
 
 // The option editor (ROADMAP 9.4b, ADR-0172): a dropdown takes its options from the library's list the demo seeds and
 // another from a standard list, depending on the first, and the canvas shows the options they resolve in English and
@@ -114,7 +115,7 @@ test("a dropdown takes the library's list, another a standard list depending on 
   await axeInside(page, 'jfb-designer-inspector');
 
   // In German, the canvas asks for the options in German.
-  await design.locator('jfb-form-canvas').getByRole('combobox', { name: 'Language' }).selectOption('de-DE');
+  await chooseLanguage(design, 'de-DE');
   await expect(canvasOptions(design, 'Zweigstelle').first()).toHaveText('Zentralbibliothek');
   await expect(canvasOptions(design, 'Monat').first()).toHaveText('Januar');
 
