@@ -24,8 +24,9 @@ Language column.
 
 ## Translating a form
 
-On a site with more than one language, **Language** in the canvas's toolbar switches the texts you see and edit, in
-the designer, the Settings view, the actions and the preview. In another language:
+On a site with more than one language, the language button in the row above the form (it shows "en-US" and lists
+the languages by name) switches the texts you see and edit, in the designer, the Settings view, the actions and the
+preview. In another language:
 
 - each box shows the default language's text as a grey hint until you write a translation; visitors get the default
   text until then;

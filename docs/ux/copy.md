@@ -199,7 +199,14 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | make a JSON file a form's draft (a form's "…", for who may design it; the import sidebar for that form) · its primary | Replace from a file… · Replace the draft | Aus einer Datei ersetzen… · Entwurf ersetzen |
 | keep a form as a template (its "…" in the tree, for who may manage the library and design the form) · keep the selected group as one (its "…" on the canvas) | Save as template… · Save group as template… | Als Vorlage speichern… · Gruppe als Vorlage speichern… |
 | a saved template's "…" (Library › Templates; a built-in one has none) · the primary of the dialog that keeps a form or group as one, whose title names it · the rename dialog's primary | Rename… · Delete… · Save · Rename | Umbenennen… · Löschen… · Speichern · Umbenennen |
-| turn a list of questions into fields | Paste questions… | Fragen einfügen… |
+| turn a list of questions into fields (the field picker's footer, the blank form's sentence) | Paste questions… | Fragen einfügen… |
+| the field picker, which every Add field and insert point opens: its headline, its search, its first group and the site's saved groups | Add a field · Search field types · Layout: Group · Saved groups | Feld hinzufügen · Feldtypen suchen · Layout: Gruppe · Gespeicherte Gruppen |
+| the picker's search without a match · the first match, marked while a search is typed, and what a screen reader hears of it | No field type matches "dte". · Enter · Enter adds Date. | Kein Feldtyp passt zu „dte“. · Eingabe · Die Eingabetaste fügt Datum hinzu. |
+| the designer's row: the pages' navigation, the "+" after the tabs (its name and tip), the step after them | Pages · Add page · After sending | Seiten · Seite hinzufügen · Nach dem Senden |
+| the open page's tab: its menu, named for the page, and the menu's items (Delete only while the form has more than one page) | More for Your details: Rename · Duplicate · Delete | Mehr für Your details: Umbenennen · Duplizieren · Löschen |
+| the row's language button, named for screen readers and its tip (it shows the culture; its list names the languages, the one shown with a check) | Language en-US: English (United States) | Sprache en-US: English (United States) |
+| the form check's badge, named for screen readers and its tip (it shows its icon and the number, a check alone where there is none) | Form check: 2 problems · Form check: no problems · Form check: checking… · Form check: not checked | Formularprüfung: 2 Probleme · Formularprüfung: keine Probleme · Formularprüfung: wird geprüft… · Formularprüfung: nicht geprüft |
+| cut a page in two at a field or group: its "…", offered only where something follows it on its page · what the live region says | Move what follows to a new page · Moved what follows Email address to a new page | Folgendes auf eine neue Seite verschieben · Was auf Email address folgt, auf eine neue Seite verschoben |
 | turn lines into a choice field's options, or a grid's rows (one a line) | Paste options… · Paste rows… | Optionen einfügen… · Zeilen einfügen… |
 | move an option or a grid's row with single presses: what its handle opens under it | Position in the list · 1 of 3 | Position in der Liste · 1 von 3 |
 | add a merge tag to a text | Insert merge tag | Platzhalter einfügen |
@@ -252,7 +259,7 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | fill the preview with valid answers | Fill with sample answers | Mit Beispielantworten füllen |
 | render the preview afresh, once its frame sent the form (in place of Fill with sample answers) | Start again | Neu beginnen |
 | the preview's "…", for who may manage the form's actions: whether test entries run them (a switch) | Test entries · Run actions for test entries | Testeinträge · Aktionen für Testeinträge ausführen |
-| reach the canvas past the header and the palette (the workspace's first stop) | Skip to the form | Zum Formular springen |
+| reach the canvas past the header and the row above the form (the workspace's first stop) | Skip to the form | Zum Formular springen |
 | list the keyboard shortcuts | Keyboard shortcuts | Tastenkürzel |
 
 - **Name the object when the button stands alone:** "Create option list", "Add action", "Export 124 entries". Inside a
@@ -262,6 +269,10 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
   „Diese Regel verwenden“; an action's switch is "Use Email the team" · „„Email the team“ verwenden“ (German quotes a name, which may read as a verb), not "Email the team
   is on".
 - **Icon-only buttons** have an accessible name that matches their tooltip ("More actions for Contact us").
+- **Gone with the designer's redraw** (ROADMAP 22.1, ADR-0256): the palette's "Search fields" and "Recently used",
+  its rail's and fold's names, "New page" in its Layout, "Start a new page after this" (now "Move what follows to a new
+  page"), the canvas's "Change" on After sending, the inspector's "Nothing selected", the page's own button on the
+  sheet ("Page 1, page"), the badge's visible words, and the Settings view's After sending group with its closed line.
 - **The designer's canvas** names its parts for screen readers (ADR-0016): "Add a field here, before Email address" ·
   „Hier ein Feld hinzufügen, vor Email address“; "Email address, email field" · „Email address, Feld vom Typ E-Mail“;
   "Move Email address" · „Email address verschieben“. After a keyboard move it says where the field is now: "Moved.
@@ -275,11 +286,13 @@ Mac, use Cmd instead of Ctrl." · „Auf dem Mac Cmd statt Strg verwenden.“
 
 | Where | Keys | English | German |
 | --- | --- | --- | --- |
-| designer | Ctrl+Z · Ctrl+Y | Undo the last change · Redo it | Letzte Änderung zurücknehmen · Erneut anwenden |
-| designer | Ctrl+D · Delete | Duplicate the selected field · Delete the selected field | Ausgewähltes Feld duplizieren · Ausgewähltes Feld löschen |
-| designer | Alt+Up or Alt+Down | Move the selected field one place up or down | Ausgewähltes Feld um eine Stelle nach oben oder unten verschieben |
-| designer | F2 | Edit the selected field's label in place | Beschriftung des ausgewählten Felds direkt bearbeiten |
-| designer | Esc | Clear the selection, close the palette, or cancel a drag | Auswahl aufheben, Palette schließen oder Ziehen abbrechen |
+| designer | (the dialog's lead) | They act on the field, group or page you are on. | Die Kürzel wirken auf das gewählte Feld, die Gruppe oder die Seite. |
+| designer | Ctrl+Z · Ctrl+Y | Undo the last change · Redo what was undone | Die letzte Änderung zurücknehmen · Zurückgenommenes erneut anwenden |
+| designer | Ctrl+D · Delete | Duplicate it · Delete it | Es duplizieren · Es löschen |
+| designer | Alt+Up or Alt+Down | Move it one place up or down | Es um eine Stelle nach oben oder unten verschieben |
+| designer | Up or Down | Go up or down the page | Auf der Seite nach oben oder unten gehen |
+| designer | F2 | Edit a field's label in place, or rename the page whose tab you are on | Die Beschriftung eines Felds direkt bearbeiten oder die Seite umbenennen, auf deren Reiter Sie sind |
+| designer | Esc | Clear the selection, or stop a drag | Die Auswahl aufheben oder ein Ziehen abbrechen |
 | entries | j · k | Next entry · Previous entry | Nächster Eintrag · Vorheriger Eintrag |
 | entries | Enter · Esc | Open the entry · Close the entry | Eintrag öffnen · Eintrag schließen |
 | entries | a · r · s | Approve · Reject · Mark as spam | Genehmigen · Ablehnen · Als Spam markieren |
@@ -477,7 +490,7 @@ toast adds only what the user cannot see.
 | an action deleted (the toast) | Mark as approved deleted. [Undo] | „Mark as approved“ gelöscht. [Zurücknehmen] |
 | an outcome added to a published form | Added. Visitors get it once you publish. | Hinzugefügt. Auf der Website gilt es ab der nächsten Veröffentlichung. |
 | a form saved as a template · a template renamed · deleted (Library › Templates) | Enquiry was saved as a template. · The template is now Enquiries. · Enquiry was deleted. | Enquiry wurde als Vorlage gespeichert. · Die Vorlage heißt jetzt Enquiries. · Enquiry wurde gelöscht. |
-| a group saved as a template · without the rules and validation rules that named a field outside it (each count in the words, joined by "and") · refused, as a group the server can't read | Delivery was saved. Any form can insert it from the palette. · Delivery was saved without 1 rule and 1 validation rule that depend on fields outside the group. · The group couldn't be saved: the form check finds a problem in it. Fix it, then save the group again. | Delivery wurde gespeichert. Jedes Formular kann die Gruppe aus der Palette einfügen. · Delivery wurde ohne 1 Regel und 1 Prüfregel gespeichert, die von Feldern außerhalb der Gruppe abhängen. · Die Gruppe konnte nicht gespeichert werden: Die Formularprüfung findet darin ein Problem. Beheben Sie es und speichern Sie die Gruppe dann erneut. |
+| a group saved as a template · without the rules and validation rules that named a field outside it (each count in the words, joined by "and") · refused, as a group the server can't read | Delivery was saved. Any form can add it from Add a field, under Saved groups. · Delivery was saved without 1 rule and 1 validation rule that depend on fields outside the group. · The group couldn't be saved: the form check finds a problem in it. Fix it, then save the group again. | Delivery wurde gespeichert. Jedes Formular kann die Gruppe über „Feld hinzufügen“ unter „Gespeicherte Gruppen“ einfügen. · Delivery wurde ohne 1 Regel und 1 Prüfregel gespeichert, die von Feldern außerhalb der Gruppe abhängen. · Die Gruppe konnte nicht gespeichert werden: Die Formularprüfung findet darin ein Problem. Beheben Sie es und speichern Sie die Gruppe dann erneut. |
 | test email sent (an action's test says all in its toast's message, which Umbraco reads aloud, led by the action's name; each sentence says on its own what happened) | Email the team: Test email sent to you (ana@example.com). | „Email the team“: Test-E-Mail an Sie gesendet (ana@example.com). |
 | an action's test reached what it is set up to reach (the type's own sentence after it) | Test sent. | Test gesendet. |
 | an action's test that reached nobody (what a run would do on the lines under it) | Nothing was sent or changed. | Nichts wurde gesendet oder geändert. |
@@ -572,7 +585,7 @@ Help text sits under its setting and answers the question the label leaves open;
 | Rule, without one (an action) · Regel | Runs for every entry. | Läuft für jeden Eintrag. |
 | Your questions (Paste questions) · Ihre Fragen | One question per line. You can change each type afterwards. | Eine Frage pro Zeile. Den Typ können Sie danach ändern. |
 | Save as template, under its name and description, in the form's workspace while it has changes not saved yet · Save group as template | Changes not saved yet stay out of the template. · Rules and validation rules that depend on fields outside the group are left out. | Ungespeicherte Änderungen kommen nicht in die Vorlage. · Regeln und Prüfregeln, die von Feldern außerhalb der Gruppe abhängen, bleiben außen vor. |
-| a saved group's preview (Library › Templates, in Use template's place) | A group: the designer's palette inserts it into any form, under Saved groups. | Eine Gruppe: Die Palette des Designers fügt sie unter „Gespeicherte Gruppen“ in jedes Formular ein. |
+| a saved group's preview (Library › Templates, in Use template's place) | A group: any form adds it from the designer's Add a field, under Saved groups. | Eine Gruppe: Jedes Formular fügt sie im Designer über „Feld hinzufügen“ unter „Gespeicherte Gruppen“ ein. |
 | Visitor texts (the Settings view, under More options) · Texte für Besucher | Your own words for this form's hints, notices and error messages. | Eigene Worte für die Hinweise, Meldungen und Fehlermeldungen dieses Formulars. |
 | Visitor texts (Settings › General) · Texte für Besucher | Your own words for the hints, notices and error messages every form brings. | Eigene Worte für die Hinweise, Meldungen und Fehlermeldungen, die jedes Formular mitbringt. |
 

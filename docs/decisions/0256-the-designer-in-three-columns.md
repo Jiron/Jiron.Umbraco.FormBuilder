@@ -124,8 +124,12 @@ in one place and changed in another.
 - **Measured by the step's checks:** at 1440 px the form's column has more than half the window under one row, in
   English and in German, for a form of two pages on a site with two languages; at 1920 px Desktop shows the form at
   its 960 px.
-- **Adding a field costs one click more** (the top tasks are counted again). The bundle keeps its size: the palette's
-  code left, and the picker's, loaded when it is first opened, and the row's came.
+- **Two top tasks grow by a click:** adding a field (two clicks to three) and splitting a page in two (three to
+  four: the field, its "…", the command). Four is one more than the three clicks step 2.1 held every top task to; the
+  owner's rule of one way in one place stands above it here, and an empty second page is two clicks with "+".
+- **The bundle** grows by 0.8 KB to 506.4 KB of 512 KB: the palette's code left, and the picker's, loaded when it
+  is first opened, the row's and the outcomes' place on the Design view came. The designer's own file now holds the
+  outcomes' list, which the Settings view's file held before (39.4 KB of 64 KB).
 - **The browser tests that added fields through the palette** add them through the picker; the walk, the journeys,
   the guides and the screenshots follow.
 - [information-architecture.md](../ux/information-architecture.md) section 5.1 and 5.2, the copy guide, the editor

@@ -22,7 +22,7 @@ New here? [Getting started](docs/getting-started.md) takes about ten minutes.
 
 **For editors**
 
-- **A calm drag-and-drop designer:** pages, groups of up to four columns, a searchable palette, a full keyboard
+- **A calm drag-and-drop designer:** pages, groups of up to four columns, a field picker with search, a full keyboard
   alternative, undo and redo, and a live preview at phone, tablet and desktop widths.
 - **33 field types,** from text, email and dates to grids, rankings, signatures, addresses, calculations, repeatable
   groups and file uploads.

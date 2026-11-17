@@ -18,22 +18,23 @@ counted as its "Rules" section says, from the section's start page.
 | --- | --- | --- | --- |
 | 1 | Start a new, empty form. | sidebar header "+" → Form | 2 |
 | 2 | Start a form from a ready-made contact form. | "+" → Form from a template… → (Use template; the gallery has the contact form chosen) | 2 |
-| 3 | Add an email field to a form. | the form → Email in the palette | 2 |
+| 3 | Add an email field to a form. | the form → "Add field" → Email in the field picker | 3 |
 | 4 | Change the wording of a question. | the form → the question → (its label) | 2 |
 | 5 | Make a question compulsory. | the form → the question → (Required) | 2 |
 | 6 | Show a question only when a visitor picked "Other" in another question. | the form → the question to show → "Add a rule" → (Country is Other, Add) | 3 |
-| 7 | Split a form into two steps. | the form → the insert point "Add a field here" → Layout › New page in the palette | 3 |
+| 7 | Split a form into two steps. | the form → the field the new page follows → its "…" → Move what follows to a new page | 4 |
 | 8 | See the form as a visitor will, before it goes live. | the form → Preview | 2 |
 | 9 | Put your changes live. | the form → Publish… → (Publish) | 2 |
-| 10 | Change what visitors read after they send the form. | the form → Settings → the outcome's row → (the message, Update) | 3 |
+| 10 | Change what visitors read after they send the form. | the form → After sending → the outcome's row → (the message, Update) | 3 |
 | 11 | Have the sales team emailed about every new entry. | the form → Actions → Add action → (the recipients, Add) | 3 |
 | 12 | Try the team email on a sample entry, without waiting for a real visitor. | the form → Actions → the card's Test | 3 |
 | 13 | Find out which pages show a form. | the form → "Used on 3 pages" | 2 |
 | 14 | Go back to how a form was last week. | the form → History → last week's row → (Restore as a new draft) | 3 |
 | 15 | Make a list of the company's offices that several forms can reuse. | Library › Option lists → Create option list → (the kind, the offices, Save) | 2 |
 
-At 620 px, where the palette doesn't stay open, task 3 is the form → "Add field" → Email (3). Task 7 also works by
-selecting the field the new page follows, then the palette's Layout › New page (3).
+At 620 px the paths are the same: the field picker opens over the form from "Add field" or an insert point, and the
+outcomes of task 10 lie under what visitors get. Task 7 grew by a click when the designer lost its list of types
+(ROADMAP 22.1, ADR-0256): a new page now starts at a field, from its "…", or empty from "+" beside the tabs.
 
 ## Entry handler
 
