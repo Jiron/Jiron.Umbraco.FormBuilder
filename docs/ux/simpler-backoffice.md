@@ -2,7 +2,9 @@
 
 - Status: a draft the owner asked for on 2026-11-16, gone over a second time the same day. The owner then decided its
   five open questions ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)) and made its four steps Phase 22 of
-  [ROADMAP.md](../../ROADMAP.md), steps 22.1 to 22.4, which hold the checks. Nothing here is built yet.
+  [ROADMAP.md](../../ROADMAP.md), steps 22.1 to 22.4, which hold the checks. **Step 22.1 is built** (2026-11-17,
+  [ADR-0256](../decisions/0256-the-designer-in-three-columns.md)): A1 to A3, B1, B2 and C1 to C3 below are as their
+  directions say, and the table at the end has its numbers. The owner paused the phase after it; D, E, C4 and F wait.
 - What it is: where the backoffice asks too much at once, a direction for each place, and an order to work through
   them. It is a concept, not a design: each step still starts with a wireframe and a decision record.
 
@@ -234,12 +236,12 @@ After each step the walk runs again and is compared with the one before.
 
 | | Today | After |
 | --- | --- | --- |
-| Columns in the designer at 1440 px | 4 | 3 |
-| The form's share of the width at 1440 px | 39 % | more than half |
-| Rows of controls above the form at 1440 px | 3 | 1 |
-| Entries that start a page | 3 | 2, each named for what it does |
+| Columns in the designer at 1440 px | 4 | 3 (measured, 22.1) |
+| The form's share of the width at 1440 px | 39 % | more than half (measured, 22.1: 57 %, 819 px) |
+| Rows of controls above the form at 1440 px | 3 | 1 (measured, 22.1: one for up to two pages on a site of two languages, two from three) |
+| Entries that start a page | 3 | 2, each named for what it does (22.1: "+", and "Move what follows to a new page") |
 | Fixed items on the left at 900 px height, with twenty forms | 0 of 17 | all of about 5 |
-| Clicks to add a field at the end of a page | 1 | 2 |
+| Clicks to add a field at the end of a page | 1 | 2 (22.1) |
 | Clicks in each of the top tasks ([top-tasks.md](top-tasks.md)) | counted there | counted again; none grows by more than one |
 | Words on each screen | the last walk's counts | no screen grows |
 
