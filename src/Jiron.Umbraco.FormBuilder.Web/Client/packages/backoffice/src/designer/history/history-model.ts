@@ -81,8 +81,8 @@ export function summaryParts(
     ...(of(['outcome']).length > 0
       ? [
           inSentence
-            ? term('jfbHistory_afterInSentence', term('jfbSettings_group_after'))
-            : term('jfbSettings_group_after'),
+            ? term('jfbHistory_afterInSentence', term('jfbDesigner_afterSending'))
+            : term('jfbDesigner_afterSending'),
         ]
       : []),
     ...named('action', 'jfbHistory_changes_actions'),

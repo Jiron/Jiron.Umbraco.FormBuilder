@@ -4,8 +4,8 @@
 // reference's example; opening and closing on the site's clock; who may fill it in; the protection's choices with a
 // provider without keys dimmed and a provider's own setting; the themes and marks with "Site default" named; the
 // developer's names; the form check's problems under their setting; Fix it to a setting; the language shared with the
-// Design view; a read that fails; and After sending's outcomes (ROADMAP 10.1b, ADR-0185), each changed, added, deleted
-// with Undo or moved as one step, a Fix it to one opening its sidebar. A stand-in workspace drives the real undo history.
+// Design view; a read that fails; and no After sending, which is the Design view's (ADR-0256). A stand-in workspace
+// drives the real undo history.
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,28 +19,12 @@ import type { Edit, EditorState } from '../editor-model';
 import type { EditorView } from '../form-workspace.context';
 import { EditorHistory } from '../history';
 import { builtInTypes, captchaProviders, englishLook } from '../preview/fixtures';
-import type { DesignOutcome } from './outcome-model';
-import type { OutcomeListElement } from './outcome-list.element';
-import type { OutcomeModalData } from './outcome.modal.token';
 import { DOT, groupOf } from './settings-model';
-import type { UndoNotificationData } from '../../ui/undo-notification.element';
 
 // What the server answers: the site's choices and providers, or nothing while it fails.
 const server = vi.hoisted(() => ({ fails: false, asked: 0, choices: null as unknown, providers: null as unknown }));
 // The cultures the look was read in, and whether the site has German too.
 const reading = vi.hoisted(() => ({ cultures: [] as (string | undefined)[], german: false }));
-
-// The outcome sidebars opened, and what the one open answers.
-const opened = vi.hoisted(() => ({ sidebars: [] as unknown[], answer: undefined as unknown }));
-
-vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
-  ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
-  umbOpenModal: async (_host: unknown, _token: unknown, args?: { data?: { closed?: () => void } }) => {
-    opened.sidebars.push(args?.data);
-    args?.data?.closed?.();
-    return opened.answer;
-  },
-}));
 
 vi.mock('@umbraco-cms/backoffice/resources', () => ({
   tryExecute: async (_host: unknown, request: Promise<unknown>) => ({ data: await request }),
@@ -156,10 +140,6 @@ class StandIn {
   readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
   /** The form as the workspace read it: its alias is all this view shows of it. */
   readonly form = new UmbBasicState<{ alias: string } | undefined>({ alias: 'contact-us' }).asObservable();
-  /** Whether visitors get a published version. */
-  readonly states = new UmbBasicState<string | undefined>('draft');
-  readonly state = this.states.asObservable();
-  checkOf = async () => [];
 
   constructor(definition: DesignDefinition) {
     this.#history = new EditorHistory({ definition, selection: null });
@@ -209,8 +189,8 @@ class StandIn {
 
 /** The toasts the view shows. */
 const toasts = {
-  shown: [] as { color: string; data: Partial<UndoNotificationData> & { message: string } }[],
-  peek(color: string, options: { data: Partial<UndoNotificationData> & { message: string } }) {
+  shown: [] as { color: string; data: { message: string } }[],
+  peek(color: string, options: { data: { message: string } }) {
     this.shown.push({ color, data: options.data });
     return { close: () => undefined };
   },
@@ -271,8 +251,6 @@ const issue = (path: string, code: string, severity: CheckIssue['severity'] = 'e
 beforeAll(registerEnglish);
 
 beforeEach(() => {
-  opened.sidebars = [];
-  opened.answer = undefined;
   toasts.shown = [];
   server.fails = false;
   server.asked = 0;
@@ -289,12 +267,18 @@ afterEach(() => {
 });
 
 describe('the groups', () => {
-  it('show Submission and After sending open and the others closed, each with the line of what is set', async () => {
+  it('show Submission open and the others closed, each with the line of what is set, and no After sending', async () => {
     const { head, root } = await viewOf();
-    expect([head('submission'), head('after')].map((one) => one.getAttribute('aria-expanded'))).toEqual([
-      'true',
-      'true',
+    expect(head('submission').getAttribute('aria-expanded')).toBe('true');
+    expect([...root.querySelectorAll('.group')].map((group) => group.getAttribute('data-group'))).toEqual([
+      'submission',
+      'availability',
+      'protection',
+      'privacy',
+      'appearance',
+      'developer',
     ]);
+    expect(root.querySelector('jfb-outcome-list')).toBeNull();
     const lines = Object.fromEntries(
       ['availability', 'protection', 'appearance', 'developer'].map((group) => [
         group,
@@ -307,14 +291,14 @@ describe('the groups', () => {
       appearance: `Default theme ${DOT} Optional fields marked`,
       developer: 'Headless access off',
     });
-    expect(root.querySelectorAll('.group-body')).toHaveLength(2);
+    expect(root.querySelectorAll('.group-body')).toHaveLength(1);
   });
 
   it('stay as this browser left them', async () => {
     const first = await viewOf();
     await first.click(first.head('submission'));
     await first.click(first.head('developer'));
-    expect([...readOpenGroups()]).toEqual(['after', 'developer']);
+    expect([...readOpenGroups()]).toEqual(['developer']);
     document.body.replaceChildren();
     const again = await viewOf();
     expect([again.head('submission'), again.head('developer')].map((one) => one.getAttribute('aria-expanded'))).toEqual(
@@ -774,22 +758,26 @@ describe('privacy', () => {
 });
 
 describe('the form check', () => {
-  it('shows its problems under their setting, and counts them on a closed group', async () => {
+  it("shows its problems under their setting, and counts them on a closed group, none of an outcome's", async () => {
     const definition = {
       ...DEFINITION,
       settings: { ...(DEFINITION['settings'] as object), availability: { members: 'groups' } },
+      outcomes: [{ key: 'o1', kind: 'redirect' }],
     };
-    const { workspace, view, head, open, why } = await viewOf(definition);
+    const { workspace, view, root, head, open, why } = await viewOf(definition);
     workspace.checks.setValue({
       status: 'checked',
       definition,
       issues: [
         issue('$.settings.availability.memberGroups', 'part_missing'),
         issue('$.settings.protection.captcha.provider', 'captcha_not_configured', 'warning'),
+        issue('$.outcomes[0].redirect', 'part_missing'),
+        issue('$.outcomes', 'too_many_outcomes'),
       ],
     });
     await settle(view);
     expect(text(head('availability').querySelector('.flag'))).toBe('1 problem');
+    expect(root.querySelectorAll('.flag')).toHaveLength(1);
     // A provider without its keys says so on its line among the choices, not again as the check's warning.
     expect(head('protection').querySelector('.flag')).toBeNull();
     await open('availability');
@@ -970,11 +958,12 @@ describe('the form check', () => {
     expect(root.getElementById('theme-why-0')?.getAttribute('data-severity')).toBe('hint');
   });
 
-  it('leaves a Fix it of another view to it', async () => {
+  it("leaves a Fix it of another view to it, an outcome's to the Design view", async () => {
     const { workspace, view } = await viewOf();
     for (const target of [
       { kind: 'element', key: 'name' },
       { kind: 'view', view: 'actions', path: '$.actions[0].settings.subject' },
+      { kind: 'outcome', path: '$.outcomes[0].message', key: 'o1' },
     ] satisfies FixTarget[]) {
       workspace.requestFix(target);
       await settle(view);
@@ -1023,7 +1012,6 @@ describe('what a translator has left', () => {
       submission: { submitLabel: { '': 'Send' }, nextLabel: { '': 'On', 'de-DE': 'Weiter' } },
       availability: { members: 'anyone', closedMessage: { '': '<p>Closed for now.</p>' } },
     },
-    outcomes: [{ key: 'o1', kind: 'message', message: { '': '<p>Thanks!</p>' } }],
   };
 
   it('marks each text without the language shown beside its label, and a closed group says it once', async () => {
@@ -1035,9 +1023,6 @@ describe('what a translator has left', () => {
     // The next button's label has its German text, and the back button's none at all: More options says nothing.
     expect(text(root.querySelector('.more-toggle'))).not.toContain('No German text yet');
     expect(text(head('availability'))).toContain('No German text yet');
-    expect(text(root.querySelector('jfb-outcome-list')?.shadowRoot?.querySelector('.row-line'))).toContain(
-      'No German text yet',
-    );
     await open('availability');
     expect(text(root.querySelector('[data-group="availability"] .label-row .untranslated'))).toBe('No German text yet');
     expect(
@@ -1081,212 +1066,6 @@ describe('a read that fails', () => {
     must(root.querySelector<HTMLElement>('[role="alert"] uui-button'), 'Try again').click();
     await settle(view);
     expect(server.asked).toBe(2);
-    expect(root.querySelectorAll('.group')).toHaveLength(7);
-  });
-});
-
-describe('after sending', () => {
-  const message: DesignOutcome = { key: 'o1', kind: 'message', message: { '': '<p>Thanks!</p>' }, showAnswers: false };
-  const press: DesignOutcome = {
-    key: 'o2',
-    kind: 'redirect',
-    redirect: { url: '/press', delaySeconds: 0 },
-    rules: [{ key: 'r1', effect: 'use', enabled: true, match: 'all', conditions: [{ field: 'name', op: 'notEmpty' }] }],
-  };
-  const withOutcomes = (outcomes: readonly DesignOutcome[]): DesignDefinition => ({ ...DEFINITION, outcomes });
-  const listIn = (root: ShadowRoot) => must(root.querySelector<OutcomeListElement>('jfb-outcome-list'), 'the list');
-  const outcomesIn = (workspace: { getEditorState(): EditorState }) =>
-    (workspace.getEditorState().definition['outcomes'] ?? []) as DesignOutcome[];
-
-  it("lists the draft's outcomes, and says closed what visitors get", async () => {
-    const { root, head, click } = await viewOf(withOutcomes([press, message]));
-    const list = listIn(root);
-    expect(list.outcomes.map((one) => one.key)).toEqual(['o2', 'o1']);
-    expect(list.defaultMessage).toBe('Thank you. We have received your message.');
-    await click(head('after'));
-    expect(text(head('after').querySelector('.summary'))).toBe('2 outcomes');
-    document.body.replaceChildren();
-    // One outcome is named by what visitors get.
-    localStorage.clear();
-    const one = await viewOf(withOutcomes([message]));
-    await one.click(one.head('after'));
-    expect(text(one.head('after').querySelector('.summary'))).toBe('Message: "Thanks!"');
-    document.body.replaceChildren();
-    // A browser that kept nothing opens After sending; closed, it says what visitors then get.
-    localStorage.clear();
-    const none = await viewOf();
-    await none.click(none.head('after'));
-    expect(text(none.head('after').querySelector('.summary'))).toBe('The default message');
-  });
-
-  it('changes an outcome in its sidebar, one step to undo', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message]));
-    opened.answer = { outcome: { ...message, showAnswers: true }, at: 0 };
-    listIn(root).open('o1');
-    await settle(view);
-    const data = opened.sidebars[0] as OutcomeModalData;
-    expect([data.outcome?.key, data.number, data.count, data.culture, data.form, data.htmlLength]).toEqual([
-      'o1',
-      1,
-      1,
-      'en-US',
-      'form1',
-      50000,
-    ]);
-    expect(outcomesIn(workspace)).toEqual([{ ...message, showAnswers: true }]);
-    expect(workspace.said).toEqual(['Changed an outcome']);
-    workspace.undo();
-    expect(outcomesIn(workspace)).toEqual([message]);
-    // A draft not yet published says nothing more.
-    expect(toasts.shown).toEqual([]);
-  });
-
-  it('adds an outcome where its sidebar placed it, and says where it went', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message]));
-    const added = { ...press, key: 'o3' };
-    opened.answer = { outcome: added, at: 0 };
-    listIn(root).open(null);
-    await settle(view);
-    expect((opened.sidebars[0] as OutcomeModalData).outcome).toBeNull();
-    expect(outcomesIn(workspace).map((one) => one.key)).toEqual(['o3', 'o1']);
-    expect(workspace.said).toEqual(['Added an outcome']);
-    expect(text(shadow(listIn(root)).querySelector('[role="status"]'))).toBe(
-      'Added. Redirect to /press: position 1 of 2.',
-    );
-  });
-
-  it('moves an outcome to the place its sidebar chose, and says where it went', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message, press]));
-    opened.answer = { outcome: message, at: 1 };
-    listIn(root).open('o1');
-    await settle(view);
-    expect(outcomesIn(workspace).map((one) => one.key)).toEqual(['o2', 'o1']);
-    expect(text(shadow(listIn(root)).querySelector('[role="status"]'))).toBe(
-      'Moved. Message: "Thanks!": position 2 of 2.',
-    );
-  });
-
-  it('says nothing for an Update that changes nothing, even on a published form', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message]));
-    workspace.states.setValue('published');
-    opened.answer = { outcome: message, at: 0 };
-    listIn(root).open('o1');
-    await settle(view);
-    expect([workspace.said, toasts.shown]).toEqual([[], []]);
-    expect(shadow(listIn(root)).activeElement?.closest('.outcome-row')?.getAttribute('data-key')).toBe('o1');
-  });
-
-  it('gives the focus back to the list: the outcome, a new one, the one after a deleted one', async () => {
-    const { root, view } = await viewOf(withOutcomes([press, message]));
-    const focused = () => shadow(listIn(root)).activeElement?.closest('.outcome-row')?.getAttribute('data-key');
-    // Cancel.
-    listIn(root).open('o1');
-    await settle(view);
-    expect(focused()).toBe('o1');
-    opened.answer = { outcome: { key: 'o3', kind: 'message' }, at: 2 };
-    listIn(root).open(null);
-    await settle(view);
-    expect(focused()).toBe('o3');
-    opened.answer = { deleted: true };
-    listIn(root).open('o2');
-    await settle(view);
-    expect(focused()).toBe('o1');
-  });
-
-  it('opens no new outcome once the form has the most it can have', async () => {
-    const outcomes = Array.from({ length: 50 }, (_, at): DesignOutcome => ({ key: `o${at}`, kind: 'message' }));
-    const { root, view } = await viewOf(withOutcomes(outcomes));
-    expect(listIn(root).limit).toBe(50);
-    listIn(root).open(null);
-    await settle(view);
-    expect(opened.sidebars).toEqual([]);
-  });
-
-  it('deletes an outcome at once, Undo in the toast bringing it back', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([press, message]));
-    opened.answer = { deleted: true };
-    listIn(root).open('o2');
-    await settle(view);
-    expect(outcomesIn(workspace).map((one) => one.key)).toEqual(['o1']);
-    const [toast] = toasts.shown;
-    expect(toast?.data.message).toBe('Outcome deleted.');
-    await toast?.data.undo?.();
-    expect(outcomesIn(workspace).map((one) => one.key)).toEqual(['o2', 'o1']);
-    // The toast is gone with its Undo: the focus goes to the outcome back in the list.
-    await settle(view);
-    expect(shadow(listIn(root)).activeElement?.closest('.outcome-row')?.getAttribute('data-key')).toBe('o2');
-  });
-
-  it('moves an outcome as the list asks, one step to undo', async () => {
-    const { root, workspace } = await viewOf(withOutcomes([press, message]));
-    listIn(root).move(0, 1);
-    expect(outcomesIn(workspace).map((one) => one.key)).toEqual(['o1', 'o2']);
-    expect(workspace.said).toEqual(['Moved an outcome']);
-  });
-
-  it("leads a Fix it to an outcome's setting in its sidebar, and one at the list to Add outcome", async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message, press]));
-    workspace.requestFix({ kind: 'view', view: 'settings', path: '$.outcomes[0].redirect.url', key: 'o2' });
-    // The sidebar opens once the router stays still (ADR-0227).
-    await settle(view);
-    expect(opened.sidebars).toHaveLength(0);
-    await vi.waitFor(() => expect(opened.sidebars).toHaveLength(1));
-    // The key leads, as the outcomes may have moved since the check.
-    expect([
-      (opened.sidebars[0] as OutcomeModalData).outcome?.key,
-      (opened.sidebars[0] as OutcomeModalData).focus,
-    ]).toEqual(['o2', 'address']);
-    workspace.requestFix({ kind: 'view', view: 'settings', path: '$.outcomes' });
-    await settle(view);
-    expect(opened.sidebars).toHaveLength(1);
-    expect(shadow(listIn(root)).activeElement?.classList.contains('add')).toBe(true);
-  });
-
-  it("counts an outcome's problems on its row and on the closed group", async () => {
-    const definition = withOutcomes([message, press]);
-    const { root, view, workspace, head, click } = await viewOf(definition);
-    workspace.checks.setValue({
-      status: 'checked',
-      definition,
-      issues: [
-        issue('$.outcomes[1].redirect.url', 'invalid_redirect'),
-        issue('$.outcomes[0].message', 'x', 'hint'),
-        issue('$.outcomes[0].message', 'y', 'warning'),
-      ],
-    });
-    await settle(view);
-    expect([...listIn(root).flags]).toEqual([
-      ['o2', { count: 1, error: true }],
-      ['o1', { count: 1, error: false }],
-    ]);
-    await click(head('after'));
-    expect(text(head('after').querySelector('.summary'))).toBe(`2 problems ${DOT} 2 outcomes`);
-    expect(head('after').querySelector('.flag')?.getAttribute('data-severity')).toBe('error');
-    // Warnings alone are counted in a warning's colour.
-    workspace.checks.setValue({
-      status: 'checked',
-      definition,
-      issues: [issue('$.outcomes[0].message', 'y', 'warning')],
-    });
-    await settle(view);
-    expect(head('after').querySelector('.flag')?.getAttribute('data-severity')).toBe('warning');
-  });
-
-  it("shows the list's own problems in the list, above Add outcome", async () => {
-    const definition = withOutcomes([message]);
-    const { root, view, workspace } = await viewOf(definition);
-    workspace.checks.setValue({ status: 'checked', definition, issues: [issue('$.outcomes', 'too_many_outcomes')] });
-    await settle(view);
-    expect(listIn(root).problems).toHaveLength(1);
-    expect(root.querySelector('[id^="outcomes-why-"]')).toBeNull();
-  });
-
-  it('says on a published form that visitors get a change once it is published', async () => {
-    const { root, view, workspace } = await viewOf(withOutcomes([message]));
-    workspace.states.setValue('published');
-    opened.answer = { outcome: { ...message, showAnswers: true }, at: 0 };
-    listIn(root).open('o1');
-    await settle(view);
-    expect(toasts.shown.map((one) => one.data.message)).toEqual(['Updated. Visitors get it once you publish.']);
+    expect(root.querySelectorAll('.group')).toHaveLength(6);
   });
 });

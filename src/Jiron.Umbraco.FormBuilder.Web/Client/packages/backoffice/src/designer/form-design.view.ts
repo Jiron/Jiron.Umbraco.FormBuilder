@@ -1,15 +1,17 @@
 // The Design view (ROADMAP 9.3b and 22.1, docs/ux/information-architecture.md section 5.1, ADR-0256): the canvas and
-// the inspector beside it. It takes the canvas's and the inspector's requests and makes each an edit of the editor model
-// through the workspace, says what happened for screen readers, offers Undo after a delete, and moves the focus to what
-// an edit left selected. Every Add field and insert point opens the field picker, whose pick lands where it was opened.
-// A page is renamed, duplicated and deleted at its tab. A link that names a field (`?field=`, ADR-0166) opens the view
-// on that field's page with the field selected. Moves (ADR-0016, ADR-0169) come from a drop, Move to... and Alt+Up and
-// Alt+Down; each says where the element is now, a move the form refuses says why at the element, and the focus stays on
-// the element moved. Up and Down go through the elements of the page, and ? opens the Keyboard shortcuts. The inspector
-// (ADR-0170) shows the selected element, else the open page, in its column beside the canvas, so selecting moves nothing
-// (ADR-0182), or over the canvas up to 700 px. Its changes are edits too, typing in one box one step to undo, and an
-// alias that entries know changes only after a question. A field that takes its options from elsewhere shows them as
-// the server resolves the draft's (ADR-0172).
+// the inspector beside it. It takes the canvas's and the inspector's requests and makes each an edit of the editor
+// model through the workspace, says what happened for screen readers, offers Undo after a delete, and moves the focus
+// to what an edit left selected. Every Add field and insert point opens the field picker, whose pick lands where it was
+// opened. A page is renamed, duplicated and deleted at its tab. A link that names a field (`?field=`, ADR-0166) opens
+// the view on that field's page with the field selected. Moves (ADR-0016, ADR-0169) come from a drop, Move to... and
+// Alt+Up and Alt+Down; each says where the element is now, a move the form refuses says why at the element, and the
+// focus stays on the element moved. Up and Down go through the elements of the page, and ? opens the Keyboard
+// shortcuts. The inspector (ADR-0170) shows the selected element, else the open page, in its column beside the canvas,
+// so selecting moves nothing (ADR-0182), or over the canvas up to 700 px. Its changes are edits too, typing in one box
+// one step to undo, and an alias that entries know changes only after a question. A field that takes its options from
+// elsewhere shows them as the server resolves the draft's (ADR-0172). After sending's outcomes stand in the inspector's
+// column beside the canvas, else under what visitors get; a Fix it in an outcome, and a rule of one in the rules
+// overview, open its sidebar there.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { ImageCropModeModel } from '@umbraco-cms/backoffice/external/backend-api';
@@ -30,11 +32,12 @@ import {
   type CheckBadge,
   type InPlaceRefusal,
 } from './canvas/form-canvas.element';
-import { bySeverity, type FixTarget } from './check/form-check';
+import { bySeverity, parsePath, type FixTarget } from './check/form-check';
 import type { CheckState } from './check/form-checker';
 import { FORM_CHECK_MODAL } from './check/form-check.modal.token';
 import { followFix, routerSettled } from './form-views';
-import { outcomesOf } from './settings/outcome-model';
+import './outcomes/form-outcomes.element';
+import type { FormOutcomesElement } from './outcomes/form-outcomes.element';
 import { keepWidth, readWidth, type CanvasWidth } from './canvas/widths';
 import { isDragging } from './drag/pointer-drag';
 import type { FormCanvasElement } from './canvas/form-canvas.element';
@@ -592,6 +595,10 @@ export class FormDesignViewElement extends UmbLitElement {
     return this.shadowRoot?.querySelector('jfb-designer-inspector') ?? null;
   }
 
+  get #outcomes(): FormOutcomesElement | null {
+    return this.shadowRoot?.querySelector('jfb-form-outcomes') ?? null;
+  }
+
   async #focus(key: string, control: Control = 'select') {
     await this.updateComplete;
     // Over a narrow canvas the selected element is the inspector's, and the canvas under it is out of reach.
@@ -809,10 +816,13 @@ export class FormDesignViewElement extends UmbLitElement {
       case 'show':
         this._shown = request.shown;
         this._insertAt = null;
-        if (state.selection && request.shown !== 'after') {
-          const page = pageOf(state.definition, state.selection);
-          if (page?.key !== state.definition.pages[request.shown]?.key) this.#context?.edit(select(state, null), '');
-        }
+        // A selection on another page is let go, and on After sending, whose column holds the outcomes.
+        if (
+          state.selection &&
+          (request.shown === 'after' ||
+            pageOf(state.definition, state.selection)?.key !== state.definition.pages[request.shown]?.key)
+        )
+          this.#context?.edit(select(state, null), '');
         return;
       case 'addPage': {
         const page = newPage(model.newKey);
@@ -840,9 +850,6 @@ export class FormDesignViewElement extends UmbLitElement {
         return;
       case 'paste':
         await this.#paste();
-        return;
-      case 'changeOutcome':
-        this.#toOutcome(request.key);
         return;
       case 'drop':
         await this.#drop(request.source, request.place);
@@ -1399,7 +1406,7 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   // The rules overview (ADR-0178): every rule of the form by page. A row selects its element on its page, with the
-  // focus on it; an outcome's opens Settings, where outcomes are edited; Add rule selects the element chosen and opens
+  // focus on it; an outcome's opens it on After sending; Add rule selects the element chosen and opens
   // the builder on it for a new rule. Its sidebar answers before it slides out and gives the focus back to the "..."
   // as it closes, so the focus set here waits until it is gone.
   async #rulesOverview() {
@@ -1426,8 +1433,7 @@ export class FormDesignViewElement extends UmbLitElement {
     if (shown) await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
     if (value.go === 'outcomes') {
       // A rule of an outcome opens the outcome on its rule.
-      const key = outcomesOf(this.#state()?.definition ?? { pages: [] })[value.index]?.key ?? null;
-      this.#toOutcome(key, key ? `$.outcomes[${value.index}].rules[0]` : undefined);
+      await this.#fixOutcome(`$.outcomes[${value.index}].rules[0]`);
       return;
     }
     const now = this.#selectFirst(value.key);
@@ -1477,14 +1483,18 @@ export class FormDesignViewElement extends UmbLitElement {
 
   /**
    * Fix it: the element selected on its page, with the inspector on the setting the problem is about; the rules builder
-   * on a rule; the field picker for the end of a page without fields; or the view where the form's settings, outcomes
-   * or actions are edited. An element gone since the check leads nowhere.
+   * on a rule; the field picker for the end of a page without fields; After sending for an outcome; or the view where
+   * the form's settings or actions are edited. An element gone since the check leads nowhere.
    */
   async #fix(target: FixTarget, handedOn = false) {
     // The user's own choice ends the wait for a link's selection, so its focus never takes this one's.
     this.#shownLink = true;
     if (target.kind === 'view') {
       followFix(target, (fix) => this.#context?.requestFix(fix));
+      return;
+    }
+    if (target.kind === 'outcome') {
+      await this.#fixOutcome(target.path, target.key, handedOn);
       return;
     }
     if (target.kind === 'picker') {
@@ -1631,6 +1641,7 @@ export class FormDesignViewElement extends UmbLitElement {
   #travel(way: 'undo' | 'redo', stay = false) {
     const context = this.#context;
     if (!context) return;
+    const before = context.getEditorState().definition;
     const said = way === 'undo' ? context.undo() : context.redo();
     if (said === undefined) return;
     this.#inspector?.forget();
@@ -1640,7 +1651,10 @@ export class FormDesignViewElement extends UmbLitElement {
     const state = context.getEditorState();
     const { definition } = state;
     const { selection, dropped, page } = this.#settle(state);
-    if (selection) {
+    if (this._shown === 'after' && !selection && !page) {
+      // On After sending, the focus goes to the outcome brought back or changed, as the toast's Undo puts it.
+      void this.#outcomes?.focusChange(before);
+    } else if (selection) {
       const index = definition.pages.findIndex((each) => each.key === pageOf(definition, selection)?.key);
       if (index >= 0) this._shown = index;
       if (!stay) void this.#focus(selection);
@@ -1746,17 +1760,20 @@ export class FormDesignViewElement extends UmbLitElement {
   }
 
   /**
-   * The Settings view, where a form's outcomes are edited, on an outcome's sidebar (at the setting `path` names), or on
-   * Add outcome for none: handed on as a Fix it without a problem, which the Settings view takes up (ADR-0185).
+   * After sending, on the sidebar of the outcome a path names (by its key where given, as the definition checked held
+   * it) at the setting it names, in the language of its message; on Add outcome for a path at the list itself or an
+   * outcome gone since (ADR-0185, ADR-0256). A selection is let go, so no inspector over a narrow canvas hides the list.
    */
-  #toOutcome(key: string | null, path?: string) {
-    const index = key ? outcomesOf(this.#state()?.definition ?? { pages: [] }).findIndex((one) => one.key === key) : -1;
-    followFix(
-      key && index >= 0
-        ? { kind: 'view', view: 'settings', path: path ?? `$.outcomes[${index}]`, key }
-        : { kind: 'view', view: 'settings', path: '$.outcomes' },
-      (fix) => this.#context?.requestFix(fix),
-    );
+  async #fixOutcome(path: string, key?: string, handedOn = false) {
+    const steps = parsePath(path) ?? ['outcomes'];
+    const state = this.#state();
+    if (state?.selection) this.#context?.edit(select(state, null), '');
+    this._shown = 'after';
+    this._insertAt = null;
+    const [, , property, language] = steps;
+    if (property === 'message') await this.#showLanguage(typeof language === 'string' ? language : '');
+    await this.updateComplete;
+    await this.#outcomes?.fix(key, steps, handedOn);
   }
 
   #onKey(event: KeyboardEvent) {
@@ -1770,7 +1787,12 @@ export class FormDesignViewElement extends UmbLitElement {
       target instanceof HTMLTextAreaElement ||
       target?.isContentEditable === true;
     const typing = entry || target instanceof HTMLSelectElement;
-    const inInspector = path.some((node) => node instanceof HTMLElement && node.localName === 'jfb-designer-inspector');
+    // The outcomes are the inspector's column's even where they lie under the sheet.
+    const inInspector = path.some(
+      (node) =>
+        node instanceof HTMLElement &&
+        (node.localName === 'jfb-designer-inspector' || node.localName === 'jfb-form-outcomes'),
+    );
     const ctrl = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
     const state = this.#state();
@@ -1877,6 +1899,14 @@ export class FormDesignViewElement extends UmbLitElement {
     const inspector = this.#inspectorMode();
     // Beside the canvas the inspector's column is always there, so a selection moves nothing; over it, only for one.
     const inspects = this._look !== undefined && !this._failed && (selection !== null || inspector !== 'overlay');
+    // After sending's outcomes: in the inspector's column beside the canvas, else under what visitors get (ADR-0256).
+    const after = this._shown === 'after' && this._look !== undefined && !this._failed;
+    const inColumn = after && inspects && inspector === 'docked';
+    const outcomes = html`<jfb-form-outcomes
+      slot="after"
+      .look=${this._look}
+      ?headed=${!inColumn}
+    ></jfb-form-outcomes>`;
     // A button, not a link: Umbraco's router takes every link's click for a move to another place.
     return html`<button
         type="button"
@@ -1908,14 +1938,15 @@ export class FormDesignViewElement extends UmbLitElement {
         .check=${this._badge}
         .saveGroups=${this._saveGroups}
         .designerActions=${this._actions}
-      ></jfb-form-canvas>
+        >${after && !inColumn ? outcomes : nothing}</jfb-form-canvas
+      >
       ${
         inspects
           ? html`<jfb-designer-inspector
               .definition=${view?.state.definition ?? { pages: [] }}
               .selection=${selection}
               .page=${this.#openPage()}
-              .afterSending=${this._shown === 'after'}
+              .afterSending=${inColumn}
               .types=${this._types}
               .culture=${this._look?.culture ?? ''}
               .languages=${this._look?.languages ?? []}
@@ -1925,7 +1956,8 @@ export class FormDesignViewElement extends UmbLitElement {
               .forgetDictionary=${() => this.#forgetDictionary()}
               .saveGroups=${this._saveGroups}
               mode=${inspector}
-            ></jfb-designer-inspector>`
+              >${inColumn ? outcomes : nothing}</jfb-designer-inspector
+            >`
           : nothing
       }
       <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>`;

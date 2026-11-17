@@ -13,7 +13,7 @@ import type { DesignDefinition, LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
 import { elementNames, inspectorRuleWords } from '../rules/rule-names';
 import { ruleWords } from '../rules/rule-words';
-import { outcomeName, type DesignOutcome } from '../settings/outcome-model';
+import { outcomeName, type DesignOutcome } from '../outcomes/outcome-model';
 import { megabytesOf } from '../../settings/settings-values';
 
 type Term = (key: string, ...args: unknown[]) => string;
@@ -269,15 +269,15 @@ export const VOCABULARY: Readonly<Record<string, Readonly<Record<string, Propert
     settings: { term: 'jfbHistory_property_settings', value: 'any' },
   },
   FormOutcome: {
-    kind: { term: 'jfbSettings_outcome_kind', value: 'enum:OutcomeKind' },
-    message: { term: 'jfbSettings_outcome_message', value: 'html' },
-    showAnswers: { term: 'jfbSettings_outcome_showAnswers', value: 'flag' },
+    kind: { term: 'jfbOutcomes_kind', value: 'enum:OutcomeKind' },
+    message: { term: 'jfbOutcomes_message', value: 'html' },
+    showAnswers: { term: 'jfbOutcomes_showAnswers', value: 'flag' },
     redirect: { term: 'jfbHistory_property_redirect', value: 'any', holds: 'OutcomeRedirect' },
   },
   OutcomeRedirect: {
-    content: { term: 'jfbSettings_outcome_page', value: 'content' },
-    url: { term: 'jfbSettings_outcome_address', value: 'line' },
-    delaySeconds: { term: 'jfbSettings_outcome_delay', value: 'number' },
+    content: { term: 'jfbOutcomes_page', value: 'content' },
+    url: { term: 'jfbOutcomes_address', value: 'line' },
+    delaySeconds: { term: 'jfbOutcomes_delay', value: 'number' },
   },
 };
 
@@ -301,7 +301,7 @@ export const VALUE_TERMS: Readonly<Record<string, Readonly<Record<string, string
       `jfbHistory_value_ActionTrigger_${value}`,
     ]),
   ),
-  OutcomeKind: { message: 'jfbSettings_outcome_kind_message', redirect: 'jfbSettings_outcome_kind_redirect' },
+  OutcomeKind: { message: 'jfbOutcomes_kind_message', redirect: 'jfbOutcomes_kind_redirect' },
   ProgressIndicator: {
     steps: 'jfbSettings_progress_steps',
     bar: 'jfbSettings_progress_bar',
@@ -454,7 +454,7 @@ class Words {
   }
 
   #outcomeName(outcome: DesignOutcome): string {
-    const term: Term = (key, ...args) => this.#context.term(`jfbSettings_${key}`, ...args);
+    const term: Term = (key, ...args) => this.#context.term(`jfbOutcomes_${key}`, ...args);
     return outcomeName(
       outcome,
       this.#context.culture,
@@ -471,7 +471,7 @@ class Words {
     if (change.kind === 'outcome') {
       const own = (change.after ?? change.before) as DesignOutcome | null | undefined;
       const outcome = own ? ({ ...own, key: change.key ?? '' } as DesignOutcome) : undefined;
-      return term('jfbHistory_what', term('jfbSettings_group_after'), outcome ? this.#outcomeName(outcome) : '');
+      return term('jfbHistory_what', term('jfbDesigner_afterSending'), outcome ? this.#outcomeName(outcome) : '');
     }
     if (change.kind === 'validationRule') {
       const own = (change.after ?? change.before) as Json | null | undefined;
@@ -1066,7 +1066,7 @@ class Words {
       );
     const at = place('newer') >= 0 ? place('newer') : place('older');
     const term = this.#context.term;
-    return term('jfbHistory_what', term('jfbSettings_group_after'), term('jfbSettings_outcome_headline', at + 1));
+    return term('jfbHistory_what', term('jfbDesigner_afterSending'), term('jfbOutcomes_headline', at + 1));
   }
 
   /** A list's change as the items added and removed; null where either side is no list of items with names. */

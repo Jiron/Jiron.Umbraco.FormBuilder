@@ -231,21 +231,17 @@ describe("a problem's Fix it", () => {
     expect(fixOf({ pages: [] }, '$.pages')).toEqual({ kind: 'picker', page: null });
   });
 
-  it("leads to the view where the form's settings, outcomes and actions are edited", () => {
+  it("leads to After sending for an outcome, and to the view where the form's settings and actions are edited", () => {
     expect(fix('$.settings.appearance.theme')).toEqual({
       kind: 'view',
       view: 'settings',
       path: '$.settings.appearance.theme',
     });
     // An outcome's problem keeps the outcome's key, as the definition checked holds it; the list itself has none.
-    expect(fix('$.outcomes[1].rules[0]')).toEqual({
-      kind: 'view',
-      view: 'settings',
-      path: '$.outcomes[1].rules[0]',
-      key: 'o2',
-    });
-    expect(fix('$.outcomes')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
-    expect(fix('$.outcomes[7].message')).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[7].message' });
+    // The outcomes are the Design view's (ADR-0256).
+    expect(fix('$.outcomes[1].rules[0]')).toEqual({ kind: 'outcome', path: '$.outcomes[1].rules[0]', key: 'o2' });
+    expect(fix('$.outcomes')).toEqual({ kind: 'outcome', path: '$.outcomes' });
+    expect(fix('$.outcomes[7].message')).toEqual({ kind: 'outcome', path: '$.outcomes[7].message' });
     // An action's carries its key too, as an outcome's does (ROADMAP 10.2a).
     expect(fix('$.actions[0].settings.replyToField')).toEqual({
       kind: 'view',

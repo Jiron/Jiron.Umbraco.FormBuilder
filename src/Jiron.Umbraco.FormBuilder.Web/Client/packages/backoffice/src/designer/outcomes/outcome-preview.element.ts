@@ -92,7 +92,7 @@ export class OutcomePreviewElement extends UmbLitElement {
     this.retry = () => undefined;
   }
 
-  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbSettings_${key}`, ...args);
+  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbOutcomes_${key}`, ...args);
 
   protected override updated(changed: PropertyValues) {
     super.updated(changed);
@@ -120,16 +120,12 @@ export class OutcomePreviewElement extends UmbLitElement {
     // Said as it comes, as the designer's other failures are.
     if (status === 'failed')
       return html`<div class="failed">
-        <p class="said" role="alert">${this.#term('outcome_previewFailed')}</p>
-        <uui-button
-          look="outline"
-          label=${this.#term('outcome_previewRetry')}
-          @click=${() => this.retry()}
-        ></uui-button>
+        <p class="said" role="alert">${this.#term('previewFailed')}</p>
+        <uui-button look="outline" label=${this.#term('retry')} @click=${() => this.retry()}></uui-button>
       </div>`;
     // A redirect shows visitors no page of the form, so its line stands on the sidebar, not on a visitor's page.
     if (preview && !preview.html && preview.address)
-      return html`<p class="said">${this.#term('outcome_previewRedirect')} <code>${preview.address}</code></p>`;
+      return html`<p class="said">${this.#term('previewRedirect')} <code>${preview.address}</code></p>`;
     // The answer's markup goes in once it is drawn; the language and its direction are the visitors'.
     return html`<div class="sheet">
       <div
@@ -145,7 +141,7 @@ export class OutcomePreviewElement extends UmbLitElement {
   override render() {
     const busy = this.state.status === 'idle' || this.state.status === 'asking';
     return html`<section class="preview" aria-labelledby="preview-heading">
-      <h4 id="preview-heading">${this.#term('outcome_preview')}</h4>
+      <h4 id="preview-heading">${this.#term('preview')}</h4>
       <div class="shown" aria-busy=${busy ? 'true' : 'false'}>${this.#shown()}</div>
     </section>`;
   }

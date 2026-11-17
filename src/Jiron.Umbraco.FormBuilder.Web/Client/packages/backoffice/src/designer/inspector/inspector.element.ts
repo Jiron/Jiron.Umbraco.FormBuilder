@@ -179,7 +179,7 @@ export class InspectorElement extends UmbLitElement {
   declare selection: string | null;
   /** The page the canvas shows, which the inspector shows while nothing is selected. */
   declare page: string | null;
-  /** Whether the canvas shows After sending, whose outcomes the inspector's column holds (ADR-0256). */
+  /** Whether the canvas shows After sending, whose outcomes the view slots into the column, under its heading (ADR-0256). */
   declare afterSending: boolean;
   declare types: Readonly<Record<string, FieldTypeResponseModel>>;
   /** The language the canvas shows, which the inspector edits texts in. */
@@ -1470,12 +1470,13 @@ export class InspectorElement extends UmbLitElement {
       >
         <uui-icon name="icon-navigation-left"></uui-icon>
       </uui-button>`;
-    // After sending: the column headed so (the outcomes follow in it).
+    // After sending: the column headed so, the outcomes the view slots in under the heading.
     if (this.afterSending)
       return html`<div class="head">
-        <h2 tabindex="-1">${this.localize.term('jfbDesigner_afterSending')}</h2>
-        ${this.mode === 'docked' ? this.#fold() : nothing}
-      </div>`;
+          <h2 tabindex="-1">${this.localize.term('jfbDesigner_afterSending')}</h2>
+          ${this.mode === 'docked' ? this.#fold() : nothing}
+        </div>
+        <div class="body"><slot name="after"></slot></div>`;
     if (!subject) return nothing;
     const sections = this.#sections(subject);
     // Close lets a selection go; the open page shown without one has none, nor a page selected beside the canvas.

@@ -1,10 +1,10 @@
-// After sending's list of outcomes (ROADMAP 10.1b, IA 5.2, ADR-0185): each row the outcome's move handle, its name as
-// the button that opens its sidebar, and a line that says when visitors get it, the form check's problems in it counted
-// on that line; under the list the default message where some visitors get it, then Add outcome. A row moves by its
-// handle with the pointer, or with Alt+Up and Alt+Down, which says where it went (ADR-0016); the view makes each move a
-// change of the draft. The form check's problems in the list itself show above Add outcome, which they describe; at the
-// most outcomes a form can have, a line says so in its place. The names of the pages the redirects lead to are read
-// from Umbraco once, in all their languages, and shown in the language the view shows.
+// After sending's list of outcomes (ROADMAP 10.1b and 22.1, IA 5.2, ADR-0185, ADR-0256): each row the outcome's move
+// handle, its name as the button that opens its sidebar, and a line that says when visitors get it, the form check's
+// problems in it counted on that line; under the list the default message where some visitors get it, then Add outcome.
+// A row moves by its handle with the pointer, or with Alt+Up and Alt+Down, which says where it went (ADR-0016); the
+// view makes each move a change of the draft. The form check's problems in the list itself show above Add outcome,
+// which they describe; at the most outcomes a form can have, a line says so in its place. The names of the pages the
+// redirects lead to are read from Umbraco once, in all their languages, and shown in the language the view shows.
 import { css, html, nothing, repeat, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
@@ -24,9 +24,9 @@ import {
   type DesignOutcome,
   type Reach,
 } from './outcome-model';
-import { choiceStyles } from './choice.styles';
-import { described, flagLine, whys, type Flag, type Shown } from './problem-lines';
-import { DOT } from './settings-model';
+import { choiceStyles } from '../settings/choice.styles';
+import { described, flagLine, whys, type Flag, type Shown } from '../settings/problem-lines';
+import { DOT } from '../settings/settings-model';
 
 /** A page's name in one of its languages; null for a page that has one name for all. */
 interface PageName {
@@ -304,7 +304,7 @@ export class OutcomeListElement extends UmbLitElement {
     }
   }
 
-  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbSettings_${key}`, ...args);
+  #term = (key: string, ...args: unknown[]) => this.localize.term(`jfbOutcomes_${key}`, ...args);
 
   // The names of the pages the redirects lead to, each in all its languages, asked for once.
   async #readPages() {
@@ -345,7 +345,7 @@ export class OutcomeListElement extends UmbLitElement {
   #lineOf(outcome: DesignOutcome, reach: Reach): string {
     const rule = useRuleOf(outcome);
     if (reach === 'ruled' && rule && this.words) return ruleWords(this.words, rule);
-    return this.#term(`outcome_reach_${reach}`);
+    return this.#term(`reach_${reach}`);
   }
 
   // ---- Moving -------------------------------------------------------------------------------------------------------
@@ -356,7 +356,7 @@ export class OutcomeListElement extends UmbLitElement {
     event.stopPropagation();
     const to = event.key === 'ArrowUp' ? at - 1 : at + 1;
     if (to < 0 || to >= this.outcomes.length) {
-      this.announce(this.#term('outcome_edge'));
+      this.announce(this.#term('edge'));
       return;
     }
     this.#move(at, to);
@@ -367,7 +367,7 @@ export class OutcomeListElement extends UmbLitElement {
     if (!outcome) return;
     this.#moved = outcome.key;
     this.move(from, to);
-    this.announce(this.#term('outcome_moved', this.#nameOf(outcome), to + 1, this.outcomes.length));
+    this.announce(this.#term('moved', this.#nameOf(outcome), to + 1, this.outcomes.length));
   }
 
   // The place a pointer at y would put a row: before the first row whose middle lies below it, or after the last.
@@ -410,7 +410,7 @@ export class OutcomeListElement extends UmbLitElement {
     return html`
       ${
         count > 0
-          ? html`<ol class="outcomes" aria-label=${this.#term('outcome_list')}>
+          ? html`<ol class="outcomes" aria-label=${this.#term('list')}>
               ${repeat(
                 outcomes,
                 // Each row stays its outcome's as the list changes, the focus on it too.
@@ -428,7 +428,7 @@ export class OutcomeListElement extends UmbLitElement {
                     <button
                       type="button"
                       class="row-handle"
-                      aria-label=${this.#term('outcome_move', name)}
+                      aria-label=${this.#term('move', name)}
                       @pointerdown=${(event: PointerEvent) => this.#drag(event, at)}
                       @keydown=${(event: KeyboardEvent) => this.#keyMove(event, at)}
                     >
@@ -462,14 +462,14 @@ export class OutcomeListElement extends UmbLitElement {
       ${
         leavesDefault(outcomes)
           ? html`<p class="default">
-              ${this.#term(count > 0 ? 'outcome_defaultOtherwise' : 'outcome_defaultOnly', this.defaultMessage)}
+              ${this.#term(count > 0 ? 'defaultOtherwise' : 'defaultOnly', this.defaultMessage)}
             </p>`
           : nothing
       }
       ${whys('outcomes', this.problems, this.weight)}
       ${
         full
-          ? html`<p class="default">${this.#term('outcome_limit', this.limit)}</p>`
+          ? html`<p class="default">${this.#term('limit', this.limit)}</p>`
           : html`<button
               type="button"
               class="add"
@@ -477,7 +477,7 @@ export class OutcomeListElement extends UmbLitElement {
               @click=${() => this.open(null)}
             >
               <uui-icon name="icon-add" aria-hidden="true"></uui-icon>
-              <span>${this.#term('outcome_addOutcome')}</span>
+              <span>${this.#term('addOutcome')}</span>
             </button>`
       }
       <div class="visually-hidden" role="status" aria-live="polite">${this._said}</div>

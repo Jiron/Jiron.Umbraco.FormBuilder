@@ -116,9 +116,14 @@ export type FixTarget =
   /** The field picker, to add at the end of the page; to a new page where the form has none. */
   | { readonly kind: 'picker'; readonly page: string | null }
   /**
-   * A view of the form where the place is edited: its settings and outcomes, or its actions, with the problem's path,
-   * which that view leads to (ADR-0184), and the key of the outcome the path is in, as the definition checked holds it,
-   * so a move of the outcomes since leads to the same one (ADR-0185).
+   * After sending on the Design view, with the outcome's sidebar on the setting the problem's path names, and the key of
+   * the outcome the path is in, as the definition checked holds it, so a move of the outcomes since leads to the same one
+   * (ADR-0185, ADR-0256).
+   */
+  | { readonly kind: 'outcome'; readonly path: string; readonly key?: string }
+  /**
+   * A view of the form where the place is edited: its settings, or its actions, with the problem's path, which that view
+   * leads to (ADR-0184), and the key of the action the path is in, as the definition checked holds it.
    */
   | {
       readonly kind: 'view';
@@ -226,7 +231,8 @@ function ruleAt(rules: unknown, rest: readonly PathStep[]): string | null {
 
 /**
  * Where Fix it leads for a problem at this path of the definition checked: the element it names, with its item, its
- * rule, or the field picker for a page without fields; a view for the form's settings, outcomes and actions. Null where
+ * rule, or the field picker for a page without fields; After sending for an outcome; a view for the form's settings
+ * and actions. Null where
  * the path names nothing the designer shows, or the whole form. The field types tell a text setting's language from a
  * nested setting's name.
  */
@@ -243,12 +249,8 @@ export function fixOf(definition: DesignDefinition, path: string, types?: CheckT
       typeof index === 'number' && Array.isArray(list)
         ? (list[index] as { key?: unknown } | undefined)?.key
         : undefined;
-    return {
-      kind: 'view',
-      view: top === 'outcomes' ? 'settings' : 'actions',
-      path,
-      ...(typeof key === 'string' ? { key } : {}),
-    };
+    const known = typeof key === 'string' ? { key } : {};
+    return top === 'outcomes' ? { kind: 'outcome', path, ...known } : { kind: 'view', view: 'actions', path, ...known };
   }
   if (top === 'validationRules') return validationFix(definition, after);
   if (top !== 'pages') return null;

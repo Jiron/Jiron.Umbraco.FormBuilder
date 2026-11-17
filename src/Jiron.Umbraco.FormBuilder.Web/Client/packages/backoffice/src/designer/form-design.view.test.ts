@@ -9,7 +9,9 @@
 // open page, its changes as edits that typing in one box makes one step, an alias that entries know changed only after
 // a question, the element's "...", the language the canvas shows, and the keys from inside it. Change type (ROADMAP
 // 9.4d): the dialog with each type's preview, the change made with Undo, a type the site can't offer refused, and a read
-// that fails said. A stand-in workspace drives the real undo history.
+// that fails said. After sending (ROADMAP 22.1): its outcomes in the inspector's column or under the sheet, and a Fix
+// it, a rule of the rules overview and Undo leading to an outcome there. A stand-in workspace drives the real undo
+// history.
 import { FORMULAS } from '@jfb/logic/calc';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbBasicState, UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
@@ -61,8 +63,10 @@ vi.mock('./preview/look', async (original) => ({
 
 vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/modal')>()),
-  umbOpenModal: async (_host: unknown, token: unknown, args?: { data?: unknown }) => {
+  umbOpenModal: async (_host: unknown, token: unknown, args?: { data?: { closed?: () => void } }) => {
     opened.dialogs.push({ alias: String(token), data: args?.data });
+    // An outcome's sidebar is gone at once.
+    if (String(token) === 'Jiron.FormBuilder.Modal.Outcome') args?.data?.closed?.();
     // A function answers each dialog by its alias.
     return typeof opened.value === 'function'
       ? (opened.value as (alias: string) => unknown)(String(token))
@@ -88,6 +92,8 @@ const dictionary = vi.hoisted(() => ({ asked: [] as { key: string[]; culture: st
 
 vi.mock('../api', async (original) => ({
   ...(await original<typeof import('../api')>()),
+  // The bounds of the save checks, which After sending reads for the most outcomes a form can have.
+  formSettingsChoices: async () => ({ data: { limits: { outcomes: 50, htmlLength: 50000 } } }),
   dictionaryTextGet: async ({ query }: { query: { key: string[]; culture: string } }) => {
     dictionary.asked.push(query);
     return {
@@ -126,6 +132,7 @@ const { PASTE_QUESTIONS_MODAL_ALIAS } = await import('./picker/paste-questions.m
 type FieldPickerModalData = import('./picker/field-picker.modal.token').FieldPickerModalData;
 type ChangeTypeModalData = import('./change-type/change-type.modal.token').ChangeTypeModalData;
 type RuleBuilderModalData = import('./rules/rule-builder.modal.token').RuleBuilderModalData;
+type OutcomeModalData = import('./outcomes/outcome.modal.token').OutcomeModalData;
 
 const field = (key: string, type = 'text') => ({ key, type, alias: key, label: { '': key } });
 
@@ -175,6 +182,9 @@ class StandIn {
   getEntityType = () => 'jfb-form';
   getUnique = () => 'form1';
   getEditorState = (): EditorState => this.#history.state;
+  /** The form's key and whether visitors get a published version, as After sending reads them. */
+  readonly unique = new UmbBasicState<string | undefined>('form1').asObservable();
+  readonly state = new UmbBasicState<string | undefined>('draft').asObservable();
 
   /** The aliases entries know, by field: changing one asks first. */
   readonly kept: Record<string, string> = {};
@@ -1865,8 +1875,8 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     expect(shadow(canvas).activeElement).toBe(control(canvas, 'note', 'select'));
   });
 
-  it('lets Add rule open the builder on the element chosen, selected, and an outcome lead to Settings', async () => {
-    const { view, ask, state, workspace } = await viewOf({
+  it('lets Add rule open the builder on the element chosen, selected, and an outcome open on After sending', async () => {
+    const { view, canvas, ask, state } = await viewOf({
       ...DEFINITION,
       outcomes: [{ key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } }],
     });
@@ -1884,17 +1894,17 @@ describe('the rules overview in the Design view (ADR-0178)', () => {
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
     opened.dialogs = [];
-    opened.value = { go: 'outcomes', index: 0 };
+    opened.value = (alias: string) => (alias.endsWith('RulesOverview') ? { go: 'outcomes', index: 0 } : undefined);
     await ask({ kind: 'rulesOverview' });
-    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
-    // A rule of an outcome opens the outcome's sidebar on its rule, handed on to the Settings view (ADR-0185).
-    expect(workspace.fixes.getValue()).toEqual({
-      kind: 'view',
-      view: 'settings',
-      path: '$.outcomes[0].rules[0]',
-      key: 'o1',
-    });
-    workspace.fixes.setValue(null);
+    // A rule of an outcome opens the outcome's sidebar on its rule, on this view's After sending (ADR-0256).
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    expect([canvas.shown, state().selection, opened.dialogs[1]?.alias]).toEqual([
+      'after',
+      null,
+      'Jiron.FormBuilder.Modal.Outcome',
+    ]);
+    expect((opened.dialogs[1]?.data as OutcomeModalData).focus).toBe('rule');
     history.replaceState(null, '', before);
 
     // Closed, it changes nothing.
@@ -2043,23 +2053,50 @@ describe('the form check in the Design view (ADR-0181)', () => {
     expect(state()).toBe(now);
   });
 
-  it("leads the canvas's Change to the outcome it shows, and to Add outcome where visitors get the default", async () => {
+  it("leads an outcome's Fix it to After sending: the selection let go, its sidebar on the setting, in the message's language", async () => {
+    reading.german = true;
     const before = window.location.pathname;
     history.replaceState(null, '', '/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
-    const { ask, workspace } = await viewOf({
+    const { canvas, ask, state, workspace } = await viewOf({
       ...DEFINITION,
       outcomes: [
         { key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } },
-        { key: 'o2', kind: 'message' },
+        { key: 'o2', kind: 'message', message: { '': '<p>Thanks</p>' } },
       ],
     });
-    await ask({ kind: 'changeOutcome', key: 'o2' });
-    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/settings');
-    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes[1]', key: 'o2' });
-    workspace.fixes.setValue(null);
-    await ask({ kind: 'changeOutcome', key: null });
-    expect(workspace.fixes.getValue()).toEqual({ kind: 'view', view: 'settings', path: '$.outcomes' });
+    await ask({ kind: 'select', key: 'email' });
+    opened.value = answering({ kind: 'outcome', path: "$.outcomes[0].message['de-DE']", key: 'o2' });
+    await ask({ kind: 'formCheck' });
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    // No other view: the outcomes are this view's (ADR-0256).
+    expect(window.location.pathname).toBe('/umbraco/section/jfb-forms/workspace/jfb-form/edit/form1/view/design');
+    expect([canvas.shown, state().selection, workspace.fixes.getValue()]).toEqual(['after', null, null]);
+    const data = opened.dialogs[1]?.data as OutcomeModalData;
+    expect([data.outcome?.key, data.focus, data.culture]).toEqual(['o2', 'message', 'de-DE']);
+    expect(workspace.language).toBe('de-DE');
     history.replaceState(null, '', before);
+  });
+
+  it("puts the focus on Add outcome for a Fix it at the list, and opens an outcome's sidebar handed on once the router stays still", async () => {
+    const { view, workspace } = await viewOf({ ...DEFINITION, outcomes: [{ key: 'o1', kind: 'message' }] });
+    opened.value = answering({ kind: 'outcome', path: '$.outcomes' });
+    await ask(view, { kind: 'formCheck' });
+    await settle(view);
+    const outcomes = must(shadow(view).querySelector<HTMLElement>('jfb-form-outcomes'), 'the outcomes');
+    await vi.waitFor(() =>
+      expect(
+        shadow(
+          must(shadow(outcomes).querySelector<HTMLElement>('jfb-outcome-list'), 'the list'),
+        ).activeElement?.classList.contains('add'),
+      ).toBe(true),
+    );
+    expect(opened.dialogs).toHaveLength(1);
+    workspace.fixes.setValue({ kind: 'outcome', path: '$.outcomes[0].showAnswers', key: 'o1' });
+    await settle(view);
+    expect(opened.dialogs).toHaveLength(1);
+    await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    expect((opened.dialogs[1]?.data as OutcomeModalData).focus).toBe('showAnswers');
+    expect(workspace.fixes.getValue()).toBeNull();
   });
 
   it("shows the language of the text a problem is in, the default's for the default text", async () => {
@@ -2122,5 +2159,93 @@ describe('the form check in the Design view (ADR-0181)', () => {
       expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(['Jiron.FormBuilder.Modal.RuleBuilder']),
     );
     expect(workspace.fixes.getValue()).toBeNull();
+  });
+});
+
+describe('After sending in the Design view (ADR-0256)', () => {
+  const OUTCOMES: DesignDefinition = {
+    ...DEFINITION,
+    outcomes: [
+      { key: 'o1', kind: 'redirect', redirect: { url: '/x', delaySeconds: 0 } },
+      { key: 'o2', kind: 'message', message: { '': '<p>Thanks</p>' } },
+    ],
+  };
+  const tell = async (view: HTMLElement & { updateComplete: Promise<unknown> }, detail: unknown) => {
+    view.dispatchEvent(new CustomEvent(INSPECTOR_REQUEST, { detail, bubbles: true, composed: true }));
+    await settle(view);
+  };
+  type Updating = HTMLElement & { updateComplete: Promise<unknown> };
+  const outcomesIn = (view: HTMLElement) => [...shadow(view).querySelectorAll<Updating>('jfb-form-outcomes')];
+  const listOf = (outcomes: HTMLElement) =>
+    must(
+      shadow(outcomes).querySelector<Updating & { move(from: number, to: number): void }>('jfb-outcome-list'),
+      'the list',
+    );
+
+  it("stands in the inspector's column beside the canvas, under its one heading, and only on After sending", async () => {
+    const { view, canvas, ask } = await viewOf(OUTCOMES);
+    expect(outcomesIn(view)).toEqual([]);
+    await ask({ kind: 'show', shown: 'after' });
+    const [outcomes, ...more] = outcomesIn(view);
+    expect(more).toEqual([]);
+    const inspector = must(shadow(view).querySelector<InspectorElement>('jfb-designer-inspector'), 'the inspector');
+    expect([outcomes?.parentElement, outcomes?.slot, outcomes?.hasAttribute('headed')]).toEqual([
+      inspector,
+      'after',
+      false,
+    ]);
+    await settle(must(outcomes, 'the outcomes'));
+    // The heading is the column's, once.
+    expect([...shadow(inspector).querySelectorAll('h2')].map((one) => text(one))).toEqual(['After sending']);
+    expect(shadow(must(outcomes, 'the outcomes')).querySelector('h2')).toBeNull();
+    expect(shadow(inspector).querySelector('slot[name="after"]')).not.toBeNull();
+    expect(shadow(canvas).querySelector('slot[name="after"]')).not.toBeNull();
+    await ask({ kind: 'show', shown: 0 });
+    expect(outcomesIn(view)).toEqual([]);
+    expect(shadow(canvas).querySelector('slot[name="after"]')).toBeNull();
+  });
+
+  it('lies under what visitors get, headed, with the inspector folded or over a narrow canvas', async () => {
+    const { view, canvas, ask } = await viewOf(OUTCOMES);
+    await ask({ kind: 'show', shown: 'after' });
+    await tell(view, { kind: 'fold' });
+    const [folded, ...more] = outcomesIn(view);
+    expect(more).toEqual([]);
+    expect([folded?.parentElement, folded?.hasAttribute('headed')]).toEqual([canvas, true]);
+    await settle(must(folded, 'the outcomes'));
+    expect(text(shadow(must(folded, 'the outcomes')).querySelector('h2'))).toBe('After sending');
+    await tell(view, { kind: 'unfold' });
+    Object.assign(view, { _narrow: true });
+    await settle(view);
+    const [narrow] = outcomesIn(view);
+    expect([narrow?.parentElement, narrow?.hasAttribute('headed'), outcomesIn(view).length]).toEqual([canvas, true, 1]);
+    expect(shadow(view).querySelector('jfb-designer-inspector')).toBeNull();
+  });
+
+  it('lets a selection go as After sending is shown', async () => {
+    const { ask, state } = await viewOf(OUTCOMES);
+    await ask({ kind: 'select', key: 'email' });
+    await ask({ kind: 'show', shown: 'after' });
+    expect(state().selection).toBeNull();
+  });
+
+  it('takes Ctrl+Z from inside the outcomes, and gives the focus to the outcome Undo brought back', async () => {
+    const { view, ask, state } = await viewOf(OUTCOMES);
+    await ask({ kind: 'show', shown: 'after' });
+    const outcomes = must(outcomesIn(view)[0], 'the outcomes');
+    await settle(outcomes);
+    const list = listOf(outcomes);
+    await settle(list);
+    list.move(0, 1);
+    await settle(view);
+    expect((state().definition['outcomes'] as { key: string }[]).map((one) => one.key)).toEqual(['o2', 'o1']);
+    const row = must(shadow(list).querySelector<HTMLElement>('.row-open'), 'a row');
+    row.focus();
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, composed: true }));
+    await settle(view);
+    expect((state().definition['outcomes'] as { key: string }[]).map((one) => one.key)).toEqual(['o1', 'o2']);
+    await vi.waitFor(() =>
+      expect(shadow(list).activeElement?.closest('.outcome-row')?.getAttribute('data-key')).toBe('o1'),
+    );
   });
 });

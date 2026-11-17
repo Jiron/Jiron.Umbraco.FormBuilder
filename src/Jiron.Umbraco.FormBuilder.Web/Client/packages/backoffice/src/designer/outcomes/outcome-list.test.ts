@@ -8,7 +8,7 @@ import type { DesignDefinition } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { inspectorRuleWords } from '../rules/rule-names';
 import type { DesignOutcome } from './outcome-model';
-import type { Flag, Shown } from './problem-lines';
+import type { Flag, Shown } from '../settings/problem-lines';
 
 // The pages the redirects lead to, as Umbraco names them.
 const pages = vi.hoisted(() => ({ asked: [] as string[][] }));

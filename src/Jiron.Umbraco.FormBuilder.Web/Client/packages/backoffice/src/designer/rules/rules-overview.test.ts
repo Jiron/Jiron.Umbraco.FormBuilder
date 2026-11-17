@@ -252,7 +252,7 @@ describe('the rules overview', () => {
     );
   });
 
-  it('leads a row to its element and an outcome to Settings', async () => {
+  it('leads a row to its element and an outcome to its own', async () => {
     const { modal, root } = await overviewOf();
     must(root.querySelector<HTMLButtonElement>('button.row[data-key="email"]'), 'the row').click();
     expect([modal.getValue(), modal.submit.mock.calls.length]).toEqual([{ go: 'element', key: 'email' }, 1]);

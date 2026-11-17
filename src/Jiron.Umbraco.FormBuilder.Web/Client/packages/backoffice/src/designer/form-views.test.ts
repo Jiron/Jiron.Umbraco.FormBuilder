@@ -73,6 +73,11 @@ describe("the form's views", () => {
     followFix(element, (fix) => handed.push(fix));
     expect(handed).toEqual([settings, actions, element]);
     expect(moves).toEqual([`${FORM}/view/settings`, `${FORM}/view/actions`, `${FORM}/view/design`]);
+    // An outcome's is the Design view's (ADR-0256).
+    const outcome: FixTarget = { kind: 'outcome', path: '$.outcomes[0].message', key: 'o' };
+    followFix(outcome, (fix) => handed.push(fix));
+    expect(handed.at(-1)).toBe(outcome);
+    expect(moves.at(-1)).toBe(`${FORM}/view/design`);
   });
 });
 

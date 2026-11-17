@@ -100,9 +100,12 @@ describe('the inspector', () => {
         button.getAttribute('label'),
       ),
     ).toEqual(['Close']);
-    // On After sending the column is headed so.
+    // On After sending the column is headed so, and holds what the view slots in under its heading.
     const after = await inspectorOf(null, { page: 'p', afterSending: true });
-    expect([text(after.root.querySelector('h2')), after.root.querySelector('.body')]).toEqual(['After sending', null]);
+    expect(text(after.root.querySelector('h2'))).toBe('After sending');
+    expect(after.root.querySelector('.body')?.innerHTML.replace(/<!--[^>]*-->/g, '')).toBe(
+      '<slot name="after"></slot>',
+    );
     expect((await inspectorOf(null)).root.querySelector('h2')).toBeNull();
     expect((await inspectorOf(null, { mode: 'rail' })).root.querySelector('uui-button')?.getAttribute('label')).toBe(
       'Open the inspector',

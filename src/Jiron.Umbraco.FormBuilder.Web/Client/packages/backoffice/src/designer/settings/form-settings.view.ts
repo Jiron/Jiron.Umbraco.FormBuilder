@@ -1,15 +1,12 @@
-// The form's Settings view (ROADMAP 10.1a, 10.1b, IA 5.2, ADR-0184, ADR-0185): one page of the groups of section 4.3.4,
-// Submission and After sending open and each other group closed with a line that says what is set, as this browser left
-// them. After sending lists the outcomes, each edited in a sidebar of its own. Each setting changes the
+// The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184): one page of the groups of section 4.3.4, Submission open
+// and each other group closed with a line that says what is set, as this browser left them. Each setting changes the
 // draft as an inspector box does: what is typed into one box is one step to undo, a value that can't be kept is said
-// under its box once the box is left, and outside a text box Ctrl+Z and Ctrl+Y undo and redo. The form check's
-// problems in the settings show under their setting, and its Fix it to one opens the group, and More options where the
-// setting is there, with the focus on the setting. The site's defaults, labels, time zone, themes, member groups and
-// captcha providers and the bounds of the save checks come from the server; the texts are shown in the Design view's
-// language.
+// under its box once the box is left, and outside a text box Ctrl+Z and Ctrl+Y undo and redo. The form check's problems
+// in the settings show under their setting, and its Fix it to one opens the group, and More options where the setting
+// is there, with the focus on the setting. The site's defaults, labels, time zone, themes, member groups and captcha
+// providers and the bounds of the save checks come from the server; the texts are shown in the Design view's language.
 import { html, live, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import {
@@ -27,14 +24,12 @@ import { UNCHECKED, type CheckState } from '../check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from '../constants';
 import type { DesignDefinition } from '../definition';
 import type { EditorView, FormWorkspaceContext } from '../form-workspace.context';
-import { routerSettled } from '../form-views';
-import { outcomeLacks, settingsLacking, type SettingText } from '../translations';
+import { settingsLacking, type SettingText } from '../translations';
 import { DictionaryReader, dictionaryKeysIn, dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
 import '../inspector/dictionary-pick.element';
 import { boxValue } from '../inspector/box-value';
 import { controlStyles } from '../inspector/control.styles';
 import { focusableIn } from '../inspector/item-focus';
-import { moved } from '../inspector/option-values';
 import '../inspector/merge-tag-picker.element';
 import { withTag } from '../inspector/merge-tags';
 import '../inspector/rich-text.element';
@@ -42,8 +37,7 @@ import { problemText, settingEditor, type EditorContext, type Found } from '../i
 import { ownText, same, withText, type Parsed, type Problem } from '../inspector/setting-values';
 import { textIn } from '../preview/field-models';
 import { readLook, word, type CanvasLook } from '../preview/look';
-import { elementNames, inspectorRuleWords } from '../rules/rule-names';
-import { UNDO_DURATION_MS, UNDO_NOTIFICATION, type UndoNotificationData } from '../../ui/undo-notification.element';
+import { elementNames } from '../rules/rule-names';
 import {
   DOT,
   GROUPS,
@@ -74,17 +68,6 @@ import {
   type ProtectionChoice,
 } from './settings-model';
 import { choiceStyles } from './choice.styles';
-import './outcome-list.element';
-import type { OutcomeListElement } from './outcome-list.element';
-import {
-  outcomeName,
-  outcomesOf,
-  settingAtPath,
-  withOutcome,
-  withOutcomes,
-  type OutcomeSetting,
-} from './outcome-model';
-import { OUTCOME_MODAL } from './outcome.modal.token';
 import { described, flagLine, flagWith, NO_FLAG, whyLine, whys, type Flag, type Shown } from './problem-lines';
 import { settingsStyles } from './settings.styles';
 import { jfbPhoneColumn } from '../../styles/phone';
@@ -96,15 +79,15 @@ import { isVisitorTexts, type VisitorTexts } from './visitor-texts';
 
 const OPEN_KEY = 'jfb.designer.settings.open';
 
-/** The groups this browser left open; Submission and After sending at first (IA 5.2). */
+/** The groups this browser left open; Submission at first (IA 5.2). */
 export function readOpenGroups(): ReadonlySet<GroupId> {
   try {
     const kept: unknown = JSON.parse(localStorage.getItem(OPEN_KEY) ?? 'null');
     if (Array.isArray(kept)) return new Set(GROUPS.filter((group) => kept.includes(group)));
   } catch {
-    // A browser that keeps nothing opens Submission and After sending.
+    // A browser that keeps nothing opens Submission.
   }
-  return new Set<GroupId>(['submission', 'after']);
+  return new Set<GroupId>(['submission']);
 }
 
 function keepOpenGroups(open: ReadonlySet<GroupId>) {
@@ -156,11 +139,9 @@ interface Checked {
   readonly flagged: ReadonlyMap<GroupId, Flag>;
   /** The problems under More options, for its toggle while it is closed. */
   readonly more: Flag;
-  /** The problems in each outcome, by its key, for its row in After sending. */
-  readonly outcomes: ReadonlyMap<string, Flag>;
 }
 
-const NONE_CHECKED: Checked = { found: new Map(), flagged: new Map(), more: NO_FLAG, outcomes: new Map() };
+const NONE_CHECKED: Checked = { found: new Map(), flagged: new Map(), more: NO_FLAG };
 
 /** A button's label in the definition, and the visitor's word for it. */
 type ButtonLabel = 'submitLabel' | 'nextLabel' | 'backLabel';
@@ -222,13 +203,6 @@ export class FormSettingsViewElement extends UmbLitElement {
   #checkedNow: Checked = NONE_CHECKED;
   // The texts the language shown lacks, read at each render (ADR-0228).
   #lackingNow: ReadonlySet<SettingText> = new Set();
-  #outcomesLackNow = false;
-  /** Whether visitors get a published version, which an outcome added or changed reaches only once it is published. */
-  #published = false;
-  /** Whether an outcome's sidebar is open, so a second never opens over it. */
-  #editingOutcome = false;
-  /** The last toast with Undo, closed by the next one: its Undo would take back another change. */
-  #undoToast: { close(): void } | undefined;
 
   constructor() {
     super();
@@ -249,7 +223,6 @@ export class FormSettingsViewElement extends UmbLitElement {
       this.observe(context.form, (form) => (this._alias = form?.alias ?? ''), 'form');
       this.observe(context.check, (check) => (this._check = check ?? UNCHECKED), 'check');
       this.observe(context.fieldTypes, (types) => (this._types = types ?? {}), 'types');
-      this.observe(context.state, (state) => (this.#published = state === 'published' || state === 'pending'), 'state');
       // The choices are the form's: they are read once the workspace has the form, again for another.
       this.observe(
         context.unique,
@@ -260,7 +233,7 @@ export class FormSettingsViewElement extends UmbLitElement {
         },
         'unique',
       );
-      // A Fix it asked from the publish dialog while this view is shown, or from the Design view that led here.
+      // A Fix it asked from the publish dialog while this view is shown, or from the view that led here.
       this.observe(
         context.fixRequest,
         (target) => {
@@ -440,11 +413,6 @@ export class FormSettingsViewElement extends UmbLitElement {
    */
   async #fix(target: FixTarget) {
     if (target.kind !== 'view') return;
-    const steps = parsePath(target.path);
-    if (steps?.[0] === 'outcomes') {
-      await this.#fixOutcome(target.key, steps);
-      return;
-    }
     const anchor = anchorOf(target.path);
     const root = this.shadowRoot;
     if (!anchor) {
@@ -470,30 +438,6 @@ export class FormSettingsViewElement extends UmbLitElement {
       return;
     }
     root?.getElementById(`group-${anchor.group}`)?.focus();
-  }
-
-  /**
-   * A Fix it in an outcome, or the canvas's Change, leads to it: After sending open, the outcome's sidebar on the setting
-   * its path names, in the language of its message; a path at the list itself, or an outcome gone since, to Add outcome.
-   */
-  async #fixOutcome(key: string | undefined, steps: readonly (string | number)[]) {
-    if (!this._open.has('after')) this.#toggle('after');
-    const outcomes = outcomesOf(this.#definition());
-    const known = key ?? (typeof steps[1] === 'number' ? outcomes[steps[1]]?.key : undefined);
-    const [, , property, language] = steps;
-    const culture = property === 'message' ? this.#languageAt(language) : null;
-    if (culture !== null) await this.#showLanguage(culture);
-    await this.updateComplete;
-    const list = this.#list();
-    if (!known || !outcomes.some((outcome) => outcome.key === known)) {
-      await list?.focusOutcome(null);
-      return;
-    }
-    await list?.focusOutcome(known);
-    // The Fix it, or the canvas's Change, came from another view: the sidebar opens once the router that showed this one
-    // stays still, as a navigation's end closes it (ADR-0227).
-    await routerSettled();
-    if (this.isConnected) await this.#openOutcome(known, settingAtPath(steps.slice(2)));
   }
 
   // The language of the text a path names, on a site with more than one, where the view shows another; null otherwise.
@@ -560,23 +504,12 @@ export class FormSettingsViewElement extends UmbLitElement {
     };
     const found = new Map<string, Shown[]>();
     const flagged = new Map<GroupId, Flag>();
-    const outcomes = new Map<string, Flag>();
-    const checkedOutcomes = outcomesOf(checked);
     let more = NO_FLAG;
     for (const issue of this._check.issues) {
       // A provider without its keys says so on its own line among the choices.
       if (issue.code === 'captcha_not_configured') continue;
       const anchor = anchorOf(issue.path);
       if (!anchor) continue;
-      // An outcome's problems count on its row, whose sidebar says them, and on After sending's line while it is closed.
-      const [top, index] = parsePath(issue.path) ?? [];
-      if (top === 'outcomes' && typeof index === 'number') {
-        const key = checkedOutcomes[index]?.key;
-        if (issue.severity === 'hint' || !key) continue;
-        outcomes.set(key, flagWith(outcomes.get(key), issue.severity));
-        flagged.set('after', flagWith(flagged.get('after'), issue.severity));
-        continue;
-      }
       const box = this.#boxOf(anchor, definition);
       found.set(box, [
         ...(found.get(box) ?? []),
@@ -586,7 +519,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       flagged.set(anchor.group, flagWith(flagged.get(anchor.group), issue.severity));
       if (anchor.more) more = flagWith(more, issue.severity);
     }
-    return { found, flagged, more, outcomes };
+    return { found, flagged, more };
   }
 
   #problemsAt(id: string): readonly Shown[] {
@@ -1801,143 +1734,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     );
   }
 
-  // ---- After sending ------------------------------------------------------------------------------------------------
-
-  #list(): OutcomeListElement | null {
-    return this.shadowRoot?.querySelector('jfb-outcome-list') ?? null;
-  }
-
-  #after(definition: DesignDefinition, choices: FormSettingsChoicesResponseModel, look: CanvasLook): TemplateResult {
-    const term = (key: string, ...args: unknown[]) => this.localize.term(key, ...args);
-    const outcomes = outcomesOf(definition);
-    return html`${outcomes.length > 1 ? html`<p class="note">${this.#term('outcome_listHelp')}</p>` : nothing}
-      <jfb-outcome-list
-        .outcomes=${outcomes}
-        .culture=${look.culture}
-        .untranslated=${this.#untranslated()}
-        .defaultMessage=${word(look, 'thankYou')}
-        .words=${inspectorRuleWords(definition, this._types, look.culture, look.languages, term)}
-        .flags=${this.#checkedNow.outcomes}
-        .problems=${this.#problemsAt('outcomes')}
-        .weight=${this.#weight}
-        .limit=${choices.limits.outcomes}
-        .open=${(key: string | null) => void this.#openOutcome(key)}
-        .move=${(from: number, to: number) => this.#moveOutcome(from, to)}
-      ></jfb-outcome-list>`;
-  }
-
-  /** Makes a change of the outcomes, named for Undo; false where it changes nothing or is refused. */
-  #changeOutcomes(definition: DesignDefinition, said: string): boolean {
-    const context = this.#context;
-    const view = this._view;
-    if (!context || !view) return false;
-    this.#visit++;
-    if (same(definition['outcomes'], view.state.definition['outcomes'])) return false;
-    const result = context.edit({ ok: true, state: { definition, selection: view.state.selection } }, said);
-    if (!result.ok) this.#announce(this.localize.term(`jfbDesigner_refusal_${result.refusal}`));
-    return result.ok;
-  }
-
-  #moveOutcome(from: number, to: number) {
-    const definition = this.#definition();
-    this.#changeOutcomes(
-      withOutcomes(definition, moved(outcomesOf(definition), from, to)),
-      this.#term('outcome_undoMoved'),
-    );
-  }
-
-  /**
-   * An outcome's sidebar, or a new one's with null: Update keeps the outcome at the place the sidebar chose, Add puts a
-   * new one there, and Delete outcome takes it away with Undo in the toast. On a published form a toast says when
-   * visitors get a change; a change that changed nothing says nothing.
-   */
-  async #openOutcome(key: string | null, focus?: OutcomeSetting) {
-    const context = this.#context;
-    const look = this._look;
-    const choices = this._choices;
-    const form = this.#form;
-    if (!context || !look || !choices || !form || this.#editingOutcome) return;
-    const definition = this.#definition();
-    const outcomes = outcomesOf(definition);
-    const at = key === null ? -1 : outcomes.findIndex((one) => one.key === key);
-    const outcome = outcomes[at] ?? null;
-    if (key !== null && !outcome) return;
-    if (key === null && choices.limits.outcomes > 0 && outcomes.length >= choices.limits.outcomes) return;
-    const defaultMessage = word(look, 'thankYou');
-    this.#editingOutcome = true;
-    try {
-      // The sidebar answers before it slides out, and its dialog gives the focus back to what opened it as it closes;
-      // the focus set here waits until it is gone, so it stays.
-      let gone: (() => void) | undefined;
-      const closed = new Promise<void>((done) => (gone = done));
-      const value = await umbOpenModal(this, OUTCOME_MODAL, {
-        data: {
-          outcome,
-          number: at >= 0 ? at + 1 : outcomes.length + 1,
-          count: outcomes.length,
-          definition,
-          form,
-          culture: look.culture,
-          languages: look.languages.map((language) => ({
-            culture: language.culture,
-            name: language.name,
-            isDefault: language.isDefault,
-          })),
-          types: this._types,
-          defaultMessage,
-          htmlLength: choices.limits.htmlLength,
-          check: (asked) => context.checkOf(asked),
-          preview: (asked, outcome, culture) => context.previewOf(asked, outcome, culture),
-          stylesheets: look.stylesheets,
-          ...(focus ? { focus } : {}),
-          closed: () => gone?.(),
-        },
-      }).catch(() => undefined);
-      await Promise.race([closed, new Promise((done) => setTimeout(done, 2000))]);
-      const list = this.#list();
-      if (!value) {
-        await list?.focusOutcome(key);
-        return;
-      }
-      const now = this.#definition();
-      const before = outcomesOf(now);
-      if ('deleted' in value) {
-        const left = before.filter((one) => one.key !== key);
-        const deleted = this.#changeOutcomes(withOutcomes(now, left), this.#term('outcome_undoDeleted'));
-        if (deleted && key !== null) void this.#offerUndo(this.#term('outcome_deleted'), key);
-        // The list shows the change before the focus goes to an outcome in it.
-        await this.updateComplete;
-        await list?.focusOutcome(left[Math.max(at, 0)]?.key ?? left.at(-1)?.key ?? null);
-        return;
-      }
-      // The outcome at the place the sidebar chose: a changed one taken from where it was first.
-      const others = before.filter((one) => one.key !== value.outcome.key);
-      const next = withOutcome(others, value.outcome, Math.min(value.at, others.length));
-      const changed = this.#changeOutcomes(
-        withOutcomes(now, next),
-        this.#term(outcome ? 'outcome_undoChanged' : 'outcome_undoAdded'),
-      );
-      if (!changed) {
-        await list?.focusOutcome(key);
-        return;
-      }
-      const place = next.findIndex((one) => one.key === value.outcome.key);
-      const name = outcomeName(value.outcome, look.culture, defaultMessage, new Map(), this.#term);
-      if (!outcome) list?.announce(this.#term('outcome_added', name, place + 1, next.length));
-      else if (place !== at) list?.announce(this.#term('outcome_moved', name, place + 1, next.length));
-      if (this.#published)
-        void this.#getNotifications().then((notifications) =>
-          notifications?.peek('positive', {
-            data: { message: this.#term(outcome ? 'outcome_updatedPublished' : 'outcome_addedPublished') },
-          }),
-        );
-      await this.updateComplete;
-      await list?.focusOutcome(value.outcome.key);
-    } finally {
-      this.#editingOutcome = false;
-    }
-  }
-
   #getNotifications() {
     return this.getContext(UMB_NOTIFICATION_CONTEXT).catch(() => undefined);
   }
@@ -1955,28 +1751,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     }
   }
 
-  // A toast with Undo for the outcome just deleted, closed by the next one: its Undo would take back another. Undo puts
-  // the focus on the outcome back in the list, as the toast it was on is gone.
-  async #offerUndo(message: string, restored: string) {
-    const made = this._view?.state;
-    this.#undoToast?.close();
-    const data: UndoNotificationData = {
-      message,
-      undoLabel: this.localize.term('jfbDesigner_undo'),
-      undo: async () => {
-        if (this._view?.state !== made) return;
-        this.#travel('undo');
-        await this.updateComplete;
-        await this.#list()?.focusOutcome(restored);
-      },
-    };
-    this.#undoToast = (await this.#getNotifications())?.peek('positive', {
-      elementName: UNDO_NOTIFICATION,
-      duration: UNDO_DURATION_MS,
-      data,
-    });
-  }
-
   // ---- The page -----------------------------------------------------------------------------------------------------
 
   #body(
@@ -1989,8 +1763,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     switch (group) {
       case 'submission':
         return this.#submission(definition, look);
-      case 'after':
-        return this.#after(definition, choices, look);
       case 'availability':
         return this.#availability(definition, choices, look);
       case 'protection':
@@ -2012,7 +1784,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     look: CanvasLook,
   ): TemplateResult {
     const open = this._open.has(group);
-    const thanks = word(look, 'thankYou');
     const line = open
       ? nothing
       : html`<span class="summary"
@@ -2022,7 +1793,6 @@ export class FormSettingsViewElement extends UmbLitElement {
             term: this.#term,
             date: this.#date,
             number: this.#number,
-            outcome: (outcome) => outcomeName(outcome, look.culture, thanks, new Map(), this.#term),
           })}</span
         >`;
     return html`<section class="group" data-group=${group}>
@@ -2064,8 +1834,6 @@ export class FormSettingsViewElement extends UmbLitElement {
         return lacking.has('submitLabel') || lacking.has('nextLabel') || lacking.has('backLabel');
       case 'availability':
         return lacking.has('closedMessage');
-      case 'after':
-        return this.#outcomesLackNow;
       default:
         return false;
     }
@@ -2147,11 +1915,6 @@ export class FormSettingsViewElement extends UmbLitElement {
     const settings = definition['settings'] as Readonly<Record<string, unknown>> | undefined;
     const isDefault = this.#isDefault();
     this.#lackingNow = isDefault ? new Set() : settingsLacking(settings, look.culture);
-    this.#outcomesLackNow =
-      !isDefault &&
-      outcomesOf(definition).some((outcome) =>
-        outcomeLacks(outcome as unknown as Readonly<Record<string, unknown>>, look.culture),
-      );
     return html`<div class="page">
         ${this.#toolbar(look)} ${GROUPS.map((group) => this.#group(group, definition, choices, providers, look))}
       </div>

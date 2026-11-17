@@ -1242,10 +1242,15 @@ export const canvasChrome = css`
     outline-color: var(--uui-color-danger);
   }
 
-  .bo-after {
-    display: grid;
-    gap: var(--uui-size-space-5);
-    justify-items: start;
+  /* After sending's outcomes, when the Design view slots them here: under the sheet, as wide as it. */
+  .bo-under {
+    box-sizing: border-box;
+    inline-size: min(100%, calc(var(--bo-width) + 2 * var(--bo-sheet-padding)));
+    margin-inline: auto;
+  }
+
+  .bo-under ::slotted(*) {
+    margin-block-start: var(--uui-size-space-5);
   }
 
   @media (prefers-reduced-motion: reduce) {

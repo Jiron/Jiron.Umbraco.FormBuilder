@@ -903,14 +903,23 @@ describe('the canvas', () => {
     expect(root.activeElement?.classList.contains('bo-add-field')).toBe(true);
   });
 
-  it("shows After sending as visitors see it, the message's markup without anything that runs, with Change", async () => {
-    const { requests, root } = await canvasOf(DEFINITION, { shown: 'after' });
+  it("shows After sending as visitors see it, the message's markup without anything that runs, the outcomes' place under it", async () => {
+    const { root } = await canvasOf(DEFINITION, { shown: 'after' });
     const outcome = must(root.querySelector<HTMLElement>('.jfb-outcome'), 'the outcome');
     expect(outcome.innerHTML).toBe('<p>Thanks, <strong>see you</strong>!</p>');
     expect(outcome.inert).toBe(true);
-    must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
-    // Change opens the outcome shown, in the Settings view (ADR-0185).
-    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'o' }]);
+    // Nothing to press on the sheet: the outcomes are edited beside it or under it (ADR-0256).
+    expect(root.querySelector('.bo-sheet uui-button, .bo-sheet button')).toBeNull();
+    const under = must(root.querySelector<HTMLElement>('.bo-under'), 'the place under the sheet');
+    expect([under.previousElementSibling?.classList.contains('bo-sheet'), under.querySelector('slot')?.name]).toEqual([
+      true,
+      'after',
+    ]);
+    expect(under.style.getPropertyValue('--bo-width')).toBe(
+      root.querySelector<HTMLElement>('.bo-sheet')?.style.getPropertyValue('--bo-width'),
+    );
+    const page = await canvasOf(DEFINITION);
+    expect(page.root.querySelector('.bo-under')).toBeNull();
   });
 
   it('shows the first outcome for every visitor: one whose rule is off counts, one with a rule that may not match does not', async () => {
@@ -925,10 +934,8 @@ describe('the canvas', () => {
         { key: 'o', kind: 'message', message: { '': '<p>Last</p>' } },
       ],
     };
-    const { requests, root } = await canvasOf(definition, { shown: 'after' });
+    const { root } = await canvasOf(definition, { shown: 'after' });
     expect(must(root.querySelector<HTMLElement>('.jfb-outcome'), 'the outcome').innerHTML).toBe('<p>Off</p>');
-    must(root.querySelector('uui-button[label="Change"]'), 'Change').dispatchEvent(new Event('click'));
-    expect(requests).toEqual([{ kind: 'changeOutcome', key: 'off' }]);
   });
 
   it('switches the width, the chosen one pressed, and keeps Undo and Redo in its menu as they can be used', async () => {

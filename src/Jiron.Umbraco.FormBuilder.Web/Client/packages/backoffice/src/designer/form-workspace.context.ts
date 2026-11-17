@@ -634,7 +634,8 @@ export class FormWorkspaceContext
 
   /**
    * Asks for a Fix it, from the publish dialog or from a view that leads to another: the view that makes it takes it up
-   * once it is shown, the Settings view a problem in the form's settings, the Design view any other.
+   * once it is shown, the Settings view a problem in the form's settings, the Actions view one in an action, the Design
+   * view any other.
    */
   requestFix(target: FixTarget) {
     this.#fix.setValue(target);

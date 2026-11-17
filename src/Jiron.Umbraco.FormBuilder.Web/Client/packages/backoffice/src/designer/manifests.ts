@@ -25,7 +25,7 @@ import { FIELD_PICKER_MODAL_ALIAS } from './picker/field-picker.modal.token';
 import { PASTE_QUESTIONS_MODAL_ALIAS } from './picker/paste-questions.modal.token';
 import { PUBLISH_MODAL_ALIAS } from './publish.modal.token';
 import { RULE_BUILDER_MODAL_ALIAS } from './rules/rule-builder.modal.token';
-import { OUTCOME_MODAL_ALIAS } from './settings/outcome.modal.token';
+import { OUTCOME_MODAL_ALIAS } from './outcomes/outcome.modal.token';
 import { RULES_OVERVIEW_MODAL_ALIAS } from './rules/rules-overview.modal.token';
 
 const IN_FORM_WORKSPACE = { alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS };
@@ -126,7 +126,7 @@ export const manifests: UmbExtensionManifest[] = [
     type: 'modal',
     alias: OUTCOME_MODAL_ALIAS,
     name: 'Jiron Form Builder outcome sidebar',
-    element: (() => import('./settings/outcome.modal.element')) as never,
+    element: (() => import('./outcomes/outcome.modal.element')) as never,
   },
   {
     type: 'modal',

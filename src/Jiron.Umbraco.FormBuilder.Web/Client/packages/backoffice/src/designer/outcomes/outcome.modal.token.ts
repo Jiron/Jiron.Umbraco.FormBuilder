@@ -1,6 +1,6 @@
-// The outcome's sidebar's token (ROADMAP 10.1b, ADR-0185): one outcome of After sending, or a new one, edited beside
-// the Settings view and kept by Update or Add; Delete outcome takes it away. Umbraco's large sidebar, so the outcome's
-// live preview has room beside its settings (10.1c, ADR-0187).
+// The outcome's sidebar's token (ROADMAP 10.1b and 22.1, ADR-0185, ADR-0256): one outcome of After sending, or a new
+// one, edited beside the Design view and kept by Update or Add; Delete outcome takes it away. Umbraco's large sidebar,
+// so the outcome's live preview has room beside its settings (10.1c, ADR-0187).
 import { UmbModalToken } from '@umbraco-cms/backoffice/modal';
 import type { FieldTypeResponseModel } from '../../api';
 import type { CheckAsk } from '../check/form-checker';
@@ -18,7 +18,7 @@ export interface OutcomeModalData {
   readonly number: number;
   /** How many outcomes the list has, the one edited among them. */
   readonly count: number;
-  /** The draft as the Settings view holds it. */
+  /** The draft as the designer holds it. */
   readonly definition: DesignDefinition;
   /** The form's key, whose draft the merge tags and the rule's options are read from. */
   readonly form: string;

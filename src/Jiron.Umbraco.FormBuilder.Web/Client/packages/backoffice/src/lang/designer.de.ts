@@ -65,7 +65,6 @@ export default {
     renamePage: 'Umbenennen',
     afterSending: 'Nach dem Senden',
     afterRedirect: 'Nach dem Senden gehen Besucher auf eine andere Seite.',
-    changeOutcome: 'Ändern',
 
     fieldName: (label: string, type: string) => `${label}, Feld vom Typ ${type}`,
     groupName: (name: string) => `${name}, Gruppe`,

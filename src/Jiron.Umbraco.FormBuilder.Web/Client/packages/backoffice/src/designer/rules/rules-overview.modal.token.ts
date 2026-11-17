@@ -24,7 +24,7 @@ export interface RulesOverviewModalData {
   readonly closed?: () => void;
 }
 
-/** Where the overview leads: to an element, to the outcomes in Settings, or to a new rule on the element chosen. */
+/** Where the overview leads: to an element, to an outcome on After sending, or to a new rule on the element chosen. */
 export type RulesOverviewModalValue =
   | { readonly go: 'element'; readonly key: string }
   | { readonly go: 'outcomes'; readonly index: number }

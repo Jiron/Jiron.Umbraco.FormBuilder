@@ -1,7 +1,7 @@
-// The form's outcomes as the Settings view edits them (ROADMAP 10.1b, ADR-0185): the list as the definition holds it,
-// what each outcome gives visitors (a message, a redirect, or a message and then a redirect) and whether a visitor can
-// get it at all, an outcome as its sidebar edits it and as Update writes it back the way the server keeps it, and where
-// a new one goes. Pure.
+// The form's outcomes as After sending edits them (ROADMAP 10.1b and 22.1, ADR-0185, ADR-0256): the list as the
+// definition holds it, what each outcome gives visitors (a message, a redirect, or a message and then a redirect) and
+// whether a visitor can get it at all, an outcome as its sidebar edits it and as Update writes it back the way the
+// server keeps it, and where a new one goes. Pure.
 import type { DesignDefinition, DesignRule, LocalizedText } from '../definition';
 import { textIn } from '../preview/field-models';
 import { plainText } from '../rules/rule-list';
@@ -278,9 +278,8 @@ export function outcomeName(
   const target = targetOf(outcome);
   const where =
     target.kind === 'page' ? (pages.get(target.key) ?? null) : target.kind === 'address' ? target.url : undefined;
-  if (kind === 'message')
-    return term('outcome_name_message', excerptOf(messageLine(outcome, culture) || defaultMessage));
-  const prefix = kind === 'redirect' ? 'outcome_name_redirect' : 'outcome_name_messageThen';
+  if (kind === 'message') return term('name_message', excerptOf(messageLine(outcome, culture) || defaultMessage));
+  const prefix = kind === 'redirect' ? 'name_redirect' : 'name_messageThen';
   if (where === undefined) return term(`${prefix}Nowhere`);
   return where === null ? term(`${prefix}SomePage`) : term(prefix, excerptOf(where));
 }

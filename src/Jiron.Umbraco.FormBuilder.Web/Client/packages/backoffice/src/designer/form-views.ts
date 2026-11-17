@@ -1,5 +1,5 @@
 // The form workspace's views by their path (ROADMAP 9.3a): a move to another view of the open form, as its tab makes
-// one, for the links between them (the outcomes in Settings, a Fix it in Design).
+// one, for the links between them (a Fix it in Design, Settings or Actions).
 import type { FixTarget } from './check/form-check';
 
 /**
@@ -35,7 +35,8 @@ export function goToView(view: string) {
 }
 
 /**
- * Leads a Fix it to the view that makes it: the one it names for the form's own settings, Design for any other. It is
+ * Leads a Fix it to the view that makes it: the one it names for the form's settings or actions, Design for any other
+ * (an outcome's too, ADR-0256). It is
  * handed on (`request`) first, to be taken up once that view is shown, only where that view takes it up.
  */
 export function followFix(fix: FixTarget, request: (fix: FixTarget) => void) {

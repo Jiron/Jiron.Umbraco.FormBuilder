@@ -65,7 +65,6 @@ export default {
     renamePage: 'Rename',
     afterSending: 'After sending',
     afterRedirect: 'After sending, visitors go to another page.',
-    changeOutcome: 'Change',
 
     fieldName: (label: string, type: string) => `${label}, ${String(type).toLowerCase()} field`,
     groupName: (name: string) => `${name}, group`,

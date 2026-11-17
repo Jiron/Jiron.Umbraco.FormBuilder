@@ -7,7 +7,8 @@
 // empty room clears the selection; an insert point between fields and the Add field at the end of a page open the field
 // picker for that place. Fields, groups and pages are dragged by their handles and tabs (ADR-0016, ADR-0169). A field,
 // group or page without a text in the language shown carries a chip (ADR-0170, ADR-0228), a page's describing its tab.
-// The canvas changes nothing itself: it says what was asked in a request, which the Design view does.
+// After sending shows what visitors get, and under it the outcomes, where the Design view slots them there. The canvas
+// changes nothing itself: it says what was asked in a request, which the Design view does.
 import { html, nothing, repeat, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { FieldViewModel } from '@jfb/element/answer';
@@ -35,7 +36,7 @@ import { groupLacks, pageLacks } from '../translations';
 import { withDictionary, type DictionaryLookups } from '../dictionary-texts';
 import { chipsOf } from '../rules/rule-list';
 import { inspectorRuleWords } from '../rules/rule-names';
-import { holdsAlways, outcomesOf, useRuleOf } from '../settings/outcome-model';
+import { holdsAlways, outcomesOf, useRuleOf } from '../outcomes/outcome-model';
 import {
   FIELD_REQUEST,
   moreMenu,
@@ -75,8 +76,6 @@ export type CanvasRequest =
   | { readonly kind: 'undo' }
   | { readonly kind: 'redo' }
   | { readonly kind: 'paste' }
-  /** The outcome the canvas shows, by its key, to change in the Settings view; none where visitors get the default. */
-  | { readonly kind: 'changeOutcome'; readonly key: string | null }
   | { readonly kind: 'shortcuts' }
   | { readonly kind: 'rulesOverview' }
   /** A site's designer action from the row's "...", by its manifest's alias (ADR-0018). */
@@ -944,30 +943,19 @@ export class FormCanvasElement extends UmbLitElement {
 
   // What visitors get after sending: the first outcome for every visitor (its rule off or always met), else the first,
   // else the package's thanks.
-  #after(look: CanvasLook): TemplateResult {
+  #after(look: CanvasLook): Node | TemplateResult {
     const outcomes = outcomesOf(this.#drawn);
     const outcome = outcomes.find((each) => holdsAlways(useRuleOf(each))) ?? outcomes[0];
-    let shown: Node | TemplateResult;
     if (outcome?.kind === 'redirect')
-      shown = html`<p class="bo-empty">${this.localize.term('jfbDesigner_afterRedirect')}</p>`;
-    else {
-      const message = safeHtml(textIn(outcome?.message, look.culture));
-      const element = writeOutcome(document, look.classes, {
-        message: showsText(message) ? message : `<p>${safeHtml(this.#word('thankYou'))}</p>`,
-        isPending: false,
-      });
-      element.removeAttribute('tabindex');
-      element.inert = true;
-      shown = element;
-    }
-    return html`<div class="bo-after">
-      ${shown}
-      <uui-button
-        look="outline"
-        label=${this.localize.term('jfbDesigner_changeOutcome')}
-        @click=${() => this.#ask({ kind: 'changeOutcome', key: outcome?.key ?? null })}
-      ></uui-button>
-    </div>`;
+      return html`<p class="bo-empty">${this.localize.term('jfbDesigner_afterRedirect')}</p>`;
+    const message = safeHtml(textIn(outcome?.message, look.culture));
+    const element = writeOutcome(document, look.classes, {
+      message: showsText(message) ? message : `<p>${safeHtml(this.#word('thankYou'))}</p>`,
+      isPending: false,
+    });
+    element.removeAttribute('tabindex');
+    element.inert = true;
+    return element;
   }
 
   // The one row above the sheet (ADR-0256): the pages at its start, the tools at its end. It keeps the Desktop sheet's
@@ -1221,6 +1209,10 @@ export class FormCanvasElement extends UmbLitElement {
             ${page ? this.#page(page, index, context) : this.#after(look)}
           </div>
         </div>
+        ${
+          // After sending's outcomes, where the Design view slots them under what visitors get (ADR-0256).
+          page ? nothing : html`<div class="bo-under" style="--bo-width: ${width}px"><slot name="after"></slot></div>`
+        }
       </div>`;
   }
 }
