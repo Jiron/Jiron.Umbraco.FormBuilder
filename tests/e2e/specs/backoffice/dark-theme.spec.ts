@@ -3,6 +3,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
+import { addFieldOf, openPicker, pickerClosed, pickerFirstMatch } from '../../support/picker.ts';
 import { openRowActions } from '../../support/tree.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
@@ -10,8 +11,9 @@ import { splitAxe } from '../../support/ux-walk.ts';
 // that meets 4.3:1 on their fill; the section's elements give those labels white, as Umbraco's light and high-contrast
 // themes do, and their own controls use colours that keep 4.5:1. Axe finds nothing inside the section's own elements
 // with every kind of filled button in sight: a folder's, the Design view's toolbar, selected element and footer, the
-// undo toast, the publish dialog's, the duplicate dialog's, the copied actions' links and the recycle bin's. The forms
-// tree's rows are Umbraco's tree, whose open row is Umbraco's colours; the label we put in it takes them.
+// undo toast, the publish dialog's, the duplicate dialog's, the copied actions' links and the recycle bin's, nor in the
+// field picker's marked first match. The forms tree's rows are Umbraco's tree, whose open row is Umbraco's colours; the
+// label we put in it takes them.
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -103,6 +105,14 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   await expect(publish.locator('.said')).not.toBeEmpty();
   expect(await ours(page), 'the publish dialog').toEqual([]);
   await publish.getByRole('button', { name: 'Cancel' }).click();
+
+  // The field picker with a search typed: the match Enter picks is marked, and its name is read on the mark.
+  await openPicker(page, addFieldOf(design));
+  await page.keyboard.type('text');
+  await expect(pickerFirstMatch(page)).toBeVisible();
+  expect(await ours(page), "the field picker's first match").toEqual([]);
+  await page.keyboard.press('Escape');
+  await pickerClosed(page);
 
   // The duplicate dialog, from the form's "..." in the tree.
   await openRowActions(page, name);
