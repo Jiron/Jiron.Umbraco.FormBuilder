@@ -3,7 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, unique } from '../../support/forms-api.ts';
 import { addFieldOf, openPicker, pickerClosed, pickerItem, pickerOf } from '../../support/picker.ts';
-import { openRowActions, treeRow } from '../../support/tree.ts';
+import { openRowActions, shownRow, treeRow } from '../../support/tree.ts';
 import { goToTab } from '../../support/places.ts';
 
 // Templates (ROADMAP 12.1, IA 4, 5 and 7, ADR-0217): a group saved from its "..." on one form's canvas, with the
@@ -238,6 +238,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
   await screen.getByRole('button', { name: 'Use template' }).click();
   await expect(page).toHaveURL(/\/workspace\/jfb-form\/edit\/[0-9a-f-]{36}/);
   await expect(page.getByRole('textbox', { name: 'Form name' })).toHaveValue(renamed);
+  await shownRow(page, renamed);
   await expect(treeRow(page, renamed), 'the tree lists the new form without a reload').toHaveCount(1);
 
   await goToTab(page, 'Library', 'Templates');

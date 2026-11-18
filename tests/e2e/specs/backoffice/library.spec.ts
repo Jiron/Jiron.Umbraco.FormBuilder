@@ -13,7 +13,7 @@ import {
   unique,
 } from '../../support/forms-api.ts';
 import { openSearch } from '../../support/search.ts';
-import { openRowActions, treeRow } from '../../support/tree.ts';
+import { loadedIn, openRowActions, shownRow, treeRow } from '../../support/tree.ts';
 
 // The form library (ROADMAP 9.2, ADR-0166): new forms blank, from the gallery (also from the Overview's checklist) and by import
 // with its notes shown; export; folders made, renamed and deleted; a form moved; a restricted form's duplicate; actions copied
@@ -99,8 +99,9 @@ async function createIn(page: Page, place: string | null, option: string): Promi
   if (place === null) {
     await page.locator('umb-section-sidebar').getByRole('button', { name: 'Create' }).first().click();
   } else {
-    await treeRow(page, place).hover();
-    await treeRow(page, place).getByRole('button', { name: 'Create' }).click();
+    const row = await shownRow(page, place);
+    await row.hover();
+    await row.getByRole('button', { name: 'Create' }).click();
   }
   await page.locator(`umb-entity-create-option-action-list-modal umb-ref-item[name="${option}"]`).click();
 }
@@ -124,7 +125,7 @@ async function expandInTree(page: Page, name: string): Promise<void> {
 /** Chooses an item in Umbraco's tree picker and confirms it. */
 async function pickInTree(page: Page, name: string): Promise<void> {
   const picker = page.locator('umb-tree-picker-modal');
-  await picker.locator(`uui-menu-item[label="${name}"]`).click();
+  await (await loadedIn(picker, picker.locator(`uui-menu-item[label="${name}"]`))).click();
   await picker.getByRole('button', { name: 'Choose' }).click();
 }
 
@@ -221,7 +222,7 @@ test('a long name ends with an ellipsis before the "..." of its row, which a cli
   await blankForm(await apiAs('designer'), name);
   await loginAs('designer');
   await openSection(page);
-  const row = treeRow(page, name).first();
+  const row = await shownRow(page, name);
   await row.evaluate((element) => element.scrollIntoView({ block: 'center' }));
   await row.hover();
   const more = page.getByRole('button', { name: `View actions for '${name}'`, exact: true });
@@ -251,13 +252,13 @@ test('a folder is made, renamed in its own name, and deleted once empty', async 
   const naming = page.locator('jfb-folder-name-modal');
   await naming.getByRole('textbox', { name: 'Name' }).fill(name);
   await naming.getByRole('button', { name: 'Create folder' }).click();
-  await expect(treeRow(page, name)).toBeVisible();
+  await expect(await shownRow(page, name)).toBeVisible();
 
   await treeAction(page, name, 'Rename\u2026');
   await expect(naming.getByRole('textbox', { name: 'Name' })).toHaveValue(name);
   await naming.getByRole('textbox', { name: 'Name' }).fill(renamed);
   await naming.getByRole('button', { name: 'Rename' }).click();
-  await expect(treeRow(page, renamed)).toBeVisible();
+  await expect(await shownRow(page, renamed)).toBeVisible();
 
   // Its screen's name renames it on Enter, and deleting it from there opens the screen of the place it was in.
   const again = `${renamed} B`;
@@ -266,7 +267,7 @@ test('a folder is made, renamed in its own name, and deleted once empty', async 
   await expect(field).toHaveValue(renamed);
   await field.fill(again);
   await field.press('Enter');
-  await expect(treeRow(page, again)).toBeVisible();
+  await expect(await shownRow(page, again)).toBeVisible();
   await expect(treeRow(page, renamed)).toHaveCount(0);
 
   await page
@@ -321,7 +322,7 @@ test("a restricted form's Duplicate dialog says that the copy takes its folder's
   await axeInside(page, 'jfb-duplicate-modal');
   await dialog.getByRole('button', { name: 'Duplicate', exact: true }).click();
   await expect(page).toHaveURL(/section\/jfb-forms\/workspace\/jfb-form\/edit\/[0-9a-f-]{36}$/);
-  await expect(treeRow(page, `${name} (copy)`)).toBeVisible();
+  await expect(await shownRow(page, `${name} (copy)`)).toBeVisible();
 });
 
 test('actions copied to a form without their fields list each reference with a link to fix it', async ({
@@ -418,6 +419,9 @@ test('an import shows what the file holds and the theme this site lacks, then ar
   await sidebar.getByRole('button', { name: 'Import as a new copy' }).click();
   await expect(page).toHaveURL(/section\/jfb-forms\/workspace\/jfb-form\/edit\/[0-9a-f-]{36}$/);
   await expandInTree(page, folder);
+  // The copy sits in the folder; the form the file came from stays at the top level, read as far as its row.
+  await expect(treeRow(page, folder).locator(`uui-menu-item[label="${source}"]`)).toBeVisible();
+  await loadedIn(page.locator('umb-section-sidebar'), treeRow(page, source).nth(1));
   await expect(treeRow(page, source)).toHaveCount(2);
 });
 
@@ -570,9 +574,10 @@ test.describe('the Recycle Bin', () => {
     await axeInside(page, 'jfb-restore-modal');
     await restoring.getByRole('button', { name: 'Restore', exact: true }).click();
     await expect(page.locator('jfb-recycle-bin tr', { hasText: name })).toHaveCount(0);
-    await expect(treeRow(page, name)).toBeVisible();
     // The row and its menu are gone; the keyboard goes on from the bin's heading, not from the page's start.
     await expect(page.locator('jfb-recycle-bin h2')).toBeFocused();
+    // The tree has the form again, read as far as its row, which takes the focus along.
+    await expect(await shownRow(page, name)).toBeVisible();
   });
 
   test('a confirm that names a form shows the name as text, and nothing in it runs', async ({

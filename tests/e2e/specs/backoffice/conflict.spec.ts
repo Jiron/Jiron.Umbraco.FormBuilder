@@ -3,6 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 import { E2E_BASE_URL } from '../../support/paths.ts';
+import { shownRow } from '../../support/tree.ts';
 
 // Conflicts and the guard against leaving unsaved (ROADMAP 10.3c, IA 5.7, ADR-0200). Two people open the same form;
 // the admin saves a new label for Email, then the designer saves a new label for Name. The designer's save is refused
@@ -201,7 +202,7 @@ test('leaving a canvas change unsaved asks first, in the backoffice and when the
   await relabel(page, 'Name', 'Full name');
 
   // Another form in the tree: the demo's contact form.
-  await page.locator('umb-section-sidebar uui-menu-item[label="Contact"]').filter({ visible: true }).first().click();
+  await (await shownRow(page, 'Contact')).click();
   const discard = page.locator('umb-discard-changes-modal, uui-dialog-layout').filter({ hasText: 'Discard' }).first();
   await expect(discard).toBeVisible();
   await discard.getByRole('button', { name: 'Stay' }).click();

@@ -1,6 +1,10 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-/** A row of the forms tree, as shown: the Recycle Bin's item holds its rows while it is closed too. */
+/**
+ * A row of the forms tree, as shown: the Recycle Bin's item holds its rows while it is closed too. The tree shows a
+ * hundred rows of a level at first, and the tests share their host's root: a row at the top level is asked for with
+ * `shownRow`, and this alone serves for a row in a folder, a row the test has just read, and a row that is gone.
+ */
 export const treeRow = (page: Page, name: string): Locator =>
   page.locator(`umb-section-sidebar uui-menu-item[label="${name.replace(/"/g, '\\"')}"]`).filter({ visible: true });
 

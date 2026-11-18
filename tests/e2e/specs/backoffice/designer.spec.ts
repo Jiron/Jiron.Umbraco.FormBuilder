@@ -4,6 +4,7 @@ import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
 import { addFieldOf, openPicker, pick, pickerClosed, pickerOf } from '../../support/picker.ts';
 import { openSearch } from '../../support/search.ts';
+import { shownRow, treeRow } from '../../support/tree.ts';
 
 // The form workspace (ROADMAP 9.3a, ADR-0166, docs/ux/information-architecture.md section 5): it loads a form's draft, renames
 // the form in its header and saves through the API, publishes after asking, asks before leaving unsaved changes, opens a
@@ -15,10 +16,6 @@ import { openSearch } from '../../support/search.ts';
 const SECTION = '/umbraco/section/jfb-forms';
 
 const workspaceOf = (key: string) => `${SECTION}/workspace/jfb-form/edit/${key}`;
-
-/** A form's row in the forms tree, by the name its label carries (a row may hold more text for screen readers). */
-const treeRow = (page: Page, name: string) =>
-  page.locator(`umb-section-sidebar uui-menu-item[label="${name}"]`).filter({ visible: true });
 
 /** The form workspace's name field. */
 const nameField = (page: Page) => page.locator('jfb-form-workspace-editor').getByRole('textbox', { name: 'Form name' });
@@ -70,7 +67,7 @@ test('the header renames a form, Save draft saves it, and Publish\u2026 publishe
   await nameField(page).fill(renamed);
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect.poll(async () => (await formOf(api, key)).name).toBe(renamed);
-  await expect(treeRow(page, renamed)).toBeVisible();
+  await expect(await shownRow(page, renamed)).toBeVisible();
 
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
   const dialog = page.locator('jfb-publish-modal');
@@ -96,7 +93,7 @@ test('leaving a renamed form unsaved asks first, and Stay keeps the change', asy
 
   await nameField(page).fill(`${name} changed`);
   // Another form in the tree: the demo's contact form.
-  await page.locator('umb-section-sidebar uui-menu-item[label="Contact"]').filter({ visible: true }).first().click();
+  await (await shownRow(page, 'Contact')).click();
   const discard = page.locator('umb-discard-changes-modal, uui-dialog-layout').filter({ hasText: 'Discard' }).first();
   await expect(discard).toBeVisible();
   await discard.getByRole('button', { name: 'Stay' }).click();

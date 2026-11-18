@@ -34,6 +34,7 @@ import {
 } from '../../support/form-views.ts';
 import { API, formOf, formWithFields, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { shownRow } from '../../support/tree.ts';
 
 // A form's views, picked first (ROADMAP 22.3, ADR-0258), each check of the step's "Done when" as a test that fails
 // without the feature:
@@ -632,7 +633,7 @@ test('a change on Design outlives a visit to Entries and is saved after it, and 
   await relabel(/^Full name, /, 'Your name');
   await viewTab(page, 'Entries').click();
   await expect(page.locator('jfb-entries-view')).toBeVisible();
-  await page.locator('umb-section-sidebar uui-menu-item[label="Contact"]').filter({ visible: true }).first().click();
+  await (await shownRow(page, 'Contact')).click();
   const discard = page.locator('umb-discard-changes-modal, uui-dialog-layout').filter({ hasText: 'Discard' }).first();
   await expect(discard).toBeVisible();
   await discard.getByRole('button', { name: 'Stay' }).click();

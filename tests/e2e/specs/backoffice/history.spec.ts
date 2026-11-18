@@ -142,9 +142,16 @@ test("a form's History lists its versions, compares two in words, and keeps a pi
   await expect(row(first).locator('uui-icon.pin')).toBeVisible();
   await expect(row(second).locator('.comment-column')).toHaveText('Order numbers for the autumn');
 
-  // Published from the History, a new version is live, which the list shows without a reload.
-  await page.getByRole('button', { name: 'Publish' + String.fromCharCode(0x2026) }).click();
-  await page.locator('jfb-publish-modal').getByRole('button', { name: 'Publish', exact: true }).click();
+  // The History has none of the form's buttons (ADR-0258). Published from Design, a new version is live, which the
+  // list shows when the user comes back to it, without a reload.
+  const publishing = page.getByRole('button', { name: 'Publish' + String.fromCharCode(0x2026) });
+  await expect(publishing).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Design', exact: true }).click();
+  await publishing.click();
+  const dialog = page.locator('jfb-publish-modal');
+  await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('tab', { name: 'History', exact: true }).click();
   await expect(rows).toHaveCount(3);
   const now = (await (await api.get(`${API}/form/${key}/versions`)).json()) as typeof listed;
   const live = now.items[0]?.version.number;

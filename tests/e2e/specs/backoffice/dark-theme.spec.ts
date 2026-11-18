@@ -4,7 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
 import { addFieldOf, openPicker, pickerClosed, pickerFirstMatch } from '../../support/picker.ts';
-import { openRowActions } from '../../support/tree.ts';
+import { loadedIn, openRowActions, shownRow } from '../../support/tree.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section in Umbraco's dark theme (ROADMAP 9.6a, ADR-0182). The theme's filled buttons put their label in a grey
@@ -85,7 +85,7 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   expect(await ours(page), 'the Design view').toEqual([]);
 
   // The open form's row in the tree: unpublished, its label takes the open row's own colour, not the muted one.
-  const label = page.locator(`umb-section-sidebar uui-menu-item[label="${name}"] > .unpublished`).first();
+  const label = (await shownRow(page, name)).locator(':scope > .unpublished');
   const colours = await label.evaluate((span) => [
     getComputedStyle(span).color,
     getComputedStyle(span.parentElement as Element).color,
@@ -130,7 +130,7 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   const copying = page.locator('jfb-copy-actions-modal');
   await copying.getByRole('button', { name: 'Choose a form\u2026' }).click();
   const picker = page.locator('umb-tree-picker-modal');
-  await picker.locator(`uui-menu-item[label="${target}"]`).click();
+  await (await loadedIn(picker, picker.locator(`uui-menu-item[label="${target}"]`))).click();
   await picker.getByRole('button', { name: 'Choose' }).click();
   await copying.getByRole('button', { name: 'Copy 2 actions' }).click();
   await expect(copying.locator('a').first()).toBeVisible();
