@@ -34,7 +34,7 @@ states, for example `entries.html?state=bulk`.
 | [option-list.html](option-list.html) | an option list of each kind, the list of them, and choosing a kind | content, data type, JSON address, list, create, empty; 620 px (default, JSON address) |
 | [theme-editor.html](theme-editor.html) | a theme with its kitchen-sink preview, and the list of themes | dark, list; 620 px (default, preview) |
 | [email-layout.html](email-layout.html) | an email layout with its preview, and the list of layouts | dark, list; 620 px (default, preview) |
-| [global-settings.html](global-settings.html) | Settings › General, Email, Spam protection, Files and Integrations, and Privacy › Data collection | one site, email, no email, test email sent, spam protection, files, integrations, locked setting; 620 px |
+| [global-settings.html](global-settings.html) | Settings › General, Email, Spam protection, Files and Integrations, and Privacy › Data collection | one site, email, no email, test email sent, spam protection, files, integrations, locked setting; 620 px (default, email, with the six tabs folded behind "…") |
 | [permissions.html](permissions.html) | Settings › Access, and Permissions… on a folder | folder, restricting a folder; 620 px (default, folder) |
 | [deliveries.html](deliveries.html) | Activity › Deliveries and a run's details | details, uncertain retry, limited, paused, empty, loading; 620 px |
 | [audit-log.html](audit-log.html) | Activity › Audit log and an event's details | details, no results, loading; 620 px |
@@ -75,7 +75,10 @@ The script's header lists every check. Its tests are in `scripts/tests/wireframe
   `@container workspace (max-width: 899px)`, by the room the workspace has rather than the window. The designer's
   stage is one too (`stage`), so the canvas reflows when it has less room than the chosen width.
 - **[assets/kit.js](assets/kit.js)** adds Umbraco's top bar and the section's sidebar for the role a page shows, draws
-  the icons and switches the states. A page holds only its workspace and its overlays. It also gives the checkboxes,
+  the icons and switches the states. The sidebar starts with the five places the role may open (Inbox with its count,
+  Library, Settings, Privacy, Activity; ADR-0257), then the tree of forms under Umbraco's header. On a tab's page the
+  kit puts the place's tabs the role may open where the header's title stood, with a heading for screen readers
+  ("Settings: Email"), and folds the tabs that do not fit behind "…"; with one tab left, the heading alone. A page holds only its workspace and its overlays. It also gives the checkboxes,
   switches and radios the kit draws as spans the tab stop UUI's own controls have: one each, and one per group of
   radios (the chosen one, or the first).
 - **The canvas, the preview and the template gallery's preview** render the visitor's form with the website theme of
@@ -90,7 +93,7 @@ The attributes a page uses:
 | Attribute | On | Means |
 | --- | --- | --- |
 | `data-role` | `<body>` | the persona of ADR-0013 the page shows: `designer`, `handler`, `viewer`, `admin`, `privacy` or `none`; the sidebar and the top bar follow it |
-| `data-active` | `<body>` | the sidebar item that is open: an item id (`inbox`, `themes`, …), `form:<id>`, `folder:<id>` or `bin` |
+| `data-active` | `<body>` | what is open: a place's tab (`inbox`, `themes`, `general`, …), whose place the sidebar marks and whose tabs the header shows, `form:<id>`, `folder:<id>` or `bin`; an editor opened from a tab (a theme's) names the tab and keeps its own header |
 | `data-role-<state>`, `data-active-<state>` | `<body>` | the same, for one state |
 | `data-state="a b"` | any element | shown only in those states |
 | `data-frame="none"` | `<body>` | without the kit's frame: a full-screen modal of its own (the preview), or a page that draws another Umbraco section itself (the member workspace) |

@@ -249,10 +249,9 @@ a {
   margin-left: auto;
 }
 
-.wf-side__group {
-  margin: var(--wf-space-5) 0 var(--wf-space-2);
-  padding: var(--wf-space-3) var(--wf-space-6) var(--wf-space-1);
-  font-weight: 700;
+/* The five places, before the tree's own header (ADR-0257). */
+.wf-side__places {
+  padding-top: var(--wf-space-4);
 }
 
 .wf-item {
@@ -371,6 +370,30 @@ a {
   border-left: 1px solid var(--uui-color-border);
   color: var(--uui-color-text);
   text-decoration: none;
+}
+
+/* A place's tabs, where a tab's title would stand: Umbraco's tab group, as a workspace's views draw it (an icon over
+   each name, the open one underlined), at the header's start. */
+.wf-tabs--place {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* What a tab's header holds besides its tabs keeps its width; the tabs fold first (kit.js). */
+.wf-head__main > .wf-tabs--place ~ .wf-row {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+.wf-tabs--place .wf-tab {
+  flex: none;
+  white-space: nowrap;
+}
+
+.wf-tabs--place .wf-tab[aria-current='page'] {
+  font-weight: 700;
 }
 
 .wf-tab[aria-current='page']::after {

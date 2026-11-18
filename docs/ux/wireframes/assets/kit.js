@@ -1,12 +1,13 @@
 /*
  * The wireframe kit's frame (step 2.2; design documents only, never shipped). Each page holds only its workspace
- * and overlays; this script adds Umbraco's top bar and the Forms section's sidebar for the role the page shows,
+ * and overlays; this script adds Umbraco's top bar and the Forms section's sidebar for the role the page shows (the
+ * five places first, then the tree of forms; ADR-0257), draws the place's tabs in the header of a tab's page,
  * draws the icons, and switches states.
  *
  * On <body>:
  *   data-role       designer | handler | viewer | admin | privacy | none   (the personas of ADR-0013)
- *   data-active     the sidebar item that is open: an item id (inbox, spam, option-lists, ...), form:<id>,
- *                   folder:<id> or bin
+ *   data-active     what is open: a place's tab (inbox, spam, option-lists, ...), whose place the sidebar marks and
+ *                   whose tabs a header with a title shows in its place, form:<id>, folder:<id> or bin
  *   data-tree       full (default) | empty (a fresh install: no forms, no entries) | seen (no unseen entries)
  *   data-role-<state>, data-active-<state>, data-tree-<state>   the same, for one state only
  * Parts with data-state="a b" show only in those states; ?state=<name> picks the state (default: "default").
@@ -21,22 +22,23 @@
   const active = body.getAttribute(`data-active-${state}`) ?? body.dataset.active ?? '';
   const treeMode = body.getAttribute(`data-tree-${state}`) || body.dataset.tree || 'full';
 
-  // Roles: which sidebar groups and items each persona sees (docs/ux/information-architecture.md, section 11).
+  // The five places and their tabs (ADR-0257), each place shown to a role that may open any of its tabs.
+  const PLACES = [
+    { id: 'inbox', icon: 'inbox', name: 'Inbox', badge: 18, tabs: [['inbox', 'Inbox', 'inbox'], ['spam', 'Spam', 'spam']] },
+    { id: 'library', icon: 'book', name: 'Library', tabs: [['option-lists', 'Option lists', 'list'], ['themes', 'Themes', 'palette'], ['email-layouts', 'Email layouts', 'layout-list'], ['templates', 'Templates', 'layers']] },
+    { id: 'settings', icon: 'settings', name: 'Settings', tabs: [['general', 'General', 'settings'], ['email', 'Email', 'mail'], ['spam-protection', 'Spam protection', 'shield'], ['files', 'Files', 'paperclip'], ['access', 'Access', 'lock'], ['integrations', 'Integrations', 'plug']] },
+    { id: 'privacy', icon: 'key', name: 'Privacy', tabs: [['people', 'People', 'users'], ['retention', 'Retention', 'timer'], ['data-collection', 'Data collection', 'eye']] },
+    { id: 'activity', icon: 'activity', name: 'Activity', tabs: [['deliveries', 'Deliveries', 'send'], ['audit-log', 'Audit log', 'list']] },
+  ];
+  const ALL_TABS = PLACES.flatMap((place) => place.tabs.map(([id]) => id));
+  // Roles: which tabs each persona may open (docs/ux/information-architecture.md, section 11).
   const ROLES = {
-    designer: { name: 'Lea Hoffmann', create: true, entries: false, groups: ['library'] },
-    handler: { name: 'Jonas Berger', create: false, entries: true, groups: ['entries'] },
-    viewer: { name: 'Paul Okafor', create: false, entries: true, groups: ['entries'] },
-    admin: { name: 'Ana Novak', create: true, entries: true, groups: ['entries', 'library', 'settings', 'privacy', 'activity'], sections: 'all' },
-    privacy: { name: 'Mira Sandberg', create: false, entries: true, groups: ['entries', 'privacy-officer'] },
-    none: { name: 'Sam Weller', create: false, entries: false, groups: [], noAccess: true },
-  };
-  const GROUPS = {
-    entries: ['Entries', [['inbox', 'inbox', 'Inbox', 18], ['spam', 'spam', 'Spam']]],
-    library: ['Library', [['option-lists', 'list', 'Option lists'], ['themes', 'palette', 'Themes'], ['email-layouts', 'mail', 'Email layouts'], ['templates', 'layers', 'Templates']]],
-    settings: ['Settings', [['general', 'settings', 'General'], ['email', 'mail', 'Email'], ['spam-protection', 'shield', 'Spam protection'], ['files', 'paperclip', 'Files'], ['access', 'lock', 'Access'], ['integrations', 'plug', 'Integrations']]],
-    privacy: ['Privacy', [['people', 'users', 'People'], ['retention', 'timer', 'Retention'], ['data-collection', 'eye', 'Data collection']]],
-    'privacy-officer': ['Privacy', [['people', 'users', 'People'], ['retention', 'timer', 'Retention']]],
-    activity: ['Activity', [['deliveries', 'send', 'Deliveries'], ['audit-log', 'activity', 'Audit log']]],
+    designer: { name: 'Lea Hoffmann', create: true, entries: false, tabs: ['option-lists', 'themes', 'email-layouts', 'templates'] },
+    handler: { name: 'Jonas Berger', create: false, entries: true, tabs: ['inbox', 'spam'] },
+    viewer: { name: 'Paul Okafor', create: false, entries: true, tabs: ['inbox', 'spam'] },
+    admin: { name: 'Ana Novak', create: true, entries: true, tabs: ALL_TABS, sections: 'all' },
+    privacy: { name: 'Mira Sandberg', create: false, entries: true, tabs: ['inbox', 'spam', 'people', 'retention'] },
+    none: { name: 'Sam Weller', create: false, entries: false, tabs: [], noAccess: true },
   };
   // The forms tree every page shares: folders first, then forms, each by name; the Recycle Bin last.
   const FULL_TREE = [
@@ -75,22 +77,28 @@
     return html;
   }
 
+  // A place's tabs the role may open, and the place the open page belongs to.
+  const tabsOf = (place) => place.tabs.filter(([id]) => r.tabs.includes(id));
+  const openPlace = PLACES.find((place) => place.tabs.some(([id]) => id === active));
+
+  // The places first, one list without a heading, each leading to its first tab the role may open; what grows (the
+  // tree) comes after what is fixed (ADR-0254's fourth rule).
+  function places() {
+    const links = PLACES.filter((place) => tabsOf(place).length > 0).map((place) => {
+      const b = place.badge && unseenShown && r.entries ? `<span class="wf-item__end"><span class="wf-badge">${place.badge}</span><span class="wf-sr">unseen</span></span>` : '';
+      return `<a class="wf-item" href="#"${place === openPlace ? ' aria-current="page"' : ''}>${icon(place.icon)}<span>${place.name}</span>${b}</a>`;
+    }).join('');
+    return links ? `<nav class="wf-side__places" aria-label="Form Builder">${links}</nav>` : '';
+  }
+
   function sidebar() {
     const head = `<div class="wf-side__head"><span>Forms</span>${r.noAccess ? '' : `<span class="wf-side__head-actions"><button class="wf-btn wf-btn--icon wf-btn--small wf-btn--text" aria-label="More actions for Forms">${icon('more')}</button>${r.create ? `<button class="wf-btn wf-btn--icon wf-btn--small wf-btn--text" aria-label="Create in Forms">${icon('plus')}</button>` : ''}</span>`}</div>`;
     if (r.noAccess) {
-      return `${head}<p class="wf-muted" style="padding: 0 var(--wf-space-6)">You can't see any forms yet. An administrator can give your user group access in Settings › Access.</p>`;
+      return `${places()}${head}<p class="wf-muted" style="padding: 0 var(--wf-space-6)">You can't see any forms yet. An administrator can give your user group access in Settings › Access.</p>`;
     }
     const tree = TREE.map((n) => treeItem(n, 0)).join('')
       + `<a class="wf-item wf-item--tree" style="--depth:0" href="#"${active === 'bin' ? ' aria-current="page"' : ''}>${icon('chevron-right', 'wf-item__chevron')}${icon('trash')}<span>Recycle Bin</span></a>`;
-    const groups = r.groups.map((g) => {
-      const [title, items] = GROUPS[g];
-      const links = items.map(([id, ic, label, badge]) => {
-        const b = badge && unseenShown && r.entries ? `<span class="wf-item__end"><span class="wf-badge">${badge}</span><span class="wf-sr">unseen</span></span>` : '';
-        return `<a class="wf-item" href="#"${active === id ? ' aria-current="page"' : ''}>${icon(ic)}<span>${label}</span>${b}</a>`;
-      }).join('');
-      return `<div class="wf-side__group">${title}</div>${links}`;
-    }).join('');
-    return `${head}<nav aria-label="Forms">${tree}${groups}</nav>`;
+    return `${places()}${head}<nav aria-label="Forms">${tree}</nav>`;
   }
 
   function topbar() {
@@ -131,6 +139,33 @@
   if (sectionsNav && window.innerWidth < 960) {
     for (const a of sectionsNav.querySelectorAll('.wf-top__section:not([aria-current])')) a.remove();
     sectionsNav.insertAdjacentHTML('beforeend', `<a class="wf-top__section" href="#" aria-label="More sections">${icon('more', 'wf-i--20')}</a>`);
+  }
+
+  // A tab's page: its header's title gives way to the place's tabs the role may open, a heading for screen readers
+  // naming the place and the tab; with one tab, the heading alone. A header without a title (an editor opened from a
+  // tab, such as a theme's) keeps what it has.
+  if (openPlace) {
+    const tabs = tabsOf(openPlace);
+    const tab = openPlace.tabs.find(([id]) => id === active);
+    for (const head of document.querySelectorAll('.wf-head')) {
+      const titles = head.querySelectorAll('h1.wf-head__title');
+      if (titles.length === 0) continue;
+      const main = head.querySelector('.wf-head__main');
+      for (const title of titles) title.remove();
+      const row = tabs.length > 1
+        ? `<nav class="wf-tabs wf-tabs--place" aria-label="${esc(openPlace.name)}">${tabs.map(([id, name, ic]) => `<a class="wf-tab" href="#"${id === active ? ' aria-current="page"' : ''}>${icon(ic)}<span>${esc(name)}</span></a>`).join('')}</nav>`
+        : '';
+      main.insertAdjacentHTML('afterbegin', `<h1 class="wf-sr">${esc(openPlace.name)}: ${esc(tab[1])}</h1>${row}`);
+      // As Umbraco's tab group does, the tabs that do not fit go behind a "…" at the row's end, never the open one.
+      const nav = main.querySelector('.wf-tabs--place');
+      if (nav && head.offsetParent && nav.scrollWidth > nav.clientWidth + 1) {
+        nav.insertAdjacentHTML('beforeend', `<a class="wf-tab" href="#" aria-label="More tabs" data-wf-more>${icon('more', 'wf-i--20')}</a>`);
+        for (const each of [...nav.querySelectorAll('.wf-tab:not([data-wf-more])')].reverse()) {
+          if (nav.scrollWidth <= nav.clientWidth + 1) break;
+          if (each.getAttribute('aria-current') !== 'page') each.style.display = 'none';
+        }
+      }
+    }
   }
 
   // Umbraco folds a workspace's view tabs into "…" when the header runs out of room: the last views first, never
