@@ -3407,7 +3407,7 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - the walk reaches every screen with nothing of the section's own from axe, and no screen shows more words than before; the top tasks are counted again;
     - the focused checks pass, with the size check; `v18/main` has the step merged in, and its checks pass there.
 
-- [ ] **22.3 A form's views: its settings by group, an action's kind first, the form's buttons where they apply** (the owner, 2026-11-16, ADR-0254)
+- [x] **22.3 A form's views: its settings by group, an action's kind first, the form's buttons where they apply** (the owner, 2026-11-16, ADR-0254) (2026-11-18, b90da088)
   - The owner: "I don't want to be bombarded with everything at once. I just want to have to pick something, and then I go to that place, and then in that place I have the more detailed stuff".
   - **A form's Settings (E1):** the view shows its groups to pick from, each with the line a closed group has today (what is set, and its problems counted), and then the group picked, alone. Six groups since 22.1: Submission, Availability, Spam protection, Privacy, Appearance, Developer. "Fix it" opens the group with the focus on its setting.
   - **One level of folding (the fifth rule)** in a form's Settings, the inspector and an action's sheet, which draw their settings the same way: where a section that opens holds "More options" today, the wireframe decides which of the two stays, and §4.13's "at most seven settings" is kept by it.
