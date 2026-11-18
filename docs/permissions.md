@@ -23,7 +23,9 @@ A user group needs two things before its users can work in Form Builder:
 2. **Permissions** in Form Builder's **Settings › Access**.
 
 Settings › Access lists every group that lacks the section, with a link to each. A user who has the section but no
-permission sees an empty section that says an administrator can give their group access.
+permission sees an empty section that says an administrator can give their group access. Everyone else sees, at the
+top of the section's sidebar, only the places they may open (Inbox, Library, Settings, Privacy, Activity), and in each
+only the tabs they may open; an address of a screen they may not open is refused as before.
 
 **Administrators hold every permission everywhere,** restricted folders included, because they could grant themselves
 any.

@@ -45,12 +45,12 @@ paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape i
 ```text
 Form Builder                the section in Umbraco's top bar (ADR-0171)
 ├── Overview                the start page: setup checklist, health, recent entries, forms at a glance
-├── the forms tree          under Umbraco's sidebar header "Forms" with "+" and "…"; the Recycle Bin last
-├── Entries                 Inbox · Spam
-├── Library                 Option lists · Themes · Email layouts · Templates
-├── Settings                General · Email · Spam protection · Files · Access · Integrations
-├── Privacy                 People · Retention · Data collection
-└── Activity                Deliveries · Audit log
+├── Inbox                   tabs: Inbox · Spam
+├── Library                 tabs: Option lists · Themes · Email layouts · Templates
+├── Settings                tabs: General · Email · Spam protection · Files · Access · Integrations
+├── Privacy                 tabs: People · Retention · Data collection
+├── Activity                tabs: Deliveries · Audit log
+└── the forms tree          under Umbraco's sidebar header "Forms" with "+" and "…"; the Recycle Bin last
 ```
 
 Outside the section: a **Forms** tab in Umbraco's header search, the form picker and the form block in the content
@@ -61,11 +61,15 @@ documents of this repository say "the Forms section", they mean this section.
 
 ### The sidebar
 
-| Group | Item | Opens | Shown to | German label |
+The sidebar starts with five **places**, without a heading, one navigation list named for screen readers; the forms tree
+follows under Umbraco's own header (ADR-0257). What grows comes after what is fixed, so with fifty forms the five are
+still on the screen. A place shows to a user who may open any of its tabs, and leads to the first of them the user may
+open.
+
+| Place | Tab | Opens | Shown to | German label |
 | --- | --- | --- | --- | --- |
-| (the sidebar header) | the forms tree | folders and forms, then the Recycle Bin | everyone in the section; it lists only the forms and folders they hold a permission on | – |
-| Entries | Inbox | the entries of every form, unseen first | `viewEntries` on any form | Posteingang |
-| Entries | Spam | the entries in Spam, of every form | `viewEntries` on any form | Spam |
+| Inbox | Inbox | the entries of every form, unseen first | `viewEntries` on any form | Posteingang |
+| Inbox | Spam | the entries in Spam, of every form | `viewEntries` on any form | Spam |
 | Library | Option lists | the list of reusable option lists | `manageLibrary` | Optionslisten |
 | Library | Themes | the list of themes | `manageLibrary` | Themes |
 | Library | Email layouts | the list of email layouts | `manageLibrary` | E-Mail-Layouts |
@@ -81,12 +85,27 @@ documents of this repository say "the Forms section", they mean this section.
 | Privacy | Data collection | IP handling, sensitive-field defaults, captcha consent mode, the insights switch | `manageSettings` | Datenerfassung |
 | Activity | Deliveries | every email and webhook run, with retry | `manageSettings` | Zustellungen |
 | Activity | Audit log | who did what, with filters and export | `manageSettings` | Protokoll |
+| (the sidebar header) | the forms tree | folders and forms, then the Recycle Bin | everyone in the section; it lists only the forms and folders they hold a permission on | – |
 
+The German names of the places: Posteingang, Bibliothek, Einstellungen, Datenschutz, Aktivität.
+
+- **Each tab is a screen of its own,** a workspace at the address it always had (`workspace/jfb-settings-email`), so
+  links in mails already sent, in the Overview and in bookmarks stay good. Each screen shows its place's tabs in its
+  header, where a headline would stand: Umbraco's tab group, a link to each tab the user may open, the open one
+  active, the tabs that don't fit behind "…". With one tab left for the user, the row is gone. The sidebar names the
+  place and the tab names the screen, so no screen has a visible title; a heading for screen readers names both
+  ("Settings: Email"; the name once where the tab has the place's, "Inbox").
+- **A place is marked as the open one** on each of its tabs and on the editors they open (an option list, a theme, an
+  email layout). An entry opened on its own marks none, as it may come from the Inbox or from a form.
+- **A site's or an add-on's tab:** a menu item that names the Settings menu (`Jiron.FormBuilder.Menu.Settings`) is a
+  tab after Settings' own, shown by its own conditions, and Settings is marked on its screen; the AI add-on's Settings ›
+  AI is one (docs/extending.md).
+- **Save saves the open tab** and names what it saves ("Save email settings"), and leaving a tab with changes not
+  saved asks first, as leaving the screen does (copy.md).
 - **The sidebar header** is Umbraco's own: "Forms", with the root's "+" (create) and "…", where Umbraco users look for
   them. With the top bar, it is the second place the section's name appears; the Overview has no title, so nothing
   adds a third (ADR-0021).
-- **A group heading** appears only when the user sees at least one of its items.
-- **The Inbox item** carries the unseen count as its badge; the Inbox screen doesn't repeat it. Spam has no badge, so
+- **The Inbox place** carries the unseen count as its badge; the Inbox screen doesn't repeat it. Spam has no badge, so
   it never draws attention to itself.
 
 ## 2. Overview (the start page)
@@ -758,9 +777,10 @@ A large export continues in the background; a notification links to the file whe
 
 ## 7. Library
 
-Each item opens a list. A row opens the item's own workspace, with its name in the header and **Save** in the footer.
+Each tab of the Library place is a list. A row opens the item's own workspace, with its name in the header, **Save** in
+the footer and its back arrow to its tab; the Library place stays marked there (ADR-0257).
 
-| Item | The list | The item's workspace | Header and "…" |
+| Tab | The list | The item's workspace | Header and "…" |
 | --- | --- | --- | --- |
 | Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, pages, a data type's values, a JSON address, an upload, countries, or a standard list) | the editor for its kind with a live preview of the options, CSV or TXT upload, and, for a JSON address, how long fetched options are kept, with Fetch now | "Used by 2 forms" · "…": Duplicate · Delete… |
 | Themes | name, a swatch, and "Default" on the default theme, unless its name already says so (Site default); primary **Create theme**; "…": Import a theme… | colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under "More options", beside a live kitchen-sink form, with each colour's contrast check under it | "Used by 5 forms" · "…": Duplicate · Export · Delete… |
@@ -776,18 +796,19 @@ Each item opens a list. A row opens the item's own workspace, with its name in t
 
 ## 8. Settings
 
-Every settings item opens one screen:
+Every tab of the Settings place is one screen, with the place's tabs in its header (section 1):
 
 - groups of at most seven settings before "More options", each setting with its help text below it;
 - a setting locked by host configuration shows the key that locks it (ADR-0008);
-- **Save** in the footer.
+- **Save** in the footer, named for what it saves: Save general settings, Save email settings, Save spam protection
+  settings, Save file settings, Save access, Save integration settings (copy.md).
 
 **General and Email** start with a site switch, set to "All sites", for the fields that can differ per site. A field
 with its own value for the chosen site says so, and offers to use the value for all sites again.
 
-| Item | What it holds | Primary | Visible secondary |
+| Tab | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
-| General | default theme, which fields get a mark (the optional or the required ones), default labels, new-form defaults, how long a form's History keeps draft saves (built in 10.3b: a History box with Keep draft saves for … days and Always keep each form's newest … draft saves, ADR-0198; no title of its own, as the sidebar names it); per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch (from 12.4a, with the first setting a site can have of its own) |
+| General | default theme, which fields get a mark (the optional or the required ones), default labels, new-form defaults, how long a form's History keeps draft saves (built in 10.3b: a History box with Keep draft saves for … days and Always keep each form's newest … draft saves, ADR-0198; no title of its own, as its place and tab name it); per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch (from 12.4a, with the first setting a site can have of its own) |
 | Email | sender name and address, default layout, team recipients for system notices, team addresses that entries may be forwarded to | **Save** | site switch · Send test email (to the user who sends it), offered only while Umbraco can send mail; until then one line at the top says so and names the key that sets up sending |
 | Spam protection | default level, each choice with its provider's key status (a captcha without keys can't be chosen, and names the key that adds them); content checks (blocked words, blocked email domains, the most links an entry may hold); blocked address ranges, compared when an entry arrives and never stored. A blocked email domain is enough to send an entry to Spam; blocked words and extra links add up (at the default strictness, three blocked words, or two with too many links). Entries are never refused for what they say (D14). A form sets only how strict its checks are, and its Spam protection group says where the words are kept. | **Save** | – |
 | Files | allowed type groups; the largest size any file field may allow; the scanner and storage status. Each file field sets its own limit, up to this one, in its Essentials, whose help names this limit and, for users who may change it, opens it in a sidebar. | **Save** | – |
@@ -796,7 +817,10 @@ with its own value for the chosen site says so, and offers to use the value for 
 
 ## 9. Privacy and Activity
 
-| Item | What it holds | Primary | Visible secondary |
+The Privacy place's tabs (People, Retention, Data collection) and the Activity place's (Deliveries, Audit log):
+Retention's Save is **Save retention settings**, Data collection's **Save data collection settings**.
+
+| Tab | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
 | People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). | **Find** | after a search: Export everything (a ZIP of JSON and files) · Set legal hold… · Erase… |
 | Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press. While the days are being changed, it counts with the values not yet saved. | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
@@ -833,7 +857,10 @@ with its own value for the chosen site says so, and offers to use the value for 
 ## 11. Who sees what
 
 The personas are those of ADR-0013, each granted globally. Grants per folder and form, and restricted folders, narrow
-or widen this per form. "–" means the screen or action is not shown.
+or widen this per form. "–" means the screen or action is not shown. A place shows in the sidebar to whoever may open
+one of its tabs, and its row of tabs holds only those: the designer sees Library; the entry handler and the viewer
+Inbox (Inbox · Spam); the privacy officer Inbox and Privacy (People · Retention); the administrator all five, every
+tab; no access none.
 
 | Screen or action | Designer | Entry handler | Viewer | Administrator | Privacy officer | No access |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -843,7 +870,7 @@ or widen this per form. "–" means the screen or action is not shown.
 | Create, duplicate, move, trash and import forms; folders | yes | – | – | yes | – | – |
 | Form views Design, Settings and History; Preview, Save draft, Publish | yes | – | – | yes | – | – |
 | Form view Actions | change and test² | – | – | change and test | – | – |
-| Form views Entries and Insights; Inbox; Spam | – | yes | yes | yes | yes | – |
+| Form views Entries and Insights; the Inbox and Spam | – | yes | yes | yes | yes | – |
 | Email me a summary | – | yes | yes | yes | yes | – |
 | Approve, reject, spam, not spam, notes, edit answers, forward | – | yes | – | yes | – | – |
 | Reveal sensitive values | – | – | – | yes | yes | – |

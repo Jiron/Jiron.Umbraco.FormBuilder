@@ -20,17 +20,27 @@ field types, rules, actions and entries each have a page of their own; this page
 ## The section
 
 Choose **Form Builder** in the backoffice's top bar. What you see depends on your user group's permissions
-([permissions.md](permissions.md)); a heading in the sidebar appears only when you may open something below it.
+([permissions.md](permissions.md)): the sidebar shows only the places you may open, and each place only its tabs you
+may open.
 
 - **Overview,** the start page: the setup checklist while a site is new, the health of the installation, the latest
   entries and how each form is doing.
-- **Forms:** your folders and forms, with the **Recycle Bin** last. A form that isn't published is shown muted, a
-  restricted folder or form shows a lock, and a form with entries you haven't seen shows a dot.
-- **Entries:** the **Inbox**, with every form's new entries in one list, and **Spam** ([entries-and-exports.md](entries-and-exports.md)).
-- **Library:** option lists, themes, email layouts and templates that every form can use.
-- **Settings, Privacy and Activity,** for users whose group may manage settings or use the privacy tools
-  ([permissions.md](permissions.md)): the site's defaults, access, retention, the privacy tools, the delivery log and the
-  audit log.
+- **Five places** come first in the sidebar. Each opens a screen with tabs along its top, on the first tab you may
+  open:
+  - **Inbox:** the **Inbox**, with every form's new entries in one list, its badge counting the ones you haven't seen,
+    and **Spam** ([entries-and-exports.md](entries-and-exports.md));
+  - **Library:** option lists, themes, email layouts and templates that every form can use;
+  - **Settings:** General, Email, Spam protection, Files, Access and Integrations, the site's defaults and who may do
+    what;
+  - **Privacy:** People, Retention and Data collection;
+  - **Activity:** Deliveries and the Audit log.
+
+  Settings, Privacy and Activity are for users whose group may manage settings or use the privacy tools
+  ([permissions.md](permissions.md)). Each tab's Save names what it saves ("Save email settings"), and leaving a tab
+  with changes not saved asks first.
+- **Forms:** your folders and forms, under the Forms heading, with the **Recycle Bin** last. A form that isn't
+  published is shown muted, a restricted folder or form shows a lock, and a form with entries you haven't seen shows a
+  dot.
 
 Umbraco's search in the header has a **Forms** tab too. It finds forms by name or alias, and fields of every form by
 label or alias; choosing a field opens its form with that field selected.

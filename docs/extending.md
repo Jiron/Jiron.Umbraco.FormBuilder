@@ -568,10 +568,51 @@ strings:
 | `JfbSectionPathname` | `jfb-forms`, the section's address: a form opens at `section/jfb-forms/workspace/jfb-form/edit/<key>` |
 | `JfbFormWorkspaceAlias`, `JfbFormEntityType` | `Jiron.FormBuilder.Workspace.Form` and `jfb-form`, the form's workspace and entity type, for views on it (below) |
 | `JfbPermission` | the permissions by the names the conditions and the management API use, such as `viewEntries` |
-| `JfbSettingsMenuAlias` | the menu of the sidebar's Settings group, for a `menuItem` of your own settings screen |
+| `JfbSettingsMenuAlias` | the menu of the Settings place: a `menuItem` that names it is a tab of your own after Settings' (below) |
 | `JfbPermissionConditionConfig` | the condition `Jiron.FormBuilder.Condition.Permission`, which shows an extension to a user who holds any of the permissions of each need, globally or, with `anywhere`, on any folder or form |
 
 A condition is a convenience of the screens; your endpoints still check the user's permissions themselves.
+
+### A tab of your own in Settings
+
+Settings is one of the five places at the top of the section's sidebar, a screen with tabs along its top. A `menuItem`
+that names the Settings menu in `meta.menus` is a tab after Settings' own, shown by its own conditions, and its
+`workspace` (of the same entity type) is the tab's screen; Settings is marked as the open place there. Put the place's
+tabs in your screen's header with the element Jiron Form Builder defines, by its tag, with your menu item's alias:
+
+```ts
+const manifests = [
+  {
+    type: 'menuItem',
+    alias: 'My.Shop.SettingsTab',
+    name: 'Shop settings tab',
+    meta: {
+      label: 'Shop',
+      icon: 'icon-cart',
+      entityType: 'my-shop-settings',
+      menus: ['Jiron.FormBuilder.Menu.Settings'],
+    },
+    conditions: [{ alias: 'Jiron.FormBuilder.Condition.Permission', needs: [{ anyOf: ['manageSettings'] }] }],
+  },
+  {
+    type: 'workspace',
+    alias: 'My.Shop.SettingsScreen',
+    name: 'Shop settings',
+    element: () => import('./shop-settings.js'),
+    meta: { entityType: 'my-shop-settings' },
+  },
+];
+```
+
+```html
+<umb-body-layout>
+  <jfb-place-tabs tab="My.Shop.SettingsTab"></jfb-place-tabs>
+  ...
+</umb-body-layout>
+```
+
+The AI add-on's Settings › AI is made this way. Name your Save for what it saves, as Settings' own tabs do ("Save shop
+settings").
 
 ### Views on the form workspace
 
