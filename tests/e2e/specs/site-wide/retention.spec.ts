@@ -4,6 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { goToTab, tabsShown } from '../../support/places.ts';
 
 // Privacy > Retention (ROADMAP 13.1, IA 9, ADR-0222): an administrator changes the days of a state and sees "What will
 // be deleted" follow it before anything is saved, saves, and finds the days after a reload; a privacy officer reads the
@@ -45,7 +46,7 @@ test('changing the days of a state, "What will be deleted" follows before the sa
     await loginAs('admin');
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(SECTION);
-    await page.locator('uui-menu-item[label="Retention"]').first().click();
+    await goToTab(page, 'Privacy', 'Retention');
     const screen = page.locator('jfb-retention-screen');
     const row = screen.locator('tbody tr', { hasText: name });
     await expect(screen.locator('.total')).toBeVisible({ timeout: 60_000 });
@@ -78,7 +79,7 @@ test('changing the days of a state, "What will be deleted" follows before the sa
     await expect(row).toHaveCount(1);
     await axeInside(page, 'jfb-retention-screen');
 
-    await screen.getByRole('button', { name: 'Save', exact: true }).click();
+    await screen.getByRole('button', { name: 'Save retention settings', exact: true }).click();
     await expect(
       page.locator('uui-toast-notification').filter({ hasText: 'The settings are saved.' }).last(),
     ).toBeVisible();
@@ -96,13 +97,13 @@ test('changing the days of a state, "What will be deleted" follows before the sa
       await loginAs('privacyOfficer', second);
       await second.setViewportSize({ width: 1440, height: 900 });
       await second.goto(SECTION);
-      await second.locator('uui-menu-item[label="Retention"]').first().click();
+      await goToTab(second, 'Privacy', 'Retention');
       const officer = second.locator('jfb-retention-screen');
       await expect(officer.locator('tbody tr', { hasText: name })).toHaveCount(1, { timeout: 60_000 });
       await expect(officer.getByText('Changing retention needs the "Manage settings" permission.')).toBeVisible();
       await expect(officer.locator('input#days-submitted')).toHaveCount(0);
-      await expect(officer.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
-      await expect(second.locator('uui-menu-item[label="Data collection"]')).toHaveCount(0);
+      await expect(officer.getByRole('button', { name: 'Save retention settings', exact: true })).toHaveCount(0);
+      expect(await tabsShown(second), 'no Data collection').toEqual(['People', 'Retention']);
       await axeInside(second, 'jfb-retention-screen');
     } finally {
       await elsewhere.close();

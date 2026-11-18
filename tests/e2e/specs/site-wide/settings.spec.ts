@@ -3,6 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API } from '../../support/forms-api.ts';
 import { headerOf } from '../../support/mail.ts';
+import { goToTab } from '../../support/places.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 
 // The global settings screens (ROADMAP 12.4a, IA 8 and 9, ADR-0218), one journey per section: an administrator opens
@@ -44,10 +45,16 @@ async function restore(
   expect(kept.ok(), await kept.text()).toBe(true);
 }
 
-/** Opens a settings screen from the sidebar, by its item's label, and waits for its first box; the item's click counts. */
-async function open(page: Page, label: string, tag: string, clicks = new ClickCounter()): Promise<Locator> {
+/** Opens a settings screen by its place and tab, and waits for its first box; the place's and the tab's clicks count. */
+async function open(
+  page: Page,
+  place: string,
+  tab: string,
+  tag: string,
+  clicks = new ClickCounter(),
+): Promise<Locator> {
   await page.goto(SECTION);
-  await clicks.click(page.locator(`umb-menu-item-layout[label="${label}"], uui-menu-item[label="${label}"]`).first());
+  await goToTab(page, place, tab, (target) => clicks.click(target));
   const screen = page.locator(tag);
   await expect(screen.locator('uui-box[headline]').first()).toBeVisible({ timeout: 60_000 });
   return screen;
@@ -56,7 +63,20 @@ async function open(page: Page, label: string, tag: string, clicks = new ClickCo
 const saved = (page: Page) =>
   expect(page.locator('uui-toast-notification').filter({ hasText: 'The settings are saved.' }).last()).toBeVisible();
 
-const saveIn = (screen: Locator) => screen.getByRole('button', { name: 'Save', exact: true }).click();
+/** Each screen's Save, named for what it saves (ADR-0257). */
+const SAVES: Readonly<Record<string, string>> = {
+  'jfb-settings-general': 'Save general settings',
+  'jfb-settings-email': 'Save email settings',
+  'jfb-settings-protection': 'Save spam protection settings',
+  'jfb-settings-files': 'Save file settings',
+  'jfb-settings-integrations': 'Save integration settings',
+  'jfb-settings-privacy': 'Save data collection settings',
+};
+
+const saveIn = async (screen: Locator) => {
+  const tag = await screen.evaluate((element) => element.localName);
+  await screen.getByRole('button', { name: SAVES[tag], exact: true }).click();
+};
 
 test.describe.configure({ mode: 'serial' });
 
@@ -72,7 +92,7 @@ test('Settings \u203a General keeps draft saves, picks the time zone from the li
   expect(site, 'the demo has a site').toBeDefined();
   const siteBefore = await read(api, 'general', site!.key);
   await loginAs('admin');
-  const screen = await open(page, 'General', 'jfb-settings-general');
+  const screen = await open(page, 'Settings', 'General', 'jfb-settings-general');
   await expect(page).toHaveURL(/workspace\/jfb-settings-general$/);
 
   const days = screen.getByRole('textbox', { name: 'Keep draft saves for' });
@@ -146,7 +166,7 @@ test('Settings \u203a Email saves its sender and sends a test mail of it to the 
   // The administrator's top tasks 1 and 2 (docs/ux/top-tasks.md, ROADMAP 16.6): the sender is one click away, the
   // name and Save being the task's own, and a test mail one more.
   const clicks = new ClickCounter();
-  const screen = await open(page, 'Email', 'jfb-settings-email', clicks);
+  const screen = await open(page, 'Settings', 'Email', 'jfb-settings-email', clicks);
   expectTaskClicks(clicks, 'Administrator', 2);
   await axeInside(page, 'jfb-settings-email');
   const admin = accountOf('admin');
@@ -175,7 +195,7 @@ test('Settings \u203a Spam protection names the keys a captcha lacks and the key
   const api = await apiAs('admin');
   const before = await read(api, 'protection');
   await loginAs('admin');
-  const screen = await open(page, 'Spam protection', 'jfb-settings-protection');
+  const screen = await open(page, 'Settings', 'Spam protection', 'jfb-settings-protection');
   await axeInside(page, 'jfb-settings-protection');
 
   try {
@@ -219,7 +239,7 @@ test("Settings \u203a Files keeps its types and its largest file under the host'
   const api = await apiAs('admin');
   const before = await read(api, 'files');
   await loginAs('admin');
-  const screen = await open(page, 'Files', 'jfb-settings-files');
+  const screen = await open(page, 'Settings', 'Files', 'jfb-settings-files');
   await axeInside(page, 'jfb-settings-files');
   const size = screen.getByRole('textbox', { name: 'Largest file' });
 
@@ -254,7 +274,7 @@ test('Settings \u203a Integrations takes a secret only as a reference, and says 
   const api = await apiAs('admin');
   const before = await read(api, 'integrations');
   await loginAs('admin');
-  const screen = await open(page, 'Integrations', 'jfb-settings-integrations');
+  const screen = await open(page, 'Settings', 'Integrations', 'jfb-settings-integrations');
   await axeInside(page, 'jfb-settings-integrations');
   const secret = screen.getByRole('textbox', { name: 'Signing secret' });
 
@@ -280,7 +300,7 @@ test('Privacy \u203a Data collection saves the insights switch', async ({ page, 
   const api = await apiAs('admin');
   const before = await read(api, 'privacy');
   await loginAs('admin');
-  const screen = await open(page, 'Data collection', 'jfb-settings-privacy');
+  const screen = await open(page, 'Privacy', 'Data collection', 'jfb-settings-privacy');
   await axeInside(page, 'jfb-settings-privacy');
   const insights = screen.getByRole('switch', { name: 'Count what visitors do with the forms' });
 

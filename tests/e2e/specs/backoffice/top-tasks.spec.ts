@@ -6,6 +6,7 @@ import { STUB_URL } from '../../support/paths.ts';
 import { addFieldOf, pickerClosed, pickerItem, pickerSearch } from '../../support/picker.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { shownRow } from '../../support/tree.ts';
+import { goToPlace, goToTab, type Clicker } from '../../support/places.ts';
 
 // The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer and
 // the two that the designer's redraw changed (7 and 10, ROADMAP 22.1), the
@@ -25,11 +26,11 @@ async function start(page: Page): Promise<void> {
   await expect(page.locator('jfb-overview uui-box').first()).toBeVisible({ timeout: 60_000 });
 }
 
-/** A sidebar item by its label; the Inbox's label carries its unseen count. */
-const sidebarItem = (page: Page, label: string) =>
-  label === 'Inbox'
-    ? page.locator('jfb-inbox-menu-item uui-menu-item')
-    : page.locator(`umb-section-sidebar uui-menu-item[label="${label}"]`).first();
+/** Counts each step of the way to a place's tab as one click. */
+const counted =
+  (clicks: ClickCounter): Clicker =>
+  (target) =>
+    clicks.click(target);
 
 /** A form of applications whose entries wait for approval, at the root, as the entry tasks' usual setup has it. */
 async function waitingEntries(api: APIRequestContext, name: string, count = 6): Promise<void> {
@@ -172,14 +173,14 @@ test('the entry handler opens the Inbox, reads, approves, rejects and moves an e
   // 1. Everything new, from all forms.
   await start(page);
   let clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   await expect(rows).toHaveCount(6, { timeout: 60_000 });
   expectTaskClicks(clicks, 'Entry handler', 1);
 
   // 2. One entry read, beside the list.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   await clicks.click(rows.first().locator('.name'));
   await expect(panel.locator('h2')).toBeVisible();
   expectTaskClicks(clicks, 'Entry handler', 2);
@@ -193,7 +194,7 @@ test('the entry handler opens the Inbox, reads, approves, rejects and moves an e
   for (const outcome of outcomes) {
     await start(page);
     clicks = new ClickCounter();
-    await clicks.click(sidebarItem(page, 'Inbox'));
+    await goToPlace(page, 'Inbox', counted(clicks));
     await expect(waiting.first()).toBeVisible({ timeout: 60_000 });
     await clicks.click(waiting.first().locator('.name'));
     await expect(panel.locator('h2')).toBeVisible();
@@ -230,7 +231,7 @@ test('the viewer sees recent entries, reads one, finds one by address, filters b
   // 2. One entry read.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   await clicks.click(rows.first().locator('.name'));
   await expect(panel.locator('h2')).toBeVisible();
   expectTaskClicks(clicks, 'Viewer', 2);
@@ -238,7 +239,7 @@ test('the viewer sees recent entries, reads one, finds one by address, filters b
   // 3. An entry found by an address: the search is the task's own input.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   const search = view.locator('uui-input.search input');
   await search.fill(address);
   await search.press('Enter');
@@ -250,7 +251,7 @@ test('the viewer sees recent entries, reads one, finds one by address, filters b
   // 4. Last month's entries: Filter, Received, then the month and Apply, which are the task's own.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   await expect(view.locator('tbody tr').first()).toBeVisible({ timeout: 60_000 });
   await clicks.click(view.getByRole('button', { name: 'Filter', exact: true }));
   await clicks.click(view.locator('#filter-menu').getByRole('button', { name: 'Received', exact: true }));
@@ -265,7 +266,7 @@ test('the viewer sees recent entries, reads one, finds one by address, filters b
   await saveFormSet(page, view, form, setName);
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Inbox'));
+  await goToPlace(page, 'Inbox', counted(clicks));
   await expect(view.locator('tbody tr').first()).toBeVisible({ timeout: 60_000 });
   await clicks.click(view.getByRole('button', { name: 'Filter', exact: true }));
   // In the Inbox a set of one form names its form under its own name, which starts the button's name.
@@ -282,7 +283,7 @@ test('the viewer sees recent entries, reads one, finds one by address, filters b
 /** Saves a filter set of one form's entries for the signed-in user, as the viewer did yesterday. */
 async function saveFormSet(page: Page, view: Locator, form: string, setName: string): Promise<void> {
   await start(page);
-  await sidebarItem(page, 'Inbox').click();
+  await goToPlace(page, 'Inbox');
   await expect(view.locator('tbody tr').first()).toBeVisible({ timeout: 60_000 });
   await view.getByRole('button', { name: 'Filter', exact: true }).click();
   await view.locator('#filter-menu').getByRole('button', { name: 'Form', exact: true }).click();
@@ -325,7 +326,7 @@ test('the privacy officer finds a person and a member, exports and erases, and s
   // 1. Everything stored about a person, by address: the address and Find are the task's own.
   await start(page);
   let clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'People'));
+  await goToPlace(page, 'Privacy', counted(clicks));
   await find();
   expectTaskClicks(clicks, 'Privacy officer', 1);
 
@@ -334,7 +335,7 @@ test('the privacy officer finds a person and a member, exports and erases, and s
   // Umbraco lists members only to who may open Members (ADR-0241).
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'People'));
+  await goToPlace(page, 'Privacy', counted(clicks));
   await expect(screen.getByRole('button', { name: /^Find a member instead/ })).toHaveCount(0);
   await find(memberOf(0).email);
   expectTaskClicks(clicks, 'Privacy officer', 2);
@@ -342,7 +343,7 @@ test('the privacy officer finds a person and a member, exports and erases, and s
   // 3. A copy of their data: Export everything, then the ready toast's Download.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'People'));
+  await goToPlace(page, 'Privacy', counted(clicks));
   await find();
   await clicks.click(screen.getByRole('button', { name: 'Export everything', exact: true }));
   const ready = page
@@ -357,7 +358,7 @@ test('the privacy officer finds a person and a member, exports and erases, and s
   // 4. Their data erased: Erase..., then the dialog's confirming button.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'People'));
+  await goToPlace(page, 'Privacy', counted(clicks));
   await find();
   await clicks.click(screen.getByRole('button', { name: 'Erase\u2026', exact: true }));
   const dialog = page.locator('jfb-people-erase-modal');
@@ -370,7 +371,7 @@ test('the privacy officer finds a person and a member, exports and erases, and s
   // 5. What retention will delete in the coming weeks.
   await start(page);
   clicks = new ClickCounter();
-  await clicks.click(sidebarItem(page, 'Retention'));
+  await goToTab(page, 'Privacy', 'Retention', counted(clicks));
   await expect(page.locator('jfb-retention-screen uui-box').first()).toBeVisible({ timeout: 60_000 });
   expectTaskClicks(clicks, 'Privacy officer', 5);
 });

@@ -71,6 +71,40 @@ test("axe's findings are ours inside a jfb- element, and Umbraco's anywhere else
   assert.equal(split.umbraco, 2);
 });
 
+test("the name and the colours of UUI's menu item are Umbraco's in the sidebar's places too, and no other rule", () => {
+  // Axe gives a node in shadow roots as the hosts down to it; the ancestry says the same with each step's place.
+  const inItem = (label: string, part: string) => [
+    ['umb-app', 'jfb-places', `uui-menu-item[label="${label}"][active=""]`, part],
+  ];
+  const ancestry = [['umb-app > umb-section-default', 'jfb-places', 'uui-menu-item:nth-child(2)', '#menu-item']];
+  const split = splitAxe([
+    { rule: 'label-content-name-mismatch', target: inItem('Library', '#menu-item'), ancestry },
+    { rule: 'color-contrast', target: inItem('Inbox, 73 unseen', '.label:nth-child(2)'), ancestry },
+    // The Inbox's name, given to the item's label slot, which UUI colours as its own label.
+    {
+      rule: 'color-contrast',
+      target: [['umb-app', 'jfb-places', 'span[slot="label"]']],
+      ancestry: [['umb-app > umb-section-default', 'jfb-places', 'nav > uui-menu-item:nth-child(1) > span']],
+    },
+    {
+      rule: 'color-contrast',
+      target: [['umb-app', 'jfb-places', 'nav']],
+      ancestry: [['umb-app', 'jfb-places', 'nav']],
+    },
+    { rule: 'label', target: [['umb-app', 'jfb-place-tabs', 'uui-tab']], ancestry: [['umb-app', 'jfb-place-tabs']] },
+    // A place we gave no name: the link inside the menu item has none, and that is ours.
+    { rule: 'link-name', target: inItem('', '#label-button'), ancestry },
+    { rule: 'label-content-name-mismatch', target: inItem('Library', '#label-button'), ancestry },
+  ]);
+  assert.deepEqual(split.ours, [
+    'color-contrast: [["umb-app","jfb-places","nav"]]',
+    'label: [["umb-app","jfb-place-tabs","uui-tab"]]',
+    `link-name: ${JSON.stringify(inItem('', '#label-button'))}`,
+    `label-content-name-mismatch: ${JSON.stringify(inItem('Library', '#label-button'))}`,
+  ]);
+  assert.equal(split.umbraco, 3);
+});
+
 test('a sheet has a cell for each of the twelve ways, saying why one has no shot, its names escaped', () => {
   const html = sheetHtml('<the bin>', [
     { combo: COMBOS[0]!, image: 'data:image/png;base64,AAAA' },

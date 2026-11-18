@@ -11,6 +11,7 @@ import { openRowActions } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
 import { COMBOS, comboName, walkDir, wantedCombo, type Combo } from '../../support/ux-walk.ts';
 import type { Role } from '../../support/users.ts';
+import { goToScreen } from '../../support/places.ts';
 
 // The journeys of the UX polish pass (ROADMAP 16.6): five people's work from start to end, each step shot in the twelve
 // ways of support/ux-walk.ts with what axe and the layout measures found, beside the walk's screens, whose contact
@@ -23,7 +24,6 @@ import type { Role } from '../../support/users.ts';
 
 const SECTION = '/umbraco/section/jfb-forms';
 const workspaceOf = (key: string) => `${SECTION}/workspace/jfb-form/edit/${key}`;
-const screenOf = (entityType: string) => `${SECTION}/workspace/${entityType}`;
 const entityAction = (id: string) => `[data-mark="entity-action:Jiron.FormBuilder.EntityAction.${id}"]`;
 const createOption = (icon: string) => `umb-entity-create-option-action-list-modal umb-ref-item[icon="${icon}"]`;
 const PUBLISH = '[data-mark="workspace-action:Jiron.FormBuilder.WorkspaceAction.Form.Publish"]';
@@ -225,8 +225,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j2-1-inbox',
       async () => {
-        await handler.goto(SECTION);
-        await handler.locator('jfb-inbox-menu-item uui-menu-item').click();
+        await goToScreen(handler, 'jfb-inbox');
         await expect(rows.first()).toBeVisible({ timeout: 60_000 });
       },
       handler,
@@ -277,7 +276,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j3-1-access',
       async () => {
-        await keeper.goto(screenOf('jfb-settings-access'));
+        await goToScreen(keeper, 'jfb-settings-access');
         const matrix = keeper.locator('jfb-access-screen table');
         await expect(matrix).toBeVisible({ timeout: 60_000 });
         await matrix.locator('input[type="checkbox"]:not(:disabled):not(:checked)').first().check();
@@ -315,7 +314,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j3-4-retention',
       async () => {
-        await keeper.goto(screenOf('jfb-privacy-retention'));
+        await goToScreen(keeper, 'jfb-privacy-retention');
         const screen = keeper.locator('jfb-retention-screen');
         await expect(screen.locator('uui-box').first()).toBeVisible({ timeout: 60_000 });
         await screen.locator('uui-box').first().locator('input').nth(2).fill('30');
@@ -401,7 +400,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot(
       'j5-1-people',
       async () => {
-        await officer.goto(screenOf('jfb-privacy-people'));
+        await goToScreen(officer, 'jfb-privacy-people');
         await expect(people.locator('#email')).toBeVisible({ timeout: 60_000 });
       },
       officer,

@@ -6,6 +6,7 @@ import { startHost, type Host } from '../../support/host.ts';
 import { FRESH_BASE_URL, FRESH_PORT } from '../../support/paths.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { readSecrets } from '../../support/users.ts';
+import { onTab, openPlace, openTab } from '../../support/places.ts';
 
 // The setup checklist end to end (ROADMAP 12.6, 9.1, ADR-0165): the demo reset and started as a new site has it, without
 // its content (Demo:Seed off), without the test team, and with Umbraco's From under a display name, which forms' mail
@@ -77,8 +78,12 @@ test('the setup checklist, followed from the Overview, turns each step green', a
   await stepOf(shown, 'Check email sending').getByRole('link', { name: 'Open email settings' }).click();
   const email = page.locator('jfb-settings-email');
   await expect(email.locator('uui-box[headline]').first()).toBeVisible({ timeout: 60_000 });
+  // The link lands on its tab, marked, with its place marked in the sidebar (ADR-0257).
+  await onTab(page, 'Settings', 'Email');
+  await expect.poll(() => openTab(page)).toBe('Email');
+  await expect.poll(() => openPlace(page)).toBe('Settings');
   await email.getByRole('textbox', { name: 'Address', exact: true }).first().fill('forms@jfb.test');
-  await email.getByRole('button', { name: 'Save', exact: true }).click();
+  await email.getByRole('button', { name: 'Save email settings', exact: true }).click();
   await expect(page.locator('uui-toast-notification').filter({ hasText: 'The settings are saved.' })).toBeVisible();
   await turnedGreen(page, 'Check email sending', 1);
 
@@ -127,8 +132,11 @@ test('the setup checklist, followed from the Overview, turns each step green', a
   const access = page.locator('jfb-access-screen');
   const matrix = access.getByRole('region', { name: 'What each user group may do with every form' });
   await expect(matrix).toBeVisible({ timeout: 60_000 });
+  await onTab(page, 'Settings', 'Access');
+  await expect.poll(() => openTab(page)).toBe('Access');
+  await expect.poll(() => openPlace(page)).toBe('Settings');
   await matrix.getByRole('checkbox', { name: 'View entries, Editors' }).check();
-  await access.getByRole('button', { name: 'Save', exact: true }).click();
+  await access.getByRole('button', { name: 'Save access', exact: true }).click();
   await expect(page.locator('uui-toast-notification').filter({ hasText: 'Access is saved.' })).toBeVisible();
   await expect(access.getByText("can't open Form Builder yet")).toBeVisible();
   await access.locator('ul.groups-without a', { hasText: 'Editors' }).click();

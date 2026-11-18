@@ -4,6 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Library > Option lists (ROADMAP 12.1, IA 7, ADR-0214): a designer makes a list of every kind through the screens. The
 // create dialog asks the kind first; each list is named, its contents set in its kind's editor, its options previewed
@@ -106,7 +107,7 @@ test('a designer makes an option list of every kind through the screens, each pr
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
   await page.goto(SECTION);
-  await page.locator('umb-menu-item-layout[label="Option lists"], uui-menu-item[label="Option lists"]').first().click();
+  await goToTab(page, 'Library', 'Option lists');
   await expect(page).toHaveURL(new RegExp(`${LISTS}$`));
   await look(page, info, 'the list screen');
 
