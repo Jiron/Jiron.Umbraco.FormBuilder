@@ -77,8 +77,9 @@ The script's header lists every check. Its tests are in `scripts/tests/wireframe
 - **[assets/kit.js](assets/kit.js)** adds Umbraco's top bar and the section's sidebar for the role a page shows, draws
   the icons and switches the states. The sidebar starts with the five places the role may open (Inbox with its count,
   Library, Settings, Privacy, Activity; ADR-0257), then the tree of forms under Umbraco's header. On a tab's page the
-  kit puts the place's tabs the role may open where the header's title stood, with a heading for screen readers
-  ("Settings: Email"), and folds the tabs that do not fit behind "…"; with one tab left, the heading alone. A page holds only its workspace and its overlays. It also gives the checkboxes,
+  kit puts the place's tabs the role may open where the header's title stood, with a second-level heading for
+  screen readers ("Settings: Email", the name once on "Inbox"), and folds the tabs that do not fit behind "…"; with
+  one tab left, the heading alone. A page holds only its workspace and its overlays. It also gives the checkboxes,
   switches and radios the kit draws as spans the tab stop UUI's own controls have: one each, and one per group of
   radios (the chosen one, or the first).
 - **The canvas, the preview and the template gallery's preview** render the visitor's form with the website theme of

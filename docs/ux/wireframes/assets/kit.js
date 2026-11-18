@@ -155,7 +155,10 @@
       const row = tabs.length > 1
         ? `<nav class="wf-tabs wf-tabs--place" aria-label="${esc(openPlace.name)}">${tabs.map(([id, name, ic]) => `<a class="wf-tab" href="#"${id === active ? ' aria-current="page"' : ''}>${icon(ic)}<span>${esc(name)}</span></a>`).join('')}</nav>`
         : '';
-      main.insertAdjacentHTML('afterbegin', `<h1 class="wf-sr">${esc(openPlace.name)}: ${esc(tab[1])}</h1>${row}`);
+      // Second-level, as the build has it: Umbraco's dialogs over the screen head with third-level headings; the name
+      // once where the tab has the place's.
+      const heading = openPlace.name === tab[1] ? esc(tab[1]) : `${esc(openPlace.name)}: ${esc(tab[1])}`;
+      main.insertAdjacentHTML('afterbegin', `<h2 class="wf-sr">${heading}</h2>${row}`);
       // As Umbraco's tab group does, the tabs that do not fit go behind a "…" at the row's end, never the open one.
       const nav = main.querySelector('.wf-tabs--place');
       if (nav && head.offsetParent && nav.scrollWidth > nav.clientWidth + 1) {

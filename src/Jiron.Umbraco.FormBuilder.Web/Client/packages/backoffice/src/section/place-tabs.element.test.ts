@@ -27,7 +27,7 @@ async function tabsOf(tab: string, permissions: MyPermissions | undefined = ADMI
   host.append(element);
   await settle(element);
   const tabs = () => all(element, 'uui-tab');
-  return { element, tabs, heading: () => text(shadow(element).querySelector('h1')) };
+  return { element, tabs, heading: () => text(shadow(element).querySelector('h2')) };
 }
 
 beforeAll(registerEnglish);
@@ -69,11 +69,14 @@ describe("a place's tabs", () => {
 
   it('names its place and tab in a heading for screen readers, hidden from sight', async () => {
     expect(PlaceTabsElement.styles).toContain(jfbVisuallyHidden);
-    expect((await tabsOf('general')).element.shadowRoot?.querySelector('h1')?.className).toBe('visually-hidden');
+    expect((await tabsOf('general')).element.shadowRoot?.querySelector('h2')?.className).toBe('visually-hidden');
     document.body.replaceChildren();
     expect((await tabsOf('email')).heading()).toBe('Settings: Email');
     document.body.replaceChildren();
     expect((await tabsOf('spam')).heading()).toBe('Inbox: Spam');
+    document.body.replaceChildren();
+    // The Inbox's first tab has the place's name: said once.
+    expect((await tabsOf('inbox')).heading()).toBe('Inbox');
     document.body.replaceChildren();
     expect((await tabsOf('dataCollection')).heading()).toBe('Privacy: Data collection');
   });

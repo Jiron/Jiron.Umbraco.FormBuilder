@@ -3,9 +3,9 @@
 // and the folding of tabs that do not fit are Umbraco's. Each tab is a link to its screen's own address and shows only
 // to who may open it; Settings ends with the tabs a site or an add-on adds. With one tab left the row is gone, and with
 // it the header: the element then stands at the top of the screen's content, holding its heading alone. A heading for
-// screen readers names the place and the tab, since the screen has no visible title (the sidebar names the place, the
-// tab the screen). It draws at once from what the user holds, read as the section opened, so the header does not
-// flicker from tab to tab.
+// screen readers names the place and the tab (the name once where the tab has the place's), since the screen has no
+// visible title (the sidebar names the place, the tab the screen). It draws at once from what the user holds, read as
+// the section opened, so the header does not flicker from tab to tab.
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
@@ -121,7 +121,9 @@ export class PlaceTabsElement extends UmbLitElement {
     if (!place) return nothing;
     const { tabs, open } = this.#tabs(place);
     const name = this.localize.term(`jfbSection_${place.id}`);
-    return html`<h1 class="visually-hidden">${open ? `${name}: ${open.label}` : name}</h1>
+    // A second-level heading: Umbraco's own headlines, in its dialogs over the screen, are third-level, so the page's
+    // headings keep their order.
+    return html`<h2 class="visually-hidden">${open && open.label !== name ? `${name}: ${open.label}` : name}</h2>
       ${
         tabs.length > 1
           ? html`<uui-tab-group aria-label=${name} @click=${this.#keepOpen}>
