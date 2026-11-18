@@ -2,9 +2,12 @@
 
 - Status: a draft the owner asked for on 2026-11-16, gone over a second time the same day. The owner then decided its
   five open questions ([ADR-0254](../decisions/0254-a-simpler-backoffice.md)) and made its four steps Phase 22 of
-  [ROADMAP.md](../../ROADMAP.md), steps 22.1 to 22.4, which hold the checks. **Step 22.1 is built** (2026-11-17,
-  [ADR-0256](../decisions/0256-the-designer-in-three-columns.md)): A1 to A3, B1, B2 and C1 to C3 below are as their
-  directions say, and the table at the end has its numbers. The owner paused the phase after it; D, E, C4 and F wait.
+  [ROADMAP.md](../../ROADMAP.md), steps 22.1 to 22.4, which hold the checks. **The phase is built** (2026-11-17 and
+  2026-11-18): the designer in step 22.1 ([ADR-0256](../decisions/0256-the-designer-in-three-columns.md)), the left
+  side in 22.2 ([ADR-0257](../decisions/0257-five-places-before-the-tree.md)), a form's views in 22.3
+  ([ADR-0258](../decisions/0258-a-forms-views-pick-first.md)) and the other screens in 22.4
+  ([ADR-0259](../decisions/0259-the-other-screens-and-the-walks-count.md), [review-22.md](review-22.md)). Under each
+  finding below, one line says what became of it; the table at the end has the numbers measured so far.
 - What it is: where the backoffice asks too much at once, a direction for each place, and an order to work through
   them. It is a concept, not a design: each step still starts with a wireframe and a decision record.
 
@@ -81,6 +84,9 @@ The patterns of Umbraco that matter here:
 - **Direction:** "Add page" in the row of pages only. The cut stays in the field's menu alone, under a name that says
   what it does. "New page" leaves the field list: a page is not a field.
 
+**Became:** step 22.1 (ADR-0256): "+" in the row of pages adds an empty page; "Move what follows to a new page" in a
+field's "…" cuts the page; the field list is gone.
+
 **A2. "Add field" opens nothing.**
 
 - **Now:** with the field list open beside the form, "Add field" on a page and "Add a field here" between two fields
@@ -89,12 +95,16 @@ The patterns of Umbraco that matter here:
 - **Direction:** both open a picker at every width: search, the field types by group, the site's saved groups, "Paste
   questions". A pick puts the field where the click was. Half of it exists: it is what a narrow window does today.
 
+**Became:** step 22.1 (ADR-0256): "Add field" and every insert point open the field picker at every width.
+
 **A3. The field list is a column of its own.**
 
 - **Now:** every field type is on the screen all the time, with "Recently used" repeating some of them above.
 - **Why:** one click adds a field after the selected one, and a type can be dragged onto the form.
 - **Direction:** with A2 the picker is the way to add, and the column goes. Dragging stays for moving fields and
   pages.
+
+**Became:** step 22.1 (ADR-0256): the column is gone; dragging moves fields, groups and pages.
 
 ### B. The designer: pages
 
@@ -105,12 +115,18 @@ The patterns of Umbraco that matter here:
 - **Direction:** the tab is the page's handle, with a menu: Rename, Duplicate, Delete (not offered for a form's only
   page). And see C1: with no field selected, the inspector shows the open page.
 
+**Became:** step 22.1 (ADR-0256): the open page's tab holds Rename, Duplicate and Delete; with nothing selected the
+inspector shows the open page.
+
 **B2. "After sending" is shown in one place and changed in another.**
 
 - **Now:** it stands at the end of the row of pages and shows what visitors get, read-only; "Change" leads to the
   form's Settings, which hold the same thing as a group.
 - **Why:** the row of pages is the visitor's way through the form, and its end belongs to it.
 - **Direction:** one home. Since the row already shows it, it is edited there, and the Settings lose a group.
+
+**Became:** step 22.1 (ADR-0256): After sending's outcomes are edited in the designer; a form's Settings have six
+groups.
 
 ### C. The designer: the layout
 
@@ -123,6 +139,8 @@ The patterns of Umbraco that matter here:
 - **Direction:** three columns. The field list goes (A3), which gives the form 820 px. The inspector's column stays
   and is never empty: with no field selected it shows the open page (B1).
 
+**Became:** step 22.1 (ADR-0256): three columns, the form 819 px of 1440 (57 %).
+
 ```text
 today   | tree 300 | field list 265 | form 555 | inspector 320 |
 after   | tree 300 | form 820                  | inspector 320 |
@@ -134,8 +152,13 @@ after   | tree 300 | form 820                  | inspector 320 |
 - **Direction:** one row: the pages on the left, the rest on the right. To check: whether "Desktop" should be offered
   where it cannot be shown, since Preview has the same switch with room for it.
 
+**Became:** step 22.1 (ADR-0256): one row, a second only where the pages need the room; Desktop stays offered, with
+"Narrowed to fit" where the canvas has less room.
+
 **C3. "Change type" is offered twice at once:** in the inspector's header and in the field's menu. One of them; the
 header, beside the type's name.
+
+**Became:** step 22.1 (ADR-0256): in the inspector's header alone.
 
 **C4. Two green buttons, one above the other.**
 
@@ -143,6 +166,9 @@ header, beside the type's name.
   the entry's own bar (Forward, Mark as spam, Reject, **Approve**) sits right above it (**Publish**).
 - **Why:** Umbraco's document workspace keeps its buttons on every view too.
 - **Direction:** the form's buttons only on the views that change the form (Design, Settings, Actions).
+
+**Became:** step 22.3 (ADR-0258): Preview, Save draft and Publish… on Design, Settings and Actions only; no footer on
+Entries, Insights and History.
 
 ### D. The section's left side
 
@@ -155,6 +181,9 @@ header, beside the type's name.
   for it.
 - **Direction:** a few fixed items first, the tree after them. Each item is one screen with tabs along its top.
   Nothing is taken away; it moves one level down. A tab shows only to who may use it, as an item does today.
+
+**Became:** step 22.2 (ADR-0257): Inbox, Library, Settings, Privacy and Activity before the tree, each a screen with
+its tabs along its top.
 
 ```text
 today                              after
@@ -169,12 +198,18 @@ Activity         2 items           Forms            the tree, grows
 **D2. "Settings" names three things:** Umbraco's own section, the Form Builder's item on the left, and a view of
 every form. To check: a name for each that says whose settings they are.
 
+**Became:** kept (ADR-0257): the owner's own word for the place is "settings", a form's view stands inside its form,
+and running text names the place with it ("Settings › Email", "the form's Settings view").
+
 ### E. A form's own views
 
 **E1. A form's Settings fold twice.**
 
 - **Now:** one long page of seven groups that open and close, some with "More options" inside.
 - **Direction:** as D1 does it for the site: pick a group, see that group. Six groups if "After sending" moves (B2).
+
+**Became:** step 22.3 (ADR-0258): the six groups as a list, the group picked beside it; Submission's "More options"
+is the one fold left.
 
 **E2. A new action shows everything at once.**
 
@@ -183,12 +218,18 @@ every form. To check: a name for each that says whose settings they are.
 - **Direction:** pick the kind first, from a list with a line each, as the Create dialog does. The sheet then holds
   that kind's settings only.
 
+**Became:** step 22.3 (ADR-0258): Add action lists the kinds, then the kind's sheet; "When it runs" is one choice.
+
 **E3. Restoring a version has two doors:** the History view, and "Restore an earlier version" in the form's menu. One
 of them; the view, where the versions are.
+
+**Became:** step 22.3 (ADR-0258): the History view alone.
 
 **E4. Six tabs** (Design, Settings, Actions, Entries, Insights, History) is many beside the two to four of Umbraco's
 own screens. Each is a clear word, and they already stand in a good order: what builds the form first, what it
 brought in after. They stay as they are.
+
+**Became:** kept, as the direction says.
 
 ### F. The other screens
 
@@ -198,8 +239,11 @@ builder, the theme and email layout editors, Access.
 Small things seen on the way:
 
 - **The inspector folds twice,** like a form's Settings: sections that open, with "More options" inside.
+  **Became:** step 22.3 (ADR-0258): a section folds nothing inside it; and in 22.4 a closed section is as tall as its
+  header (ADR-0259).
 - **The entries list has a column "Actions" that says "none" in nearly every row.** It could speak only when
   something went wrong.
+  **Became:** step 22.4 (ADR-0259): it speaks only where something did not go out.
 
 Not looked at yet, one pass each with the same four questions: an entry's screen, exports, the option list editor,
 People, Retention, Deliveries, the Audit log, Insights.
@@ -208,6 +252,9 @@ People, Retention, Deliveries, the Audit log, Insights.
 2. What could wait until something is picked?
 3. What is said twice?
 4. Does the empty state say what to do next?
+
+**Became:** step 22.4 (ADR-0259): each screen asked, each finding fixed or kept with its reason in
+[review-22.md](review-22.md).
 
 ## Four steps
 
@@ -240,9 +287,9 @@ After each step the walk runs again and is compared with the one before.
 | The form's share of the width at 1440 px | 39 % | more than half (measured, 22.1: 57 %, 819 px) |
 | Rows of controls above the form at 1440 px | 3 | 1 (measured, 22.1: one for up to two pages on a site of two languages, two from three) |
 | Entries that start a page | 3 | 2, each named for what it does (22.1: "+", and "Move what follows to a new page") |
-| Fixed items on the left at 900 px height, with twenty forms | 0 of 17 | all of about 5 |
+| Fixed items on the left at 900 px height, with twenty forms | 0 of 17 | 5 of 5 (measured, 22.4: with fifty forms in the tree, at 1440 by 900 px, each place lies inside the window; `places.spec.ts`) |
 | Clicks to add a field at the end of a page | 1 | 2 (22.1) |
-| Clicks in each of the top tasks ([top-tasks.md](top-tasks.md)) | counted there | counted again; none grows by more than one |
+| Clicks in each of the top tasks ([top-tasks.md](top-tasks.md)) | counted there | none grows by more than one (counted, 22.4: ten tasks one more for a later tab, 22.2; designer task 11 one more for the kinds, 22.3; designer task 7 one more, 22.1; none in 22.4; the first five of each persona clicked on the build by `top-tasks.spec.ts`) |
 | Words on each screen | the last walk's counts | no screen grows |
 
 ## What it costs

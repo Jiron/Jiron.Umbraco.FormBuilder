@@ -54,6 +54,15 @@ follows the Umbraco major).
 - **An earlier version comes back from the History view;** the form's **…** no longer has "Restore an earlier
   version…".
 - The form check's badge shows its icon and the number of problems, its words in its tip.
+- **The entries' lists say what needs someone:** the Actions column speaks only where an action did not go out ("1
+  failed", "1 uncertain", "2 waiting") and stays empty otherwise, and **Export…** is not offered while the list shows
+  no entries. The export says which entries go beside Entries and how many on its button; a filter's dialog names its
+  choices by its headline alone.
+- **Insights has one Show as tables** beside the range, for the Overview and the Answers alike, kept for you, in place
+  of a button on every chart.
+- A closed section of the inspector is as tall as its header, and a closed Rules section holds **Add a rule** on its
+  header's line. An option list's editor names its options by its headline alone.
+- Deliveries and the Audit log, empty, say that they show the last 30 days.
 - The website runtime's budget with every feature is 100 KB gzip at most (was 60 KB); what every page with a form
   loads first stays within 16 KB.
 - **The screens say less.** About 350 texts of the backoffice are shorter or gone, in English and German: help lines
@@ -72,6 +81,7 @@ follows the Umbraco major).
 
 ### Fixed
 
+- Privacy › Retention showed the raw keys of two help texts under Rejected and Spam; those rows draw no help line now.
 - At a wide window, **Desktop** shows the form at its full 960 px on the canvas, not 958 px.
 - The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.
 - Leaving a form for another screen of the backoffice no longer raises an error in the browser's console when the AI

@@ -136,6 +136,8 @@ One line that says where something stands, next to the thing it is about.
 
 | Where | English | German |
 | --- | --- | --- |
+| an entries list's Actions column, only where something did not go out, the worst first; empty where every action went out or none ran (ROADMAP 22.4) | 1 failed · 1 uncertain · 2 waiting | 1 fehlgeschlagen · 1 unklar · 2 warten |
+| the Insights view's one switch for its charts, beside the range, kept per user | Show as tables | Als Tabellen zeigen |
 | an action's card, after a failed delivery | Failed at 14:02. Next try at 14:30. | Fehlgeschlagen um 14:02. Nächster Versuch um 14:30. |
 | an action's card, after it failed for good | Failed at 14:02. | Fehlgeschlagen um 14:02. |
 | an action's card, after a webhook (Slack, Teams) went through | Delivered 2 hours ago | Vor 2 Stunden zugestellt |
@@ -397,8 +399,8 @@ useful action. One sentence, plus a button or link where there is one.
 
 | Case | English | German |
 | --- | --- | --- |
-| Activity › Deliveries, nothing sent yet · nothing matches | No deliveries yet. Emails and webhooks appear here once forms send them. · No deliveries match the search and the filters. | Noch keine Zustellungen. E-Mails und Webhooks erscheinen hier, sobald Formulare sie senden. · Keine Zustellung passt zur Suche und zu den Filtern. |
-| Activity › Audit log, nothing recorded yet · nothing matches | Nothing is recorded yet. The log fills as people work with forms, entries and settings. · No actions match the search and the filters. | Noch ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten. · Keine Aktion passt zur Suche und zu den Filtern. |
+| Activity › Deliveries, nothing in the last 30 days, where it opens · nothing matches | No deliveries in the last 30 days. Emails and webhooks appear here once forms send them. · No deliveries match the search and the filters. | Keine Zustellungen in den letzten 30 Tagen. E-Mails und Webhooks erscheinen hier, sobald Formulare sie senden. · Keine Zustellung passt zur Suche und zu den Filtern. |
+| Activity › Audit log, nothing in the last 30 days, where it opens · nothing matches | Nothing recorded in the last 30 days. The log fills as people work with forms, entries and settings. · No actions match the search and the filters. | In den letzten 30 Tagen ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten. · Keine Aktion passt zur Suche und zu den Filtern. |
 | an audit log list or Deliveries past its read budget | The list took too long to load. Narrow it down with the search or the filters. [Try again] | Die Liste hat zu lange gebraucht. Grenzen Sie sie mit der Suche oder den Filtern ein. [Erneut versuchen] |
 | no entries yet, for a user who may design the form | No entries yet. Share the form, or preview it and send a test entry. | Noch keine Einträge. Teilen Sie das Formular, oder öffnen Sie die Vorschau und senden Sie einen Testeintrag. |
 | no entries yet, for everyone else (they can neither share nor preview it) | No entries yet. They appear here as soon as visitors send the form. [Email me a summary…] | Noch keine Einträge. Einträge erscheinen hier, sobald jemand das Formular sendet. [Zusammenfassung per E-Mail…] |
@@ -559,12 +561,13 @@ toast adds only what the user cannot see.
   weiterarbeiten; eine Benachrichtigung verlinkt die Datei.“ After a search that counts no further than 1,000, the
   number written so far stands alone: "Preparing the export: 2,500 entries so far." · „Der Export wird vorbereitet:
   bisher 2.500 Einträge.“
-- **The export sidebar** names its entries in one line: "All 214 entries, no filters" · „Alle 214 Einträge, keine
-  Filter“, "124 entries that match the filters" · „124 Einträge, die den Filtern entsprechen“, "6 entries selected" ·
-  „6 Einträge ausgewählt“; an export that will run in the background says so under it: "This export continues in the
-  background; a notification links to the file." · „Dieser Export läuft im Hintergrund weiter; eine Benachrichtigung
-  verlinkt die Datei.“ Its fields say once what is left out: "Sensitive fields are left out." · „Vertrauliche Felder
-  werden weggelassen.“
+- **The export sidebar** says which entries go beside Entries, without the number its Export button says ("Export
+  124 entries", ROADMAP 22.4): "All, no filters" · „Alle, keine Filter“, "Those that match the filters" · „Die, die den
+  Filtern entsprechen“, "Those that match the search" · „Die, die der Suche entsprechen“ (more than 1,000), "Those
+  selected" · „Die ausgewählten“; an export that will run in the background says so under it: "This export continues
+  in the background; a notification links to the file." · „Dieser Export läuft im Hintergrund weiter; eine
+  Benachrichtigung verlinkt die Datei.“ Its fields say once what is left out: "Sensitive fields are left out." ·
+  „Vertrauliche Felder werden weggelassen.“
 
 ### Help text
 
@@ -574,7 +577,7 @@ Help text sits under its setting and answers the question the label leaves open;
 | --- | --- | --- |
 | One entry per member, under Who can fill it in once the form is for members (Availability) | A member who has sent it sees that in its place, and a second entry is refused. | Wer es gesendet hat, sieht das an seiner Stelle, und ein zweiter Eintrag wird abgelehnt. |
 | Anonymous (the form's Privacy group) | Its entries keep no member, even when a member is signed in. | Die Einträge speichern kein Mitglied, auch wenn ein Mitglied angemeldet ist. |
-| When a member is deleted (Settings › Privacy › Members, under the box's lead) | Anonymise their entries: The entries stay in the counts, with their form, number and state; every answer and everything else about the member goes. · Delete their entries: The entries go, with their files and mail. | Seine Einträge anonymisieren: Die Einträge bleiben mit Formular, Nummer und Status in den Zahlen; jede Antwort und alles andere über das Mitglied geht. · Seine Einträge löschen: Die Einträge gehen, mit ihren Dateien und E-Mails. |
+| When a member is deleted (Privacy › Data collection › Members, under the box's lead) | Anonymise their entries: The entries stay in the counts, with their form, number and state; every answer and everything else about the member goes. · Delete their entries: The entries go, with their files and mail. | Seine Einträge anonymisieren: Die Einträge bleiben mit Formular, Nummer und Status in den Zahlen; jede Antwort und alles andere über das Mitglied geht. · Seine Einträge löschen: Die Einträge gehen, mit ihren Dateien und E-Mails. |
 | a version's comment (History's dialog) | At most 500 characters. Saving it empty removes the comment. | Höchstens 500 Zeichen. Leer gespeichert, wird der Kommentar entfernt. |
 | Settings › Email while Umbraco can't send mail (one line at the top; no Send test email) | Emails can't be sent yet: no mail server is configured. Entries are kept, and their emails go out once sending works. A developer sets up sending in Umbraco:CMS:Global:Smtp. | E-Mails können noch nicht gesendet werden: Es ist kein Mailserver eingerichtet. Einträge bleiben erhalten, und ihre E-Mails gehen hinaus, sobald das Senden funktioniert. Eine Entwicklerin oder ein Entwickler richtet das Senden in Umbraco:CMS:Global:Smtp ein. |
 | a box of the Access matrix ticked that needs another, or unticked that others need (said to screen readers) | View entries is on too: Export entries needs it. · Edit entries and Export entries are off too: they need View entries. | View entries ist ebenfalls an: Export entries braucht das. · Edit entries und Export entries sind ebenfalls aus: sie brauchen View entries. |

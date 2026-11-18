@@ -355,8 +355,8 @@ that takes several answers takes one default a line.
 
 **Prefill** fills a field for a particular visitor:
 
-- **From a query value:** from the page's address, as `?plan=pro`. The name must be listed under Settings › Developer ›
-  **Query values**.
+- **From a query value:** from the page's address, as `?plan=pro`. The name must be listed under the form's Settings
+  view › Developer › **Query values**.
 - **From a member property:** from the signed-in member, either shown and changeable, or **Not shown, taken when the
   entry is sent**. A property the member type marks sensitive, or doesn't let members see, can't be used.
 - **From a context value:** from a value the site's code passes when it places the form, listed under Settings ›

@@ -78,7 +78,7 @@ Check, in this order:
    naming the error; the log has the details. Often a view the site overrode ([rendering.md](rendering.md#overriding-views)).
 4. **Are the tag helpers imported?** `<jfb-render>` needs `@addTagHelper *, Jiron.Umbraco.FormBuilder.Web` in
    `Views/_ViewImports.cshtml`; without it the tag stays in the page as it is. The view component needs no import.
-5. **Headless:** the form's Settings › Developer › **Headless access** must be on, or the API and the Delivery API
+5. **Headless:** the form's Settings view › Developer › **Headless access** must be on, or the API and the Delivery API
    answer as if it didn't exist.
 6. **Not open, closed, full, or for members:** the form shows its notice instead.
 

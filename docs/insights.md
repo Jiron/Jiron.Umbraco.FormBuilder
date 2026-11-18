@@ -32,7 +32,8 @@ whether to **Compare with the previous period**. The view then shows:
 - **Entries by hour of day,** in the time zone of all sites (Settings › General).
 - **Members:** on forms that signed-in members send, how many members sent how many entries.
 
-Each chart can be shown as a table instead, which the view remembers for you.
+**Show as tables** beside the range shows every chart as a table instead, on the Overview and the Answers alike, and
+the view remembers it for you.
 
 ## Answers
 

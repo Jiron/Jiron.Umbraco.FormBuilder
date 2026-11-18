@@ -57,7 +57,7 @@ A tag holds a **path**, the value it writes, and optionally **filters**, which c
 | `page.<property>` | a property of that page, by its alias |
 | `page.up.<property>` | the property from the nearest page above that has a value |
 | `member.name`, `member.email`, `member.<property>` | the signed-in member; a property only if members may see it and it isn't sensitive |
-| `query.<name>` | a value from the page's address, if listed under Settings › Developer › Query values |
+| `query.<name>` | a value from the page's address, if listed under the form's Settings view › Developer › Query values |
 | `context.<name>` | a value the site's code passes when it places the form ([rendering.md](rendering.md)) |
 | `site.name`, `site.url` | the site and its address |
 | `date.now` | now, in the site's time zone |

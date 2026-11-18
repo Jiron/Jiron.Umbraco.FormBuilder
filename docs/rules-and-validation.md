@@ -34,9 +34,10 @@ and [calculations](field-types.md#calculation).
 
 ## Writing a rule
 
-Select the element and open **Rules** in the inspector, then **Add a rule**. For an outcome, the rule is in its editor
-under After sending, on the Design view; for an action, in the action's editor. The **Rules overview** in the canvas's
-**…** menu lists every rule of the form by page, and **Add rule** there starts by asking what the rule should affect.
+Select the element and choose **Add a rule** on the line of the inspector's **Rules**, open or closed. For an outcome,
+the rule is in its editor under After sending, on the Design view; for an action, in the action's editor. The **Rules
+overview** in the canvas's **…** menu lists every rule of the form by page, and **Add rule** there starts by asking
+what the rule should affect.
 
 ![The rule builder: what the rule shows, the condition it looks at and its value](screenshots/rule-builder.png)
 
@@ -56,7 +57,7 @@ A condition can look at:
 - **any earlier or later answer** of a type rules can compare, each row of a grid included;
 - **the language** of the page, on sites with more than one;
 - **the visitor:** signed in as a member or not, and their **member groups**;
-- **a query value** from the page's address, if the form lists it under Settings › Developer › Query values;
+- **a query value** from the page's address, if the form lists it under its Settings view › Developer › Query values;
 - **today's date.**
 
 It can't look at the element itself, at fields inside the element it shows or hides, at hidden fields, or at a member

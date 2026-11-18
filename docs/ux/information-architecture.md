@@ -277,7 +277,8 @@ stand in for it.
   the emails include it.
 - **Validation, Messages, Rules, Appearance, Privacy and Advanced** (closed, remembered per user):
   - a closed section shows a short summary of what is set ("Maximum length: 200"), or "Nothing changed", wrapping
-    rather than cut, so a rule's sentence keeps what it depends on (ADR-0182);
+    rather than cut, so a rule's sentence keeps what it depends on (ADR-0182), and is as tall as its header: its body
+    takes no room until it opens (ADR-0259);
   - a section folds nothing inside it, and shows at most seven settings: no built-in type has more in any section. A
     site's own type that has more gets the rest in a section of its own right after it, "Validation, more"
     (ADR-0258).
@@ -287,9 +288,9 @@ stand in for it.
 - **The alias** is checked as the server checks it. Once the form has entries, changing a saved field's alias asks
   first ("Change the alias?") and keeps the old one for the merge tags that use it.
 - **Rules:**
-  - the closed section's line holds its action directly: "Always shown · Add a rule", whose link sits beside the
-    header's button, not inside it, and opens the rules builder without opening the section first (the link comes
-    with the builder in 9.5a; until then the line says "Always shown" or how many rules);
+  - the closed section's line holds its action directly: "Add a rule" at the end of the header's first line, beside
+    the header's button ("Rules", then "Always shown" or how many rules), not inside it, at every width; it opens the
+    rules builder without opening the section first (ADR-0259);
   - the section's help says that a rule sits on the element it shows, hides or requires, or on the field it shows a
     message on: a field's validation rules are listed among its rules, each opening the builder (ADR-0178).
 - **The AI add-on:** "Suggest help text" sits beside the help text.
@@ -602,6 +603,8 @@ Inbox uses them too while it is filtered to this form.
 - **the switch** "Compare with the previous period": a calendar period compares with the same days of the one before
   (this month so far with the same days of last month), a rolling one with the span just before it. It applies to the
   numbers and to the chart of entries per day;
+- **the switch** "Show as tables", which shows every chart of the screen as its table, on the Overview and the Answers
+  alike, kept per user (ADR-0259);
 - **the segmented switch** Overview · Answers.
 
 **Overview:** views, starts, entries and conversion, each with its change in words ("up 6% from 4,540"); entries per
@@ -614,11 +617,12 @@ Filter, dialog and chips, without Received, which the range says). Choice fields
 share of the answers, a ranking its options by their average position, a grid row by row, a number its average,
 median, lowest and highest, and a scale from 0 to 10 its three groups and recommendation score; free-text answers are
 listed, newest first, each linking to its entry, and never summarised; other fields say how often they were answered,
-and the fields nobody answered share one line. Compare and Group by are the Overview's; in their place, one switch
-"Show as tables" shows every answer's chart as its table, kept per user. The answers come from the entries, so they are
-there while insights are off.
+and the fields nobody answered share one line. Compare and Group by are the Overview's; "Show as tables" is the
+screen's, so it shows the answers' tables too. The answers come from the entries, so they are there while insights are
+off.
 
-- **Every chart** has "Show as table", which swaps it for its table in place; each box remembers the choice per user.
+- **No chart** has a button of its own: the toolbar's one switch shows them all as tables, and each chart's text for
+  screen readers names it.
 - **Empty:** "No data yet", with when numbers appear.
 - **Insights off:** one line naming where to turn them on, and nothing else.
 
@@ -677,8 +681,9 @@ Both are the same list. The Inbox shows every form the user may view, with a for
 then the newest. A form's Entries view shows that form only.
 
 - **Columns:** the selection box (named "Select entry 1042"), with a box in the header that selects the page; the
-  entry title, or its number when the form has none; the form (Inbox only); the state chip; the time received; the
-  action status ("3/3 delivered"); and the columns the user adds.
+  entry title, or its number when the form has none; the form (Inbox only); the state chip; the time received;
+  Actions, which speaks only where something did not go out ("1 failed", "1 uncertain", "2 waiting") and is empty
+  where every action went out or none ran (ADR-0259); and the columns the user adds.
 - **A column whose value a filter fixes** to one value is hidden while that filter is on, since its chip already says
   it; a filter that leaves several values (a date range) keeps its column.
 - **The column chooser** sits at the end of the header row. It opens a sidebar of checkboxes: the details every entry
@@ -689,7 +694,8 @@ then the newest. A form's Entries view shows that form only.
   row's state chip sits under its name, so the name, the state and the time each keep one line
   ([ADR-0213](../decisions/0213-the-phase-11-ux-walk.md)).
 - **Unseen entries** are bold with a dot. Opening one marks it seen.
-- **Toolbar:** the search field · Filter · Export…; "…": Email me a summary… · Keyboard shortcuts.
+- **Toolbar:** the search field · Filter · Export…; "…": Email me a summary… · Keyboard shortcuts. Export… is not
+  offered while the list shows no entries (ADR-0259).
 - **Search** matches the entry title, number and reference, and the answers of fields that are not sensitive. When it
   finds nothing and sensitive fields exist, the empty state says that they aren't searched.
 - **Filter** opens a menu:
@@ -698,7 +704,9 @@ then the newest. A form's Entries view shows that form only.
     by type;
   - under "Saved", the user's own filter sets: on the Inbox all of them, each naming its form when it has one
     (choosing such a set filters the Inbox to that form); on a form's Entries view, the sets for that form and those
-    without one.
+    without one;
+  - a part opens a dialog whose headline names what its boxes choose ("Filter by state"), so the boxes carry no
+    second name (ADR-0259).
 - **Active filters** show as chips in a row of their own under the toolbar, followed by "Save as…" and "Clear filters".
 - **Bulk bar** (Umbraco's, at the bottom, once a row is selected): visible, the first three actions the user may use,
   in this order: Approve · Reject · Mark as spam · Delete… · Export selected… · Re-run actions. The rest are in "…".
@@ -790,7 +798,7 @@ A sidebar beside the list; the list keeps its place, its selection and its scrol
 
 | Screen | Content | Primary | Secondary |
 | --- | --- | --- | --- |
-| Export (sidebar) | the format (CSV, Excel, JSON, printable view, ZIP of the uploaded files), the fields, and the current filters with the number of entries they match; under "More options" the delimiter, labels or aliases as headers, and the byte-order mark. It opens with the user's last choices for this form. | **Export** | Cancel |
+| Export (sidebar) | the format (CSV, Excel, JSON, printable view, ZIP of the uploaded files), the fields, and which entries go ("All, no filters", "Those that match the filters", "Those selected"); how many stands on the primary alone ("Export 3 entries"); under "More options" the delimiter, labels or aliases as headers, and the byte-order mark. It opens with the user's last choices for this form. | **Export 3 entries** | Cancel |
 | Email me a summary (sidebar) | Off, daily, or weekly on Mondays; it goes out at 07:00 in the site's time zone and covers the day or week before. It holds counts and links, never answers, only for the forms the user may view, and goes to the user's own address. Below the choice, what it looks like. | **Save** | Send test email · Cancel |
 
 A large export continues in the background; a notification links to the file when it is ready (11.4).
@@ -802,7 +810,7 @@ the footer and its back arrow to its tab; the Library place stays marked there (
 
 | Tab | The list | The item's workspace | Header and "…" |
 | --- | --- | --- | --- |
-| Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, pages, a data type's values, a JSON address, an upload, countries, or a standard list) | the editor for its kind with a live preview of the options, CSV or TXT upload, and, for a JSON address, how long fetched options are kept, with Fetch now | "Used by 2 forms" · "…": Duplicate · Delete… |
+| Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, pages, a data type's values, a JSON address, an upload, countries, or a standard list) | the editor for its kind under the kind's headline ("Fixed options"), which names its rows, with a live preview of the options, CSV or TXT upload, and, for a JSON address, how long fetched options are kept, with Fetch now | "Used by 2 forms" · "…": Duplicate · Delete… |
 | Themes | name, a swatch, and "Default" on the default theme, unless its name already says so (Site default); primary **Create theme**; "…": Import a theme… | colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under "More options", beside a live kitchen-sink form, with each colour's contrast check under it | "Used by 5 forms" · "…": Duplicate · Export · Delete… |
 | Email layouts | name, a thumbnail, and "Default" on the default layout; primary **Create email layout** | logo, colours, header and footer per language, beside a preview with a sample entry in light and dark; Send test email sits with the preview, because it sends what the preview shows | "Used by 3 actions" · "…": Duplicate · Delete… |
 | Templates | the gallery of built-in and saved templates; no create button, because templates come from "Save as template" on a form or a group | none: a card opens its preview, with **Use template** | saved templates' "…": Rename… · Delete… |
@@ -843,10 +851,10 @@ Retention's Save is **Save retention settings**, Data collection's **Save data c
 | Tab | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
 | People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). | **Find** | after a search: Export everything (a ZIP of JSON and files) · Set legal hold… · Erase… |
-| Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press. While the days are being changed, it counts with the values not yet saved. | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
+| Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam), a help line only under a state whose name does not say which entries it holds (Submitted, Approved); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press. While the days are being changed, it counts with the values not yet saved. | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
 | Data collection | IP handling, sensitive-field defaults, captcha consent mode, the insights switch | **Save** | – |
-| Deliveries | every email and webhook run, problems first (failed, uncertain, limited), then the newest; state, recipient, form and time. A row opens its details. | in the details: **Retry** for a failed or uncertain run | search · Filter |
-| Audit log | who did what, when, on which form or setting. A row opens its details, with the values before and after; a form's save or publish links to that version in the form's History, where the changes are listed. | – | search · Filter · Export |
+| Deliveries | every email and webhook run of the last 30 days at first, problems first (failed, uncertain, limited), then the newest; state, recipient, form and time. A row opens its details. Empty, it says the span: "No deliveries in the last 30 days." | in the details: **Retry** for a failed or uncertain run | search · Filter |
+| Audit log | who did what, when, on which form or setting, the last 30 days at first; empty, it says the span. A row opens its details, with the values before and after; a form's save or publish links to that version in the form's History, where the changes are listed. | – | search · Filter · Export |
 
 - **Export everything** prepares the ZIP in the background: the results box shows how far it is, the button can't be
   used meanwhile, the user can carry on, and a toast and a notification link to the file.

@@ -118,7 +118,7 @@ The form takes the screen, with the inspector beside it on the right and one row
 **After sending** at its start, the width, the language, the form check and **…** at its end. You can fold the
 inspector to a narrow rail; below 700 pixels it opens over the form when you select something, and Esc closes it.
 
-![The Design view of a contact form: the form on the canvas, and the inspector of the selected Email address field on the right](screenshots/designer.png)
+![The Design view: a contact form, and the field picker open from Add field](screenshots/designer.png)
 
 ### Adding fields
 

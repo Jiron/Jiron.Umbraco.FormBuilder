@@ -17,6 +17,10 @@ counted as its "Rules" section says, from the section's start page.
 - **A form's views ask for a pick first** (ROADMAP 22.3, ADR-0258): Add action lists the kinds before the kind's
   settings, so designer task 11 grew by one click. A form's Settings show the group picked, Submission at first, and
   no task here starts in another group. The other tasks are as they were.
+- **The other screens** (ROADMAP 22.4, ADR-0259) changed no path: the Actions column, the export's words, the filter
+  dialogs, Insights' one switch and Retention's rows say less, and every task takes the clicks it took. The paths were
+  counted again on the build after it, by the browser test of the first five tasks of each persona
+  (`top-tasks.spec.ts`).
 
 ## Designer
 
@@ -164,7 +168,7 @@ design was changed after each:
 
 **The fourth run's notes** on the longer routes a newcomer might try first shaped the last changes:
 
-- **A new page's empty state** points to Layout › New page.
+- **A new page's empty state** points to Layout › New page (since step 22.1, to its "Add field" and the field picker).
 - **A toast** says when an addition waits for publishing.
 - **The Audit log** links a form's changes to its History.
 

@@ -1,6 +1,8 @@
 # 0188. The Actions view: a list per trigger, an action's sidebar, and its words loaded with it
 
-- Status: accepted
+- Status: accepted; the sidebar's "What happens" choice above the settings is superseded by
+  [ADR-0258](0258-a-forms-views-pick-first.md): "Add action" lists the kinds first, and the sheet that follows is
+  headed by the kind. The list per trigger and the words loaded with the view stay as decided here
 - Date: 2026-11-05
 - Roadmap step: 10.2a (10.2b adds the email editor, 10.2c Test, 10.2d the other editors, 10.2e the last run); builds on
   [ADR-0185](0185-the-outcomes-editor.md) (the outcomes editor), [ADR-0158](0158-the-action-framework.md) (the action
