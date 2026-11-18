@@ -52,6 +52,12 @@ test('changing the days of a state, "What will be deleted" follows before the sa
     await expect(screen.locator('.total')).toBeVisible({ timeout: 60_000 });
     await expect(row, 'a year is far off').toHaveCount(0);
     await axeInside(page, 'jfb-retention-screen');
+    // A help line only under a state whose name needs one, and no raw key of the words anywhere (ROADMAP 22.4).
+    await expect(screen.locator('#days-submitted-help')).toBeVisible();
+    await expect(screen.locator('#days-approved-help')).toBeVisible();
+    await expect(screen.locator('#days-rejected-help')).toHaveCount(0);
+    await expect(screen.locator('#days-spam-help')).toHaveCount(0);
+    await expect(screen.getByText(/\bjfb[A-Z]\w*_/)).toHaveCount(0);
 
     // Ten days for submitted entries: the form's three go within the next 30 days, counted before anything is saved.
     const submitted = screen.getByLabel('Submitted', { exact: true });

@@ -44,7 +44,13 @@ test("the walk's contact sheets", async ({ page }) => {
         const { screen: _screen, file: _file, ...found } = shot;
         (summary[screen] ??= {})[comboName(combo)] = found;
       }
-      return { combo, image, ...(shot?.error ? { note: shot.error } : shot ? {} : { note: 'not walked' }) };
+      const counts = shot && !shot.error ? { words: shot.words, navigation: shot.navigation } : {};
+      return {
+        combo,
+        image,
+        ...counts,
+        ...(shot?.error ? { note: shot.error } : shot ? {} : { note: 'not walked' }),
+      };
     });
     await page.setContent(sheetHtml(screen, cells));
     await page.screenshot({ path: join(sheets, `${screen}.png`), fullPage: true });

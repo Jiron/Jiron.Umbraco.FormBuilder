@@ -123,6 +123,9 @@ test('a designer makes an option list of every kind through the screens, each pr
   await editor.getByRole('button', { name: 'Add these options' }).click();
   await expect(radios(view)).toHaveCount(3);
   await expect(view.locator('#as-dropdown option')).toHaveText(['Choose one', 'Small', 'Medium', 'Large']);
+  // The box's headline names the rows, and the editor names them no second time (ROADMAP 22.4).
+  await expect(editor.locator('p.label')).toHaveCount(0);
+  await expect(editor.getByRole('list', { name: 'Fixed options', exact: true })).toBeVisible();
   made.set('manual', await save(page));
   await expect(page.locator('jfb-library-item-editor').getByText('Not used by any form')).toBeVisible();
   await axeInside(page, 'jfb-option-list-view');

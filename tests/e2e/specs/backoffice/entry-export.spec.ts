@@ -92,7 +92,9 @@ test('Export selected... exports only the ticked entries, Export... the search, 
     .click();
   await view.locator('#bulk-more').getByRole('button', { name: 'Export selected\u2026', exact: true }).click();
   const sidebar = page.locator('jfb-entry-export-modal');
-  await expect(sidebar.getByText('3 entries selected', { exact: true })).toBeVisible();
+  // Which entries beside Entries; how many on the button alone (ROADMAP 22.4).
+  await expect(sidebar.getByText('Those selected', { exact: true })).toBeVisible();
+  await expect(sidebar.getByText(/\b3 entries\b/)).toHaveCount(1);
   await expect(sidebar.getByText('Sensitive fields are left out.', { exact: true })).toBeVisible();
   await axeInside(page, 'jfb-entry-export-modal');
 
@@ -117,7 +119,7 @@ test('Export selected... exports only the ticked entries, Export... the search, 
   await search.press('Enter');
   await expect(rows).toHaveCount(1);
   await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
-  await expect(sidebar.getByText('1 entry that matches the filters', { exact: true })).toBeVisible();
+  await expect(sidebar.getByText('Those that match the filters', { exact: true })).toBeVisible();
   const format = sidebar.locator('uui-select');
   await format.locator('select').selectOption('json');
   await expect(sidebar.getByRole('button', { name: 'More options', exact: true })).toHaveCount(0);
@@ -129,6 +131,14 @@ test('Export selected... exports only the ticked entries, Export... the search, 
   await expect(format.locator('select')).toHaveValue('json');
   await sidebar.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
+  // A search that finds nothing: Export... is not offered while the list shows no entries (ROADMAP 22.4).
+  await search.fill('Nobody by this name');
+  await search.press('Enter');
+  await expect(rows).toHaveCount(0);
+  await expect(view.locator('.toolbar').getByRole('button', { name: /^Export\W$/ })).toBeDisabled();
+  await search.fill('Person 0005');
+  await search.press('Enter');
+  await expect(rows).toHaveCount(1);
 
   // The panel's Print asks for the printable view of its one entry.
   await rows.first().locator('.name').click();
