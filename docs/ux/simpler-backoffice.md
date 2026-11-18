@@ -290,7 +290,7 @@ After each step the walk runs again and is compared with the one before.
 | Fixed items on the left at 900 px height, with twenty forms | 0 of 17 | 5 of 5 (measured, 22.4: with fifty forms in the tree, at 1440 by 900 px, each place lies inside the window; `places.spec.ts`) |
 | Clicks to add a field at the end of a page | 1 | 2 (22.1) |
 | Clicks in each of the top tasks ([top-tasks.md](top-tasks.md)) | counted there | none grows by more than one (counted, 22.4: ten tasks one more for a later tab, 22.2; designer task 11 one more for the kinds, 22.3; designer task 7 one more, 22.1; none in 22.4; the first five of each persona clicked on the build by `top-tasks.spec.ts`) |
-| Words on each screen | the last walk's counts | no screen grows |
+| Words on each screen | the last walk's counts: 59,481 on the 286 shots of its two looks | 48,455 on the same shots (measured, 22.4, on the final build: no screen shows more than one word more, and 168 shots show more than three fewer; [review-22.md](review-22.md)) |
 
 ## What it costs
 

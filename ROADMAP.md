@@ -3385,7 +3385,7 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - the walk reaches every screen with nothing of the section's own from axe, and no screen of the designer shows more words than in the walk before; the top tasks are counted again;
     - the focused checks of "How to use" pass, with `node scripts/size-check.mjs`; `v18/main` has the step merged in, and its checks pass there.
 
-- [ ] **22.2 The section's left side: the fixed items first, each one screen with tabs** (the owner, 2026-11-16, ADR-0254)
+- [x] **22.2 The section's left side: the fixed items first, each one screen with tabs** (the owner, 2026-11-16, ADR-0254) (2026-11-18, b349e686)
   - The owner: "Everything is listed at the left hand section. So you have to scroll a lot"; "at the left you can only click on settings", and "once you're in that page, you can select the sub categories of these settings".
   - **The sidebar (D1, the second decision):** Inbox, with its count of unseen entries, Library, Settings, Privacy and Activity come first, without headings. The tree of forms follows under Umbraco's own header with its "+" and "…", the Recycle Bin last. An item shows to a user who may use any of its tabs.
   - **Each item is one screen with tabs along its top,** in Umbraco's own way (a workspace's views or a section's; the ADR decides which):
@@ -3407,7 +3407,7 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - the walk reaches every screen with nothing of the section's own from axe, and no screen shows more words than before; the top tasks are counted again;
     - the focused checks pass, with the size check; `v18/main` has the step merged in, and its checks pass there.
 
-- [ ] **22.3 A form's views: its settings by group, an action's kind first, the form's buttons where they apply** (the owner, 2026-11-16, ADR-0254)
+- [x] **22.3 A form's views: its settings by group, an action's kind first, the form's buttons where they apply** (the owner, 2026-11-16, ADR-0254) (2026-11-18, b90da088)
   - The owner: "I don't want to be bombarded with everything at once. I just want to have to pick something, and then I go to that place, and then in that place I have the more detailed stuff".
   - **A form's Settings (E1):** the view shows its groups to pick from, each with the line a closed group has today (what is set, and its problems counted), and then the group picked, alone. Six groups since 22.1: Submission, Availability, Spam protection, Privacy, Appearance, Developer. "Fix it" opens the group with the focus on its setting.
   - **One level of folding (the fifth rule)** in a form's Settings, the inspector and an action's sheet, which draw their settings the same way: where a section that opens holds "More options" today, the wireframe decides which of the two stays, and §4.13's "at most seven settings" is kept by it.
@@ -3423,7 +3423,7 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - the walk reaches every screen with nothing of the section's own from axe, and no screen shows more words than before; the top tasks are counted again;
     - the focused checks pass, with the size check; `v18/main` has the step merged in, and its checks pass there.
 
-- [ ] **22.4 The other screens, what describes the section, and phase review** (the owner, 2026-11-16, ADR-0254)
+- [x] **22.4 The other screens, what describes the section, and phase review** (the owner, 2026-11-16, ADR-0254) (2026-11-18, 40da2811)
   - **The screens not yet looked at (F):** an entry's screen and panel, the entries' filters and exports, the option list editor, People, Retention, Deliveries, the Audit log and Insights, each asked four questions: is there a second way to do this; what could wait until something is picked; what is said twice; does the empty state say what to do next. The "Actions" column of the entries' lists speaks only where something did not go out. Every finding is in `docs/ux/review-22.md`, fixed with a test that fails without the fix or kept with its reason, with a section per design skill.
   - **What describes the section:** `docs/ux/information-architecture.md` describes the section as it now is, with its wireframes, the copy guide and the top tasks; so do the editor guide and every guide that names a screen's place, the screenshots of every changed screen (the Marketplace listings' included), CHANGELOG and `docs/STATUS.md`. ADR-0021, ADR-0165 and ADR-0170 name the records that changed them. `docs/ux/simpler-backoffice.md` says for each of its findings what became of it, and its table "How to tell that it got simpler" holds the numbers measured before and after.
   - **Phase review:** the handover note, with the wiring sweep over every screen, address and link the phase moved.

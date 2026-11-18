@@ -242,8 +242,50 @@ rendering, rules-and-validation, troubleshooting, the README and the copy guide)
 
 ## The walk on the final build
 
-The walk in the twelve looks and the five journeys run on the phase's last work commit, with the clean-clone
-verification after them. Their result is recorded here once they have run.
+The walk in the twelve looks and the five journeys first ran on the build that held the phase's records, `9495272b`:
+1,824 shots, and two things found.
+
+- **The fold check's reader threw on the visitor's journey** in the four looks at 375 px, the one width that walks
+  it. Not the product: the check reads each element's `children`, a form answers `form.children` with its control of
+  that name, and the demo's newsletter has a field called "children". The reader asks `Element`'s own getter now,
+  which no control stands in front of.
+- **The field picker's first match was hard to read in the dark theme** (axe, `color-contrast`, in the six dark
+  looks). The match Enter picks stood on Umbraco's colour for what is current under the row's own text, about 4.3:1.
+  The picker was built in step 22.1, whose walk looked at the light theme alone. The match stands on
+  `--jfb-bo-color-current` under its contrast text now, 5.0:1, as the open entry's row and the group picked in a
+  form's Settings do, and `dark-theme.spec.ts` opens the picker with a search typed and fails without the fix.
+
+The whole walk then ran once more on the final build, `4be8f0ac`, in one go. All twelve looks and the five journeys
+reached every screen: 1,844 shots (152 screens in a look, 157 at 375 px with the visitor's journey), none with an
+error, none with a fold inside a fold, none with a raw key.
+
+Axe inside the section's own elements found nothing of the section's own; what it named, the walk of Phase 21 named
+too ([review-21.1.md](review-21.1.md)):
+
+- Umbraco's and its UI library's own components: the colours of an open tree row in the dark theme, a checkbox's
+  `indeterminate` state, the entity actions' target in the Recycle Bin at 1440 px, and the label colour of a
+  dialog's Cancel in the dark theme at 768 px.
+- Controls of the section's own that axe measured smaller than they are to use, each half under a bar that stays in
+  place at the moment of the shot: in an action's sidebar the one setting at its footer's edge (a yes-or-no setting
+  at 1440 and 768 px, a radio at 375 px in German), the name of an unseen entry under the selection bar at 768 px,
+  and the drag handle of an action's card at 375 px.
+
+**Words, like for like.** The twelve looks walk one site, and each leaves its own forms, themes, lists and entries
+in it. So a list shows twelve looks' rows where the last walk of Phase 21, of two looks, showed two: against that
+walk the whole walk named 66 shots with more words, Themes with 80 where it had 22, twelve rows for two. The
+comparison was made as the earlier walk was, with its two looks alone on a fresh site, on the same commit:
+
+- **143 screens in both, 286 shots:** none shows more than one word more (Data collection in German, 194 to 195),
+  so what the 66 shots showed is the data of twelve looks, not a screen that grew; 168 shots show more than three
+  words fewer. In all, 59,481 words before and 48,455 after.
+
+**The clean-clone verification** first ran on the same commit and failed three backoffice tests, none of them a fault
+of the product. History's spec still published from the History view, which has had none of the form's buttons since
+step 22.3. And two of the library's tests asked a freshly read tree for a row at its top level: the tree shows a
+hundred rows of a level at first, the specs share their host's root, and with this phase's specs the root had outgrown
+that page by the time they ran. On a root of 260 forms both fail the same way and pass once the tree is read as far as
+the row. `40da2811` changes those specs and no file of the product or of the walk, so the walk above stands for it; the
+verification passed on it, and [STATUS.md](../STATUS.md) holds its counts.
 
 ## The three design skills
 
