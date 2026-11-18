@@ -68,7 +68,6 @@ Each form in the tree, and the open form's header, has a **…** menu:
 
 | Item | What it does |
 | --- | --- |
-| Restore an earlier version… | Compares an earlier version with the draft and restores it ([History](#history)). In the open form only. |
 | Duplicate… | Copies the form under a new name. **Copy its actions too** is on by default. A copy never takes the form's own access settings; it gets those of the folder it lands in. |
 | Move to… | Moves it to another folder. If more user groups would see it there, you are asked first. |
 | Copy actions to… | Copies its actions to another form, and then lists anything the other form lacks for them. |
@@ -101,9 +100,11 @@ Opening a form shows its name, its state and its views.
   draft) or **Unpublished** (published before, now offline).
 - **The views:** **Design**, **Settings**, **Actions**, **Entries**, **Insights** and **History**. You see the ones
   your permissions allow, and the form opens on the first of them.
-- **The footer:** **Preview**, **Save draft** and **Publish…**.
+- **The footer:** **Preview**, **Save draft** and **Publish…**, on Design, Settings and Actions, the views that change
+  the form. Entries, Insights and History have no footer.
 
-Everything you change in Design, Settings and Actions changes the **draft**. **Save draft** keeps it; visitors keep
+Everything you change in Design, Settings and Actions changes the **draft**, and stays while you look at the other
+views. Leaving the form with changes not saved asks first. **Save draft** keeps them; visitors keep
 getting the published version until you publish. If someone else saved the form after you opened it, your save stops
 and **Review both versions** shows each difference side by side, so you choose what stays; nothing you changed is
 lost.
@@ -187,16 +188,17 @@ nothing selected, it shows the open page's title and rules:
 
 - **Essentials:** the label, help text, whether an answer is required, the placeholder and, for choice fields, the
   options.
-- **Validation:** the checks on an answer, such as a length, a pattern or "each answer only once", and the message for
-  each ([rules-and-validation.md](rules-and-validation.md)).
+- **Validation:** the checks on an answer, such as a length, a pattern or "each answer only once"
+  ([rules-and-validation.md](rules-and-validation.md)).
+- **Messages:** what visitors read when an answer is missing or does not pass a check.
 - **Rules:** when the element is shown, hidden or required.
 - **Appearance:** hiding the label, the width in a group of columns, and the type's own look.
-- **Advanced:** the alias, a default value or prefill, autocomplete, whether the answer is sensitive, how long it is
-  kept, whether emails list it, and a CSS class.
+- **Privacy:** whether the answer is sensitive, how long it is kept, and whether emails list it.
+- **Advanced:** the alias, a default value or prefill, autocomplete, and a CSS class.
 
 Essentials is open at first; the other sections stay open or closed as you leave them in this browser. A closed
-section sums up what is set in one line, and a long section shows its first seven settings with **More options** for
-the rest. A setting the site's configuration fixes is shown read-only, with the key that sets it.
+section sums up what is set in one line, and an open one shows all its settings, never more than seven. A setting the
+site's configuration fixes is shown read-only, with the key that sets it.
 
 The **alias** names the answer in merge tags, exports and the API. Changing the alias of a field that already has
 entries asks first; merge tags written with the old alias keep working ([merge-tags.md](merge-tags.md)).
@@ -232,8 +234,11 @@ first if it follows a message (5 by default). **Preview with a sample entry** sh
 ## The Settings view
 
 The form's settings, in groups: **Submission**, **Availability**, **Spam protection**, **Privacy**, **Appearance** and
-**Developer**. A closed group sums up its settings in one line. A setting offered as
-**Site default (…)** follows the site's own setting, also when that changes later.
+**Developer**. The groups are a list, each summing up its settings in one line; pick one, and its settings show beside
+the list, Submission at first and then the group you picked last. On a narrow screen the list stands alone, a pick
+shows the group in its place, and **All settings** goes back. Where the site has several languages, the language
+button above the settings is the Design view's. A setting offered as **Site default (…)** follows the site's own
+setting, also when that changes later. The form check's **Fix it** picks the group and puts you on the setting.
 
 ### Submission
 
@@ -336,7 +341,6 @@ between.
   message.
 
 Published and pinned versions are kept for good; how long draft saves are kept is set in Settings › General.
-**Restore an earlier version…** in the form's "…" does the same from any view.
 
 ## Templates
 

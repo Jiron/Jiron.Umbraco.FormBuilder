@@ -64,7 +64,7 @@ daily counts of Insights three years. [The privacy facts](privacy/facts.md#how-l
 
 ## Sensitive answers
 
-Two settings of a field, under **Advanced** in the inspector, protect an answer:
+Two settings of a field, under **Privacy** in the inspector, protect an answer:
 
 - **Sensitive:** the answer is shown masked in lists and entries, and only users who may **View sensitive data** can
   reveal it; each reveal is recorded in the audit log. Emails and webhooks leave it out of the answers they list and

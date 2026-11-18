@@ -227,7 +227,9 @@ flowchart LR
   Umbraco's document picker for the page after a send; the property and the allowed folders and forms share their rows
   through `picked-rows.ts`. The backoffice's own tokens are in `src/styles/tokens.ts`. From 9.3a it holds the form
   workspace (`src/designer`, ADR-0167): Umbraco's named detail workspace over the draft endpoint (`FormDetailRepository`
-  with its store), whose views and footer actions show by the user's permissions on the open form, and the editor model,
+  with its store), whose views and footer actions show by the user's permissions on the open form, the footer actions
+  on the views that change the form alone (`form-view.condition.ts`, which follows the address; the form's editor
+  draws Umbraco's workspace editor itself, which leaves the footer out elsewhere, ADR-0258), and the editor model,
   pure functions over the definition and the selection with an undo history (`editor-model.ts`, `history.ts`), whose
   moves the form engine's own `hasCycle` from `@jfb/logic` checks. From 9.3b the Design view (`form-design.view.ts`,
   ADR-0168) holds the canvas (`canvas/`) and, since 22.1 (ADR-0256), the field picker every Add field and insert point
@@ -247,9 +249,9 @@ flowchart LR
   each change to the Design view as an edit of the editor model, typing in one box one step of the undo history. The
   canvas endpoint serves the site's languages, which the row's language list switches between, and the draft endpoint
   whether the form has entries, which an alias change asks about first. From 14.1 (ADR-0228): `translations.ts` finds
-  the texts the
-  language shown lacks, which the canvas marks on a field, group or page, After sending on an outcome's row, and the
-  Settings and Actions views on a box, an action's card and a closed group's line; `dictionary-texts.ts` finds the dictionary items a draft's
+  the texts the language shown lacks, which the canvas marks on a field, group or page, After sending on an outcome's
+  row, and the Settings and Actions views on a box, an action's card and a group's row; `dictionary-texts.ts` finds
+  the dictionary items a draft's
   texts name (`#key`), reads their texts from the management API's `dictionary-text` endpoint once per language and
   key, and maps the draft the canvas draws to them, the inspector and the sidebars saying under a `#key` box what
   visitors see; `inspector/dictionary-pick.element.ts` opens Umbraco's dictionary picker for a user with the
@@ -291,9 +293,10 @@ flowchart LR
   held to the shared vectors of `tests/vectors/search.json`. The editor model's delete takes the validation rules that show their message on what it
   deletes along, and the structure check refuses a validation rule on a field the visitor's page has no comparable
   answer of, which both runtimes would refuse the whole form for. From 10.1a (ADR-0184): `settings/` holds the form's
-  Settings view, the groups of section 4.3.4 on one page: `settings-model.ts` reads each group with the model's
-  defaults, writes a setting back where it was as the server writes its canonical form, says where a path of the
-  settings is in the view (`anchorOf`) and the line a closed group says, pure; `time-zone.ts` turns a time on the
+  Settings view, the groups of section 4.3.4 as a list to pick from, the group picked beside it (ADR-0258):
+  `settings-model.ts` reads each group with the model's defaults, writes a setting back where it was as the server
+  writes its canonical form, says where a path of the settings is in the view (`anchorOf`) and the line a group's row
+  says, pure; `time-zone.ts` turns a time on the
   site's clock into the UTC instant the definition stores and back, with the browser's own time zone data; and
   `form-settings.view.ts` draws the groups with the boxes' look the inspector has (`inspector/control.styles.ts`) and
   its editors for a captcha provider's own settings. The site's choices come from the management API:
@@ -387,8 +390,8 @@ flowchart LR
   `history/restore-draft.ts`, one restore at a time and held to the form it began in: it saves what is unsaved, takes
   the new draft's number from the server's answer, and reads the form again. The toast names what changed (the
   History's summary, joined by the dictionary's `listOf`), and Undo restores the draft before while the draft is still
-  the restored one. The History view, a row's "…" and the form's "Restore an earlier version…" (an entity action shown
-  only in the workspace, with its picker sidebar) share it; after Restore and publish… the caller opens the publish
+  the restored one. The History view and a row's "…" share it, the one way to an earlier version (ADR-0258); after
+  Restore and publish… the caller opens the publish
   dialog through `publish-flow.ts`, the flow Publish… uses. Settings › General's History box is one of the
   global settings screen's (12.4a below).
   From 10.3c (ADR-0200): a save (`form-detail.data-source.ts`) reads the stored draft and refuses a draft saved, or a name

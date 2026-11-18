@@ -10,8 +10,8 @@ paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape i
 
 - **One primary action per screen** at most, in the place Umbraco gives it: the workspace footer, or a modal's or
   sidebar's action bar. The tables below name it in **bold**. A screen for reading, such as the Audit log, has none.
-  - **In a workspace with views,** the footer's primary belongs to the whole workspace and stays on every view, as
-    Umbraco's document workspace keeps "Save and publish" on its Info view.
+  - **In a workspace with views,** the footer's buttons show on the views they act on, and no footer is drawn on the
+    others, where it would hold none of them ([ADR-0258](../decisions/0258-a-forms-views-pick-first.md)).
   - **A view adds no second primary:** its own main action is the first button of its toolbar, in the secondary style.
 - **At most three visible secondary actions** in any toolbar, header or card. Everything else is in "…".
   - **A segmented switch** (Phone · Tablet · Desktop) counts as one control.
@@ -186,15 +186,18 @@ with `design`, who can act on it; to others the chip says what visitors get, "Pu
 - **"Used on":** opens a sidebar listing the pages that pick the form and where on each page ("Form block in Main
   content"), each linking to the content editor. With none, it reads "Not used on any page", and its sidebar says how
   to put a form on a page, with "Create a form block type…" for users who may.
-- **"…"** starts with Restore an earlier version… (users with `design`, 5.6), then holds the tree's form actions,
-  Unpublish… and, for users with `manageSettings`, "Audit log for this form" (the Audit log, filtered to it).
+- **"…"** holds the tree's form actions, Unpublish… and, for users with `manageSettings`, "Audit log for this form"
+  (the Audit log, filtered to it). An earlier version comes back from the History view alone (5.6).
 
 **Views,** as tabs in Umbraco's place: **Design, Settings, Actions, Entries, Insights, History**. Users see the views
 their permissions allow (section 11). A form opens on Design for users with `design`, otherwise on Entries.
 
-**Footer** (users with `design`): Preview · Save draft · **Publish…**. Leaving with unsaved changes asks first
-(Umbraco's "Discard unsaved changes", with Stay and Discard changes), for a change on the canvas and in a view as for the
-name; closing or reloading the tab asks the browser's own question, which Umbraco's workspace asks (10.3c, ADR-0200).
+**Footer** (users with `design`), on the views that change the form, Design, Settings and Actions: Preview · Save
+draft · **Publish…**. On Entries, Insights and History no footer is drawn, nor on a view of a site's own; with an
+entry open, the entry's own bar is the only one (ADR-0258).
+Changes not saved yet stay while the views change. Leaving the form with them asks first (Umbraco's "Discard unsaved
+changes", with Stay and Discard changes), for a change on the canvas and in a view as for the name; closing or
+reloading the tab asks the browser's own question, which Umbraco's workspace asks (10.3c, ADR-0200).
 
 ### 5.1 Design
 
@@ -268,10 +271,16 @@ stand in for it.
 - **Validation** adds, for text, email, phone and web address fields, **Must match a pattern**: the pattern, its
   message, and **Try it**, which says at once whether a typed answer matches, as the site will check it. A pattern the
   site's matcher refuses is said under its box; the answer tried is never saved.
-- **Validation, Rules, Appearance and Advanced** (closed, remembered per user):
+- **Messages,** after Validation: what visitors read when an answer is missing or does not pass a check, a box for
+  each message the field's type has.
+- **Privacy,** before Advanced, for a field that holds an answer: Sensitive, what is kept of the answer, and whether
+  the emails include it.
+- **Validation, Messages, Rules, Appearance, Privacy and Advanced** (closed, remembered per user):
   - a closed section shows a short summary of what is set ("Maximum length: 200"), or "Nothing changed", wrapping
     rather than cut, so a rule's sentence keeps what it depends on (ADR-0182);
-  - a section shows at most seven settings before "More options".
+  - a section folds nothing inside it, and shows at most seven settings: no built-in type has more in any section. A
+    site's own type that has more gets the rest in a section of its own right after it, "Validation, more"
+    (ADR-0258).
 - **Each box** has its label, its help and why a value can't be kept tied to it for screen readers; a value is checked
   as it is typed and said once the box is left. Typing in one box is one step to undo. A setting the site locks shows
   its value and the configuration key behind it, read-only; one it hides is not shown (ADR-0060, ADR-0170).
@@ -397,11 +406,19 @@ dialog blocks it with Fix it.
 
 ### 5.2 Settings
 
-One page with the groups of §4.3.4, in their order: Submission, Availability, Spam protection, Privacy, Appearance,
-Developer. After sending, the form's outcomes, is the Design view's (§5.1, ADR-0256).
+The groups of §4.3.4 as a list to pick from, in their order: Submission, Availability, Spam protection, Privacy,
+Appearance, Developer; beside it, the group picked, alone (ADR-0258). After sending, the form's outcomes, is the Design
+view's (§5.1, ADR-0256).
 
-- **Open or closed:** Submission is open. The others are closed, each with a summary line ("Open
-  until 30 November · 120 entries at most").
+- **The list:** each group a row, its name and a line of what it sets ("Open until 30 November · 120 entries at
+  most"), its problems counted first; the row picked is marked as Umbraco marks the open item, and beside its group
+  says its name alone, as the group's settings say the rest. Submission is picked at first, then the group the user
+  picked last.
+- **The group picked:** its name as a heading, the language button of the Design view where the site has several
+  languages, and its settings.
+- **At 620 px** (and in any view up to 700 px wide), the list stands alone, every row with its line. A pick shows the
+  group in its place, with the focus on its first setting, and "All settings" before its name goes back to the list,
+  with the focus on the group's row.
 - **Submission** shows five settings: the send button's label, Store entries, Manual approval, Email verification and
   the entry title (with its merge-tag picker). Its "More options" holds the settings of forms with several pages (the
   labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference: its prefix, the
@@ -410,8 +427,9 @@ Developer. After sending, the form's outcomes, is the Design view's (§5.1, ADR-
 - **Spam protection** is a list of choices with a line each: "Site default (Standard)" names what the site chooses, and a
   captcha provider without its keys is dimmed, its line saying that a developer adds them. A chosen provider's own
   settings follow it (reCAPTCHA v3's lowest score).
-- **Problems:** the form check's problems in the settings show under their setting, a closed group counts them on its
-  line, and Fix it opens the group, and More options where the setting is there, with the focus on it (ADR-0184).
+- **Problems:** the form check's problems in the settings show under their setting, each row counts its group's on
+  its line, and Fix it picks the group, and opens Submission's More options where the setting is there, with the focus
+  on it (ADR-0184).
 - **Help:** each setting has its help text below it and, where useful, "Learn more".
 - **Settings, outcomes and actions belong to the draft:** a sidebar's **Add** or **Update** changes the draft like any
   designer change, Save draft keeps it, and Publish puts it live. On a published form, the toast after Add or Update
@@ -426,21 +444,26 @@ it runs ("when an entry comes in"). The actions one event queues run in the orde
   its setting is off, the group shows one line saying so, with a link that opens the setting in the Settings view
   with the focus on it, and any actions it holds under that line, which don't run until the setting is on. Approved,
   on a form without manual approval, says that it runs as each entry comes in.
-- **The toolbar:** Add action, the view's main action and its one button. It opens the action sidebar ready to email
-  the team, the most common action. At the most actions a form can have, a line says so in its place.
-  - **Its first setting, What happens,** offers every preset of every action type, and a type without presets as
-    itself, in the registry's order: Email the team, Confirm to the visitor, Webhook, Slack, Microsoft Teams, Change the
-    entry's state, Create or update content. Choosing another replaces the settings below it, and the name with them
-    until a name is typed. An action of the form keeps what it does, said where the choice would be: another type is
-    another action.
-  - **Then** the name, the trigger (Submitted unless chosen; each choice says when it runs or the setting it needs),
-    the place in the list among that trigger's actions (a pointer orders them without dragging, WCAG 2.5.7), the type's
-    own settings as the inspector draws them (Essentials, then More options), Stop the rest if this
-    fails, and the rule, which the rules builder edits ("Run Email the team when").
+- **The toolbar:** Add action, the view's main action and its one button. At the most actions a form can have, a line
+  says so in its place.
+  - **The kinds first** (ADR-0258): Add action opens the action sidebar on the kinds a new action may be, under the
+    headline "New action": every preset of every action type, and a type without presets as itself, in the registry's
+    order, each with its icon, its name and a line: Email the team, Confirm to the visitor, Webhook, Slack, Microsoft
+    Teams, Change the entry's state, Create or update content. A site's own kind shows its name, and a line where the
+    site gives one ([extending.md](../extending.md)). The focus starts on the first kind.
+  - **The sheet:** a pick opens the kind's settings alone, headed by the kind, with the focus in its first box.
+    "Other kinds" before the heading goes back to the kinds, with the focus on the kind picked, while the action is not
+    added; another kind replaces the settings, and the name with them until a name is typed. An action of the form
+    opens on its sheet, headed by its kind, which it keeps: another kind is another action.
+  - **Then** the name; **When it runs**, one choice (Submitted unless chosen) with a line under it about the moment
+    chosen ("It runs when an entry comes in.", or the setting it needs); the place in the list among that trigger's
+    actions (a pointer orders them without dragging, WCAG 2.5.7); the type's own settings as the inspector draws them
+    (Essentials, then More options); Stop the rest if this fails; and the rule, which the rules builder edits ("Run
+    Email the team when").
   - **Problems:** the sidebar asks the form check about the draft as Add or Update would make it and says its problems
     under their box: those an action of the form had at once, others, and all of a new action's, once their box is
     left; an error keeps the button back, a warning does not. A problem under More options opens them; one of a setting
-    whose editor comes later shows under What happens, by the setting's name.
+    whose editor comes later shows at the sheet's top, under its kind, by the setting's name.
   - **Footer:** Delete action (for an action of the form) and Test at its start; Cancel · **Add**, or Cancel ·
     **Update**, at its end. Test tests the action as the sidebar holds it, before Add or Update (ADR-0190).
   - **After Add,** the sidebar closes, the new card takes the focus, the live region says where it runs ("Added. Email
@@ -634,11 +657,8 @@ with entries.
   reversible, so it acts at once (§4.13): the toast names what changed, since the menu skips the comparison, and Undo
   puts the draft before it back, which also stays in History. Undo does so only while the draft is still the restored
   one: after a change since, it says the draft before stays in History, as going back would lose that change.
-- **Restore an earlier version…,** first in the form's "…", offers the same from every view: a sidebar listing the
-  versions by date, newest first, with the same "Show draft saves" switch, where choosing one shows the same comparison
-  on top and the same two buttons; a restore there closes both, and only then does Restore and publish… open the
-  publish dialog. The current draft is not listed: there is nothing to compare it with. The menu item is the
-  workspace's only, not the tree's, where the form isn't open.
+- **One way back:** an earlier version comes back from this view alone; the form's "…" offers no second way
+  (ADR-0258).
 
 ### 5.7 Preview, publishing and conflicts
 
@@ -687,8 +707,8 @@ then the newest. A form's Entries view shows that form only.
   - **After a state change** (approve, reject, mark as spam, not spam) the selection clears, the rows change in place,
     and the toast offers **Undo** for 10 seconds. The actions the change starts wait until then, so Undo also cancels
     them (ADR-0023). Delete… asks first instead, because deleting can't be undone.
-  - **On a form's Entries view** the bulk bar sits directly above the workspace footer. The two never merge: the
-    footer's buttons are about the form, the bulk bar's about the selected entries.
+  - **On a form's Entries view** the bulk bar sits at the view's foot, where no workspace footer is drawn (5): the
+    form's buttons are not about the selected entries.
 - **Keyboard:** `j`/`k` move, `Enter` opens, `a` approves, `r` rejects, `s` marks as spam, `/` searches, `Esc` closes,
   `?` lists them in a dialog with only Close (§4.13).
   - **The keyboard cursor** is a focus ring around the row, without a fill, so it never looks like a ticked row or the

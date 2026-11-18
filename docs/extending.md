@@ -125,6 +125,12 @@ carry `[FormBuilderChoice(label)]`, and `TestAsync` answers with an `ActionTestR
 `ActionTestOutcome.DryRun` with lines in its `Preview`. The CRM sample,
 [`Crm/CrmActionType.cs`](../samples/Jiron.Umbraco.FormBuilder.Samples/Crm/CrmActionType.cs), shows each of these.
 
+In the designer, **Add action** lists your type among the kinds a new action may be: its icon and its name, or a
+kind for each of its presets by the preset's name. A kind has a line under its name where the backoffice's words hold
+one: a name written as a term of your own, `#acme_crm`, takes the term `jfbActionLines_crm` (the key after the area)
+as its line, from the `localization` manifest of your package, in English and German ([below](#a-settings-own-editor)).
+A name written as plain text, or a term without that word, shows the name alone.
+
 ### Option sources
 
 `IFormBuilderOptionSource` gives options from code by its `Name`, in the culture asked for and, for a cascade, for the
@@ -642,7 +648,9 @@ this.consumeContext(FORM_WORKSPACE, (context) => {
 ```
 
 `JfbFormWorkspaceContext` declares what it gives: the form's key, alias and name, and its draft's and live version's
-numbers. It is read-only; a view that changes a form does so through the management API, as the designer does.
+numbers. It is read-only; a view that changes a form does so through the management API, as the designer does. The
+form's Preview, Save draft and Publish… act on Design, Settings and Actions, so the workspace draws no footer on a view
+of your own, as on Entries, Insights and History.
 
 ## 8. Headless sites
 

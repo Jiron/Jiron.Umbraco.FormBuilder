@@ -45,7 +45,7 @@ triggers, and an entry waiting for its address to be confirmed is not yet submit
 
 ## Adding an action
 
-**Add action** opens the action's editor. Choose **What happens**:
+**Add action** lists the kinds of action, each with a line of what it does. Pick one:
 
 - **Email the team:** a mail with the answers to addresses you name;
 - **Confirm to the visitor:** a mail to the address the visitor gave;
@@ -53,10 +53,11 @@ triggers, and an entry waiting for its address to be confirmed is not yet submit
 - **Change the entry's state:** approve, reject or move it to Spam;
 - **Create or update content:** an item in Umbraco's content for each entry.
 
-Then:
+The editor that follows holds that kind's settings alone, headed by the kind. Until you add the action, **Other
+kinds** goes back to the list; an action keeps its kind once added, so for another kind you add another action. Then:
 
-- **Name:** shown on its card and in the delivery log. It follows the choice until you type your own.
-- **When it runs:** its trigger, **Submitted** by default.
+- **Name:** shown on its card and in the delivery log. It follows the kind until you type your own.
+- **When it runs:** its trigger, **Submitted** by default, with a line under it saying when the trigger you chose runs.
 - **Run order:** actions of the same trigger run in this order.
 - **The action's settings,** described below for each kind.
 - **Stop the rest if this fails:** off by default. On, if this action fails for good, the actions after it for the same
