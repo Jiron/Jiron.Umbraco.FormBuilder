@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
+import { addAction } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 
 // An email action's editor and its preview (ROADMAP 10.2b, IA 5.3, ADR-0189). Its To box holds every kind of
@@ -138,10 +139,8 @@ test("the recipient builder adds an address, an email field's answer and the add
   await loginAs('designer');
   const view = await openActions(page, form.key);
 
-  // Add action starts ready to email the team, in the large sidebar.
-  await view.getByRole('button', { name: 'Add action' }).click();
-  const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('radio', { name: 'Email the team' })).toBeChecked();
+  // Add action, Email the team picked from the kinds, in the large sidebar.
+  const sidebar = await addAction(page, view, 'Email the team');
   const to = sidebar.getByRole('group', { name: 'To', exact: true });
   const add = to.locator('summary', { hasText: 'Add recipient' });
 
@@ -297,7 +296,7 @@ test("the form check's Fix it of an email setting lands on its editor, its probl
   await expect(check).toHaveCount(0);
   await expect(page).toHaveURL(/\/view\/actions$/);
   const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('heading', { name: 'Email the team' })).toBeVisible();
+  await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Email the team');
   const field = sidebar.getByRole('combobox', { name: 'The answer of' });
   await expect(field).toBeFocused();
   await expect(field.locator('option:checked')).toHaveText('Your name (no email field)');

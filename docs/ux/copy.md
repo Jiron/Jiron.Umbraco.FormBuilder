@@ -210,7 +210,6 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | move to a folder | Move to… | Verschieben nach… |
 | move to the Recycle Bin | Trash | In den Papierkorb |
 | bring back from the Recycle Bin | Restore… | Wiederherstellen… |
-| go back to an earlier version of a form | Restore an earlier version… | Frühere Version wiederherstellen… |
 | make an earlier version the draft (in its sidebar, or in a row's "…"; it acts at once and offers Undo) | Restore as a new draft | Als neuen Entwurf wiederherstellen |
 | restore a version, then open the publish dialog for it (beside Restore as a new draft in the sidebar that compares it with the current draft; not for the live version) | Restore and publish… | Wiederherstellen und veröffentlichen… |
 | after a save someone else's save refused (the dialog's primary) | Review both versions | Beide Versionen prüfen |
@@ -228,6 +227,9 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | the field picker, which every Add field and insert point opens: its headline, its search, its first group and the site's saved groups | Add a field · Search field types · Layout: Group · Saved groups | Feld hinzufügen · Feldtypen suchen · Layout: Gruppe · Gespeicherte Gruppen |
 | the picker's search without a match · the first match, marked while a search is typed, and what a screen reader hears of it | No field type matches "dte". · Enter · Enter adds Date. | Kein Feldtyp passt zu „dte“. · Eingabe · Die Eingabetaste fügt Datum hinzu. |
 | the designer's row: the pages' navigation, the "+" after the tabs (its name and tip), the step after them | Pages · Add page · After sending | Seiten · Seite hinzufügen · Nach dem Senden |
+| the inspector's sections, each a button that opens it; a site's own field type with more than seven settings in one gets the rest in the next ("Validation, more") | Essentials · Validation · Messages · Rules · Appearance · Privacy · Advanced · Validation, more | Grundlegendes · Validierung · Meldungen · Regeln · Darstellung · Datenschutz · Erweitert · Validierung, weitere |
+| the form's Settings: the list of its groups, named for screen readers · back to it from a group shown in its place (at 620 px) | Settings groups · All settings | Gruppen der Einstellungen · Alle Einstellungen |
+| a new action: the kinds' headline · back to them from a kind's sheet while the action is not added (an icon button, its name and tip) | New action · Other kinds | Neue Aktion · Andere Arten |
 | the open page's tab: its menu, named for the page, and the menu's items (Delete only while the form has more than one page) | More for Your details: Rename · Duplicate · Delete | Mehr für Your details: Umbenennen · Duplizieren · Löschen |
 | the row's language button, named for screen readers and its tip (it shows the culture; its list names the languages, the one shown with a check) | Language en-US: English (United States) | Sprache en-US: English (United States) |
 | the form check's badge, named for screen readers and its tip (it shows its icon and the number, a check alone where there is none) | Form check: 2 problems · Form check: no problems · Form check: checking… · Form check: not checked | Formularprüfung: 2 Probleme · Formularprüfung: keine Probleme · Formularprüfung: wird geprüft… · Formularprüfung: nicht geprüft |
@@ -298,6 +300,11 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
   its rail's and fold's names, "New page" in its Layout, "Start a new page after this" (now "Move what follows to a new
   page"), the canvas's "Change" on After sending, the inspector's "Nothing selected", the page's own button on the
   sheet ("Page 1, page"), the badge's visible words, and the Settings view's After sending group with its closed line.
+- **Gone with a form's views picked first** (ROADMAP 22.3, ADR-0258): the inspector's "More options" and "Fewer options"
+  inside its sections (Submission's in the Settings view, and an action's sheet, keep theirs), What happens with its
+  line "An action keeps what it does…", When it runs' line under each of its choices, "Restore an earlier version…" in
+  the form's "…" with its sidebar's sentence and its empty state, and "starts with an email to the team" in the Actions
+  view's empty state.
 - **The designer's canvas** names its parts for screen readers (ADR-0016): "Add a field here, before Email address" ·
   „Hier ein Feld hinzufügen, vor Email address“; "Email address, email field" · „Email address, Feld vom Typ E-Mail“;
   "Move Email address" · „Email address verschieben“. After a keyboard move it says where the field is now: "Moved.
@@ -390,7 +397,6 @@ useful action. One sentence, plus a button or link where there is one.
 
 | Case | English | German |
 | --- | --- | --- |
-| Restore an earlier version… on a form without one (the current draft is never listed) | There is no earlier version yet. | Es gibt noch keine frühere Version. |
 | Activity › Deliveries, nothing sent yet · nothing matches | No deliveries yet. Emails and webhooks appear here once forms send them. · No deliveries match the search and the filters. | Noch keine Zustellungen. E-Mails und Webhooks erscheinen hier, sobald Formulare sie senden. · Keine Zustellung passt zur Suche und zu den Filtern. |
 | Activity › Audit log, nothing recorded yet · nothing matches | Nothing is recorded yet. The log fills as people work with forms, entries and settings. · No actions match the search and the filters. | Noch ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten. · Keine Aktion passt zur Suche und zu den Filtern. |
 | an audit log list or Deliveries past its read budget | The list took too long to load. Narrow it down with the search or the filters. [Try again] | Die Liste hat zu lange gebraucht. Grenzen Sie sie mit der Suche oder den Filtern ein. [Erneut versuchen] |
@@ -411,7 +417,7 @@ useful action. One sentence, plus a button or link where there is one.
 | a field picker on a form without such a field (said in its place) | This form has no email field yet. · This form has no file upload yet. · This form has no field marked sensitive. | Dieses Formular hat noch kein E-Mail-Feld. · Dieses Formular hat noch keinen Datei-Upload. · Dieses Formular hat kein als vertraulich markiertes Feld. |
 | an entry without notes (under the box for a new one) | No notes yet. | Noch keine Notizen. |
 | Forward…, while nobody may receive the entry | Nobody else may view this form's entries yet, and Settings › Email names no team address. | Noch darf niemand sonst die Einträge dieses Formulars sehen, und unter Einstellungen › E-Mail steht keine Team-Adresse. |
-| no actions yet (Add action sits in the toolbar) | No actions yet. Add action starts with an email to the team. | Noch keine Aktionen. „Aktion hinzufügen“ beginnt mit einer E-Mail an das Team. |
+| no actions yet (Add action sits in the toolbar) | No actions yet. Add action lists what can run after a submission. | Noch keine Aktionen. „Aktion hinzufügen“ zeigt, was nach dem Absenden laufen kann. |
 | a new, empty form | Add your first field, or paste your questions. | Fügen Sie das erste Feld hinzu, oder fügen Sie Ihre Fragen ein. |
 | no rules yet (the rules overview, with Add rule in its header) | No rules yet. Most rules show a question only when another answer calls for it. | Noch keine Regeln. Die meisten Regeln zeigen eine Frage nur, wenn eine andere Antwort sie verlangt. |
 | no insights yet | No data yet. Numbers appear after the first visit to a page with this form. | Noch keine Daten. Zahlen erscheinen nach dem ersten Besuch einer Seite mit diesem Formular. |
@@ -491,7 +497,7 @@ toast adds only what the user cannot see.
 | draft saved | Draft saved | Entwurf gespeichert |
 | published (the chip already says Published) | Visitors get the new version now. | Auf der Website gilt jetzt die neue Version. |
 | published for the first time, while no page shows it ("Show how" opens the "Used on" sidebar) | Visitors can fill it in once it's on a page. [Show how] | Besucher können es ausfüllen, sobald es auf einer Seite eingebunden ist. [Anleitung zeigen] |
-| a version restored as a new draft (from its sidebar, a History row's "…" or Restore an earlier version…; the list joins as the reader's language does) | Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed. [Undo] | Version 13 ist der neue Entwurf: 4 Felder, „Nach dem Senden“, 1 Regel und 1 Aktion geändert. [Zurücknehmen] |
+| a version restored as a new draft (from its sidebar or a History row's "…"; the list joins as the reader's language does) | Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed. [Undo] | Version 13 ist der neue Entwurf: 4 Felder, „Nach dem Senden“, 1 Regel und 1 Aktion geändert. [Zurücknehmen] |
 | a version restored that holds what the draft before held | Version 13 is the new draft. It holds what the draft before held. [Undo] | Version 13 ist der neue Entwurf. Er enthält, was der vorherige Entwurf enthielt. [Zurücknehmen] |
 | a version restored whose changes couldn't be read | Version 13 is the new draft. [Undo] | Version 13 ist der neue Entwurf. [Zurücknehmen] |
 | a restore undone (the draft before comes back as a new draft) | The draft before is back. | Der vorherige Entwurf ist wiederhergestellt. |
@@ -585,7 +591,6 @@ Help text sits under its setting and answers the question the label leaves open;
 | Review both versions, a difference both changed (a chip by its name) · without differences | Changed in both · The two versions don't differ. Saving keeps your draft as it is. | Von beiden geändert · Die beiden Versionen unterscheiden sich nicht. Beim Speichern bleibt Ihr Entwurf, wie er ist. |
 | Review both versions, what a difference is about, and its rows | Field "Email" · Field "Email": place · Settings: Appearance · The form; In the form · Holds · Place: After "Name", First in "About you" | Feld „Email“ · Feld „Email“: Platz · Einstellungen: Darstellung · Das Formular; Im Formular · Enthält · Platz: Nach „Name“, An erster Stelle in „Über Sie“ |
 | what Undo takes back after the review saved (said as "Undone: ...") | Merged both versions | Beide Versionen zusammengeführt |
-| Restore an earlier version (its sidebar's sentence) | Choose a version to compare it with the current draft first. | Wählen Sie eine Version, um sie zuerst mit dem aktuellen Entwurf zu vergleichen. |
 | Keep approved entries for | Approved entries are deleted this many days after approval. Entries on legal hold stay. | Genehmigte Einträge werden so viele Tage nach der Genehmigung gelöscht. Einträge mit Löschsperre bleiben. |
 | Email verification | Visitors confirm their address through a link before any action runs. | Wer das Formular sendet, bestätigt die eigene Adresse über einen Link, bevor eine Aktion ausgeführt wird. |
 | Sensitive | Answers are masked in the backoffice and left out of emails and exports. | Antworten werden im Backoffice verdeckt und in E-Mails und Exporten weggelassen. |
@@ -604,7 +609,8 @@ Help text sits under its setting and answers the question the label leaves open;
 | the legal hold sidebar, under its settings | Held entries are kept past their retention, and Erase… leaves them out until the hold ends. | Gesperrte Einträge bleiben über ihre Aufbewahrung hinaus erhalten, und „Daten löschen…“ lässt sie aus, bis die Sperre endet. |
 | An address (under Add recipient; said once on the sidebar, though Copy to's boxes take several the same way) · Eine Adresse | Several at once: separate them with commas. | Mehrere auf einmal: durch Kommas getrennt. |
 | Addresses chosen by (each option's addresses) · Adressen je nach | Addresses per answer, separated by commas. An answer without any adds no one. | Adressen je Antwort, durch Kommas getrennt. Eine Antwort ohne Adressen fügt niemanden hinzu. |
-| What happens, for an action of the form · Was passiert | An action keeps what it does. To do something else, add another action. | Die Art einer Aktion lässt sich nicht ändern. Für etwas anderes fügen Sie eine weitere Aktion hinzu. |
+| a new action's kinds, each under its name: Email the team · Confirm to the visitor · Webhook · Slack · Microsoft Teams · Change the entry's state · Create or update content | Tells your team about each entry, with its answers. · Sends the visitor a copy of what they sent. · Sends each entry to an address of your own. · Posts each entry in a Slack channel. · Posts each entry in a Teams channel. · Approves, rejects or moves the entry to Spam. · Makes a page or another item from the answers. | Informiert Ihr Team über jeden Eintrag, mit seinen Antworten. · Schickt der Person eine Kopie dessen, was sie gesendet hat. · Sendet jeden Eintrag an eine eigene Adresse. · Postet jeden Eintrag in einen Slack-Kanal. · Postet jeden Eintrag in einen Teams-Kanal. · Genehmigt oder lehnt den Eintrag ab, oder verschiebt ihn in den Spam. · Erstellt aus den Antworten eine Seite oder ein anderes Element. |
+| When it runs, under the moment chosen: Submitted · Approved (with manual approval, and without) · Rejected · Verified; Rejected and Verified without their setting · Wann sie läuft | It runs when an entry comes in. · It runs when someone approves an entry. · It runs as each entry comes in, because this form has no manual approval. · It runs when someone rejects an entry. · It runs when a visitor confirms their address. · It runs once the form has manual approval. · It runs once the form has email verification. | Läuft, wenn ein Eintrag eingeht. · Läuft, wenn jemand einen Eintrag genehmigt. · Läuft bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat. · Läuft, wenn jemand einen Eintrag ablehnt. · Läuft, wenn jemand die eigene Adresse bestätigt. · Läuft erst, wenn das Formular die manuelle Genehmigung verwendet. · Läuft erst, wenn das Formular die E-Mail-Bestätigung verwendet. |
 | Columns, on the Inbox or Spam not filtered to one form (in the fields' place) · Spalten | Filter the list by one form to choose that form's fields as columns. | Filtern Sie die Liste nach einem Formular, um dessen Felder als Spalten zu wählen. |
 | Stop the rest if this fails · Die übrigen anhalten, wenn diese fehlschlägt | If it fails for good, the actions after it for the same entry don't run. Retrying it from Deliveries brings them back. | Schlägt sie endgültig fehl, laufen die Aktionen danach für denselben Eintrag nicht. Ein neuer Versuch unter Zustellungen bringt sie zurück. |
 | Rule, without one (an action) · Regel | Runs for every entry. | Läuft für jeden Eintrag. |

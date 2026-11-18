@@ -22,6 +22,8 @@ export default {
     group_privacy: 'Datenschutz',
     group_appearance: 'Darstellung',
     group_developer: 'Entwicklung',
+    groupsLabel: 'Gruppen der Einstellungen',
+    allSettings: 'Alle Einstellungen',
 
     submitLabel: 'Senden-Schaltfläche',
     submitLabelHelp: 'Auf der letzten Seite.',

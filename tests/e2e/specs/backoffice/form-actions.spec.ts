@@ -1,10 +1,12 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
+import { addAction, kindHeading } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 
-// The form's Actions view (ROADMAP 10.2a, IA 5.3, ADR-0188). The actions show by trigger as cards: Add action opens a
-// new action's sidebar ready to email the team, whose problems the form check finds under their box; a card moves by its
+// The form's Actions view (ROADMAP 10.2a and 22.3, IA 5.3, ADR-0188, ADR-0258). The actions show by trigger as cards:
+// Add action lists the kinds, and the sheet of the kind picked holds its problems the form check finds under their box
+// (the kinds themselves are form-views.spec.ts's); a card moves by its
 // handle with the pointer or with Alt and the arrows, switches off, gets a rule in the rules builder, and Delete offers
 // Undo; Save draft keeps them as the server writes them. Without Manage actions the view and each sidebar only show. The
 // form check's Fix it of an action's setting opens its sidebar on that setting.
@@ -103,15 +105,12 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   // The view's own live region, after its page; each list has its own.
   const status = view.locator('.page + [role="status"]');
 
-  // A form without actions says what most forms do, which Add action starts with.
-  await expect(view.locator('.empty')).toHaveText('No actions yet. Add action starts with an email to the team.');
+  // A form without actions says where to start.
+  await expect(view.locator('.empty')).toHaveText('No actions yet. Add action lists what can run after a submission.');
   await axeInside(page, 'jfb-form-actions-view');
 
-  // Add action: ready to email the team, kept back by the check until the mail has someone to go to.
-  await view.getByRole('button', { name: 'Add action' }).click();
-  const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('heading', { name: 'New action' })).toBeVisible();
-  await expect(sidebar.getByRole('radio', { name: 'Email the team' })).toBeChecked();
+  // Add action, Email the team picked: kept back by the check until the mail has someone to go to.
+  const sidebar = await addAction(page, view, 'Email the team');
   await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Email the team');
   await expect(sidebar.getByRole('textbox', { name: 'Subject' })).toHaveValue('New entry in {{ form.name }}');
   await axeInside(page, 'jfb-action-modal');
@@ -129,9 +128,8 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
   await expect(status).toHaveText('Added. Email the team runs when an entry comes in.');
   await expect(cardOf(view, 'Email the team')).toBeFocused();
 
-  // Another choice of what happens replaces the settings below it, and the name until one is typed.
-  await view.getByRole('button', { name: 'Add action' }).click();
-  await sidebar.getByRole('radio', { name: "Change the entry's state" }).check();
+  // Another kind: its own settings, and its name until one is typed.
+  await addAction(page, view, "Change the entry's state");
   await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue("Change the entry's state");
   await expect(sidebar.getByRole('combobox', { name: 'Move the entry to' })).toHaveValue('approved');
   await expect(sidebar.getByRole('textbox', { name: 'Subject' })).toHaveCount(0);
@@ -175,8 +173,8 @@ test('the Actions view adds an action from a preset, moves it by drag and keyboa
 
   // A rule in the rules builder, which runs the action only for some entries.
   await cardOf(view, 'Email the team').click();
-  await expect(sidebar.getByRole('heading', { name: 'Email the team' })).toBeVisible();
-  await expect(sidebar.locator('.kept')).toHaveText('Email');
+  await expect(kindHeading(sidebar)).toHaveText('Email');
+  await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Email the team');
   await expect(sidebar.locator('#rule-words')).toHaveText('Runs for every entry.');
   await sidebar.getByRole('button', { name: 'Add a rule' }).click();
   const builder = page.locator('jfb-rule-builder-modal');
@@ -266,7 +264,8 @@ test('without Manage actions the view and each sidebar show the actions as they 
   // A card still opens, its settings shown as they are, with Close only.
   await cardOf(view, 'Email the team').click();
   const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('heading', { name: 'Email the team' })).toBeVisible();
+  await expect(kindHeading(sidebar)).toHaveText('Email');
+  await expect(sidebar.locator('#name')).toHaveText('Email the team');
   await expect(sidebar.locator('#setting-to')).toHaveText('sales@example.com');
   await expect(sidebar.locator('#setting-subject')).toHaveText('New entry');
   await expect(sidebar.locator('input, textarea, select')).toHaveCount(0);
@@ -308,7 +307,7 @@ test("the form check's Fix it of an action's setting opens its sidebar on that s
   await expect(check).toHaveCount(0);
   await expect(page).toHaveURL(/\/view\/actions$/);
   const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('heading', { name: 'Send to the CRM' })).toBeVisible();
+  await expect(sidebar.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Send to the CRM');
   const address = sidebar.getByRole('textbox', { name: 'Address', exact: true });
   await expect(address).toBeFocused();
   await expect(sidebar.locator('#setting-url-found-0')).toHaveText(

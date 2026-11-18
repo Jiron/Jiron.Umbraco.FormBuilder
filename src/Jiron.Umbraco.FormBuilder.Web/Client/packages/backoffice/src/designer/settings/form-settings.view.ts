@@ -1,10 +1,12 @@
-// The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184): one page of the groups of section 4.3.4, Submission open
-// and each other group closed with a line that says what is set, as this browser left them. Each setting changes the
-// draft as an inspector box does: what is typed into one box is one step to undo, a value that can't be kept is said
-// under its box once the box is left, and outside a text box Ctrl+Z and Ctrl+Y undo and redo. The form check's problems
-// in the settings show under their setting, and its Fix it to one opens the group, and More options where the setting
-// is there, with the focus on the setting. The site's defaults, labels, time zone, themes, member groups and captcha
-// providers and the bounds of the save checks come from the server; the texts are shown in the Design view's language.
+// The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184, ADR-0258): the groups of section 4.3.4 to pick from, each
+// with a line that says what is set, and beside them the group picked, alone: Submission at first, then the one this
+// browser picked last. Where the view is too narrow for both, the list stands alone and a pick shows the group in its
+// place, with "All settings" to go back, the focus following each way. Each setting changes the draft as an inspector
+// box does: what is typed into one box is one step to undo, a value that can't be kept is said under its box once the
+// box is left, and outside a text box Ctrl+Z and Ctrl+Y undo and redo. The form check's problems in the settings show
+// under their setting, and its Fix it to one picks the group, and opens More options where the setting is there, with
+// the focus on the setting. The site's defaults, labels, time zone, themes, member groups and captcha providers and the
+// bounds of the save checks come from the server; the texts are shown in the Design view's language.
 import { html, live, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
@@ -26,6 +28,8 @@ import type { EditorView, FormWorkspaceContext } from '../form-workspace.context
 import { settingsLacking, type SettingText } from '../translations';
 import { DictionaryReader, dictionaryKeysIn, dictionaryLineOf, type DictionaryLookups } from '../dictionary-texts';
 import '../inspector/dictionary-pick.element';
+import { popoverMenuStyles } from '../canvas/canvas-field.element';
+import { languageButton, languageButtonStyles } from '../canvas/language-button';
 import { boxValue } from '../inspector/box-value';
 import { controlStyles } from '../inspector/control.styles';
 import { focusableIn } from '../inspector/item-focus';
@@ -76,22 +80,22 @@ import './visitor-texts.element';
 import { learnMore } from '../../docs/learn-more.element';
 import { isVisitorTexts, type VisitorTexts } from './visitor-texts';
 
-const OPEN_KEY = 'jfb.designer.settings.open';
+const PICKED_KEY = 'jfb.designer.settings.picked';
 
-/** The groups this browser left open; Submission at first (IA 5.2). */
-export function readOpenGroups(): ReadonlySet<GroupId> {
+/** The group this browser picked last; Submission at first (ADR-0258). */
+export function readPickedGroup(): GroupId {
   try {
-    const kept: unknown = JSON.parse(localStorage.getItem(OPEN_KEY) ?? 'null');
-    if (Array.isArray(kept)) return new Set(GROUPS.filter((group) => kept.includes(group)));
+    const kept = localStorage.getItem(PICKED_KEY);
+    return GROUPS.find((group) => group === kept) ?? 'submission';
   } catch {
-    // A browser that keeps nothing opens Submission.
+    // A browser that keeps nothing shows Submission.
+    return 'submission';
   }
-  return new Set<GroupId>(['submission']);
 }
 
-function keepOpenGroups(open: ReadonlySet<GroupId>) {
+function keepPickedGroup(group: GroupId) {
   try {
-    localStorage.setItem(OPEN_KEY, JSON.stringify([...open]));
+    localStorage.setItem(PICKED_KEY, group);
   } catch {
     // Kept for this page only.
   }
@@ -154,7 +158,8 @@ export class FormSettingsViewElement extends UmbLitElement {
     _failed: { state: true },
     _check: { state: true },
     _types: { state: true },
-    _open: { state: true },
+    _picked: { state: true },
+    _inGroup: { state: true },
     _more: { state: true },
     _problems: { state: true },
     _said: { state: true },
@@ -167,6 +172,8 @@ export class FormSettingsViewElement extends UmbLitElement {
     jfbVisuallyHidden,
     controlStyles,
     choiceStyles,
+    popoverMenuStyles,
+    languageButtonStyles,
     settingsStyles,
     jfbPhoneColumn,
   ];
@@ -178,7 +185,9 @@ export class FormSettingsViewElement extends UmbLitElement {
   declare private _failed: boolean;
   declare private _check: CheckState;
   declare private _types: Readonly<Record<string, FieldTypeResponseModel>>;
-  declare private _open: ReadonlySet<GroupId>;
+  declare private _picked: GroupId;
+  /** Whether a narrow view shows the group picked in the list's place; a wide one shows both. */
+  declare private _inGroup: boolean;
   declare private _more: boolean;
   /** Why a box's last value couldn't be kept, by the box's id, until it can, or Undo or another language comes. */
   declare private _problems: ReadonlyMap<string, string>;
@@ -208,7 +217,8 @@ export class FormSettingsViewElement extends UmbLitElement {
     this._failed = false;
     this._check = UNCHECKED;
     this._types = {};
-    this._open = readOpenGroups();
+    this._picked = readPickedGroup();
+    this._inGroup = false;
     this._more = false;
     this._problems = new Map();
     this._said = '';
@@ -389,12 +399,34 @@ export class FormSettingsViewElement extends UmbLitElement {
     event.preventDefault();
   }
 
-  #toggle(group: GroupId) {
-    const next = new Set(this._open);
-    if (next.has(group)) next.delete(group);
-    else next.add(group);
-    this._open = next;
-    keepOpenGroups(next);
+  /** Shows a group, alone, and keeps it for the next visit. */
+  #show(group: GroupId) {
+    this._picked = group;
+    this._inGroup = true;
+    keepPickedGroup(group);
+  }
+
+  /** Picks a group from the list; where only the group shows, the focus goes to its first setting. */
+  #pick(group: GroupId) {
+    this.#show(group);
+    void this.updateComplete.then(() => {
+      if (this.#listShown()) return;
+      // The first setting's own box, not a Learn more beside its name.
+      const body = this.shadowRoot?.querySelector<HTMLElement>('.group-body');
+      const box = body?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea');
+      (box ?? (body ? focusableIn(body) : null))?.focus();
+    });
+  }
+
+  /** Back to the list from a group shown in its place, the focus on the group's row. */
+  #backToList() {
+    this._inGroup = false;
+    void this.updateComplete.then(() => this.shadowRoot?.getElementById(`group-${this._picked}`)?.focus());
+  }
+
+  /** Whether the list is on the screen: always where the view is wide enough for both parts. */
+  #listShown(): boolean {
+    return (this.shadowRoot?.querySelector('.groups')?.getClientRects().length ?? 0) > 0;
   }
 
   // ---- Fix it -------------------------------------------------------------------------------------------------------
@@ -407,8 +439,8 @@ export class FormSettingsViewElement extends UmbLitElement {
   }
 
   /**
-   * Opens the group of the setting a problem's path names, and More options where it is there, and puts the focus on
-   * the setting's box, in the language of its text; on the first group's header for a path the view doesn't show.
+   * Picks the group of the setting a problem's path names, and opens More options where it is there, and puts the focus
+   * on the setting's box, in the language of its text; on the first group's row for a path the view doesn't show.
    */
   async #fix(target: FixTarget) {
     if (target.kind !== 'view') return;
@@ -416,12 +448,12 @@ export class FormSettingsViewElement extends UmbLitElement {
     const root = this.shadowRoot;
     if (!anchor) {
       await this.updateComplete;
-      root?.querySelector<HTMLElement>('.group-head button')?.focus();
+      root?.querySelector<HTMLElement>('.groups button')?.focus();
       return;
     }
     const culture = this.#languageOf(target.path);
     if (culture !== null) await this.#showLanguage(culture);
-    if (!this._open.has(anchor.group)) this.#toggle(anchor.group);
+    this.#show(anchor.group);
     if (anchor.more) this._more = true;
     await this.updateComplete;
     for (const id of [this.#boxOf(anchor, this.#definition()), ...anchor.boxes]) {
@@ -436,7 +468,7 @@ export class FormSettingsViewElement extends UmbLitElement {
       focus.scrollIntoView?.({ block: 'center' });
       return;
     }
-    root?.getElementById(`group-${anchor.group}`)?.focus();
+    root?.querySelector<HTMLElement>('.group-body')?.focus();
   }
 
   // The language of the text a path names, on a site with more than one, where the view shows another; null otherwise.
@@ -821,7 +853,7 @@ export class FormSettingsViewElement extends UmbLitElement {
         type="button"
         class="more-toggle"
         aria-expanded=${this._more ? 'true' : 'false'}
-        aria-controls=${this._more ? 'submission-more' : nothing}
+        aria-controls="submission-more"
         @click=${() => (this._more = !this._more)}
       >
         <uui-icon name=${this._more ? 'icon-navigation-down' : 'icon-navigation-right'} aria-hidden="true"></uui-icon>
@@ -839,11 +871,9 @@ export class FormSettingsViewElement extends UmbLitElement {
             : nothing
         }
       </button>
-      ${
-        this._more
-          ? html`<div class="more-body" id="submission-more">${this.#moreOptions(definition, look)}</div>`
-          : nothing
-      }
+      <div class="more-body" id="submission-more" ?hidden=${!this._more}>
+        ${this._more ? this.#moreOptions(definition, look) : nothing}
+      </div>
     `;
   }
 
@@ -1775,17 +1805,25 @@ export class FormSettingsViewElement extends UmbLitElement {
     }
   }
 
-  #group(
+  /**
+   * A group's row in the list: its name and the line of what is set, its problems counted first, read as one. Beside
+   * its group, the row picked shows its name alone (settings.styles.ts).
+   */
+  #row(
     group: GroupId,
     definition: DesignDefinition,
     choices: FormSettingsChoicesResponseModel,
     providers: readonly CaptchaProviderResponseModel[],
-    look: CanvasLook,
   ): TemplateResult {
-    const open = this._open.has(group);
-    const line = open
-      ? nothing
-      : html`<span class="summary"
+    return html`<li>
+      <button
+        type="button"
+        id=${`group-${group}`}
+        aria-current=${this._picked === group ? 'true' : nothing}
+        @click=${() => this.#pick(group)}
+      >
+        <span class="group-name">${this.#term(`group_${group}`)}</span>
+        <span class="summary"
           >${flagLine(this.#checkedNow.flagged.get(group), (count) => this.#term('problems', count), DOT)}${
             this.#groupLacks(group) ? html`<span class="untranslated">${this.#untranslated()}</span> ${DOT} ` : nothing
           }${summaryOf(group, definition, choices, providers, {
@@ -1793,28 +1831,41 @@ export class FormSettingsViewElement extends UmbLitElement {
             date: this.#date,
             number: this.#number,
           })}</span
-        >`;
-    return html`<section class="group" data-group=${group}>
-      <h2 class="group-head">
-        <button
-          type="button"
-          id=${`group-${group}`}
-          aria-expanded=${open ? 'true' : 'false'}
-          aria-controls=${open ? `body-${group}` : nothing}
-          @click=${() => this.#toggle(group)}
         >
-          <uui-icon name=${open ? 'icon-navigation-down' : 'icon-navigation-right'} aria-hidden="true"></uui-icon>
-          <span class="group-name">${this.#term(`group_${group}`)}</span>
-          ${line}
+      </button>
+    </li>`;
+  }
+
+  /** The group picked, alone: its name, the language shown, and its settings. */
+  #groupPicked(
+    definition: DesignDefinition,
+    choices: FormSettingsChoicesResponseModel,
+    providers: readonly CaptchaProviderResponseModel[],
+    look: CanvasLook,
+  ): TemplateResult {
+    const group = this._picked;
+    const show = (culture: string) => void this.#showLanguage(culture);
+    const languages = languageButton(this.localize, 'jfb-settings-languages', look.languages, look.culture, show);
+    return html`<section class="picked" aria-labelledby="picked-name" data-group=${group}>
+      <div class="picked-head">
+        <button type="button" class="back" @click=${() => this.#backToList()}>
+          <uui-icon name="icon-arrow-left" aria-hidden="true"></uui-icon>${this.#term('allSettings')}
         </button>
-      </h2>
+        <h2 id="picked-name">${this.#term(`group_${group}`)}</h2>
+        ${languages}
+      </div>
       ${
-        open
-          ? html`<div class="group-body" id=${`body-${group}`}>
-              ${this.#body(group, definition, choices, providers, look)}
-            </div>`
-          : nothing
+        this.#isDefault()
+          ? nothing
+          : html`<p class="note">
+              ${this.localize.term(
+                'jfbInspector_editingLanguage',
+                this.#languageName(look.culture),
+                this.#languageName(this.#defaultCulture()),
+              )}
+            </p>`
       }
+      <div class="group-body" tabindex="-1">${this.#body(group, definition, choices, providers, look)}</div>
     </section>`;
   }
 
@@ -1836,36 +1887,6 @@ export class FormSettingsViewElement extends UmbLitElement {
       default:
         return false;
     }
-  }
-
-  // The language the texts are shown in, on a site with more than one, and whose texts visitors see where one is empty.
-  #toolbar(look: CanvasLook): TemplateResult | typeof nothing {
-    if (look.languages.length < 2) return nothing;
-    const shown = look.culture.toLowerCase();
-    return html`<div class="toolbar">
-      <label class="language">
-        <span>${this.localize.term('jfbDesigner_language')}</span>
-        <select @change=${(event: Event) => void this.#showLanguage((event.target as HTMLSelectElement).value)}>
-          ${look.languages.map(
-            (language) =>
-              html`<option value=${language.culture} ?selected=${language.culture.toLowerCase() === shown}>
-                ${language.name}
-              </option>`,
-          )}
-        </select>
-      </label>
-      ${
-        this.#isDefault()
-          ? nothing
-          : html`<p class="note">
-              ${this.localize.term(
-                'jfbInspector_editingLanguage',
-                this.#languageName(look.culture),
-                this.#languageName(this.#defaultCulture()),
-              )}
-            </p>`
-      }
-    </div>`;
   }
 
   protected override updated(changed: PropertyValues) {
@@ -1914,8 +1935,13 @@ export class FormSettingsViewElement extends UmbLitElement {
     const settings = definition['settings'] as Readonly<Record<string, unknown>> | undefined;
     const isDefault = this.#isDefault();
     this.#lackingNow = isDefault ? new Set() : settingsLacking(settings, look.culture);
-    return html`<div class="page">
-        ${this.#toolbar(look)} ${GROUPS.map((group) => this.#group(group, definition, choices, providers, look))}
+    return html`<div class=${this._inGroup ? 'page in-group' : 'page'}>
+        <nav class="groups" aria-label=${this.#term('groupsLabel')}>
+          <ul>
+            ${GROUPS.map((group) => this.#row(group, definition, choices, providers))}
+          </ul>
+        </nav>
+        ${this.#groupPicked(definition, choices, providers, look)}
       </div>
       <div class="visually-hidden" id="said" role="status" aria-live="polite">${this._said}</div>`;
   }

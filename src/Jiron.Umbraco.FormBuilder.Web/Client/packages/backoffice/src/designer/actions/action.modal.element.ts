@@ -1,8 +1,10 @@
-// An action's sidebar (ROADMAP 10.2a, IA 5.3, ADR-0188): for a new action, what happens first, a choice of the types'
-// presets that replaces the settings below it; then the name, which follows that choice until it is typed, when it
-// runs and its place among that trigger's actions, the type's own settings as the inspector draws them (Essentials, then More options), whether a failure stops the
-// rest, and the action's rule, which the rules builder edits over it. An action of the form keeps its type, said where
-// the choice would be. The form check is asked about the draft as Add or Update would make it once the changes pause,
+// An action's sidebar (ROADMAP 10.2a, IA 5.3, ADR-0188, ADR-0258): for a new action, the kinds to pick from first, the
+// types' presets as the Create dialog lists what can be made; then the kind's sheet, headed by the kind, with "Other
+// kinds" to go back while the action is not added, and the name, which follows that choice until it is typed, when it
+// runs (one choice, the moment chosen said under it) and its place among that trigger's actions, the type's own
+// settings as the inspector draws them (Essentials, then More options), whether a failure stops the rest, and the
+// action's rule, which the rules builder edits over it. An action of the form keeps its kind, which heads its sheet
+// too. The form check is asked about the draft as Add or Update would make it once the changes pause,
 // and its problems in the action show under their box: those it had at once, others once their box is left or the
 // button is pressed, which keeps the action once the check finds no error in it, or gives no answer. Without
 // `manageActions` every setting shows as it is, and only Close is offered. An email has its own editors (ADR-0189): its
@@ -127,6 +129,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     _tried: { state: true },
     _checking: { state: true },
     _more: { state: true },
+    _picking: { state: true },
     _at: { state: true },
     _preview: { state: true },
     _options: { state: true },
@@ -172,22 +175,74 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         }
       }
 
-      .kept {
+      /* The kinds to pick from, as Umbraco's Create dialog lists what can be made: an icon, a name and a line. */
+      .kinds {
+        display: grid;
+        gap: var(--uui-size-space-1);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .kind {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--uui-size-space-4);
+        inline-size: 100%;
+        padding: var(--uui-size-space-3) var(--uui-size-space-4);
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+      }
+
+      @media (hover: hover) {
+        .kind:hover {
+          background: var(--uui-color-surface-emphasis);
+        }
+      }
+
+      .kind:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: -2px;
+      }
+
+      .kind uui-icon {
+        flex: none;
+        margin-block-start: 2px;
+        font-size: var(--uui-size-6);
+      }
+
+      .kind-text {
+        display: grid;
+        gap: var(--uui-size-space-1);
+      }
+
+      .kind-name {
+        font-weight: 700;
+      }
+
+      .kind-line {
+        color: var(--jfb-bo-color-text-muted);
+      }
+
+      .kind-head h3 {
+        margin: 0;
+        font-size: var(--uui-type-h5-size);
+      }
+
+      .kind-head {
         display: flex;
         align-items: center;
-        gap: var(--uui-size-space-2);
-        margin: 0;
-        font-weight: 600;
+        gap: var(--uui-size-space-3);
       }
 
-      .kept uui-icon {
-        color: var(--jfb-bo-color-text-muted);
-      }
-
-      .choice-name uui-icon {
-        margin-inline-end: var(--uui-size-space-2);
-        color: var(--jfb-bo-color-text-muted);
-        vertical-align: -2px;
+      /* The settings under More options stand in the settings' own grid. */
+      .settings-more:not([hidden]) {
+        display: contents;
       }
 
       .settings {
@@ -302,6 +357,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
   declare private _checking: boolean;
   /** Whether the type's settings beyond Essentials show. */
   declare private _more: boolean;
+  /** Whether a new action shows the kinds to pick from, before its sheet. */
+  declare private _picking: boolean;
   /** The place chosen among its trigger's actions; null for where it is, or after the others. */
   declare private _at: number | null;
   /** An email's mail for the sample entry, as the preview shows it. */
@@ -335,6 +392,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this._tried = false;
     this._checking = false;
     this._more = false;
+    this._picking = false;
     this._at = null;
     this._preview = NO_PREVIEW;
     this._options = new Map();
@@ -346,12 +404,9 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     window.addEventListener(EXTENSIONS_CHANGED, this.#extensionsChanged);
     const data = this.data;
     if (!data) return;
-    const first = data.choices[0];
-    this._edit = data.action
-      ? editOf(data.action)
-      : first
-        ? newEdit(crypto.randomUUID(), first, this.#say(first.name))
-        : this._edit;
+    // A new action starts at the kinds; one already added opens on its sheet.
+    if (data.action) this._edit = editOf(data.action);
+    else this._picking = !data.readOnly;
     this.#answered = false;
     // Who may only read the actions sees the mail too, as the preview needs only design (ADR-0189).
     const preview = data.preview;
@@ -363,7 +418,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     this.#askPreview();
     if (data.readOnly) return;
     this.#checker = new FormChecker(data.check, (state) => this.#heard(state));
-    this.#checker.changed(this.#draft());
+    // An action without its kind is not asked about: the pick asks.
+    if (!this._picking) this.#checker.changed(this.#draft());
   }
 
   override disconnectedCallback() {
@@ -400,7 +456,15 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     // The sidebar takes the focus itself as it opens; the box a Fix it leads to, or the first, takes it after.
     const focus = this.data?.focus;
     if (focus?.kind === 'setting' && this.#hidden(focus.path)) this._more = true;
-    requestAnimationFrame(() => void this.updateComplete.then(() => this.#focus(focus ?? { kind: 'action' })));
+    this.#focusDrawn(() => (this._picking ? this.#focusKind(null) : this.#focus(focus ?? { kind: 'action' })));
+  }
+
+  /**
+   * Moves the focus once the sidebar has drawn what changed: a box slotted into a new body layout takes no focus
+   * until that layout has drawn its slot.
+   */
+  #focusDrawn(move: () => void) {
+    requestAnimationFrame(() => void this.updateComplete.then(move));
   }
 
   // ---- Words --------------------------------------------------------------------------------------------------------
@@ -812,52 +876,86 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   // ---- Drawing ------------------------------------------------------------------------------------------------------
 
-  #whatHappens(found: FoundAt): TemplateResult {
-    const data = this.data;
-    const problems = this.#problemsAt(BOX.whatHappens, found);
-    // An action of the form keeps its type: another is another action (ADR-0188).
-    if (data?.action || data?.readOnly) {
-      const type = this.#type();
-      return html`<div class="item">
-        <p class="label">${this.#term('whatHappens')}</p>
-        <p class="kept" id=${BOX.whatHappens} tabindex="-1">
-          <uui-icon name=${type?.icon ?? 'icon-lightning'} aria-hidden="true"></uui-icon>
-          <span>${this.#say(type?.name) || this._edit.type}</span>
-        </p>
-        ${data.readOnly ? nothing : html`<p class="help">${this.#term('whatHappensKept')}</p>`}
-        ${whys(BOX.whatHappens, problems, this.#weight)}
-      </div>`;
-    }
-    const choose = (choice: ActionChoice) => {
+  /**
+   * A kind's one line: the word `jfbActionLines_<key>` for a kind named by the term `#<area>_<key>`, which the
+   * backoffice's words hold for each built-in kind and a site's package may add for its own (extending.md); none else.
+   */
+  #lineOf(choice: ActionChoice): string {
+    const name = choice.name.startsWith('#') ? choice.name.slice(1) : '';
+    const key = `jfbActionLines_${name.slice(name.indexOf('_') + 1)}`;
+    const line = name ? this.localize.term(key) : '';
+    return line === key ? '' : line;
+  }
+
+  /** The kinds a new action may be, to pick from: each its icon, its name and its line. */
+  #kinds(): TemplateResult {
+    const pick = (choice: ActionChoice) => {
       this._typed = new Map([...this._typed].filter(([box]) => !box.startsWith('setting-')));
       this.#kept.clear();
-      this.#change(withChoice(this._edit, choice, this.#say(choice.name)), BOX.whatHappens, true);
+      this._picking = false;
+      const name = this.#say(choice.name);
+      // The first pick starts the action; another keeps what was typed since.
+      const edit = this._edit.key ? withChoice(this._edit, choice, name) : newEdit(crypto.randomUUID(), choice, name);
+      this.#change(edit, BOX.whatHappens, true);
+      this.#focusDrawn(() => this.#focus({ kind: 'name' }));
     };
-    return html`<fieldset
-      class="item"
-      id=${BOX.whatHappens}
-      aria-describedby=${described(BOX.whatHappens, false, problems) ?? nothing}
-    >
-      <legend class="label">${this.#term('whatHappens')}</legend>
-      <div class="choices">
-        ${(data?.choices ?? []).map(
-          (choice) =>
-            html`<label class="choice">
-              <input
-                type="radio"
-                name="what-happens"
-                value=${choice.id}
-                .checked=${live(this._edit.choice === choice.id)}
-                @change=${() => choose(choice)}
-              />
-              <span class="choice-name"
-                ><uui-icon name=${choice.icon} aria-hidden="true"></uui-icon>${this.#say(choice.name)}</span
-              >
-            </label>`,
-        )}
-      </div>
-      ${whys(BOX.whatHappens, problems, this.#weight)}
-    </fieldset>`;
+    return html`<ul class="kinds" aria-label=${this.#term('headlineNew')}>
+      ${(this.data?.choices ?? []).map((choice) => {
+        const line = this.#lineOf(choice);
+        return html`<li>
+          <button type="button" class="kind" data-choice=${choice.id} @click=${() => pick(choice)}>
+            <uui-icon name=${choice.icon} aria-hidden="true"></uui-icon>
+            <span class="kind-text">
+              <span class="kind-name">${this.#say(choice.name)}</span>
+              ${line ? html`<span class="kind-line">${line}</span>` : nothing}
+            </span>
+          </button>
+        </li>`;
+      })}
+    </ul>`;
+  }
+
+  /** Puts the focus on a kind: the one picked before, after going back, or the first. */
+  #focusKind(id: string | null) {
+    const root = this.shadowRoot;
+    (
+      (id ? root?.querySelector<HTMLElement>(`.kind[data-choice="${id}"]`) : null) ??
+      root?.querySelector<HTMLElement>('.kind')
+    )?.focus();
+  }
+
+  /** The sheet's head: the kind, with "Other kinds" while the action is not added. */
+  #kindHead(): TemplateResult {
+    const data = this.data;
+    const type = this.#type();
+    const back = () => {
+      const picked = this._edit.choice;
+      this._picking = true;
+      this.#focusDrawn(() => this.#focusKind(picked));
+    };
+    return html`<div class="kind-head">
+      ${
+        data?.action || data?.readOnly
+          ? nothing
+          : html`<uui-button
+              compact
+              look="secondary"
+              label=${this.#term('otherKinds')}
+              title=${this.#term('otherKinds')}
+              @click=${back}
+            >
+              <uui-icon name="icon-arrow-left"></uui-icon>
+            </uui-button>`
+      }
+      <uui-icon name=${type?.icon ?? 'icon-lightning'} aria-hidden="true"></uui-icon>
+      <h3 id=${BOX.whatHappens} tabindex="-1">${this.#kindName()}</h3>
+    </div>`;
+  }
+
+  /** The kind the sheet is of: the preset picked, or the type of an action already added. */
+  #kindName(): string {
+    const choice = this.data?.choices.find((one) => one.id === this._edit.choice);
+    return this.#say(choice?.name ?? this.#type()?.name) || this._edit.type;
   }
 
   #name(found: FoundAt): TemplateResult {
@@ -903,36 +1001,36 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
         ${need ? html`<p class="needs">${this.#term(`triggerNeeds_${need}`)}</p>` : nothing}
       </div>`;
     }
-    return html`<fieldset
-      class="item"
-      id=${BOX.trigger}
-      aria-describedby=${described(BOX.trigger, false, problems) ?? nothing}
-    >
-      <legend class="label">${this.#term('trigger')}</legend>
-      <div class="choices">
-        ${TRIGGERS.map((trigger) => {
-          const need = needs(trigger);
-          return html`<label class="choice">
-            <input
-              type="radio"
-              name="trigger"
-              value=${trigger}
-              aria-describedby=${`trigger-needs-${trigger}`}
-              .checked=${live(this._edit.trigger === trigger)}
-              @change=${() => {
-                this._at = null;
-                this.#change({ ...this._edit, trigger }, BOX.trigger, true);
-              }}
-            />
-            <span class="choice-name">${this.#term(`trigger_${trigger}`)}</span>
-            <span class="choice-line" id=${`trigger-needs-${trigger}`}
-              >${need ? this.#term(`triggerNeeds_${need}`) : this.#term(`when_${this.#whenOf(trigger)}`)}</span
-            >
-          </label>`;
-        })}
-      </div>
+    const need = needs(this._edit.trigger);
+    return html`<div class="item">
+      <label class="label" for=${BOX.trigger}>${this.#term('trigger')}</label>
+      <select
+        id=${BOX.trigger}
+        class="short"
+        aria-describedby=${['trigger-line', described(BOX.trigger, false, problems)].filter(Boolean).join(' ')}
+        .value=${live(this._edit.trigger)}
+        @change=${(event: Event) => {
+          this._at = null;
+          const trigger = (event.target as HTMLSelectElement).value as (typeof TRIGGERS)[number];
+          this.#change({ ...this._edit, trigger }, BOX.trigger, true);
+        }}
+      >
+        ${TRIGGERS.map(
+          (trigger) =>
+            html`<option value=${trigger} ?selected=${trigger === this._edit.trigger}>
+              ${this.#term(`trigger_${trigger}`)}
+            </option>`,
+        )}
+      </select>
+      <p class="help" id="trigger-line">
+        ${
+          need
+            ? this.#term(`triggerNeeds_${need}`)
+            : this.#term('runsWhen', this.#term(`when_${this.#whenOf(this._edit.trigger)}`))
+        }
+      </p>
       ${whys(BOX.trigger, problems, this.#weight)}
-    </fieldset>`;
+    </div>`;
   }
 
   // Where the action runs among its trigger's, which a pointer chooses without dragging a card (WCAG 2.5.7); nothing
@@ -1187,13 +1285,17 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     });
     const showsMore = this._more || flagged;
     return html`<div class="settings">
-      ${shown.map((one) => one.template)} ${showsMore ? more.map((one) => one.template) : nothing}
+      ${shown.map((one) => one.template)}
+      <div class="settings-more" id="settings-more" ?hidden=${!showsMore}>
+        ${showsMore ? more.map((one) => one.template) : nothing}
+      </div>
       ${
         more.length > 0 && !flagged
           ? html`<button
               type="button"
               class="more"
               aria-expanded=${showsMore ? 'true' : 'false'}
+              aria-controls="settings-more"
               @click=${() => (this._more = !this._more)}
             >
               ${this.localize.term(showsMore ? 'jfbInspector_fewerOptions' : 'jfbInspector_moreOptions', more.length)}
@@ -1277,12 +1379,21 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const readOnly = data.readOnly;
     const email = this.#isEmail();
     const view = settingAt(this._edit, 'view');
-    return html`<umb-body-layout headline=${data.action ? this.#nameShown() : this.#term('headlineNew')}>
+    if (this._picking)
+      return html`<umb-body-layout headline=${this.#term('headlineNew')}>
+        <div class="room">${this.#kinds()}</div>
+        <div slot="actions" class="actions">
+          <uui-button label=${this.localize.term('general_cancel')} @click=${this._rejectModal}></uui-button>
+        </div>
+      </umb-body-layout>`;
+    return html`<umb-body-layout>
+      <div slot="header" class="head">${this.#kindHead()}</div>
       <div class="room">
         <div class="layout ${email ? 'with-preview' : ''}">
           <div class="action">
-            ${this.#whatHappens(found)} ${this.#name(found)} ${this.#trigger(found)} ${this.#placeBox()}
-            ${this.#settings(found)} ${this.#stopOnFailure(found)} ${this.#rule(found)}
+            ${whys(BOX.whatHappens, this.#problemsAt(BOX.whatHappens, found), this.#weight)} ${this.#name(found)}
+            ${this.#trigger(found)} ${this.#placeBox()} ${this.#settings(found)} ${this.#stopOnFailure(found)}
+            ${this.#rule(found)}
           </div>
           ${
             email

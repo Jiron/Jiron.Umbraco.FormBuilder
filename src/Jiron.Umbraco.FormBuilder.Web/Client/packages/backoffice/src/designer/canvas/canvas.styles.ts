@@ -321,22 +321,6 @@ export const canvasChrome = css`
     outline-color: var(--bo-on-accent);
   }
 
-  /* The language shown, as its culture; a menu of the site's languages by name. */
-  .bo-language {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--uui-size-space-1);
-    min-height: 36px;
-    padding: 0 var(--uui-size-space-3);
-    border: 1px solid var(--jfb-bo-color-control-border);
-    border-radius: var(--uui-border-radius);
-    background: var(--uui-color-surface);
-    color: var(--uui-color-text);
-    font: inherit;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
   /* The form check's badge: one width for two digits, whatever it says, so the row never moves. */
   .bo-check {
     display: inline-flex;
@@ -412,63 +396,6 @@ export const canvasChrome = css`
 
   .bo-narrowed[data-shown] {
     visibility: visible;
-  }
-
-  .bo-menu {
-    display: grid;
-    min-width: 200px;
-    padding: var(--uui-size-space-2) 0;
-    border-radius: var(--uui-border-radius);
-    background: var(--uui-color-surface);
-    box-shadow: var(--uui-shadow-depth-3);
-    transform-origin: top right;
-    transition:
-      opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease),
-      transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
-  }
-
-  @starting-style {
-    .bo-menu {
-      opacity: 0;
-      transform: scale(0.97);
-    }
-  }
-
-  .bo-menu button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--uui-size-space-5);
-    min-height: 36px;
-    padding: 0 var(--uui-size-space-4);
-    border: 0;
-    background: none;
-    color: var(--uui-color-text);
-    font: inherit;
-    text-align: start;
-    cursor: pointer;
-  }
-
-  @media (hover: hover) {
-    .bo-menu button:hover:not(:disabled) {
-      background: var(--uui-color-surface-emphasis);
-    }
-  }
-
-  .bo-menu button:disabled {
-    color: var(--uui-color-disabled-contrast);
-    cursor: default;
-  }
-
-  .bo-menu kbd {
-    color: var(--jfb-bo-color-text-muted);
-    font: inherit;
-    font-size: var(--uui-type-small-size);
-  }
-
-  /* The item shown now (the language) carries a check at its end. */
-  .bo-menu uui-icon {
-    flex: none;
   }
 
   /* A layer of its own, so the browser scrolls it without painting the sheet again (ADR-0169). The host's colour shows

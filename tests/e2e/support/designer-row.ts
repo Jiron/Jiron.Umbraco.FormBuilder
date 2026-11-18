@@ -9,14 +9,21 @@ const LANGUAGE_NAMES: Readonly<Record<string, RegExp>> = {
   'de-DE': /Deutsch|German/,
 };
 
-/** Shows the form in a language of the site: its button, then the language in the list it opens. */
+/** Shows the form in a language of the site: the Design view's button, then the language in the list it opens. */
 export async function chooseLanguage(design: Locator, culture: string): Promise<void> {
+  await chooseLanguageIn(design.locator('jfb-form-canvas'), culture);
+}
+
+/**
+ * The same with the button where another view holds it, the Settings view's group picked among them (ROADMAP 22.3):
+ * its button, then the language in the list it opens.
+ */
+export async function chooseLanguageIn(holder: Locator, culture: string): Promise<void> {
   const name = LANGUAGE_NAMES[culture];
   if (!name) throw new Error(`No language list name for ${culture}`);
-  const canvas = design.locator('jfb-form-canvas');
-  await canvas.locator('.bo-language').click();
-  await canvas.locator('.bo-menu button').filter({ hasText: name }).first().click();
-  await expect(canvas.locator('.bo-language')).toHaveAttribute('aria-label', new RegExp(`^Language ${culture}:`));
+  await holder.locator('.bo-language').click();
+  await holder.locator('.bo-menu button').filter({ hasText: name }).first().click();
+  await expect(holder.locator('.bo-language')).toHaveAttribute('aria-label', new RegExp(`^Language ${culture}:`));
 }
 
 /** The pages' row: its tabs, Add page and After sending. */

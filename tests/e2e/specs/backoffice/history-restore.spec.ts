@@ -5,9 +5,9 @@ import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts'
 
 // Restoring a version as a new draft (ROADMAP 10.3b, IA 5.6, ADR-0198): a form published with "Your email", then saved
 // with "Email address". From the sidebar that compares the published version with the current draft, a restore names
-// what changed and Undo brings the draft before back; a row's "..." restores at once; Restore an earlier version... in
-// the form's "..." saves a change not saved yet first, so Undo brings it back; and Restore and publish... opens the
-// publish dialog for the restored draft. The sidebar's buttons sit at its foot, stacked on a phone.
+// what changed and Undo brings the draft before back; a row's "..." restores at once; the form's "..." offers no second
+// way (ROADMAP 22.3); and Restore and publish... opens the publish dialog for the restored draft. The sidebar's buttons
+// sit at its foot, stacked on a phone.
 
 const SECTION = '/umbraco/section/jfb-forms/workspace/jfb-form/edit';
 
@@ -143,40 +143,32 @@ test('a row\'s "..." restores a version at once', async ({ page, loginAs, apiAs 
   await expect(page.locator('jfb-form-history-view tbody tr').first().locator('.plain')).toHaveText('Current draft');
 });
 
-test('Restore an earlier version... in the form\'s "..." saves a change first, which Undo brings back', async ({
+test('the form\'s "..." offers no second way to an earlier version: the History view is the one (ADR-0258)', async ({
   page,
   loginAs,
   apiAs,
 }) => {
   test.setTimeout(180_000);
   const api = await apiAs('designer');
-  const { key, published } = await publishedThenChanged(api, unique('Restore earlier'));
+  const { key } = await publishedThenChanged(api, unique('One way back'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
-  await page.goto(`${SECTION}/${key}/view/design`);
-  const design = page.locator('jfb-form-design-view');
-  await design.getByRole('button', { name: /^Email address, / }).click();
-  await design.locator('jfb-designer-inspector').getByLabel('Label', { exact: true }).fill('Work email');
-
-  await page.locator('umb-workspace-entity-action-menu').getByRole('button', { name: 'Actions' }).click();
-  const menu = page.locator('umb-entity-action-list uui-menu-item').filter({ visible: true });
-  await expect(menu.first()).toHaveAttribute('label', 'Restore an earlier version' + String.fromCharCode(0x2026));
-  await menu.first().click();
-
-  const picker = page.locator('jfb-version-picker-modal');
-  await expect(picker.locator('.version')).toHaveCount(1);
-  await axeInside(page, 'jfb-version-picker-modal');
-  await picker.locator(`.version[data-number="${String(published)}"]`).click();
-  const sidebar = page.locator('jfb-version-comparison-modal');
-  await sidebar.getByRole('button', { name: 'Restore as a new draft', exact: true }).click();
-  await expect(picker).toHaveCount(0);
-  await expect(sidebar).toHaveCount(0);
-
-  await expect.poll(() => labelOf(api, key)).toBe('Your email');
-  await expect(design.getByRole('button', { name: /^Your email, / })).toBeVisible();
-  await toast(page).getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect.poll(() => labelOf(api, key)).toBe('Work email');
-  await expect(design.getByRole('button', { name: /^Work email, / })).toBeVisible();
+  for (const [view, element] of [
+    ['history', 'jfb-form-history-view'],
+    ['design', 'jfb-form-design-view'],
+  ] as const) {
+    await page.goto(`${SECTION}/${key}/view/${view}`);
+    await expect(page.locator(element)).toBeVisible({ timeout: 60_000 });
+    await page.locator('umb-workspace-entity-action-menu').getByRole('button', { name: 'Actions' }).click();
+    const menu = page.locator('umb-entity-action-list uui-menu-item').filter({ visible: true });
+    await expect(menu.first()).toBeVisible();
+    const labels = await menu.evaluateAll((items) => items.map((item) => item.getAttribute('label') ?? ''));
+    expect(
+      labels.filter((label) => /version/i.test(label)),
+      view,
+    ).toEqual([]);
+    await page.keyboard.press('Escape');
+  }
 });
 
 test('Restore and publish... restores, then publishes the restored draft from the publish dialog', async ({

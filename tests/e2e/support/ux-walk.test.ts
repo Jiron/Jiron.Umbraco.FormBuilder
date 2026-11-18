@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import {
   COMBOS,
   comboName,
+  foldsInFolds,
   sheetHtml,
   splitAxe,
   walkDir,
@@ -11,6 +12,7 @@ import {
   wantedScreen,
   WINDOWS,
   wordChanges,
+  type FoldNode,
 } from './ux-walk.ts';
 
 test('the walk looks at every screen in twelve ways: three widths, two themes, two languages', () => {
@@ -103,6 +105,96 @@ test("the name and the colours of UUI's menu item are Umbraco's in the sidebar's
     `label-content-name-mismatch: ${JSON.stringify(inItem('Library', '#label-button'))}`,
   ]);
   assert.equal(split.umbraco, 3);
+});
+
+test('a fold inside a region another fold opened is found by both names; a menu, a combobox, a tree are none', () => {
+  const node = (tag: string, extra: Partial<FoldNode> = {}, ...children: FoldNode[]): FoldNode => ({
+    tag,
+    ...extra,
+    children,
+  });
+  // A section open with a "More options" inside it, and a details open inside "More options"'s region.
+  const nested = node(
+    'body',
+    {},
+    node('button', { name: 'Validation', expanded: 'true', controls: ['1:validation'] }),
+    node(
+      'div',
+      { id: '1:validation' },
+      node('button', { name: 'More options', expanded: 'false', controls: ['1:more'] }),
+      node('button', { name: 'Fewer', expanded: 'true', controls: ['1:fewer'] }),
+      node('div', { id: '1:fewer' }, node('details', { open: true }, node('summary', { name: 'Add recipient' }))),
+    ),
+  );
+  assert.deepEqual(foldsInFolds(nested), [
+    '"More options" inside "Validation"',
+    '"Fewer" inside "Validation"',
+    '"Add recipient" inside "Validation"',
+  ]);
+
+  // Side by side, and closed, nothing is inside anything; a closed fold's region opens nothing.
+  const sideBySide = node(
+    'body',
+    {},
+    node('button', { name: 'Validation', expanded: 'true', controls: ['1:a'] }),
+    node('div', { id: '1:a' }, node('input', { id: '1:min' })),
+    node('button', { name: 'Advanced', expanded: 'false', controls: ['1:b'] }),
+    node('div', { id: '1:b' }, node('button', { name: 'Inner', expanded: 'false', controls: ['1:c'] })),
+  );
+  assert.deepEqual(foldsInFolds(sideBySide), []);
+
+  // An id names the element of its own shadow root: the same id in another root is not the region.
+  const otherRoot = node(
+    'body',
+    {},
+    node('button', { name: 'Open', expanded: 'true', controls: ['1:part'] }),
+    node('div', { id: '2:part' }, node('button', { name: 'Inner', expanded: 'false', controls: ['2:x'] })),
+  );
+  assert.deepEqual(foldsInFolds(otherRoot), []);
+
+  // Inside an open region: a menu button, a combobox, a popover's opener, one whose region is a list box, and a tree's
+  // items are no folds.
+  const popups = node(
+    'body',
+    {},
+    node('button', { name: 'Section', expanded: 'true', controls: ['1:s'] }),
+    node(
+      'div',
+      { id: '1:s' },
+      node('button', { name: 'Actions', expanded: 'false', haspopup: 'menu' }),
+      node('input', { role: 'combobox', name: 'Country', expanded: 'false' }),
+      node('button', { name: 'Language', expanded: 'false', popovertarget: true }),
+      node('button', { name: 'Pick', expanded: 'true', controls: ['1:list'] }),
+      node('ul', { id: '1:list', role: 'listbox' }),
+      node(
+        'uui-menu-item',
+        { name: 'Folder' },
+        node('button', { name: 'Expand', expanded: 'true', controls: ['1:t'] }),
+      ),
+      node('div', { role: 'tree' }, node('div', { role: 'treeitem', expanded: 'false', name: 'Child' })),
+      // A tool that opens a picker under its box: Insert merge tag.
+      node(
+        'jfb-merge-tag-picker',
+        {},
+        node('button', { name: 'Insert merge tag', expanded: 'true', controls: ['2:tags'] }),
+        node('div', { id: '2:tags', role: 'group' }, node('button', { name: 'Inner', expanded: 'false' })),
+      ),
+    ),
+  );
+  assert.deepEqual(foldsInFolds(popups), []);
+
+  // A details open inside a details.
+  const details = node(
+    'body',
+    {},
+    node(
+      'details',
+      { open: true },
+      node('summary', { name: 'Outer' }),
+      node('details', { open: false }, node('summary', { name: 'Inner' })),
+    ),
+  );
+  assert.deepEqual(foldsInFolds(details), ['"Inner" inside "Outer"']);
 });
 
 test('a sheet has a cell for each of the twelve ways, saying why one has no shot, its names escaped', () => {

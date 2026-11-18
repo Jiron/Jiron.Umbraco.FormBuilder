@@ -77,6 +77,12 @@ describe("the Actions view's words", () => {
     expect(added('Spam check', when_approvedEach)).toBe(
       'Hinzugef\u00fcgt. \u201eSpam check\u201c l\u00e4uft bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat.',
     );
+    // Under the moment chosen in an action's sheet, the same.
+    const { runsWhen } = de.jfbActions;
+    expect([runsWhen(when_submitted), runsWhen(when_approvedEach)]).toEqual([
+      'L\u00e4uft, wenn ein Eintrag eingeht.',
+      'L\u00e4uft bei jedem eingehenden Eintrag, da dieses Formular keine manuelle Genehmigung hat.',
+    ]);
   });
 
   it("are looked up as Umbraco's own: by area and key, in one language", () => {

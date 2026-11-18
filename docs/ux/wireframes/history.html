@@ -36,8 +36,11 @@
 
     States: default; drafts (with draft saves, whose empty comments read "none"); compare (two ticked); diff (the
     comparison); version (one version beside the list); row-menu (a row's "…": Restore as a new draft, Pin, Add
-    comment…); restore (after restoring from that menu: the toast says what changed and offers Undo); loading. At 620 px the Comment column goes, and each comment
-    moves under its row's "Changed" text.
+    comment…); restore (after restoring from that menu: the toast says what changed and offers Undo); loading. At 620
+    px the Comment column goes, and each comment moves under its row's "Changed" text.
+
+    ADR-0258: History is the one door to an earlier version (the form's "…" no longer offers it), and the form's Preview,
+    Save draft and Publish… show only on Design, Settings and Actions, so this view has no footer.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -154,13 +157,6 @@
       <p class="wf-small wf-muted" style="margin-top: var(--wf-space-4)" data-state="drafts">Draft saves are kept for 90 days. Published and pinned versions are kept for good.</p>
     </div>
 
-    <footer class="wf-foot">
-      <div class="wf-foot__end">
-        <button class="wf-btn">Preview</button>
-        <button class="wf-btn">Save draft</button>
-        <button class="wf-btn wf-btn--primary">Publish…</button>
-      </div>
-    </footer>
   </main>
 
   <!-- Comparing two versions -->

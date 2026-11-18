@@ -1,14 +1,19 @@
 // The form workspace's frame (docs/ux/information-architecture.md, section 5): Umbraco's detail workspace editor, with the
 // back arrow to the form's folder, the name, which renames the form for who may design it (ADR-0166) and is a heading for
 // everyone else (ADR-0182), and the state chip in Umbraco's words, which goes under the name where the two do not fit
-// side by side and wraps rather than cuts (ADR-0206, ADR-0213). The views draw the rest, and the footer holds Save
-// draft and Publish....
+// side by side and wraps rather than cuts (ADR-0206, ADR-0213). The views draw the rest. The footer holds Preview, Save
+// draft and Publish... on the views that change the form, which only who may design it sees; on the others it is not
+// drawn at all (ADR-0258). So this is Umbraco's workspace editor, which can leave its footer out, drawn here as
+// Umbraco's detail workspace editor draws it (the form's "..." where the form is saved, and Umbraco's own words for a
+// form that can't be opened or isn't there), since that one draws its footer on every view. A form put in the Recycle
+// Bin leaves its screen by the action that put it there (library/actions/trash-form.action.ts).
 import { css, html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, screenPath } from '../section/entity-types';
+import { FOLDER_ENTITY_TYPE, FORM_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, screenPath } from '../section/entity-types';
 import { jfbBackofficeTokens } from '../styles/tokens';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
 import type { FormState } from './form-state';
+import { changesForm, shownView } from './form-views';
 
 /** How each state's chip looks: the live form stands out, a draft and an offline form stay quiet. */
 const CHIP: Record<FormState, { color: string; look: string }> = {
@@ -32,6 +37,11 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     _canDesign: { state: true },
     _stacked: { state: true },
     _waiting: { state: true },
+    _loading: { state: true },
+    _forbidden: { state: true },
+    _exists: { state: true },
+    _isNew: { state: true },
+    _footer: { state: true },
   };
 
   // The tokens give the footer's filled buttons, Umbraco's own, the section's white labels (ADR-0182).
@@ -98,6 +108,11 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
       .waiting > * {
         visibility: hidden;
       }
+
+      /* As Umbraco's detail workspace editor keeps itself in place while there is no form to show. */
+      umb-workspace-editor.hide {
+        visibility: hidden;
+      }
     `,
   ];
 
@@ -110,6 +125,12 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   declare private _stacked: boolean;
   /** Whether Umbraco's row leaves the header less than the name's 6rem, so the name and the state wait for room. */
   declare private _waiting: boolean;
+  declare private _loading: boolean;
+  declare private _forbidden: boolean;
+  declare private _exists: boolean;
+  declare private _isNew: boolean | undefined;
+  /** Whether the view shown changes the form, so the footer with its buttons is drawn. */
+  declare private _footer: boolean;
 
   /** The header's own size follows the window and the chip's words; each change reads again where the chip lies. */
   #resize = new ResizeObserver(() => this.#measure());
@@ -119,7 +140,15 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     this._name = '';
     this._stacked = false;
     this._waiting = false;
+    this._loading = false;
+    this._forbidden = false;
+    this._exists = false;
+    this._footer = true;
     this.consumeContext(FORM_WORKSPACE_CONTEXT, (context) => {
+      this.observe(context?.loading.isOn, (loading) => (this._loading = loading ?? false), 'loading');
+      this.observe(context?.forbidden.isOn, (forbidden) => (this._forbidden = forbidden ?? false), 'forbidden');
+      this.observe(context?.data, (data) => (this._exists = !!data), 'data');
+      this.observe(context?.isNew, (isNew) => (this._isNew = isNew), 'isNew');
       this.observe(context?.state, (state) => (this._state = state), 'state');
       this.observe(
         context?.form,
@@ -135,10 +164,21 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
     });
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener('navigationend', this.#viewShown);
+    this.#viewShown();
+  }
+
   override disconnectedCallback() {
     super.disconnectedCallback();
+    window.removeEventListener('navigationend', this.#viewShown);
     this.#resize.disconnect();
   }
+
+  readonly #viewShown = () => {
+    this._footer = changesForm(shownView(window.location.pathname));
+  };
 
   protected override firstUpdated(changed: PropertyValues<this>) {
     super.firstUpdated(changed);
@@ -171,23 +211,39 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   }
 
   override render() {
-    return html`<umb-entity-detail-workspace-editor .backPath=${this._backPath}>
-      <div
-        class=${['header', this._stacked ? 'stacked' : '', this._waiting ? 'waiting' : ''].filter(Boolean).join(' ')}
-        slot="header"
+    const missing = !this._loading && !this._exists;
+    const forbidden =
+      !this._loading && this._forbidden
+        ? html`<umb-entity-detail-forbidden entity-type=${FORM_ENTITY_TYPE}></umb-entity-detail-forbidden>`
+        : nothing;
+    const gone = missing
+      ? html`<umb-entity-detail-not-found entity-type=${FORM_ENTITY_TYPE}></umb-entity-detail-not-found>`
+      : nothing;
+    const menu = html`<umb-workspace-entity-action-menu slot="action-menu"></umb-workspace-entity-action-menu>`;
+    return html`${forbidden}${gone}
+      <umb-workspace-editor
+        class=${missing ? 'hide' : ''}
+        ?loading=${this._loading}
+        .enforceNoFooter=${!this._footer}
+        .backPath=${this._backPath}
       >
-        ${
-          this._canDesign === false
-            ? html`<h1>${this._name}</h1>`
-            : html`<div class="name">
-                <umb-workspace-header-name-editable
-                  label=${this.localize.term('jfbDesigner_formName')}
-                ></umb-workspace-header-name-editable>
-              </div>`
-        }
-        ${this.#chip()}
-      </div>
-    </umb-entity-detail-workspace-editor>`;
+        <div
+          class=${['header', this._stacked ? 'stacked' : '', this._waiting ? 'waiting' : ''].filter(Boolean).join(' ')}
+          slot="header"
+        >
+          ${
+            this._canDesign === false
+              ? html`<h1>${this._name}</h1>`
+              : html`<div class="name">
+                  <umb-workspace-header-name-editable
+                    label=${this.localize.term('jfbDesigner_formName')}
+                  ></umb-workspace-header-name-editable>
+                </div>`
+          }
+          ${this.#chip()}
+        </div>
+        ${this._isNew ? nothing : menu}
+      </umb-workspace-editor>`;
   }
 }
 

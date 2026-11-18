@@ -1,8 +1,9 @@
-// What the inspector shows for each built-in type (ROADMAP 9.4a, IA 5.1, ADR-0170), from the field types endpoint's
-// snapshot (docs/api/field-types.json): sections in their order, the common properties a type's features allow, its
-// settings by their group, and none an editor of a later step draws.
+// What the inspector shows for each built-in type (ROADMAP 9.4a, IA 5.1, ADR-0170, ADR-0258), from the field types
+// endpoint's snapshot (docs/api/field-types.json): sections in their order, the common properties a type's features
+// allow, its settings by their group, and none an editor of a later step draws.
 import { describe, expect, it } from 'vitest';
 import type { FieldTypeResponseModel } from '../../api';
+import { must } from '../../testing';
 import type { DesignField } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import {
@@ -11,7 +12,7 @@ import {
   MOST_SHOWN,
   pageSections,
   PLAIN_EDITORS,
-  splitItems,
+  sectionKey,
   takesSeveral,
   untranslated,
   type Item,
@@ -43,34 +44,18 @@ const nameOf = (item: Item): string => {
 };
 
 const shape = (sections: readonly Section[]) =>
-  Object.fromEntries(sections.map((section) => [section.id, section.items.map(nameOf)]));
+  Object.fromEntries(sections.map((section) => [sectionKey(section), section.items.map(nameOf)]));
 
 describe("a field's sections", () => {
-  it('are those of a text field: its common properties, its settings by group, its checks and messages', () => {
+  it('are those of a text field: its checks, then its messages, and what is kept of its answer in Privacy', () => {
     expect(shape(fieldSections(typeOf('text'), 1))).toEqual({
       essentials: ['label', 'help', 'required', 'placeholder'],
-      validation: [
-        'setting:minLength',
-        'setting:maxLength',
-        'pattern',
-        'unique',
-        'matches',
-        'message:required',
-        'message:minLength',
-        'message:maxLength',
-      ],
+      validation: ['setting:minLength', 'setting:maxLength', 'pattern', 'unique', 'matches'],
+      messages: ['message:required', 'message:minLength', 'message:maxLength'],
       rules: [],
       appearance: ['hideLabel', 'setting:prefix', 'setting:suffix', 'setting:counter'],
-      advanced: [
-        'alias',
-        'defaultValue',
-        'prefill',
-        'autocomplete',
-        'sensitive',
-        'keep',
-        'includeInEmails',
-        'cssClass',
-      ],
+      privacy: ['sensitive', 'keep', 'includeInEmails'],
+      advanced: ['alias', 'defaultValue', 'prefill', 'autocomplete', 'cssClass'],
     });
   });
 
@@ -83,6 +68,8 @@ describe("a field's sections", () => {
       'setting:decimals',
       'unique',
       'matches',
+    ]);
+    expect(number['messages']).toEqual([
       'message:required',
       'message:invalid',
       'message:min',
@@ -100,10 +87,8 @@ describe("a field's sections", () => {
       'setting:excluded',
       'unique',
       'matches',
-      'message:required',
-      'message:invalid',
-      'message:dateWindow',
     ]);
+    expect(date['messages']).toEqual(['message:required', 'message:invalid', 'message:dateWindow']);
   });
 
   it('leave out a section with nothing in it, Rules where the type takes none, and a hidden lock', () => {
@@ -199,14 +184,32 @@ describe("a field's sections", () => {
 });
 
 describe('a section with many items', () => {
-  it('shows seven before More options, as IA 5.1 says', () => {
+  it('never holds more than seven for any built-in type, so none needs a "more"', () => {
     expect(MOST_SHOWN).toBe(7);
-    const items = Array.from({ length: MOST_SHOWN + 2 }, (_, at): Item => ({ kind: 'message', message: `m${at}` }));
-    const split = splitItems(items);
-    expect(split.shown).toHaveLength(MOST_SHOWN);
-    expect(split.more.map(nameOf)).toEqual([`message:m${MOST_SHOWN}`, `message:m${MOST_SHOWN + 1}`]);
-    expect(splitItems(items.slice(0, MOST_SHOWN))).toEqual({ shown: items.slice(0, MOST_SHOWN), more: [] });
-    expect(splitItems(items.slice(0, MOST_SHOWN + 1)).more).toHaveLength(1);
+    for (const type of Object.values(builtInTypes))
+      for (const section of fieldSections(type, 4)) {
+        expect(section.items.length, `${type.alias} ${section.id}`).toBeLessThanOrEqual(MOST_SHOWN);
+        expect(section.more, `${type.alias} ${section.id}`).toBeUndefined();
+      }
+  });
+
+  it("puts the rest of a site's type's section that runs over in its own section right after it", () => {
+    const text = typeOf('text');
+    const own = (name: string) => ({
+      ...must(text.settings[0], 'a setting'),
+      name,
+      group: 'essentials',
+      editor: 'text',
+      lock: null,
+    });
+    const site: FieldTypeResponseModel = {
+      ...text,
+      settings: [...text.settings, ...['a', 'b', 'c', 'd', 'e'].map(own)],
+    };
+    const sections = fieldSections(site, 1);
+    expect(sections.slice(0, 3).map(sectionKey)).toEqual(['essentials', 'essentials-more', 'validation']);
+    expect(sections[0]?.items).toHaveLength(MOST_SHOWN);
+    expect(shape(sections)['essentials-more']).toEqual(['setting:d', 'setting:e']);
   });
 });
 

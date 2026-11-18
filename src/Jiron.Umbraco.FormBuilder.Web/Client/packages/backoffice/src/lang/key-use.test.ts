@@ -6,6 +6,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import type { ActionTypeResponseModel } from '../api';
+import { choicesOf } from '../designer/actions/action-model';
 import { CONTEXT_TERMS } from '../designer/rules/rule-words';
 import { SPANS } from '../privacy/retention-screen.element';
 import { LEADS } from '../settings/settings-screen.element';
@@ -254,6 +256,16 @@ describe('every key is used', () => {
     for (const area of ['jfbActionTypes', 'jfbActionPresets', 'jfbActionChoices', 'jfbActionSettings'])
       expectHeld(area, servedIn(types, area));
   });
+
+  it("in the kinds' lines: one for each kind a new action of the built-in types may be, by the kind's own name", () => {
+    const types = snapshot('action-types.json') as ActionTypeResponseModel[];
+    const kinds = new Set(choicesOf(types).map((choice) => choice.name.slice(choice.name.indexOf('_') + 1)));
+    expectHeld('jfbActionLines', kinds);
+    expect(
+      [...kinds].filter((kind) => !keysOf('jfbActionLines').has(kind)),
+      'kinds without a line',
+    ).toEqual([]);
+  });
 });
 
 describe('every area', () => {
@@ -300,6 +312,7 @@ describe('every area', () => {
     'jfbExport',
     'jfbActionTypes',
     'jfbActionPresets',
+    'jfbActionLines',
     'jfbActionChoices',
     'jfbActionSettings',
   ];

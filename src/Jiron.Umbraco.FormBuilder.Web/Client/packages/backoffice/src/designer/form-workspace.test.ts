@@ -2,7 +2,7 @@
 // field types' traits, and the manifests that put the views and the footer's actions behind the open form's permissions.
 import { describe, expect, it } from 'vitest';
 import type { FieldTypeResponseModel, FormDraftResponseModel, FormResponseModel } from '../api';
-import { FORM_PERMISSION_CONDITION, FORM_WORKSPACE_ALIAS } from './constants';
+import { FORM_PERMISSION_CONDITION, FORM_VIEW_CONDITION, FORM_WORKSPACE_ALIAS } from './constants';
 import { changesOf, detailOf, detailOfForm, keptAlias } from './form-detail.data-source';
 import { holdsAny } from './form-permission.condition';
 import { actionOfQuery, fieldOfQuery, formState } from './form-state';
@@ -228,17 +228,13 @@ describe("the form workspace's manifests", () => {
     const actions = all.filter((manifest) => manifest.type === 'workspaceAction');
     expect(actions.map((action) => action.alias.split('.').at(-1))).toEqual(['Preview', 'SaveDraft', 'Publish']);
     expect(actions.map(holding)).toEqual([['design'], ['design'], ['design']]);
+    // Only on the views that change the form (ADR-0258).
+    for (const action of actions) expect(action.conditions).toContainEqual({ alias: FORM_VIEW_CONDITION });
+    expect(all.find((manifest) => manifest.alias === FORM_VIEW_CONDITION)?.type).toBe('condition');
   });
 
-  it('put Restore an earlier version... first in the form\'s "..." in the workspace, for who may design the form', () => {
-    const restore = all.find((manifest) => manifest.alias === 'Jiron.FormBuilder.EntityAction.RestoreEarlier') as
-      (Conditioned & { forEntityTypes: string[]; weight: number; meta: { label: string } }) | undefined;
-    expect(restore?.type).toBe('entityAction');
-    expect(restore?.forEntityTypes).toEqual(['jfb-form']);
-    expect(restore?.meta.label).toBe('#jfbDesigner_restoreEarlier');
-    // Above the tree's form actions (the highest, Duplicate, weighs 1000), and only where the form is open.
-    expect(restore?.weight).toBeGreaterThan(1000);
-    expect(restore?.conditions).toContainEqual({ alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS });
-    expect(restore && holding(restore)).toEqual(['design']);
+  it('offer no earlier version in the form\'s "...": the History view is the one door to one (ADR-0258)', () => {
+    expect(all.some((manifest) => manifest.alias === 'Jiron.FormBuilder.EntityAction.RestoreEarlier')).toBe(false);
+    expect(all.some((manifest) => manifest.alias === 'Jiron.FormBuilder.Modal.VersionPicker')).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, created, unique } from '../../support/forms-api.ts';
 import { fillForm, logicCome, pressOnThePage } from '../../support/form.ts';
+import { openSettings, openSettingsMore, settingsMore } from '../../support/form-views.ts';
 import { bodyOf, headerOf } from '../../support/mail.ts';
 import { E2E_BASE_URL } from '../../support/paths.ts';
 
@@ -65,11 +66,9 @@ test('a form saved for later on its last page comes back from the link in the ma
 
   // The editor turns it on under Submission's More options; days out of range say their message there.
   await loginAs('designer');
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
-  const view = page.locator('jfb-form-settings-view');
-  await expect(view.locator('#group-submission')).toBeVisible();
-  await view.getByRole('button', { name: 'More options (6)' }).click();
+  const view = await openSettings(page, `${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
+  await expect(settingsMore(view)).toHaveText(/More options \(6\)/);
+  await openSettingsMore(view);
   const offered = view.getByRole('switch', { name: 'Save and continue later' });
   await expect(offered).not.toBeChecked();
   await offered.check();

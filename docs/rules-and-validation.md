@@ -126,8 +126,8 @@ text-like fields:
 **Messages on a field** go further: **Show a message on** a field when its conditions hold, as "Shows "We deliver only
 within Switzerland" on Postcode when Country is not Switzerland". The visitor must change the answer before sending.
 
-Every check has a standard message in each visitor language. A field's own message box replaces it for that field;
-**Visitor texts** in Settings rewords it for a form or the whole site.
+Every check has a standard message in each visitor language. A field's own message box, in the inspector's
+**Messages** section, replaces it for that field; **Visitor texts** in Settings rewords it for a form or the whole site.
 
 ## Patterns
 

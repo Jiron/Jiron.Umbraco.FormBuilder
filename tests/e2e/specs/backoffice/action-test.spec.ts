@@ -1,6 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
+import { addAction } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 import { bodyOf, headerOf, visibleText } from '../../support/mail.ts';
 
@@ -67,10 +68,8 @@ test('an email from a preset is tested from its sidebar before it is added, and 
   await loginAs('designer');
   const view = await openActions(page, form.key);
 
-  // Add action starts ready to email the team; an address goes in the To box.
-  await view.getByRole('button', { name: 'Add action' }).click();
-  const sidebar = page.locator('jfb-action-modal');
-  await expect(sidebar.getByRole('radio', { name: 'Email the team' })).toBeChecked();
+  // Add action, Email the team picked from the kinds; an address goes in the To box.
+  const sidebar = await addAction(page, view, 'Email the team');
   const to = sidebar.getByRole('group', { name: 'To', exact: true });
   await to.locator('summary', { hasText: 'Add recipient' }).click();
   const address = to.getByRole('textbox', { name: 'An address' });

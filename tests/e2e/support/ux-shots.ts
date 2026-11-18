@@ -3,7 +3,17 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { inLanguage, inTheme } from './backoffice-look.ts';
-import { LANGUAGE_CODES, splitAxe, wantedScreen, type AxeNode, type Combo, type ShotReport } from './ux-walk.ts';
+import {
+  FOLD_TOOLS,
+  foldsInFolds,
+  LANGUAGE_CODES,
+  splitAxe,
+  wantedScreen,
+  type AxeNode,
+  type Combo,
+  type FoldNode,
+  type ShotReport,
+} from './ux-walk.ts';
 
 // The shots of a UX walk (ROADMAP 9.6a; the journeys of 16.6 take them the same way): a page dressed in a combination of
 // support/ux-walk.ts, each screen reached, settled and shot, with what axe found inside our own elements, how far the
@@ -137,6 +147,71 @@ export const measure = (page: Page) =>
     };
   });
 
+/**
+ * The screen as the fold check reads it (`foldsInFolds` in support/ux-walk.ts): the drawn elements as the page composes
+ * them, a shadow root in its host and what a slot shows in the slot, kept where an element has an id, a role,
+ * `aria-expanded`, a popover or is a `details`, a `summary`, UUI's menu item or a tool of `FOLD_TOOLS`, and the rest
+ * left out around their children.
+ */
+export const foldTree = (page: Page): Promise<FoldNode> =>
+  page.evaluate((tools) => {
+    interface Node {
+      tag: string;
+      id?: string;
+      role?: string;
+      name?: string;
+      expanded?: string;
+      controls?: string[];
+      haspopup?: string;
+      popovertarget?: boolean;
+      popover?: boolean;
+      open?: boolean;
+      children: Node[];
+    }
+    const scopes = new Map<globalThis.Node, number>();
+    const scopeOf = (element: Element) => {
+      const root = element.getRootNode();
+      if (!scopes.has(root)) scopes.set(root, scopes.size);
+      return scopes.get(root) ?? 0;
+    };
+    const drawn = (element: Element) =>
+      getComputedStyle(element).display === 'contents' ||
+      element.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+    const kept = (element: Element) =>
+      element.id !== '' ||
+      ['role', 'aria-expanded', 'popover'].some((name) => element.hasAttribute(name)) ||
+      ['details', 'summary', 'uui-menu-item', ...tools].includes(element.localName);
+    const inside = (element: Element): Element[] =>
+      element instanceof HTMLSlotElement
+        ? element.assignedElements({ flatten: true })
+        : [...(element.shadowRoot ?? element).children];
+    const read = (element: Element): Node[] => {
+      if (['style', 'script', 'template'].includes(element.localName) || !drawn(element)) return [];
+      const children = inside(element).flatMap(read);
+      if (!kept(element)) return children;
+      const scope = scopeOf(element);
+      const attribute = (name: string) => element.getAttribute(name) ?? undefined;
+      const text = (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+      const node: Node = { tag: element.localName, children };
+      if (element.id) node.id = `${scope}:${element.id}`;
+      const role = attribute('role');
+      if (role) node.role = role;
+      const name = attribute('aria-label') ?? attribute('label') ?? (text || undefined);
+      if (name) node.name = name;
+      const expanded = attribute('aria-expanded');
+      if (expanded !== undefined) node.expanded = expanded;
+      const controls = attribute('aria-controls');
+      if (controls) node.controls = controls.split(/\s+/).map((id) => `${scope}:${id}`);
+      const haspopup = attribute('aria-haspopup');
+      if (haspopup !== undefined) node.haspopup = haspopup;
+      if (element.hasAttribute('popovertarget')) node.popovertarget = true;
+      if (element.hasAttribute('popover')) node.popover = true;
+      if (element instanceof HTMLDetailsElement) node.open = element.open;
+      return [node];
+    };
+    return { tag: 'body', children: read(document.body).flatMap((node) => node.children) };
+  }, FOLD_TOOLS);
+
 /** One walk: its shots and what each found, written beside them. */
 export class Walk {
   readonly reports: ShotReport[] = [];
@@ -158,7 +233,8 @@ export class Walk {
       const file = `${screen}.png`;
       await page.screenshot({ path: join(this.dir, file) });
       const { ours, umbraco } = splitAxe(await axeNodes(page));
-      this.reports.push({ screen, file, axe: ours, axeUmbraco: umbraco, ...(await measure(page)) });
+      const folds = foldsInFolds(await foldTree(page));
+      this.reports.push({ screen, file, axe: ours, axeUmbraco: umbraco, folds, ...(await measure(page)) });
     } catch (error) {
       const message = (error instanceof Error ? error.message : String(error)).split('\n')[0]?.slice(0, 300) ?? '';
       await page.screenshot({ path: join(this.dir, `${screen}.failed.png`) }).catch(() => undefined);
@@ -168,6 +244,7 @@ export class Walk {
         error: message,
         axe: [],
         axeUmbraco: 0,
+        folds: [],
         overflowX: 0,
         scrollers: [],
         clipped: [],

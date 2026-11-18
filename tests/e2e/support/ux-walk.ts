@@ -80,6 +80,8 @@ export interface ShotReport {
   readonly axe: readonly string[];
   /** How many of axe's findings lie in Umbraco's own elements, which are Umbraco's to answer for. */
   readonly axeUmbraco: number;
+  /** The folds inside a region another fold opened, as `foldsInFolds` names them; the walk fails a screen with one. */
+  readonly folds: readonly string[];
   /** How far the page itself scrolls sideways, in pixels. */
   readonly overflowX: number;
   /** Boxes that scroll sideways inside the page, as `tag (scroll width > width)`. */
@@ -161,6 +163,100 @@ export function splitAxe(nodes: readonly AxeNode[]): { ours: string[]; umbraco: 
     else umbraco++;
   }
   return { ours, umbraco };
+}
+
+/**
+ * An element of a screen as the fold check reads it (support/ux-shots.ts): only what is drawn, shadow roots inside
+ * their hosts, and only what the check needs. Ids carry their shadow root's number (`3:more`), as an `aria-controls`
+ * names an element of its own root.
+ */
+export interface FoldNode {
+  readonly tag: string;
+  readonly id?: string;
+  readonly role?: string;
+  readonly name?: string;
+  /** `aria-expanded`, where the element has it. */
+  readonly expanded?: string;
+  /** The ids its `aria-controls` names. */
+  readonly controls?: readonly string[];
+  /** `aria-haspopup`, where the element has it. */
+  readonly haspopup?: string;
+  /** Whether it opens a popover (`popovertarget`), or is one (`popover`). */
+  readonly popovertarget?: boolean;
+  readonly popover?: boolean;
+  /** A `details` element's `open`. */
+  readonly open?: boolean;
+  readonly children: readonly FoldNode[];
+}
+
+/** The roles of what a control opens over the page rather than in it, which is a menu or a list, not a fold. */
+const POPUP_ROLES = new Set(['menu', 'listbox', 'dialog', 'tree', 'grid']);
+
+/**
+ * The tools that open a picker under the box they write into, and close as the focus leaves it: Insert merge tag and
+ * the AI add-on's Suggest help text. They put a value in a box rather than show settings, so they are no folds.
+ */
+export const FOLD_TOOLS: readonly string[] = ['jfb-merge-tag-picker', 'jfb-ai-suggest'];
+
+/**
+ * The folds that stand inside a region another fold opened, as `"inner" inside "outer"`: a screen that opens a section
+ * inside a section (ROADMAP 22.3, the fifth rule of ADR-0254). A fold is a control that opens and closes a region in
+ * the page: an element with `aria-expanded`, or a `details` (named by its `summary`). What opens over the page is no
+ * fold: a control with `aria-haspopup`, a combobox, one that opens a popover, or one whose region is a menu, a list
+ * box, a dialog, a tree or a grid. A tree's own items are no folds either (a `treeitem`, anything in a `tree`, and
+ * UUI's menu item, which draws Umbraco's trees), nor what a tool of `FOLD_TOOLS` holds. A fold's region is what its
+ * `aria-controls` names while it is expanded, or a `details` itself while it is open.
+ */
+export function foldsInFolds(root: FoldNode): string[] {
+  const NOT_FOLDS = new Set(['uui-menu-item', ...FOLD_TOOLS]);
+  const byId = new Map<string, FoldNode>();
+  const index = (node: FoldNode) => {
+    if (node.id) byId.set(node.id, node);
+    node.children.forEach(index);
+  };
+  index(root);
+  const nameOf = (node: FoldNode) =>
+    node.tag === 'details'
+      ? (node.children.find((child) => child.tag === 'summary')?.name ?? node.name ?? 'details')
+      : (node.name ?? node.id ?? node.tag);
+  const isFold = (node: FoldNode) => {
+    if (node.tag === 'details') return true;
+    if (node.expanded === undefined) return false;
+    if (node.haspopup !== undefined && node.haspopup !== 'false') return false;
+    if (node.role === 'combobox' || node.popovertarget) return false;
+    return !(node.controls ?? []).some((id) => {
+      const region = byId.get(id);
+      return region?.popover === true || POPUP_ROLES.has(region?.role ?? '');
+    });
+  };
+  // Each open region, by its fold's name.
+  const regions = new Map<FoldNode, string>();
+  const findRegions = (node: FoldNode, inTree: boolean) => {
+    const tree = inTree || node.role === 'tree' || node.role === 'treeitem' || NOT_FOLDS.has(node.tag);
+    if (!tree && isFold(node)) {
+      if (node.tag === 'details' && node.open) regions.set(node, nameOf(node));
+      else if (node.expanded === 'true')
+        for (const id of node.controls ?? []) {
+          const region = byId.get(id);
+          if (region) regions.set(region, nameOf(node));
+        }
+    }
+    for (const child of node.children) findRegions(child, tree);
+  };
+  findRegions(root, false);
+  const found: string[] = [];
+  const walk = (node: FoldNode, within: readonly { region: FoldNode; fold: string }[], inTree: boolean) => {
+    const tree = inTree || node.role === 'tree' || node.role === 'treeitem' || NOT_FOLDS.has(node.tag);
+    if (!tree && isFold(node)) {
+      const outer = within.find((one) => one.region !== node);
+      if (outer) found.push(`"${nameOf(node)}" inside "${outer.fold}"`);
+    }
+    const fold = regions.get(node);
+    const inside = fold === undefined ? within : [...within, { region: node, fold }];
+    for (const child of node.children) walk(child, inside, tree);
+  };
+  walk(root, [], false);
+  return found;
 }
 
 /** A cell of a contact sheet: a combination and its shot as a data URL, or null when there is none. */

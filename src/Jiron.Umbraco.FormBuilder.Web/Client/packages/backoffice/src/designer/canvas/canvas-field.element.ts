@@ -10,6 +10,7 @@
 // field without a text in the language shown carries a chip, and so does each rule in use on it, in words (ADR-0178),
 // each describing the button that selects the field.
 import {
+  css,
   html,
   LitElement,
   nothing,
@@ -110,6 +111,72 @@ export interface MenuItem {
   /** A site's designer action's alias, which the item carries (ADR-0018). */
   readonly alias?: string;
 }
+
+/** The look of a menu of `popoverMenu`, for the elements that draw one. */
+export const popoverMenuStyles = css`
+  .bo-menu {
+    display: grid;
+    min-width: 200px;
+    padding: var(--uui-size-space-2) 0;
+    border-radius: var(--uui-border-radius);
+    background: var(--uui-color-surface);
+    box-shadow: var(--uui-shadow-depth-3);
+    transform-origin: top right;
+    transition:
+      opacity var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease),
+      transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
+  }
+
+  @starting-style {
+    .bo-menu {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  .bo-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--uui-size-space-5);
+    min-height: 36px;
+    padding: 0 var(--uui-size-space-4);
+    border: 0;
+    background: none;
+    color: var(--uui-color-text);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bo-menu button:hover:not(:disabled) {
+      background: var(--uui-color-surface-emphasis);
+    }
+  }
+
+  .bo-menu button:disabled {
+    color: var(--uui-color-disabled-contrast);
+    cursor: default;
+  }
+
+  .bo-menu kbd {
+    color: var(--jfb-bo-color-text-muted);
+    font: inherit;
+    font-size: var(--uui-type-small-size);
+  }
+
+  /* The item shown now (the language) carries a check at its end. */
+  .bo-menu uui-icon {
+    flex: none;
+  }
+
+  .bo-menu button:focus-visible {
+    position: relative;
+    outline: 2px solid var(--jfb-bo-color-focus);
+    outline-offset: -4px;
+  }
+`;
 
 /**
  * A menu as the product draws its menus: buttons in a popover, which opens from the button that names it with

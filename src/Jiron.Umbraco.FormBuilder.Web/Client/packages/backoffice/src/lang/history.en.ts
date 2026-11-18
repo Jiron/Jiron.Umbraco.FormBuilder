@@ -51,9 +51,6 @@ export default {
     undone: 'The draft before is back.',
     undoStale: "The draft has changed since, so the restore can't be undone here. The draft before stays in History.",
     unread: "The new draft couldn't be read here. Reload the page to see it.",
-    pick_headline: 'Restore an earlier version',
-    pick_empty: 'There is no earlier version yet.',
-    pick_lead: 'Choose a version to compare it with the current draft first.',
 
     // Review both versions (ADR-0200), after a save someone else's save refused.
     review_headline: 'Review both versions',

@@ -22,6 +22,8 @@ export default {
     group_privacy: 'Privacy',
     group_appearance: 'Appearance',
     group_developer: 'Developer',
+    groupsLabel: 'Settings groups',
+    allSettings: 'All settings',
 
     submitLabel: 'Send button',
     submitLabelHelp: 'On the last page.',

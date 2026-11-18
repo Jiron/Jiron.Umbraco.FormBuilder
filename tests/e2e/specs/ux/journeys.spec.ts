@@ -6,6 +6,7 @@ import { formPages, pathOf } from '../../support/demo-content.ts';
 import { fillForm, press, submitForm } from '../../support/form.ts';
 import { API, created, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { actionSheetOf, addAction, openSection, pickKindOfChoice } from '../../support/form-views.ts';
 import { addFieldOf, openPasteQuestions } from '../../support/picker.ts';
 import { openRowActions } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
@@ -59,12 +60,9 @@ async function selectField(design: Locator, index: number): Promise<void> {
   await expect(design.locator('jfb-designer-inspector h2')).toBeVisible();
 }
 
-/** Opens an inspector section by its id, unless it is open. */
-async function openInspectorSection(design: Locator, id: string): Promise<void> {
-  const head = design.locator(`jfb-designer-inspector [data-section="${id}"] .section-head button`);
-  await head.scrollIntoViewIfNeeded();
-  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
-}
+/** Opens a section of the designer's inspector by its key, unless it is open. */
+const openInspectorSection = (design: Locator, key: string) =>
+  openSection(design.locator('jfb-designer-inspector'), key);
 
 for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
   test(`the journeys, ${comboName(combo)}`, async ({ browser, request, loginAs, apiAs }) => {
@@ -161,9 +159,9 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       async () => {
         await editor.goto(`${workspaceOf(formKey)}/view/actions`);
         const view = editor.locator('jfb-form-actions-view');
-        await view.locator('#add').click();
-        const sidebar = editor.locator('jfb-action-modal');
-        await expect(sidebar.locator('input[name="what-happens"]:checked')).toBeVisible();
+        // The kinds first (22.3): the team's email picked, then its sheet.
+        await pickKindOfChoice(await addAction(editor, view), 'email:0');
+        const sidebar = actionSheetOf(editor);
         await sidebar.locator('details.add summary').first().click();
         const address = sidebar.locator('details.add[open] .add-panel input').first();
         await address.fill('circle@lindenhall.example');
@@ -435,6 +433,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await officer.context().close();
 
     walk.write(combo, 'journeys.json');
+    expect.soft(walk.reports.flatMap((report) => report.folds.map((fold) => `${report.screen}: ${fold}`))).toEqual([]);
     expect(walk.reports.filter((report) => report.error).map((report) => `${report.screen}: ${report.error}`)).toEqual(
       [],
     );

@@ -213,6 +213,16 @@ export default {
     emailNotifyTeam: 'Email the team',
     emailConfirmSender: 'Confirm to the visitor',
   },
+  // One line for each kind a new action may be, under its name (ADR-0258), by the kind's own name.
+  jfbActionLines: {
+    emailNotifyTeam: 'Tells your team about each entry, with its answers.',
+    emailConfirmSender: 'Sends the visitor a copy of what they sent.',
+    webhook: 'Sends each entry to an address of your own.',
+    webhookSlack: 'Posts each entry in a Slack channel.',
+    webhookTeams: 'Posts each entry in a Teams channel.',
+    content: 'Makes a page or another item from the answers.',
+    setState: 'Approves, rejects or moves the entry to Spam.',
+  },
   jfbActionChoices: {
     webhookTargetUrl: 'An address of its own',
     webhookTargetSlack: 'Slack',

@@ -21,8 +21,12 @@ export default {
 
     section_essentials: 'Essentials',
     section_validation: 'Validation',
+    section_messages: 'Messages',
     section_rules: 'Rules',
     section_appearance: 'Appearance',
+    section_privacy: 'Privacy',
+    // The rest of a section that runs over seven, after it (ADR-0258).
+    sectionMore: (name: string) => `${name}, more`,
     section_advanced: 'Advanced',
     summaryNone: 'Defaults',
     moreOptions: (count: number) => (count === 1 ? 'More options (1)' : `More options (${count})`),

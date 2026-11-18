@@ -1,8 +1,9 @@
 # Field types
 
 Every field type the designer offers, what visitors see, its settings and what it stores. The settings sit in the
-inspector's sections, Essentials, Validation, Appearance and Advanced, as [the editor's guide](editor-guide.md#the-inspector)
-describes; the tables below name each type's own settings with their defaults.
+inspector's sections, Essentials, Validation, Messages, Appearance, Privacy and Advanced, as
+[the editor's guide](editor-guide.md#the-inspector) describes; the tables below name each type's own settings with their
+defaults.
 
 ## Contents
 
@@ -49,9 +50,9 @@ names are kept for the form's own use: `form`, `entry`, `page`, `member`, `query
 `ufprt`. Changing the alias of a field that already has entries asks first, and the old alias keeps working in merge
 tags.
 
-**Messages:** each check a type makes has a message box under Validation, such as "Message when no answer is given".
-Empty, the standard message applies, in the visitor's language. Administrators can reword the standard messages for
-the whole site, and editors for one form, under **Visitor texts** ([multi-language.md](multi-language.md)).
+**Messages:** each check a type makes has a message box in the Messages section, such as "Message when no answer is
+given". Empty, the standard message applies, in the visitor's language. Administrators can reword the standard
+messages for the whole site, and editors for one form, under **Visitor texts** ([multi-language.md](multi-language.md)).
 
 ## Text
 

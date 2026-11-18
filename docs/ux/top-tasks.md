@@ -14,6 +14,9 @@ counted as its "Rules" section says, from the section's start page.
 - **The sidebar starts with five places** (ROADMAP 22.2, ADR-0257): a screen that is its place's first tab is one
   click away as before, and a later tab is one more. Administrator tasks 1, 2, 3, 9, 12 and 13, privacy officer tasks 5
   and 10, entry handler task 6 and viewer task 14 grew by that click; no task takes more than 4.
+- **A form's views ask for a pick first** (ROADMAP 22.3, ADR-0258): Add action lists the kinds before the kind's
+  settings, so designer task 11 grew by one click. A form's Settings show the group picked, Submission at first, and
+  no task here starts in another group. The other tasks are as they were.
 
 ## Designer
 
@@ -29,7 +32,7 @@ counted as its "Rules" section says, from the section's start page.
 | 8 | See the form as a visitor will, before it goes live. | the form → Preview | 2 |
 | 9 | Put your changes live. | the form → Publish… → (Publish) | 2 |
 | 10 | Change what visitors read after they send the form. | the form → After sending → the outcome's row → (the message, Update) | 3 |
-| 11 | Have the sales team emailed about every new entry. | the form → Actions → Add action → (the recipients, Add) | 3 |
+| 11 | Have the sales team emailed about every new entry. | the form → Actions → Add action → Email the team → (the recipients, Add) | 4 |
 | 12 | Try the team email on a sample entry, without waiting for a real visitor. | the form → Actions → the card's Test | 3 |
 | 13 | Find out which pages show a form. | the form → "Used on 3 pages" | 2 |
 | 14 | Go back to how a form was last week. | the form → History → last week's row → (Restore as a new draft) | 3 |

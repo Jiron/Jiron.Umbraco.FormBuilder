@@ -52,9 +52,6 @@ export default {
     undoStale:
       'Der Entwurf hat sich seither geändert, daher lässt sich das Wiederherstellen hier nicht zurücknehmen. Der vorherige Entwurf bleibt im Verlauf.',
     unread: 'Der neue Entwurf konnte hier nicht gelesen werden. Laden Sie die Seite neu, um ihn zu sehen.',
-    pick_headline: 'Frühere Version wiederherstellen',
-    pick_empty: 'Es gibt noch keine frühere Version.',
-    pick_lead: 'Wählen Sie eine Version, um sie zuerst mit dem aktuellen Entwurf zu vergleichen.',
 
     // Beide Versionen prüfen (ADR-0200), nach einem Speichern, das ein zwischendurch gespeicherter Stand verhindert hat.
     review_headline: 'Beide Versionen prüfen',

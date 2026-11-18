@@ -38,6 +38,21 @@ follows the Umbraco major).
 - **After sending is edited where it is shown:** the outcomes are listed beside what visitors get on the Design view,
   and the form's Settings no longer have an After sending group. Fix it on an outcome's problem opens it there, and
   History and the publish dialog list an outcome's changes under a part of their own, After sending.
+- **A form's views ask you to pick first.** The form's Settings list their six groups, each with a line of what it
+  sets, and show the group you pick beside the list, Submission at first and then your last pick; on a narrow screen
+  the list stands alone and **All settings** goes back. The language of the texts is chosen with the Design view's
+  button.
+- **The inspector folds nothing inside a section:** a field's messages have a section of their own, **Messages**,
+  after Validation, and Sensitive, what is kept of the answer and whether emails list it are in **Privacy**, before
+  Advanced. No section shows more than seven settings.
+- **Add action lists the kinds of action first,** each with a line of what it does; the editor that follows holds that
+  kind's settings alone, headed by the kind, and **When it runs** is one choice with a line about the moment chosen.
+  A package can give its own action type a line ([docs/extending.md](docs/extending.md)).
+- **Preview, Save draft and Publish… show on Design, Settings and Actions,** the views that change the form, and the
+  other views have no footer. Changes not saved yet stay while you look at the other views, and leaving the form still
+  asks first.
+- **An earlier version comes back from the History view;** the form's **…** no longer has "Restore an earlier
+  version…".
 - The form check's badge shows its icon and the number of problems, its words in its tip.
 - The website runtime's budget with every feature is 100 KB gzip at most (was 60 KB); what every page with a form
   loads first stays within 16 KB.

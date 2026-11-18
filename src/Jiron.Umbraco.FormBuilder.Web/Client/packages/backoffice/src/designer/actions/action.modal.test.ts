@@ -12,6 +12,7 @@
 // problems at their box; and its boxes in words for who may only read them.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { umbLocalizationManager } from '@umbraco-cms/backoffice/localization-api';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionTypeResponseModel } from '../../api';
@@ -159,7 +160,8 @@ function modalContext() {
   };
 }
 
-async function sidebarOf(extra: Partial<ActionModalData> = {}) {
+/** A sidebar of an action; a new one's kind is picked first, the team's email unless `kind` says another or none. */
+async function sidebarOf(extra: Partial<ActionModalData> = {}, kind: string | null = 'email:0') {
   const data: ActionModalData = {
     action: TEAM,
     definition: definitionWith(extra.action === null ? [] : [extra.action ?? TEAM]),
@@ -189,7 +191,23 @@ async function sidebarOf(extra: Partial<ActionModalData> = {}) {
   const root = shadow(element);
   const box = <E extends HTMLElement = HTMLInputElement>(id: string) =>
     must(root.getElementById(id) as E | null, `#${id}`);
+  /** Picks a kind of a new action from the kinds, going back to them first from a sheet. */
+  const pick = async (id: string) => {
+    root.querySelector<HTMLElement>('uui-button[label="Other kinds"]')?.click();
+    await settle(element);
+    must(root.querySelector<HTMLButtonElement>(`.kind[data-choice="${id}"]`), id).click();
+    await settle(element);
+  };
+  if (extra.action === null && kind) await pick(kind);
   const choose = async (name: string, value: string) => {
+    if (name === 'what-happens') return pick(value);
+    if (name === 'trigger') {
+      const trigger = box<HTMLSelectElement>('trigger');
+      trigger.value = value;
+      trigger.dispatchEvent(new Event('change'));
+      await settle(element);
+      return;
+    }
     const radio = must(root.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`), value);
     radio.checked = true;
     radio.dispatchEvent(new Event('change'));
@@ -214,7 +232,7 @@ async function sidebarOf(extra: Partial<ActionModalData> = {}) {
   const kept = () => (modal.getValue() as { action: DesignAction }).action;
   const why = (id: string) => [...root.querySelectorAll(`[id^="${id}-why-"]`)].map((one) => text(one));
   const found = (id: string) => [...root.querySelectorAll(`[id^="${id}-found-"]`)].map((one) => text(one));
-  return { element, modal, root, box, choose, type, pause, keep, kept, why, found };
+  return { element, modal, root, box, pick, choose, type, pause, keep, kept, why, found };
 }
 
 const problem = (path: string, code: string, message: string, severity: CheckIssue['severity'] = 'error') => ({
@@ -243,25 +261,41 @@ afterEach(() => {
 });
 
 describe("an action's sidebar", () => {
-  it('opens a new action ready to email the team, its name following the choice of what happens until it is typed', async () => {
-    const { root, box, choose, type, keep, kept, modal } = await sidebarOf({ action: null });
+  it('opens a new action on the kinds, each with its line, then the kind picked, named by it until typed', async () => {
+    const { root, box, pick, choose, type, keep, kept, modal } = await sidebarOf({ action: null }, null);
     expect(root.querySelector('umb-body-layout')?.getAttribute('headline')).toBe('New action');
-    const choices = [...root.querySelectorAll('#what-happens .choice-name')].map((one) => text(one));
-    expect(choices).toEqual([
-      'Email the team',
-      'Confirm to the visitor',
-      'Webhook',
-      'Slack',
-      'Microsoft Teams',
-      "Change the entry's state",
-      'Create or update content',
+    const kinds = [...root.querySelectorAll('.kind')].map((one) => [
+      text(one.querySelector('.kind-name')),
+      text(one.querySelector('.kind-line')),
     ]);
-    expect(root.querySelector<HTMLInputElement>('input[name="what-happens"]:checked')?.value).toBe('email:0');
+    expect(kinds).toEqual([
+      ['Email the team', 'Tells your team about each entry, with its answers.'],
+      ['Confirm to the visitor', 'Sends the visitor a copy of what they sent.'],
+      ['Webhook', 'Sends each entry to an address of your own.'],
+      ['Slack', 'Posts each entry in a Slack channel.'],
+      ['Microsoft Teams', 'Posts each entry in a Teams channel.'],
+      ["Change the entry's state", 'Approves, rejects or moves the entry to Spam.'],
+      ['Create or update content', 'Makes a page or another item from the answers.'],
+    ]);
+    // The kinds alone: no box of a sheet, and Cancel the only button.
+    expect([root.getElementById('name'), root.querySelectorAll('uui-button').length]).toEqual([null, 1]);
+    await frame();
+    expect(root.activeElement?.getAttribute('data-choice')).toBe('email:0');
+    await pick('email:0');
+    // The sheet, headed by the kind, the focus on its first box.
+    expect(text(root.querySelector('#what-happens'))).toBe('Email the team');
+    expect(root.querySelector('.kind')).toBeNull();
+    await frame();
+    expect(root.activeElement?.id).toBe('name');
     expect([box('name').value, box('setting-subject').value]).toEqual([
       'Email the team',
       'New entry in {{ form.name }}',
     ]);
-    // Another choice replaces the settings below it, and the name with them.
+    // Back to the kinds, the focus on the one picked; another kind replaces the settings, and the name with them.
+    must(root.querySelector<HTMLElement>('uui-button[label="Other kinds"]'), 'Other kinds').click();
+    await settle();
+    await frame();
+    expect(root.activeElement?.getAttribute('data-choice')).toBe('email:0');
     await choose('what-happens', 'email:1');
     expect([box('name').value, box('setting-subject').value]).toEqual([
       'Confirm to the visitor',
@@ -290,32 +324,55 @@ describe("an action's sidebar", () => {
     expect(modal.submit).toHaveBeenCalled();
   });
 
-  it('says that an action of the form keeps what it does, and updates it', async () => {
+  it("lists a site's own kinds by their names, with the line its words hold under one named by a term", async () => {
+    // A package's words: its type's name, and the line Add action shows under it, by the key after the name's area.
+    umbLocalizationManager.registerLocalization({
+      $code: 'en',
+      acme_crm: 'Tell the CRM',
+      jfbActionLines_crm: 'Sends each entry to the sales CRM.',
+    } as never);
+    const own = (alias: string, name: string): ActionTypeResponseModel => ({
+      ...(ACTION_TYPES.find((type) => type.alias === 'setState') as ActionTypeResponseModel),
+      alias,
+      name,
+      presets: [],
+    });
+    const types = [...ACTION_TYPES, own('crm', '#acme_crm'), own('ledger', 'Ledger')];
+    const { root } = await sidebarOf({ action: null, actionTypes: types, choices: choicesOf(types) }, null);
+    const shown = (id: string) => {
+      const kind = must(root.querySelector(`.kind[data-choice="${id}"]`), id);
+      return [text(kind.querySelector('.kind-name')), kind.querySelector('.kind-line')?.textContent?.trim() ?? null];
+    };
+    expect([shown('crm'), shown('ledger')]).toEqual([
+      ['Tell the CRM', 'Sends each entry to the sales CRM.'],
+      ['Ledger', null],
+    ]);
+  });
+
+  it('opens an action of the form on its sheet, headed by its kind, which it keeps, and updates it', async () => {
     const { root, keep, kept } = await sidebarOf();
-    expect(root.querySelector('umb-body-layout')?.getAttribute('headline')).toBe('Action a1');
-    expect(root.querySelector('input[name="what-happens"]')).toBeNull();
     expect(text(root.querySelector('#what-happens'))).toBe('Email');
-    expect(text(root.querySelector('#what-happens + .help'))).toBe(
-      'An action keeps what it does. To do something else, add another action.',
-    );
+    expect([root.querySelector('.kind'), root.querySelector('uui-button[label="Other kinds"]')]).toEqual([null, null]);
     expect(root.querySelector('uui-button[look="primary"]')?.getAttribute('label')).toBe('Update');
     await keep();
     expect(kept()).toEqual(TEAM);
   });
 
-  it('says when each trigger runs, or the setting it needs, and starts a new action on Submitted', async () => {
-    const { root, choose, keep, kept } = await sidebarOf({ action: null });
-    expect(root.querySelector<HTMLInputElement>('input[name="trigger"]:checked')?.value).toBe('submitted');
-    expect([...root.querySelectorAll('#trigger .choice-line')].map((one) => text(one))).toEqual([
-      'when an entry comes in',
-      'as each entry comes in, because this form has no manual approval',
+  it('says when the trigger chosen runs, or the setting it needs, and starts a new action on Submitted', async () => {
+    const { root, box, choose, keep, kept } = await sidebarOf({ action: null });
+    const line = () => text(root.querySelector('#trigger-line'));
+    expect([box<HTMLSelectElement>('trigger').value, line()]).toEqual(['submitted', 'It runs when an entry comes in.']);
+    expect(box('trigger').getAttribute('aria-describedby')).toBe('trigger-line');
+    const lines: string[] = [];
+    for (const trigger of ['approved', 'rejected', 'verified']) {
+      await choose('trigger', trigger);
+      lines.push(line());
+    }
+    expect(lines).toEqual([
+      'It runs as each entry comes in, because this form has no manual approval.',
       'It runs once the form has manual approval.',
       'It runs once the form has email verification.',
     ]);
-    // Each choice's line describes it.
-    expect(root.querySelector('input[name="trigger"][value="rejected"]')?.getAttribute('aria-describedby')).toBe(
-      'trigger-needs-rejected',
-    );
     await choose('trigger', 'approved');
     await keep();
     expect(kept().trigger).toBe('approved');
@@ -324,7 +381,8 @@ describe("an action's sidebar", () => {
     const approving = await sidebarOf({
       needs: { submitted: null, approved: null, rejected: null, verified: null },
     });
-    expect(text(approving.root.querySelector('#trigger-needs-approved'))).toBe('when someone approves an entry');
+    await approving.choose('trigger', 'approved');
+    expect(text(approving.root.querySelector('#trigger-line'))).toBe('It runs when someone approves an entry.');
   });
 
   it("draws the type's settings, Essentials first and the rest under More options, and writes them back as the server keeps them", async () => {
@@ -346,6 +404,8 @@ describe("an action's sidebar", () => {
     expect([...root.querySelectorAll('.recipients .chip-text')].map((one) => text(one))).toEqual(['sales@example.com']);
     const more = must(root.querySelector<HTMLButtonElement>('.more'), 'More options');
     expect([text(more), more.getAttribute('aria-expanded')]).toEqual(['More options (7)', 'false']);
+    // The fold names what it opens, which stands in the sheet while closed too.
+    expect(root.getElementById(more.getAttribute('aria-controls') ?? '')?.hidden).toBe(true);
     more.click();
     await settle();
     expect(drawn().slice(6)).toEqual([
@@ -460,10 +520,7 @@ describe("an action's sidebar", () => {
   it('puts the focus on the trigger chosen for Move to another trigger\u2026', async () => {
     const { root } = await sidebarOf({ action: action('a1', { trigger: 'approved' }), focus: { kind: 'trigger' } });
     await frame();
-    expect([root.activeElement?.getAttribute('name'), (root.activeElement as HTMLInputElement).value]).toEqual([
-      'trigger',
-      'approved',
-    ]);
+    expect([root.activeElement?.id, (root.activeElement as HTMLSelectElement).value]).toEqual(['trigger', 'approved']);
   });
 
   it("chooses its place among its trigger's actions without dragging, and goes after another trigger's", async () => {

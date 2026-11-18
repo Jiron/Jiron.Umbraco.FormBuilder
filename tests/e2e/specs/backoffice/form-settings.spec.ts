@@ -2,12 +2,21 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
+import {
+  expectPicked,
+  groupPicked,
+  groupsList,
+  openSettings as openSettingsAt,
+  pickGroup,
+  rowLine,
+} from '../../support/form-views.ts';
 
-// The form's Settings view (ROADMAP 10.1a, IA 5.2, ADR-0184). Submission is open and the other groups are closed, each
-// with the line of what is set, and After sending is no group of it (ADR-0256); each setting changes the draft, which
-// Save draft keeps, and a value the view can't keep is said under its box once the box is left. The form check's
-// problems in the settings show under their setting, and its Fix it, from the Design view's check and from the publish
-// dialog, opens the group with the focus on the setting.
+// The form's Settings view (ROADMAP 10.1a and 22.3, IA 5.2, ADR-0184, ADR-0258). The groups are a list to pick from,
+// each row with the line of what its group sets, and the group picked stands beside it, Submission at first; After
+// sending is no group of it (ADR-0256). Each setting changes the draft, which Save draft keeps, and a value the view
+// can't keep is said under its box once the box is left. The form check's problems in the settings show under their
+// setting, and its Fix it, from the Design view's check and from the publish dialog, picks the group with the focus on
+// the setting. One group at a time, the narrow list, the pick kept and a Fix it per group are form-views.spec.ts's.
 
 const SECTION = '/umbraco/section/jfb-forms';
 const ELLIPSIS = String.fromCharCode(0x2026);
@@ -41,21 +50,9 @@ async function newForm(api: APIRequestContext, name: string) {
 const choicesOf = async (api: APIRequestContext, key: string) =>
   (await (await api.get(`${API}/form/${key}/setting-choices`)).json()) as { timeZone: string };
 
-async function openSettings(page: Page, key: string, width = 1440) {
-  await page.setViewportSize({ width, height: 900 });
-  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
-  const view = page.locator('jfb-form-settings-view');
-  await expect(view.locator('#group-submission')).toBeVisible();
-  return view;
-}
-
-const headOf = (view: Locator, group: string) => view.locator(`#group-${group}`);
-
-async function openGroup(view: Locator, group: string) {
-  const head = headOf(view, group);
-  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
-  await expect(head).toHaveAttribute('aria-expanded', 'true');
-}
+/** A form's Settings view at 1440 px. */
+const openSettings = (page: Page, key: string) =>
+  openSettingsAt(page, `${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
 
 /** Types into a box and leaves it, as a person does: the view says a value it can't keep once the box is left. */
 async function enter(box: Locator, value: string) {
@@ -114,14 +111,12 @@ test('the submission group and its More options set what they say, refuse what t
   await loginAs('designer');
   const view = await openSettings(page, key);
 
-  // Submission open, the others closed, each with its line; the outcomes are the Design view's (ADR-0256).
-  await expect(view.locator('.group')).toHaveCount(6);
-  await expect(headOf(view, 'after')).toHaveCount(0);
-  await expect(headOf(view, 'submission')).toHaveAttribute('aria-expanded', 'true');
-  for (const group of ['availability', 'protection', 'appearance', 'developer'])
-    await expect(headOf(view, group)).toHaveAttribute('aria-expanded', 'false');
-  await expect(headOf(view, 'availability').locator('.summary')).toHaveText(`Always open ${DOT} No limit`);
-  await expect(headOf(view, 'developer').locator('.summary')).toHaveText('Headless access off');
+  // Submission picked beside the list, each other row with its line; the outcomes are the Design view's (ADR-0256).
+  await expect(groupsList(view).locator('button')).toHaveCount(6);
+  await expect(view.locator('#group-after')).toHaveCount(0);
+  await expectPicked(view, 'submission');
+  await expect(rowLine(view, 'availability')).toHaveText(`Always open ${DOT} No limit`);
+  await expect(rowLine(view, 'developer')).toHaveText('Headless access off');
   await axeInside(page, 'jfb-form-settings-view');
 
   await view.getByLabel('Send button').fill('Send request');
@@ -185,9 +180,10 @@ test('the submission group and its More options set what they say, refuse what t
     entryReference: { prefix: 'REQ-', year: true, digits: 3 },
   });
 
-  // A closed group says what is set.
-  await headOf(view, 'submission').click();
-  await expect(headOf(view, 'submission').locator('.summary')).toHaveText(
+  // Its row says what is set, once another group is picked.
+  await pickGroup(view, 'availability');
+  await expect(rowLine(view, 'submission')).toBeVisible();
+  await expect(rowLine(view, 'submission')).toHaveText(
     `Entries not stored ${DOT} Manual approval ${DOT} Email verification`,
   );
 });
@@ -214,7 +210,7 @@ test('retention: a number of days to store entries for and the days per state ea
   await expect(view.locator('#store-days-why-0')).toHaveCount(0);
 
   // Privacy's days per state: each empty box shows the site's days, and a number out of range says why.
-  await openGroup(view, 'privacy');
+  await pickGroup(view, 'privacy');
   const spam = view.locator('#retention-spam');
   await expect(spam).toHaveAttribute('placeholder', '30');
   await expect(view.locator('#retention-submitted')).toHaveAttribute('placeholder', '365');
@@ -233,11 +229,10 @@ test('retention: a number of days to store entries for and the days per state ea
   expect(settings['submission']).toMatchObject({ store: 'days', storeDays: 400 });
   expect(settings['privacy']).toMatchObject({ retentionDays: { spam: 7, rejected: 14 } });
 
-  // A closed group says what is set.
-  await headOf(view, 'privacy').click();
-  await expect(headOf(view, 'privacy').locator('.summary')).toHaveText(`Own retention days ${DOT} Insights on`);
-  await headOf(view, 'submission').click();
-  await expect(headOf(view, 'submission').locator('.summary')).toHaveText('Entries kept 400 days');
+  // The rows say what is set: Submission's beside Privacy, then Privacy's beside another group.
+  await expect(rowLine(view, 'submission')).toHaveText('Entries kept 400 days');
+  await pickGroup(view, 'submission');
+  await expect(rowLine(view, 'privacy')).toHaveText(`Own retention days ${DOT} Insights on`);
 });
 
 test("IP addresses: the Privacy group chooses what the form's entries keep, and an entry it then takes keeps the address that way", async ({
@@ -251,7 +246,7 @@ test("IP addresses: the Privacy group chooses what the form's entries keep, and 
   const { key } = await newForm(api, 'IP addresses');
   await loginAs('admin');
   const view = await openSettings(page, key);
-  await openGroup(view, 'privacy');
+  await pickGroup(view, 'privacy');
   const ip = view.getByLabel('IP addresses', { exact: true });
   await expect(ip.locator('option')).toHaveText([
     'Site default (No IP addresses)',
@@ -268,8 +263,8 @@ test("IP addresses: the Privacy group chooses what the form's entries keep, and 
   await axeInside(page, 'jfb-form-settings-view');
   await saveDraft(page, key);
   expect((await draftOf(api, key)).definition.settings['privacy']).toMatchObject({ ip: 'anonymised' });
-  await headOf(view, 'privacy').click();
-  await expect(headOf(view, 'privacy').locator('.summary')).toHaveText(`Anonymised IP addresses ${DOT} Insights on`);
+  await pickGroup(view, 'submission');
+  await expect(rowLine(view, 'privacy')).toHaveText(`Anonymised IP addresses ${DOT} Insights on`);
 
   // Published for headless sites, it takes an entry from this machine, and keeps its address with the end removed.
   const draft = await draftOf(api, key);
@@ -323,8 +318,8 @@ test('availability, spam protection, appearance and developer set what they say,
 
   // Availability: the times in the time zone of all sites, a closing before the opening refused, the limit, the message,
   // members.
-  await openGroup(view, 'availability');
-  await expect(view.locator('#body-availability .note').first()).toHaveText(
+  await pickGroup(view, 'availability');
+  await expect(groupPicked(view).locator('.group-body .note').first()).toHaveText(
     `Times are in the time zone set for all sites: ${timeZone}.`,
   );
   await enter(view.getByLabel('Opens'), '2026-12-01T09:00');
@@ -344,7 +339,7 @@ test('availability, spam protection, appearance and developer set what they say,
   await axeInside(page, 'jfb-form-settings-view');
 
   // Spam protection: the site's choice named, providers without keys dimmed, a provider's own setting in bounds.
-  await openGroup(view, 'protection');
+  await pickGroup(view, 'protection');
   const choices = view.locator('.choice');
   await expect(choices.first().locator('.choice-name')).toHaveText(/^Site default \(.+\)$/);
   const scored = choices.filter({ hasText: 'reCAPTCHA v3' });
@@ -359,7 +354,7 @@ test('availability, spam protection, appearance and developer set what they say,
   await view.getByLabel('Content checks', { exact: true }).selectOption('strict');
 
   // Appearance: the site's theme and marks named, the form's own chosen.
-  await openGroup(view, 'appearance');
+  await pickGroup(view, 'appearance');
   await expect(view.getByLabel('Theme').locator('option').first()).toHaveText(/^\s*Site default \(.+\)\s*$/);
   await view.getByLabel('Theme').selectOption('unstyled');
   await view.getByLabel('Fields that get a mark').selectOption('required');
@@ -371,7 +366,7 @@ test('availability, spam protection, appearance and developer set what they say,
   await enter(css, 'wide');
 
   // Developer: headless access, and the names one a line as the server checks them.
-  await openGroup(view, 'developer');
+  await pickGroup(view, 'developer');
   await view.getByRole('switch', { name: 'Headless access' }).check();
   const query = view.getByLabel('Query values');
   await enter(query, 'ref\nwith space');
@@ -413,13 +408,11 @@ test('availability, spam protection, appearance and developer set what they say,
   });
   expect(settings['developer']).toEqual({ headless: true, queryValues: ['ref', 'utm_source'], contextValues: ['crm'] });
 
-  // Each closed group says what is set.
-  for (const group of ['availability', 'protection', 'developer']) await headOf(view, group).click();
-  await expect(headOf(view, 'availability').locator('.summary')).toContainText(
-    `120 entries at most ${DOT} Members of 1 group`,
-  );
-  await expect(headOf(view, 'protection').locator('.summary')).toHaveText(`reCAPTCHA v3 ${DOT} Strict content checks`);
-  await expect(headOf(view, 'developer').locator('.summary')).toHaveText(
+  // Each row says what its group sets, Developer's once another group is picked.
+  await pickGroup(view, 'submission');
+  await expect(rowLine(view, 'availability')).toContainText(`120 entries at most ${DOT} Members of 1 group`);
+  await expect(rowLine(view, 'protection')).toHaveText(`reCAPTCHA v3 ${DOT} Strict content checks`);
+  await expect(rowLine(view, 'developer')).toHaveText(
     `Headless access on ${DOT} 2 query values ${DOT} 1 context value`,
   );
 });
@@ -443,7 +436,7 @@ test("the form check's problems in the settings show under their setting, and Fi
   expect(saved.ok(), await saved.text()).toBe(true);
   await loginAs('designer');
 
-  // From the Design view's check: Fix it on the member groups opens Availability on them, the problem said there.
+  // From the Design view's check: Fix it on the member groups picks Availability, on them, the problem said there.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}`);
   const design = page.locator('jfb-form-design-view');
@@ -454,16 +447,15 @@ test("the form check's problems in the settings show under their setting, and Fi
   await expect(sidebar).toHaveCount(0);
   await expect(page).toHaveURL(/\/view\/settings$/);
   const view = page.locator('jfb-form-settings-view');
-  await expect(headOf(view, 'availability')).toHaveAttribute('aria-expanded', 'true');
+  await expectPicked(view, 'availability');
   await expect(view.locator('#member-groups').getByLabel('Library members')).toBeFocused();
   await expect(view.locator('#member-groups-why-0')).toHaveText('The form is for some member groups, but names none.');
   await axeInside(page, 'jfb-form-settings-view');
 
-  // A closed group counts its problems on its line.
-  await headOf(view, 'submission').click();
-  await expect(headOf(view, 'submission').locator('.flag')).toHaveText('1 problem');
+  // Another group's row counts its problems on its line.
+  await expect(rowLine(view, 'submission').locator('.flag')).toHaveText('1 problem');
 
-  // From the publish dialog, while the view is shown: Fix it on the verification's field opens Submission on it.
+  // From the publish dialog, while the view is shown: Fix it on the verification's field picks Submission, on it.
   await page.getByRole('button', { name: `Publish${ELLIPSIS}` }).click();
   const dialog = page.locator('jfb-publish-modal');
   await expect(dialog.locator('[role="alert"] .lead')).toHaveText('2 errors block publishing.');
@@ -472,14 +464,19 @@ test("the form check's problems in the settings show under their setting, and Fi
     .getByRole('button', { name: 'Fix it: Form settings' })
     .click();
   await expect(dialog).toHaveCount(0);
-  await expect(headOf(view, 'submission')).toHaveAttribute('aria-expanded', 'true');
+  await expectPicked(view, 'submission');
   await expect(view.getByLabel('Address to confirm')).toBeFocused();
   await expect(view.locator('#verification-field-why-0')).toHaveText(
     "It refers to a field or an option that doesn't fit here.",
   );
 
-  // Fixed here, the problems go once the check has looked again.
+  // Fixed here, each in its group, the problems go once the check has looked again, the rows' counts with them.
   await view.getByLabel('Address to confirm').selectOption(fields['email']!);
+  await pickGroup(view, 'availability');
   await view.locator('#member-groups').getByLabel('Library members').check();
   await expect(view.locator('[id$="-why-0"]')).toHaveCount(0);
+  await expect(rowLine(view, 'submission').locator('.flag')).toHaveCount(0);
+  await pickGroup(view, 'submission');
+  await expect(view.locator('[id$="-why-0"]')).toHaveCount(0);
+  await expect(rowLine(view, 'availability').locator('.flag')).toHaveCount(0);
 });

@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
+import { addAction } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 import { E2E_WEBHOOK_SECRET, STUB_URL } from '../../support/paths.ts';
 
@@ -51,14 +52,6 @@ async function openActions(page: Page, key: string) {
   await expect(view.locator('.page')).toBeVisible();
   await expect(view.locator('.skeleton')).toHaveCount(0);
   return view;
-}
-
-/** Add action, and the choice of what happens. */
-async function addAction(page: Page, view: Locator, choice: string) {
-  await view.getByRole('button', { name: 'Add action' }).click();
-  const sidebar = page.locator('jfb-action-modal');
-  await sidebar.getByRole('radio', { name: choice, exact: true }).check();
-  return sidebar;
 }
 
 /** Test from the sidebar, after its question, and the toast that says what came of it. */
