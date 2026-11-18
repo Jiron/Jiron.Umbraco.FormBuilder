@@ -43,7 +43,7 @@ The first of these that is set wins:
 live preview of a sample form, in light and, for a base with a dark scheme, dark. Your theme changes only what you set,
 and follows the base theme for the rest.
 
-![The theme editor: the colours and sizes on the left, the form previewed in light and dark on the right](screenshots/theme-editor.png)
+![The theme editor: the colours with their contrast on the left, the form previewed on the right](screenshots/theme-editor.png)
 
 | Section | Settings |
 | --- | --- |

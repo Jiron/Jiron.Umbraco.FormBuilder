@@ -16,7 +16,7 @@ personal data in check with the privacy tools.
 
 New here? [Getting started](docs/getting-started.md) takes about ten minutes.
 
-![The designer: a contact form on the canvas, the palette of field types on the left, and the selected field's inspector on the right](docs/screenshots/designer.png)
+![The designer: a contact form, and the field picker open beside it](docs/screenshots/designer.png)
 
 ## Features
 

@@ -1,10 +1,11 @@
 // The screenshot script's helpers (ROADMAP 17.3): a submission id that is the same on every run, the proof of work as
-// the server checks it, and the forms read from a page's markup with their consents' wording hashes.
+// the server checks it, the forms read from a page's markup with their consents' wording hashes, and a place found on
+// the section's left side by its name.
 // Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
-import { formsIn, solveProof, submissionIdOf } from '../screenshots.mjs';
+import { formsIn, placeSelector, solveProof, submissionIdOf } from '../screenshots.mjs';
 
 test('a name gives the same submission id on every run, as a GUID, and another name another', () => {
   const id = submissionIdOf('contact-0');
@@ -35,4 +36,13 @@ test("a page's forms are read with their key, revision, page and consents, a for
     { key: 'aaaa-1', revision: 3, content: 'page-1', consents: {} },
     { key: 'bbbb-2', revision: 1, content: 'page-1', consents: { agree: 'e242d51e' } },
   ]);
+});
+
+test("a place is found by its name, the Inbox's too, whose label adds its unseen count after a comma", () => {
+  assert.equal(
+    placeSelector('Inbox'),
+    'jfb-places uui-menu-item[label="Inbox"], jfb-places uui-menu-item[label^="Inbox,"]',
+  );
+  // A place whose name starts another's is not found by it: the count follows a comma.
+  assert.equal(placeSelector('Settings').includes('[label^="Settings"]'), false);
 });

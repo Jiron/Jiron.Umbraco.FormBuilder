@@ -20,7 +20,7 @@
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/designer.png",
-      "Caption": "The designer: field types on the left, the form on the canvas, the selected field's inspector on the right"
+      "Caption": "The designer: the form on the canvas, and the field picker open beside it"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-default.png",
@@ -64,7 +64,7 @@
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/theme-editor.png",
-      "Caption": "The theme editor, with the form previewed in light and dark"
+      "Caption": "The theme editor, with each colour's contrast and the form previewed"
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Jiron/Jiron.Umbraco.FormBuilder/main/docs/screenshots/website-bootstrap5.png",

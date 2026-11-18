@@ -5,9 +5,13 @@
 // shot pixel by pixel, and written to docs/screenshots/.
 //
 // The demo brings forms, not entries, so the script first sends entries through the public API, as visitors' browsers
-// do, each with a fixed submission id: a second run gets the same receipts and makes no second entry. Its website shots
-// send the contact form twice more, as a visitor would. For the history's comparison it publishes the workshop form
-// once more with another Send button, only while the form has a single version. Nothing else on the demo changes.
+// do, each with a fixed submission id: a second run gets the same receipts and makes no second entry, and a new entry
+// comes with its visit's beacons, so Insights counts views and starts beside it. Its website shots send the contact
+// form twice more, as a visitor would. For the history's comparison it publishes the workshop form once more with
+// another Send button, only while the form has a single version. Nothing else on the demo changes.
+//
+// Each backoffice screen is reached as a person reaches it: a place on the left and its tab (ROADMAP 22.2), a form's
+// view, Add action through its kind (22.3), the designer's field picker from Add field (22.1).
 //
 // Usage: node scripts/screenshots.mjs [--only name,name] [--no-seed]
 //   Start the demo first: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\demo.ps1 start
@@ -82,7 +86,10 @@ async function post(path, body) {
 
 const retryAfter = (response) => (Number(response.headers.get('retry-after')) || 10) * 1000 + 500;
 
-/** Sends one entry as a visitor's browser would, waiting where the rate limits say; returns once it is stored. */
+/**
+ * Sends one entry as a visitor's browser would, waiting where the rate limits say; returns once it is stored, true for
+ * a new entry and false for one an earlier run sent.
+ */
 async function sendEntry(form, name, values, consents = {}) {
   for (let attempt = 1; attempt <= 12; attempt++) {
     const asked = await post(`forms/${form.key}/challenge`, { contentKey: form.content });
@@ -104,17 +111,26 @@ async function sendEntry(form, name, values, consents = {}) {
     };
     if (challenge.proofOfWork) body.proofOfWork = solveProof(challenge.proofOfWork.nonce, challenge.proofOfWork.bits);
     const sent = await post(`forms/${form.key}/entries`, body);
-    if (sent.ok) return;
+    if (sent.ok) return true;
     if (sent.status === 429) {
       await wait(retryAfter(sent));
       continue;
     }
     const problem = await sent.json().catch(() => ({}));
     // The same id for other answers: the entry of an earlier run, from a form published again since.
-    if (problem.code === 'duplicate_submission' || problem.code === 'already_submitted') return;
+    if (problem.code === 'duplicate_submission' || problem.code === 'already_submitted') return false;
     throw new Error(`${name}: the entry answered ${sent.status} ${problem.code ?? ''}`);
   }
   throw new Error(`${name}: still rate limited after twelve tries`);
+}
+
+/** Counts a visit's beacon as the runtime sends it ({ type: 'view' } or 'start'), waiting where the rate limit says. */
+async function beacon(form, type) {
+  for (let attempt = 1; attempt <= 12; attempt++) {
+    const sent = await post(`forms/${form.key}/events`, { type });
+    if (sent.status !== 429) return;
+    await wait(retryAfter(sent));
+  }
 }
 
 // Visitors of the demo's library, made up, at addresses of example.com.
@@ -137,7 +153,11 @@ async function seed() {
   if (!contact) throw new Error("the demo's contact page shows no form");
   for (const [index, [person, topic, message]] of PEOPLE.entries()) {
     const email = `${person.split(' ')[0].toLowerCase()}@example.com`;
-    await sendEntry(contact, `contact-${index}`, { name: person, email, topic, message });
+    // A browser counts the visit's view and start before it sends; a new entry gets them, with the visits of two more
+    // people who looked and one who began and left, so Insights reads as a site's would.
+    if (await sendEntry(contact, `contact-${index}`, { name: person, email, topic, message })) {
+      for (const type of ['view', 'view', 'view', 'start', 'start']) await beacon(contact, type);
+    }
     process.stdout.write('.');
   }
   if (!newsletter?.consents.agree) {
@@ -161,6 +181,15 @@ async function settle(page) {
     })
     .catch(() => undefined);
   await page.waitForTimeout(400);
+}
+
+/** Takes the focus off the box a sidebar put it in, so the picture shows no focus ring there. */
+async function blurFocus(page) {
+  await page.evaluate(() => {
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+  });
 }
 
 /** Scrolls so the shot shows the form, or the outcome in its place, with no line cut at the window's top. */
@@ -294,6 +323,27 @@ async function formKey(page, name) {
 
 const workspaceOf = (key) => `${BASE}${SECTION}/workspace/jfb-form/edit/${key}`;
 
+/** A place's item on the section's left side, by its name: its label, or for the Inbox its name and unseen count. */
+export const placeSelector = (place) =>
+  `jfb-places uui-menu-item[label="${place}"], jfb-places uui-menu-item[label^="${place},"]`;
+
+/**
+ * Opens a place from the section's left side, as a person would, and then one of its tabs (ROADMAP 22.2): the places
+ * and tabs by their English names. The Inbox's label adds its unseen count after a comma.
+ */
+async function goToPlace(page, place, tab) {
+  await page.goto(`${BASE}${SECTION}`);
+  const item = page.locator(placeSelector(place));
+  await item.first().waitFor({ timeout: 60_000 });
+  await item.first().locator('a').first().click();
+  await page.locator('jfb-places uui-menu-item[active]').first().waitFor();
+  if (!tab) return;
+  const tabItem = page.locator(`jfb-place-tabs uui-tab[label="${tab}"]`).first();
+  await tabItem.waitFor({ timeout: 60_000 });
+  if ((await tabItem.getAttribute('active')) === null) await tabItem.click();
+  await page.locator(`jfb-place-tabs uui-tab[label="${tab}"][active]`).first().waitFor();
+}
+
 async function openDesign(page, key) {
   await page.goto(workspaceOf(key));
   const design = page.locator('jfb-form-design-view');
@@ -317,9 +367,12 @@ async function secondVersion(page, key) {
   if ((await history.locator('tbody tr[data-number]').count()) > 1) return;
   await page.goto(`${workspaceOf(key)}/view/settings`);
   const settings = page.locator('jfb-form-settings-view');
-  const head = settings.locator('#group-submission');
-  await head.waitFor({ timeout: 60_000 });
-  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
+  // The Settings view lists its groups, and the group picked shows beside them (ROADMAP 22.3): Submission picked.
+  const row = settings.locator('#group-submission');
+  await row.waitFor({ timeout: 60_000 });
+  const picked = settings.locator('section.picked[data-group="submission"]');
+  if (!(await picked.isVisible())) await row.click();
+  await picked.waitFor();
   const label = settings.locator('#submit-label');
   // The box shows the draft's label once the view has read the form; a change before then is overwritten.
   await page.waitForFunction((box) => box.value !== '', await label.elementHandle(), { timeout: 30_000 });
@@ -346,9 +399,13 @@ const BACKOFFICE = {
     await page.locator('jfb-overview uui-box').first().waitFor({ timeout: 60_000 });
     await page.locator('jfb-overview [aria-busy="true"]').waitFor({ state: 'detached', timeout: 30_000 }).catch(() => {});
   },
+  // The designer with its field picker, opened from Add field at the page's end, beside the canvas (ROADMAP 22.1).
   designer: async (page, keys) => {
     const design = await openDesign(page, keys.contact);
     await selectField(design, 'Email address');
+    await design.locator('jfb-form-canvas .bo-add-field').last().click();
+    await page.locator('jfb-field-picker-modal uui-input input').waitFor();
+    await page.waitForTimeout(800);
   },
   'rule-builder': async (page, keys) => {
     const design = await openDesign(page, keys.feedback);
@@ -360,13 +417,28 @@ const BACKOFFICE = {
     const rules = design.locator('jfb-designer-inspector [data-section="rules"] .section-head button');
     if ((await rules.getAttribute('aria-expanded')) !== 'true') await rules.click();
     await design.locator('jfb-designer-inspector button.rule').first().click();
-    await page.locator('jfb-rule-builder-modal').waitFor();
+    await page.locator('jfb-rule-builder-modal select').first().waitFor();
   },
+  // Add action lists the kinds first; the team's email is picked, and its sheet shows the mail beside its settings
+  // (ROADMAP 22.3).
   'action-email': async (page, keys) => {
     await page.goto(`${workspaceOf(keys.contact)}/view/actions`);
     const actions = page.locator('jfb-form-actions-view');
-    await actions.locator('jfb-action-list .open').first().click();
-    await page.locator('jfb-action-modal jfb-email-preview').first().waitFor({ timeout: 30_000 });
+    await actions.locator('#add').click();
+    const sheet = page.locator('jfb-action-modal');
+    await sheet.locator('button.kind[data-choice="email:0"]').click();
+    await sheet.locator('.kind-head h3').waitFor();
+    await sheet.locator('jfb-email-preview').first().waitFor({ timeout: 30_000 });
+    // The team's address, as an editor types it, so the mail's To says whom it goes to.
+    const to = sheet.getByRole('group', { name: 'To', exact: true });
+    await to.locator('summary', { hasText: 'Add recipient' }).click();
+    const address = to.getByRole('textbox', { name: 'An address' });
+    await address.fill('team@lindenhall.example');
+    await address.press('Enter');
+    await sheet.locator('jfb-email-preview').getByText('team@lindenhall.example').first().waitFor({ timeout: 30_000 });
+    // Add recipient closes again, as the address is in.
+    const add = to.locator('details', { has: page.locator('summary', { hasText: 'Add recipient' }) }).first();
+    if ((await add.getAttribute('open')) !== null) await to.locator('summary', { hasText: 'Add recipient' }).click();
   },
   preview: async (page, keys) => {
     await openDesign(page, keys.contact);
@@ -399,7 +471,7 @@ const BACKOFFICE = {
     await view.locator('jfb-entry-panel h2').waitFor();
   },
   inbox: async (page) => {
-    await page.goto(`${BASE}${SECTION}/workspace/jfb-inbox`);
+    await goToPlace(page, 'Inbox', 'Inbox');
     await page.locator('jfb-entries-view tbody tr').first().waitFor({ timeout: 60_000 });
   },
   insights: async (page, keys) => {
@@ -407,18 +479,21 @@ const BACKOFFICE = {
     await page.locator('jfb-form-insights-view dl.stats').waitFor({ timeout: 60_000 });
   },
   'theme-editor': async (page) => {
-    await page.goto(`${BASE}${SECTION}/workspace/jfb-theme/create/default`);
+    // Library's Themes, then Create theme, which asks which theme it builds on: the default one.
+    await goToPlace(page, 'Library', 'Themes');
+    await page.getByRole('button', { name: 'Create theme', exact: true }).click();
+    await page.getByRole('button', { name: /^Default/ }).first().click();
     const view = page.locator('jfb-theme-view');
     await view.locator('iframe[data-scheme="dark"]').waitFor({ timeout: 60_000 });
     await page.getByRole('textbox', { name: 'Name of the theme' }).fill('Lindenhall');
     await page.waitForTimeout(1500);
   },
   settings: async (page) => {
-    await page.goto(`${BASE}${SECTION}/workspace/jfb-settings-spam`);
+    await goToPlace(page, 'Settings', 'Spam protection');
     await page.locator('jfb-settings-protection uui-box[headline]').first().waitFor({ timeout: 60_000 });
   },
   privacy: async (page) => {
-    await page.goto(`${BASE}${SECTION}/workspace/jfb-privacy-people`);
+    await goToPlace(page, 'Privacy', 'People');
     const email = page.locator('jfb-people-screen input[type="email"]');
     await email.waitFor({ timeout: 60_000 });
     await email.fill('ada@example.com');
@@ -523,6 +598,8 @@ async function main() {
           await backoffice.screenshot({ path: join(root, '.local', `screenshots-failed-${name}.png`) }).catch(() => {});
           throw error;
         });
+        // No focus ring on the box a screen or a sidebar put the focus in; the picker's search is the designer's point.
+        if (name !== 'designer') await blurFocus(backoffice);
         await settle(backoffice);
         await keep(name, await backoffice.screenshot());
       }
