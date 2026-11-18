@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Actions · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 added@1440x900 run-details@1440x900 empty@1440x900 read-only@1440x900 loading@1440x900 default@920x900 run-details@920x900 read-only@920x900">
+  <meta name="wf-shots" content="default@1440x900 added@1440x900 run-details@1440x900 kinds@1440x900 empty@1440x900 read-only@1440x900 loading@1440x900 default@920x900 run-details@920x900 kinds@920x900 read-only@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ac-trigger + .ac-trigger { margin-top: var(--wf-space-6); }
@@ -27,6 +27,12 @@
     /* The run's details */
     .ac-quote { margin-top: var(--wf-space-2); padding: var(--wf-space-3); border-radius: var(--wf-radius); background: var(--uui-color-background); font-family: var(--wf-font-mono); font-size: var(--wf-type-small); }
     .ac-attempt { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); padding: var(--wf-space-3) 0; }
+    /* The kinds of a new action, as Umbraco's Create dialog lists what can be made */
+    .ac-kinds { display: grid; gap: var(--wf-space-1); margin: 0; padding: 0; list-style: none; }
+    .ac-kind { display: flex; align-items: flex-start; gap: var(--wf-space-4); width: 100%; padding: var(--wf-space-3) var(--wf-space-4); border: 0; border-radius: var(--wf-radius); background: none; font: inherit; color: inherit; text-align: left; }
+    .ac-kind:hover { background: var(--uui-color-surface-emphasis); }
+    .ac-kind__text { display: grid; gap: var(--wf-space-1); }
+    html[data-wf-state='kinds'] .ac-kinds li:first-child .ac-kind { outline: 2px solid var(--uui-color-focus); outline-offset: -2px; }
     .ac-attempt + .ac-attempt { border-top: 1px solid var(--uui-color-divider-standalone); }
   </style>
   <script src="assets/icons.js" defer></script>
@@ -47,6 +53,9 @@
     - run-details: Details on a failed run. The designer holds manageActions but not viewEntries or manageSettings,
       so the details show what the server answered and the tries, never the entry, and name who can retry (IA 11,
       footnote 1). Test is what the designer can do here.
+    - kinds: Add action opens the kinds to pick from, each with its icon, its name and one line, as the Create dialog
+      lists what can be made (ADR-0258); a pick shows that kind's sheet in the same sidebar (email-editor.html). The
+      server lists only the kinds the site can offer, so none is drawn unavailable.
     - empty, loading.
     - read-only: the view without manageActions (IA 5.3). No seeded persona lacks it everywhere, so it is drawn where
       the designer meets it: Job application, in the restricted HR folder, whose own grant gives the designers group
@@ -57,13 +66,13 @@
     <header class="wf-head">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name" data-state="default added run-details empty loading">Contact us</span>
+        <span class="wf-head__name" data-state="default added run-details empty loading kinds">Contact us</span>
         <span class="wf-head__name" data-state="read-only">Job application</span>
-        <span class="wf-chip wf-chip--warning" data-state="default added run-details empty loading">Published (pending changes)</span>
+        <span class="wf-chip wf-chip--warning" data-state="default added run-details empty loading kinds">Published (pending changes)</span>
         <span class="wf-chip wf-chip--positive" data-state="read-only">Published</span>
-        <a href="#" data-state="default added run-details empty loading">Used on 3 pages</a>
+        <a href="#" data-state="default added run-details empty loading kinds">Used on 3 pages</a>
         <a href="#" data-state="read-only">Used on 1 page</a>
-        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us" data-state="default added run-details empty loading"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us" data-state="default added run-details empty loading kinds"><i data-i="more"></i></button>
         <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Job application" data-state="read-only"><i data-i="more"></i></button>
       </div>
       <nav class="wf-tabs" aria-label="Views">
@@ -76,7 +85,7 @@
 
     <div class="wf-content wf-content--narrow">
       <div>
-        <div class="wf-toolbar" data-state="default added run-details empty loading">
+        <div class="wf-toolbar" data-state="default added run-details empty loading kinds">
           <button class="wf-btn"><i data-i="plus"></i>Add action</button>
         </div>
 
@@ -94,7 +103,7 @@
         </div>
 
         <!-- Contact us: the designer may change and test its actions -->
-        <div data-state="default added run-details">
+        <div data-state="default added run-details kinds">
           <!-- Submitted -->
           <section class="ac-trigger" aria-labelledby="t-submitted">
             <div class="ac-trigger__head"><h2 class="wf-title" id="t-submitted">Submitted</h2><span class="wf-muted">when an entry comes in</span></div>
@@ -233,10 +242,28 @@
     <span>Post in #leads added. It runs for new entries once you publish.</span>
   </div>
 
+  <!-- Add action: the kinds to pick from, the first with the focus -->
+  <div class="wf-backdrop" data-state="kinds"></div>
+  <aside class="wf-sidebar" data-state="kinds" role="dialog" aria-labelledby="kinds-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="kinds-title">New action</h2></header>
+    <div class="wf-sidebar__body">
+      <ul class="ac-kinds" aria-labelledby="kinds-title">
+        <li><button class="ac-kind"><i data-i="mail"></i><span class="ac-kind__text"><span class="wf-strong">Email the team</span><span class="wf-muted">Tells your team about each entry, with its answers.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="mail"></i><span class="ac-kind__text"><span class="wf-strong">Confirm to the visitor</span><span class="wf-muted">Sends the visitor a copy of what they sent.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="webhook"></i><span class="ac-kind__text"><span class="wf-strong">Webhook</span><span class="wf-muted">Sends each entry to an address of your own.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="link"></i><span class="ac-kind__text"><span class="wf-strong">Slack</span><span class="wf-muted">Posts each entry in a Slack channel.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="link"></i><span class="ac-kind__text"><span class="wf-strong">Microsoft Teams</span><span class="wf-muted">Posts each entry in a Teams channel.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="form"></i><span class="ac-kind__text"><span class="wf-strong">Create or update content</span><span class="wf-muted">Makes a page or another item from the answers.</span></span></button></li>
+        <li><button class="ac-kind"><i data-i="check"></i><span class="ac-kind__text"><span class="wf-strong">Change the entry's state</span><span class="wf-muted">Approves, rejects or moves the entry to Spam.</span></span></button></li>
+      </ul>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Cancel</button></footer>
+  </aside>
+
   <!-- Details of a failed run, for a user without Deliveries: what the server answered and the tries, never the
        entry; who can retry; Test, which the designer may use -->
-  <div class="wf-backdrop" data-state="run-details"></div>
-  <aside class="wf-sidebar" data-state="run-details" role="dialog" aria-labelledby="rd-title">
+  <div class="wf-backdrop" data-state="run-details kinds"></div>
+  <aside class="wf-sidebar" data-state="run-details kinds" role="dialog" aria-labelledby="rd-title">
     <header class="wf-sidebar__head"><h2 class="wf-title" id="rd-title">Send to the CRM</h2></header>
     <div class="wf-sidebar__body">
       <div class="wf-stack wf-stack--lg">

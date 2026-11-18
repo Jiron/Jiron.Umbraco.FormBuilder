@@ -4,33 +4,52 @@
   <meta charset="utf-8">
   <title>Form settings · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x1100 more-options@1440x1300 default@920x900">
+  <meta name="wf-shots" content="default@1440x1100 privacy@1440x900 more-options@1440x1300 problem@1440x900 default@920x900 narrow-group@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
-    .fs-group-head { display: flex; align-items: center; gap: var(--wf-space-3); width: 100%; padding: var(--wf-space-4) var(--wf-space-5); border: 0; background: none; font: inherit; color: inherit; text-align: left; }
-    .fs-group-head .wf-disclosure__summary { margin-left: auto; }
+    /* The two parts (ADR-0258): the groups to pick from, and the one picked beside them. */
+    .fs-view { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 680px); gap: var(--wf-space-6); align-items: start; }
+    .fs-list { display: grid; gap: 0; padding: var(--wf-space-2) 0; }
+    .fs-row { display: grid; gap: var(--wf-space-1); width: 100%; padding: var(--wf-space-3) var(--wf-space-5); border: 0; background: none; font: inherit; color: inherit; text-align: left; }
+    .fs-row[aria-current='true'] { background: var(--uui-color-current); }
+    .fs-row .wf-muted { font-size: var(--wf-type-small); }
+    .fs-row .fs-problems { color: var(--uui-color-danger-standalone); font-size: var(--wf-type-small); }
+    .fs-group-top { display: flex; align-items: center; gap: var(--wf-space-3); margin-bottom: var(--wf-space-4); }
+    .fs-group-top .dz-lang { margin-left: auto; }
     .fs-labels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wf-space-4); }
     .fs-input-tag { display: flex; gap: var(--wf-space-3); }
     .fs-input-tag > .wf-input { flex: 1; min-width: 0; }
     .fs-more { margin-top: var(--wf-space-5); padding-top: var(--wf-space-5); border-top: 1px solid var(--uui-color-divider-standalone); }
+    /* Beside its group the row picked says its name alone (say it once); the rows keep their height. */
+    @container workspace (min-width: 900px) {
+      .fs-row { align-content: center; min-height: 63px; }
+      .fs-row[aria-current='true'] .wf-muted { display: none; }
+    }
+    /* Too narrow for both parts: the list alone, or the group picked with the way back. */
+    @container workspace (max-width: 899px) {
+      .fs-view { grid-template-columns: minmax(0, 1fr); }
+      :root:not([data-wf-state='narrow-group']) .fs-picked { display: none; }
+      :root[data-wf-state='narrow-group'] .fs-list-part { display: none; }
+    }
+    :root:not([data-wf-state='narrow-group']) .fs-back { display: none; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
 <body data-role="designer" data-active="form:contact">
   <!--
-    IA 5.2: one page with the groups of ROADMAP 4.3.4. Submission open; the others closed with a summary. Step 22.3
-    redraws this view (one group at a time).
+    IA 5.2, ADR-0258: the six groups to pick from, each with the line a closed group had (what is set, its problems
+    counted, a text the language shown lacks), and the group picked beside them, alone. One group is always picked:
+    Submission at first, then the one picked last. Submission's "More options" is the view's only fold. The language is
+    the Design view's button. Too narrow for both parts (a 620 px workspace), the list stands alone and a pick shows
+    the group in its place, with "All settings" to go back.
 
     Submission shows five settings (the send button's label, Store entries, Manual approval, Email verification and the
-    Entry title with its merge-tag picker, D24); "More options" holds the multi-page settings (the next and back labels,
-    Summary page, Progress, Save and continue later) and the entry reference.
+    Entry title with its merge-tag picker, D24); "More options" holds the multi-page settings and the entry reference.
 
-    After sending is no longer a group here (ADR-0256): the outcomes are edited where they are shown, on the Design
-    view's After sending, and every "Fix it" and link that led here opens them there (designer.html, states after,
-    outcome and outcome-deleted).
-
-    States: default; more-options (Submission's More options open).
+    States: default (Submission picked); privacy (Privacy picked); more-options (Submission's More options open);
+    problem (a problem in Spam protection, counted on its row); narrow-group (at 920 px, Submission picked, with "All
+    settings").
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -45,93 +64,119 @@
         <a class="wf-tab" href="#"><i data-i="pencil" class="wf-i--20"></i>Design</a>
         <a class="wf-tab" href="#" aria-current="page"><i data-i="settings" class="wf-i--20"></i>Settings</a>
         <a class="wf-tab" href="#"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#"><i data-i="inbox" class="wf-i--20"></i>Entries</a>
+        <a class="wf-tab" href="#"><i data-i="chart" class="wf-i--20"></i>Insights</a>
         <a class="wf-tab" href="#"><i data-i="history" class="wf-i--20"></i>History</a>
       </nav>
     </header>
 
-    <div class="wf-content wf-content--narrow">
-      <div class="wf-stack wf-stack--lg">
+    <div class="wf-content">
+      <div class="fs-view">
+        <!-- The groups to pick from: one navigation of buttons, the picked one marked -->
+        <nav class="wf-box fs-list-part" aria-label="Settings groups">
+          <div class="fs-list">
+            <button class="fs-row" aria-current="true" data-state="default more-options problem narrow-group"><span class="wf-strong">Submission</span><span class="wf-muted">Entries stored · Manual approval off</span></button>
+            <button class="fs-row" data-state="privacy"><span class="wf-strong">Submission</span><span class="wf-muted">Entries stored · Manual approval off</span></button>
+            <button class="fs-row"><span class="wf-strong">Availability</span><span class="wf-muted">Always open · No limit</span></button>
+            <button class="fs-row" data-state="default privacy more-options narrow-group"><span class="wf-strong">Spam protection</span><span class="wf-muted">Site default: standard</span></button>
+            <button class="fs-row" data-state="problem"><span class="wf-strong">Spam protection</span><span class="wf-muted">Captcha: reCAPTCHA</span><span class="fs-problems">1 problem</span></button>
+            <button class="fs-row" data-state="default more-options problem narrow-group"><span class="wf-strong">Privacy</span><span class="wf-muted">Site defaults</span></button>
+            <button class="fs-row" aria-current="true" data-state="privacy"><span class="wf-strong">Privacy</span><span class="wf-muted">Site defaults</span></button>
+            <button class="fs-row"><span class="wf-strong">Appearance</span><span class="wf-muted">Default theme · Optional fields marked</span></button>
+            <button class="fs-row"><span class="wf-strong">Developer</span><span class="wf-muted">Headless access off</span></button>
+          </div>
+        </nav>
 
-        <!-- Submission (open): five settings, then More options -->
-        <section class="wf-box" aria-labelledby="g-submission">
-          <h2><button class="fs-group-head" aria-expanded="true" id="g-submission"><i data-i="chevron-down"></i><span class="wf-strong">Submission</span></button></h2>
-          <div class="wf-box__body" style="border-top: 1px solid var(--uui-color-divider-standalone)">
-            <label class="wf-field">
-              <span class="wf-label">Send button</span>
-              <span class="wf-input" style="max-width: 280px">Send</span>
-              <span class="wf-help">On the last page. The labels of Next and Back are under More options.</span>
-            </label>
-            <label class="wf-field">
-              <span class="wf-label">Store entries</span>
-              <span class="wf-select" style="max-width: 280px"><span>Always</span><i data-i="chevron-down"></i></span>
-              <span class="wf-help">"Never" runs the actions and keeps nothing. Retention in the Privacy group decides how long stored entries stay.</span>
-            </label>
-            <div class="wf-field">
-              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-approval"></span><span class="wf-label" id="s-approval">Manual approval</span></span>
-              <span class="wf-help">Entries wait until someone approves or rejects them. Without it, every entry is approved as it arrives.</span>
-            </div>
-            <div class="wf-field">
-              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-verify"></span><span class="wf-label" id="s-verify">Email verification</span></span>
-              <span class="wf-help">Visitors confirm their address through a link before any action runs. Use it for newsletters.</span>
-            </div>
-            <div class="wf-field">
-              <span class="wf-label" id="s-title">Entry title</span>
-              <div class="fs-input-tag">
-                <span class="wf-input" role="textbox" aria-labelledby="s-title"><span><span class="wf-tag">{{ field.name }}</span>, <span class="wf-tag">{{ field.company }}</span></span></span>
-                <button class="wf-btn" aria-label="Insert a merge tag into the entry title"><span class="wf-tag">{{ }}</span></button>
-              </div>
-              <span class="wf-help">Names each entry in the lists. Sensitive fields are left out.</span>
-            </div>
+        <!-- The group picked, alone -->
+        <section class="fs-picked" aria-labelledby="picked-name">
+          <div class="fs-group-top">
+            <button class="wf-btn wf-btn--text fs-back"><i data-i="arrow-left"></i>All settings</button>
+            <h2 class="wf-title" id="picked-name" data-state="default more-options problem narrow-group">Submission</h2>
+            <h2 class="wf-title" data-state="privacy">Privacy</h2>
+            <button class="wf-btn dz-lang" aria-haspopup="listbox" aria-label="Language en-US: English (United States)">en-US<i data-i="chevron-down"></i></button>
+          </div>
 
-            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="false" data-state="default"><i data-i="chevron-right"></i>More options</button>
-            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="true" data-state="more-options"><i data-i="chevron-down"></i>More options</button>
-
-            <!-- More options: the multi-page settings and the entry reference -->
-            <div class="fs-more" data-state="more-options">
+          <div class="wf-box" data-state="default more-options problem narrow-group">
+            <div class="wf-box__body">
+              <label class="wf-field">
+                <span class="wf-label">Send button</span>
+                <span class="wf-input" style="max-width: 280px">Send</span>
+                <span class="wf-help">On the last page. The labels of Next and Back are under More options.</span>
+              </label>
+              <label class="wf-field">
+                <span class="wf-label">Store entries</span>
+                <span class="wf-select" style="max-width: 280px"><span>Always</span><i data-i="chevron-down"></i></span>
+                <span class="wf-help">"Never" runs the actions and keeps nothing. Retention in the Privacy group decides how long stored entries stay.</span>
+              </label>
               <div class="wf-field">
-                <span class="wf-label">Next and back buttons</span>
-                <div class="fs-labels">
-                  <label class="wf-field" style="margin: 0"><span class="wf-help">Next page</span><span class="wf-input">Next</span></label>
-                  <label class="wf-field" style="margin: 0"><span class="wf-help">Previous page</span><span class="wf-input">Back</span></label>
+                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-approval"></span><span class="wf-label" id="s-approval">Manual approval</span></span>
+                <span class="wf-help">Entries wait until someone approves or rejects them. Without it, every entry is approved as it arrives.</span>
+              </div>
+              <div class="wf-field">
+                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-verify"></span><span class="wf-label" id="s-verify">Email verification</span></span>
+                <span class="wf-help">Visitors confirm their address through a link before any action runs. Use it for newsletters.</span>
+              </div>
+              <div class="wf-field">
+                <span class="wf-label" id="s-title">Entry title</span>
+                <div class="fs-input-tag">
+                  <span class="wf-input" role="textbox" aria-labelledby="s-title"><span><span class="wf-tag">{{ field.name }}</span>, <span class="wf-tag">{{ field.company }}</span></span></span>
+                  <button class="wf-btn" aria-label="Insert a merge tag into the entry title"><span class="wf-tag">{{ }}</span></button>
                 </div>
+                <span class="wf-help">Names each entry in the lists. Sensitive fields are left out.</span>
               </div>
-              <div class="wf-field">
-                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-summary"></span><span class="wf-label" id="s-summary">Summary page</span></span>
-                <span class="wf-help">Visitors check their answers on one page before they send.</span>
+
+              <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="false" aria-controls="fs-more" data-state="default problem narrow-group"><i data-i="chevron-right"></i>More options</button>
+              <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)" aria-expanded="true" aria-controls="fs-more" data-state="more-options"><i data-i="chevron-down"></i>More options</button>
+
+              <!-- More options: the multi-page settings and the entry reference -->
+              <div class="fs-more" id="fs-more" data-state="more-options">
+                <div class="wf-field">
+                  <span class="wf-label">Next and back buttons</span>
+                  <div class="fs-labels">
+                    <label class="wf-field" style="margin: 0"><span class="wf-help">Next page</span><span class="wf-input">Next</span></label>
+                    <label class="wf-field" style="margin: 0"><span class="wf-help">Previous page</span><span class="wf-input">Back</span></label>
+                  </div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-summary"></span><span class="wf-label" id="s-summary">Summary page</span></span>
+                  <span class="wf-help">Visitors check their answers on one page before they send.</span>
+                </div>
+                <label class="wf-field">
+                  <span class="wf-label">Progress</span>
+                  <span class="wf-select" style="max-width: 280px"><span>Numbered steps</span><i data-i="chevron-down"></i></span>
+                  <span class="wf-help">Shown only on forms with more than one page.</span>
+                </label>
+                <div class="wf-field">
+                  <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-resume"></span><span class="wf-label" id="s-resume">Save and continue later</span></span>
+                  <span class="wf-help">Visitors can ask for a link by email and finish the form later.</span>
+                </div>
+                <label class="wf-field">
+                  <span class="wf-label">Entry reference prefix</span>
+                  <span class="wf-input" style="max-width: 280px">REQ</span>
+                  <span class="wf-help">Visitors get references like REQ-2026-00042: the prefix, the year and the entry's number.</span>
+                </label>
               </div>
-              <label class="wf-field">
-                <span class="wf-label">Progress</span>
-                <span class="wf-select" style="max-width: 280px"><span>Numbered steps</span><i data-i="chevron-down"></i></span>
-                <span class="wf-help">Shown only on forms with more than one page.</span>
-              </label>
-              <div class="wf-field">
-                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-resume"></span><span class="wf-label" id="s-resume">Save and continue later</span></span>
-                <span class="wf-help">Visitors can ask for a link by email and finish the form later.</span>
-              </div>
-              <label class="wf-field">
-                <span class="wf-label">Entry reference prefix</span>
-                <span class="wf-input" style="max-width: 280px">REQ</span>
-                <span class="wf-help">Visitors get references like REQ-2026-00042: the prefix, the year and the entry's number.</span>
-              </label>
             </div>
           </div>
-        </section>
 
-        <!-- The closed groups, each with its summary -->
-        <section class="wf-box">
-          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Availability</span><span class="wf-disclosure__summary">Always open · No limit</span></button></h2>
-        </section>
-        <section class="wf-box">
-          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Spam protection</span><span class="wf-disclosure__summary">Site default: standard</span></button></h2>
-        </section>
-        <section class="wf-box">
-          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Privacy</span><span class="wf-disclosure__summary">Site defaults</span></button></h2>
-        </section>
-        <section class="wf-box">
-          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Appearance</span><span class="wf-disclosure__summary">Default theme · Optional fields marked</span></button></h2>
-        </section>
-        <section class="wf-box">
-          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Developer</span><span class="wf-disclosure__summary">Headless access off</span></button></h2>
+          <div class="wf-box" data-state="privacy">
+            <div class="wf-box__body">
+              <label class="wf-field">
+                <span class="wf-label">Keep entries for</span>
+                <span class="wf-select" style="max-width: 280px"><span>Site default (365 days)</span><i data-i="chevron-down"></i></span>
+                <span class="wf-help">Privacy › Retention sets the site's default.</span>
+              </label>
+              <label class="wf-field">
+                <span class="wf-label">IP addresses</span>
+                <span class="wf-select" style="max-width: 280px"><span>Site default: shortened</span><i data-i="chevron-down"></i></span>
+                <span class="wf-help">Kept with each entry to tell visitors apart.</span>
+              </label>
+              <div class="wf-field">
+                <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="s-insights"></span><span class="wf-label" id="s-insights">Count visits for Insights</span></span>
+                <span class="wf-help">Counts views and starts, without cookies.</span>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </div>

@@ -36,10 +36,11 @@
 </head>
 <body data-role="designer" data-active="form:contact">
   <!--
-    IA 5.3: the action sidebar, opened by Add action ready to email the team. What happens comes first and chooses the
-    type; then the trigger; then the type's own settings, beside a live preview with a sample entry. Where the sidebar
-    is too narrow for both (a window under 1000 px), the sidebar's header gets the switch Settings · Preview, the same
-    switch the theme editor and the email layout use; state "preview" shows the preview side at 920 px. The subject
+    IA 5.3, ADR-0258: the kind's sheet, after Email the team was picked from the kinds (actions.html, state kinds): headed
+    by the kind, with "Other kinds" to go back while the action is not added; When it runs is one choice, and only the
+    moment chosen is explained under it; then the kind's own settings, beside a live preview with a sample entry. Where
+    the sidebar is too narrow for both (a window under 1000 px), the sidebar's header gets the switch Settings · Preview,
+    the same switch the theme editor and the email layout use; state "preview" shows the preview side at 920 px. The subject
     and the body insert merge tags with one control, "Insert merge tag", at the end of each field.
   -->
   <main class="wf-main">
@@ -62,7 +63,9 @@
   <div class="wf-backdrop"></div>
   <aside class="wf-sidebar" style="--wf-sidebar-size: calc(100vw - 120px)" role="dialog" aria-labelledby="ee-title">
     <header class="wf-sidebar__head">
-      <h2 class="wf-title" id="ee-title">New action</h2>
+      <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Other kinds"><i data-i="arrow-left"></i></button>
+      <i data-i="mail"></i>
+      <h2 class="wf-title" id="ee-title">Email the team</h2>
       <div class="wf-seg ee-switch" role="group" aria-label="Show" data-state="default merge-tags tested"><button aria-pressed="true">Settings</button><button aria-pressed="false">Preview</button></div>
       <div class="wf-seg ee-switch" role="group" aria-label="Show" data-state="preview"><button aria-pressed="false">Settings</button><button aria-pressed="true">Preview</button></div>
     </header>
@@ -71,12 +74,9 @@
         <div class="ee__form">
           <div class="wf-box"><div class="wf-box__body">
             <label class="wf-field">
-              <span class="wf-label">What happens</span>
-              <span class="wf-select"><span><i data-i="mail"></i> Email the team</span><i data-i="chevron-down"></i></span>
-            </label>
-            <label class="wf-field">
-              <span class="wf-label">When</span>
-              <span class="wf-select"><span>Submitted: when an entry comes in</span><i data-i="chevron-down"></i></span>
+              <span class="wf-label">When it runs</span>
+              <span class="wf-select" style="max-width: 280px"><span>Submitted</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">It runs when an entry comes in.</span>
             </label>
             <div class="wf-field">
               <span class="wf-label" id="ee-to">To</span>
