@@ -3385,7 +3385,7 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - the walk reaches every screen with nothing of the section's own from axe, and no screen of the designer shows more words than in the walk before; the top tasks are counted again;
     - the focused checks of "How to use" pass, with `node scripts/size-check.mjs`; `v18/main` has the step merged in, and its checks pass there.
 
-- [ ] **22.2 The section's left side: the fixed items first, each one screen with tabs** (the owner, 2026-11-16, ADR-0254)
+- [x] **22.2 The section's left side: the fixed items first, each one screen with tabs** (the owner, 2026-11-16, ADR-0254) (2026-11-18, b349e686)
   - The owner: "Everything is listed at the left hand section. So you have to scroll a lot"; "at the left you can only click on settings", and "once you're in that page, you can select the sub categories of these settings".
   - **The sidebar (D1, the second decision):** Inbox, with its count of unseen entries, Library, Settings, Privacy and Activity come first, without headings. The tree of forms follows under Umbraco's own header with its "+" and "…", the Recycle Bin last. An item shows to a user who may use any of its tabs.
   - **Each item is one screen with tabs along its top,** in Umbraco's own way (a workspace's views or a section's; the ADR decides which):
