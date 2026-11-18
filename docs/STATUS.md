@@ -1,24 +1,38 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-15, after the last pass over it: what was built, how it is tested, what
-the budgets measured, what it does not do yet, and what only you, the owner, can do next.
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-18, after the pass that made its backoffice
+simpler to find a way through: what was built, how it is tested, what the budgets measured, what it does not do yet,
+and what only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
 `17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
 `18.0.0-alpha.0`. Nothing is published, and the repository is private.
 
-**Since this report** (2026-11-16) you asked for a backoffice that is simpler to find a way through. That is Phase 22
-of the roadmap, four steps to be done before the repository goes public
-([ADR-0254](decisions/0254-a-simpler-backoffice.md), [the concept](ux/simpler-backoffice.md)).
+**The simpler backoffice you asked for on 2026-11-16 is built:** Phase 22 of the roadmap, four steps
+([ADR-0254](decisions/0254-a-simpler-backoffice.md)). [The concept](ux/simpler-backoffice.md) says what became of each
+of its findings, with the numbers before and after.
 
-- **Done: the designer (22.1, 2026-11-17).** A field is added through a picker that every "Add field" opens; a page
-  is renamed, duplicated and deleted at its tab; "After sending" is edited beside what visitors get; and the form has
-  57 % of a 1440 px window instead of 39 %, under one row of controls
-  ([ADR-0256](decisions/0256-the-designer-in-three-columns.md)). The backoffice bundle is now 506.40 KB of 512 KB.
-- **Waiting for your word:** the section's left side (22.2, designed in
-  [ADR-0257](decisions/0257-five-places-before-the-tree.md), not built), a form's views (22.3) and the pass over the
-  other screens with the phase review (22.4). You paused the phase after 22.1 on 2026-11-17. Until 22.4 the guides'
-  pictures of the designer show it as it was.
+- **The designer (22.1).** A field is added through a picker that every "Add field" opens; a page is renamed,
+  duplicated and deleted at its tab; "After sending" is edited beside what visitors get; and the form has 57 % of a
+  1440 px window instead of 39 %, under one row of controls
+  ([ADR-0256](decisions/0256-the-designer-in-three-columns.md)).
+- **The section's left side (22.2).** Five places come first: Inbox, with its count of unseen entries, Library,
+  Settings, Privacy and Activity. The tree of forms follows them. Each place is one screen with tabs, seventeen in
+  all, and a user sees only the places and tabs their permissions open. Every screen kept its address, so a link
+  in a mail already sent and a bookmark open what they opened
+  ([ADR-0257](decisions/0257-five-places-before-the-tree.md)).
+- **A form's views (22.3).** A form's Settings list their six groups, each with a line of what is set, and show
+  one group at a time; "Add action" asks for the kind first; the inspector has no "More options" any more; Preview,
+  Save draft and Publish… show on Design, Settings and Actions only; and the History view is the one way to an
+  earlier version ([ADR-0258](decisions/0258-a-forms-views-pick-first.md)).
+- **The other screens (22.4).** Entries, their filters and exports, the option list editor, People, Retention,
+  Deliveries, the Audit log and Insights were each asked whether there is a second way to do a thing, what could
+  wait, what is said twice and whether an empty screen says what to do next. [review-22.md](ux/review-22.md) holds
+  every finding, fixed or kept with its reason, and the guides' nineteen pictures were taken again
+  ([ADR-0259](decisions/0259-the-other-screens-and-the-walks-count.md)).
+- **Measured:** on the 286 shots of the last walk before the phase, the screens held 59,481 words and now hold
+  48,455; none shows more than one word more. Twelve of the 78 top tasks take one click more, ten of them the
+  click on a tab; none grew by more than one, and none takes more than four.
 
 ## Contents
 
@@ -34,13 +48,14 @@ Everything ROADMAP §1.1 and §1.3 describe. Each line names where it is describ
 
 | Part | What a site gets | Read more |
 | --- | --- | --- |
+| The section | Five places before the tree of forms: Inbox, Library, Settings, Privacy and Activity, each one screen with tabs, showing a user only what their permissions open | [editor-guide.md](editor-guide.md), [information-architecture.md](ux/information-architecture.md) |
 | The form library | Folders, search, nine starter templates, duplicate, move, a Recycle Bin with restore, delete with the pages that still use a form named, import and export as JSON | [editor-guide.md](editor-guide.md) |
-| The designer | Pages, groups of one to four columns, a searchable palette, drag and drop with a full keyboard alternative, undo and redo, an inspector from essential to advanced, texts per language, a live preview at three widths, the form check | [editor-guide.md](editor-guide.md) |
+| The designer | Pages, groups of one to four columns, a field picker with search behind every "Add field", drag and drop with a full keyboard alternative, undo and redo, an inspector in sections, texts per language, a live preview at three widths, the form check | [editor-guide.md](editor-guide.md) |
 | Field types | The 33 types of §4.3, a third-party captcha when an editor chooses one, and a site's own types | [field-types.md](field-types.md) |
 | Option lists | From the field, a reusable list (also from a CSV or text file), Umbraco content or a data type, a JSON address on an allowed host, the countries, or code; cascading lists and places per option | [field-types.md](field-types.md) |
 | Rules and validation | Show, hide, skip, require, choose the outcome and gate an action; conditions with "all" and "any", nested, on answers, language, member and date; the server decides and the browser agrees (one set of shared vectors) | [rules-and-validation.md](rules-and-validation.md) |
 | Drafts, publishing and history | A draft until published, every published version kept, compared and restored; entries keep the version they were sent with | [editor-guide.md](editor-guide.md) |
-| Form settings | Labels, outcomes, storage, approval, verification, availability, members, the marker, the theme, the reference | [editor-guide.md](editor-guide.md) |
+| Form settings | In six groups, each with a line of what is set: labels, outcomes, storage, approval, verification, availability, members, the marker, the theme, the reference | [editor-guide.md](editor-guide.md) |
 | Multi-page forms | Steps or a bar, checks per page, Back without losing answers, save and continue later through an emailed link, prefill | [editor-guide.md](editor-guide.md), [rendering.md](rendering.md#save-and-continue-later) |
 | Actions | Email to the team and to the submitter, webhooks (signed, retried, safe from server-side requests to private addresses), Slack and Microsoft Teams, Umbraco content, the entry's state; triggers, rules, order, retries, a delivery log and a test run | [actions.md](actions.md), [webhooks.md](webhooks.md), [email.md](email.md) |
 | Entries | Per form and across forms, Spam, new markers, filters, search, columns, bulk actions; one entry's panel with its timeline, notes, approval, editing with an audit and forwarding; CSV, Excel, JSON, print and a ZIP of the files | [entries-and-exports.md](entries-and-exports.md) |
@@ -61,37 +76,45 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of the last pass (21.1), on 2026-11-15 on origin's
-`main` at `81193183`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 4,501 s, the browser tests on their first run:
+The clean-clone verification of ROADMAP 20.1 ran again at the end of the simpler backoffice (22.4), on 2026-11-18 on
+origin's `main` at `40da2811`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every
+step passed, in 4,890 s, the browser tests on their first run:
 
 | What ran | Count |
 | --- | --- |
 | Unit tests (.NET), with the shared vectors in the server's engine | 9,123; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP |
 | Integration tests (.NET), on real Umbraco hosts with SQLite | 2,312 |
 | The AI add-on's tests (.NET) | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,244 in 232 files |
-| The repository's scripts (Node) | 400 |
-| The browser tests' own support (Node) | 54 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 556 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,300 in 234 files |
+| The repository's scripts (Node) | 401 |
+| The browser tests' own support (Node) | 59 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 587 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean |
-| A pack of `17.0.0-dev.202611150542` | 4 packages |
+| A pack of `17.0.0-dev.202611181434` | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks |
-| The secret scan of the whole history | 1,209 commits, clean |
+| The secret scan of the whole history | 1,257 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) |
 
-- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from the .NET tests on
-  `81193183` (ROADMAP §6 asks 85% of Core).
+The verification's first run that day, on `4be8f0ac`, failed three browser tests, none of them a fault of the product:
+their specs had not followed the phase. One still pressed Publish on a form's History, which has had none of the
+form's buttons since step 22.3, and two asked the forms tree for a row beyond the hundred it shows at first.
+`40da2811` corrects those specs and changes no file of the product ([review-22.md](ux/review-22.md)).
+
+- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,275 of 11,538), from the .NET tests on
+  `40da2811` (ROADMAP §6 asks 85% of Core).
+- **The walk:** every screen of the backoffice in twelve looks (two themes, two languages, three widths) and five
+  journeys, on `4be8f0ac`, which differs from `40da2811` in browser specs alone: 1,844 shots, none with an error, a
+  fold inside a fold or a key in place of its words, and nothing of the section's own from axe
+  ([review-22.md](ux/review-22.md)).
 - **Checked by changing the code:** each step put behaviours back wrong one at a time and ran the tests that should
   catch each, until all were caught ([WORKLOG.md](WORKLOG.md) names them per step).
 - **Accessibility:** axe on every backoffice screen and every theme, keyboard paths, and the narrowest widths in the
   browser tests ([accessibility.md](accessibility.md)).
-- **The Umbraco 18 line:** its own gate passed at the Phase 19 review on `e54d894c` (the browser projects on their one
-  allowed rerun after a database stall, ADR-0011), and the 17 to 18 upgrade with data passed 53 checks; save and
-  continue later, merged into it since, passed its own checks there. So did the last pass: with it merged, the unit
-  tests (9,152), the client's (6,253), the integration tests of mail and actions (422) and the whole browser suite
-  (553, on its first run) pass there.
+- **The Umbraco 18 line:** with every commit of `main` merged in, its whole gate passed on 2026-11-18 on `f9fc6ff3`,
+  in a clone of its own: the unit tests (9,152; the same 17 skipped), the integration tests (2,312), the AI add-on's
+  (56), the client's (6,309 in 235 files) and the whole browser suite (587, on its first run). The 17 to 18 upgrade
+  with data last ran at the Phase 19 review, where it passed 53 checks.
 
 ## The budgets, measured
 
@@ -109,11 +132,11 @@ how to repeat it. Sizes are gzip.
 | A CSV export of 10,000 entries | 1.7 s median | 5 s |
 | The first mail after a submission | 8.7 ms median | 10 s |
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
-| The slowest designer interaction on a form of 300 fields | 56 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
+| The slowest designer interaction on a form of 300 fields | 48 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 44.39 KB | 64 KB |
-| The backoffice's largest file (the designer) | 32.45 KB | 64 KB |
-| The backoffice bundle | 505.56 KB | 512 KB |
+| What every backoffice session loads at its start | 44.89 KB | 64 KB |
+| The backoffice's largest file (the designer) | 39.42 KB | 64 KB |
+| The backoffice bundle | 508.10 KB | 512 KB |
 
 ## What it does not do yet
 

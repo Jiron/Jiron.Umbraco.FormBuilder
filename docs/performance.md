@@ -81,26 +81,27 @@ of three pages, thirty groups and 300 fields, open in Edge at 1,440 pixels, thro
 moving, adding, deleting, undoing and redoing a field, scrolling the canvas and moving a field by dragging. The steps
 run twice, each on a form of its own in a new page: first in the browser as the test starts it, whose graphics chip
 draws each kind of thing for the first time, then in a second page of the same browser, as an editor's browser draws.
-The browser's own measures, in milliseconds, the highest of five runs alone (16.5):
+The browser's own measures, in milliseconds, the highest of five runs alone on the build of 2026-11-18 (22.4):
 
 | Measure | New browser | Its budget | New page | Its budget | Met |
 | --- | --- | --- | --- | --- | --- |
-| The slowest interaction, from the input to the next paint (146 to 185 of them over 16 ms) | 88 | < 200 | 56 | < 100 | yes |
+| The slowest interaction, from the input to the next paint (157 to 176 of them over 16 ms) | 88 | < 200 | 48 | < 100 | yes |
 | The longest task holding the main thread (none reached 50 ms) | 0 | < 100 | 0 | < 100 | yes |
 | The most work of scripts and rendering in one frame | 1 | < 100 | 1 | < 100 | yes |
 | The most rendering in one frame | 1 | < 50 | 1 | < 50 | yes |
-| The longest frame, the wait for the browser's own drawing included | 91 | reported | 90 | reported | |
+| The longest frame, the wait for the browser's own drawing included | 83 | reported | 87 | reported | |
 
-The slowest interaction in the new page takes 48 to 56 ms. In the new browser it takes 64 to 88 ms: the first click,
-which opens the inspector, and the first Delete, which shows its Undo toast, wait there for the browser to compile its
-graphics programs for the inspector's controls and the toast's shadow, which a browser keeps in its profile from then
-on (ADR-0243). A move by the keyboard takes 32 to 56 ms and a drag's first moves 24 to 32 ms since the canvas's dashed
-lines run along square corners (ADR-0242).
+The slowest interaction in the new page took 48 ms in each of the five runs. In the new browser it took 72 to 88 ms.
+The measurements behind ADR-0243 found which ones wait there: the first click, which opens the inspector, and the
+first Delete, which shows its Undo toast, while the browser compiles its graphics programs for the inspector's
+controls and the toast's shadow, which a browser keeps in its profile from then on. Those behind ADR-0242 put a move
+by the keyboard at 32 to 56 ms and a drag's first moves at 24 to 32 ms, since the canvas's dashed lines run along
+square corners; the runs of 2026-11-18 report each run's slowest interaction, not each kind's.
 
 ## Files
 
 Checked by `scripts/size-check.mjs` on every client build, which fails the build when a budget is missed. Sizes are
-gzip, in kilobytes of 1,024 bytes, as the build of 2026-11-15 measured them.
+gzip, in kilobytes of 1,024 bytes, as the build of 2026-11-18 measured them.
 
 | What | Size | Budget |
 | --- | --- | --- |
@@ -109,9 +110,9 @@ gzip, in kilobytes of 1,024 bytes, as the build of 2026-11-15 measured them.
 | The base rules every form loads (`base.css`) | 1.98 | ≤ 10 |
 | The default theme (`default.css`) | 8.06 | ≤ 10 |
 | The Bootstrap 5 theme (`bootstrap5.css`) | 4.73 | ≤ 10 |
-| What every backoffice session loads at its start: the entry, its static imports, and two languages' words | 44.39 | ≤ 64 |
-| The backoffice's largest file (the designer) | 32.45 | ≤ 64 |
-| The whole backoffice bundle (56 files) | 505.56 | ≤ 512 |
+| What every backoffice session loads at its start: the entry, its static imports, and two languages' words | 44.89 | ≤ 64 |
+| The backoffice's largest file (the designer) | 39.42 | ≤ 64 |
+| The whole backoffice bundle (56 files) | 508.10 | ≤ 512 |
 
 A page loads only the runtime's core and the features its forms use, each when it is first needed; every file is served
 compressed, under a fingerprint, with a year's caching (ADR-0026, ADR-0092), and nothing loads from another host.
