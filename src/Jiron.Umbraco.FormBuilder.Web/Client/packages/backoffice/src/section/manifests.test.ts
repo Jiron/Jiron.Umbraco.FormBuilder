@@ -1,5 +1,6 @@
-// The section's manifests (ADR-0021, ADR-0067, ADR-0165): its pathname and entity type as the server's links name them, the sidebar of
-// docs/ux/information-architecture.md with the permission of each item, and a workspace behind everything that opens one.
+// The section's manifests (ADR-0021, ADR-0067, ADR-0165, ADR-0257): its pathname and entity type as the server's links name
+// them, the sidebar of docs/ux/information-architecture.md (the places with their tabs, each with its permission, then
+// the tree), and a workspace behind everything that opens one.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,16 @@ import {
   SECTION_PATHNAME,
 } from './entity-types';
 import { PERMISSION_CONDITION } from './my-permissions';
-import { FORMS_NEEDS, meets, needsOfGroup, SIDEBAR, type MyPermissions, type Needs } from './sidebar';
+import {
+  FORMS_NEEDS,
+  meets,
+  PLACES,
+  PLACES_NEEDS,
+  placesFor,
+  tabsFor,
+  type MyPermissions,
+  type Needs,
+} from './sidebar';
 
 interface Manifest {
   type: string;
@@ -80,13 +90,12 @@ describe('the section', () => {
     expect(byType('workspace').map((workspace) => workspace.meta?.['entityType'])).toContain(ENTRY_ENTITY_TYPE);
   });
 
-  it('puts a workspace behind every menu item, and behind what the tree opens', () => {
+  it('puts a workspace behind every tab, every editor a tab opens, and what the tree opens', () => {
     const workspaces = byType('workspace').map((workspace) => workspace.meta?.['entityType']);
-    const opened = byType('menuItem')
-      .filter((item) => item.kind !== 'tree')
-      .map((item) => item.meta?.['entityType']);
-    expect(opened.length).toBe(SIDEBAR.flatMap((group) => group.items).length);
+    const opened = PLACES.flatMap((place) => [...place.tabs.map((tab) => tab.entityType), ...(place.editors ?? [])]);
     expect(opened.filter((entityType) => !workspaces.includes(entityType))).toEqual([]);
+    // No menu item but the tree's: the places and their tabs are the sidebar's and the screens' own (ADR-0257).
+    expect(byType('menuItem').filter((item) => item.kind !== 'tree')).toEqual([]);
     expect(workspaces).toEqual(
       expect.arrayContaining([FORM_ENTITY_TYPE, FOLDER_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE]),
     );
@@ -143,11 +152,11 @@ describe('the section', () => {
 });
 
 describe('the sidebar', () => {
-  /** The labels of docs/ux/information-architecture.md, section 1. */
+  /** The labels of docs/ux/information-architecture.md, section 1: each place, and each of its tabs. */
   const expected = {
-    entries: [
-      'Entries',
-      'Eintr\u00e4ge',
+    inbox: [
+      'Inbox',
+      'Posteingang',
       [
         ['inbox', 'Inbox', 'Posteingang'],
         ['spam', 'Spam', 'Spam'],
@@ -194,93 +203,121 @@ describe('the sidebar', () => {
     ],
   } as const;
 
-  it('holds the groups and items of the design, in order, in both languages', () => {
-    expect(SIDEBAR.map((group) => group.id)).toEqual(Object.keys(expected));
-    for (const group of SIDEBAR) {
-      const [english, german, items] = expected[group.id as keyof typeof expected];
-      expect(en.jfbSection[group.id as keyof typeof en.jfbSection]).toBe(english);
-      expect(de.jfbSection[group.id as keyof typeof de.jfbSection]).toBe(german);
-      expect(group.items.map((item) => item.id)).toEqual(items.map(([id]) => id));
-      for (const [id, itemEnglish, itemGerman] of items) {
-        expect(en.jfbSection[id as keyof typeof en.jfbSection]).toBe(itemEnglish);
-        expect(de.jfbSection[id as keyof typeof de.jfbSection]).toBe(itemGerman);
+  it('holds the places and their tabs of the design, in order, in both languages', () => {
+    expect(PLACES.map((place) => place.id)).toEqual(Object.keys(expected));
+    for (const place of PLACES) {
+      const [english, german, tabs] = expected[place.id as keyof typeof expected];
+      expect(en.jfbSection[place.id as keyof typeof en.jfbSection]).toBe(english);
+      expect(de.jfbSection[place.id as keyof typeof de.jfbSection]).toBe(german);
+      expect(place.tabs.map((tab) => tab.id)).toEqual(tabs.map(([id]) => id));
+      for (const [id, tabEnglish, tabGerman] of tabs) {
+        expect(en.jfbSection[id as keyof typeof en.jfbSection]).toBe(tabEnglish);
+        expect(de.jfbSection[id as keyof typeof de.jfbSection]).toBe(tabGerman);
       }
     }
   });
 
-  it('shows the groups in order under the tree, and each item in order in its menu, by weight', () => {
+  it('gives every tab its screen, a workspace of its entity type in the table order', () => {
+    const screens = byType('workspace')
+      .filter(
+        (workspace) => workspace.alias.startsWith('Jiron.FormBuilder.Workspace.') && workspace.kind !== 'routable',
+      )
+      .map((workspace) => workspace.meta?.['entityType']);
+    const tabs = PLACES.flatMap((place) => place.tabs.map((tab) => tab.entityType));
+    expect(screens.filter((entityType) => tabs.includes(entityType as string))).toEqual(tabs);
+  });
+
+  it('shows the places first, then the tree or its sentence, all inside the section', () => {
     const apps = byType('sectionSidebarApp').sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
     expect(apps.map((app) => app.alias)).toEqual([
+      'Jiron.FormBuilder.SidebarApp.Places',
       'Jiron.FormBuilder.SidebarApp.Forms',
       'Jiron.FormBuilder.SidebarApp.NoForms',
-      ...SIDEBAR.map((group) => `Jiron.FormBuilder.SidebarApp.${group.id.charAt(0).toUpperCase()}${group.id.slice(1)}`),
     ]);
-    const library = byType('menuItem').filter((item) =>
-      (item.meta?.['menus'] as string[]).includes('Jiron.FormBuilder.Menu.Library'),
-    );
-    expect(library.sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).map((item) => item.meta?.['label'])).toEqual([
-      '#jfbSection_optionLists',
-      '#jfbSection_themes',
-      '#jfbSection_emailLayouts',
-      '#jfbSection_templates',
+    expect(apps[0]?.conditions).toEqual([
+      { alias: 'Umb.Condition.SectionAlias', match: SECTION_ALIAS },
+      { alias: PERMISSION_CONDITION, needs: PLACES_NEEDS },
     ]);
+    expect(apps.every((app) => app.conditions?.[0]?.match === SECTION_ALIAS)).toBe(true);
   });
 
-  it('keeps every group inside the section, and shows its heading only with an item the user sees', () => {
-    for (const group of SIDEBAR) {
-      const app = byType('sectionSidebarApp').find((each) =>
-        each.alias.endsWith(`.${group.id.charAt(0).toUpperCase()}${group.id.slice(1)}`),
-      );
-      expect(app?.kind).toBe('menu');
-      expect(app?.conditions).toEqual([
-        { alias: 'Umb.Condition.SectionAlias', match: SECTION_ALIAS },
-        { alias: PERMISSION_CONDITION, needs: needsOfGroup(group) },
-      ]);
-    }
-  });
-
-  /** What each persona of ADR-0013 sees, by the items' ids. */
-  const seenBy = (permissions: MyPermissions) =>
-    SIDEBAR.flatMap((group) => group.items)
-      .filter((item) => meets(permissions, [item]))
-      .map((item) => item.id);
   const person = (global: string[], anywhere = global): MyPermissions => ({ global, anywhere });
+  /** What a persona of ADR-0013 sees: each place with the tabs it may open. */
+  const seenBy = (permissions: MyPermissions) =>
+    Object.fromEntries(
+      placesFor(permissions).map(({ place }) => [place.id, tabsFor(place, permissions).map((tab) => tab.id)]),
+    );
 
-  it("shows the privacy officer People and Retention without Data collection, and no setting's item", () => {
-    expect(seenBy(person(['privacyTools', 'viewEntries', 'viewSensitive', 'deleteEntries']))).toEqual([
-      'inbox',
-      'spam',
-      'people',
-      'retention',
+  it('shows the administrator every place with every tab', () => {
+    const admin = person([
+      'design',
+      'manageActions',
+      'viewEntries',
+      'viewSensitive',
+      'editEntries',
+      'deleteEntries',
+      'export',
+      'manageLibrary',
+      'manageSettings',
+      'managePermissions',
+      'privacyTools',
     ]);
+    expect(seenBy(admin)).toEqual(
+      Object.fromEntries(PLACES.map((place) => [place.id, place.tabs.map((tab) => tab.id)])),
+    );
+  });
+
+  it('shows the entry handler and the viewer the Inbox alone, with Spam', () => {
+    expect(seenBy(person(['viewEntries', 'editEntries', 'export']))).toEqual({ inbox: ['inbox', 'spam'] });
+    expect(seenBy(person(['viewEntries']))).toEqual({ inbox: ['inbox', 'spam'] });
+  });
+
+  it('shows the privacy officer People and Retention without Data collection, and no setting', () => {
+    expect(seenBy(person(['privacyTools', 'viewEntries', 'viewSensitive', 'deleteEntries']))).toEqual({
+      inbox: ['inbox', 'spam'],
+      privacy: ['people', 'retention'],
+    });
+  });
+
+  it('shows the designer the library alone', () => {
+    expect(seenBy(person(['design', 'manageActions', 'manageLibrary']))).toEqual({
+      library: ['optionLists', 'themes', 'emailLayouts', 'templates'],
+    });
   });
 
   it('asks manageSettings for Retention just as privacyTools, and for each other setting, but managePermissions for Access', () => {
-    expect(seenBy(person(['manageSettings']))).toEqual([
-      'general',
-      'email',
-      'spamProtection',
-      'files',
-      'integrations',
-      'retention',
-      'dataCollection',
-      'deliveries',
-      'auditLog',
-    ]);
-    expect(seenBy(person(['managePermissions']))).toEqual(['access']);
+    expect(seenBy(person(['manageSettings']))).toEqual({
+      settings: ['general', 'email', 'spamProtection', 'files', 'integrations'],
+      privacy: ['retention', 'dataCollection'],
+      activity: ['deliveries', 'auditLog'],
+    });
+    expect(seenBy(person(['managePermissions']))).toEqual({ settings: ['access'] });
   });
 
-  it('shows the library to manageLibrary alone', () => {
-    expect(seenBy(person(['manageLibrary']))).toEqual(['optionLists', 'themes', 'emailLayouts', 'templates']);
+  it('leads each place to the first of its tabs the user may open', () => {
+    const first = (permissions: MyPermissions) =>
+      Object.fromEntries(placesFor(permissions).map(({ place, first: tab }) => [place.id, tab.id]));
+    expect(first(person(['manageSettings', 'managePermissions', 'privacyTools']))).toEqual({
+      settings: 'general',
+      privacy: 'people',
+      activity: 'deliveries',
+    });
+    expect(first(person(['managePermissions', 'manageSettings'], []))).toEqual({
+      settings: 'general',
+      privacy: 'retention',
+      activity: 'deliveries',
+    });
+    expect(first(person(['managePermissions']))).toEqual({ settings: 'access' });
   });
 
   it('shows the Inbox to someone who may view the entries of one folder, but no setting that holds only there', () => {
-    expect(seenBy(person([], ['viewEntries', 'manageSettings']))).toEqual(['inbox', 'spam']);
+    expect(seenBy(person([], ['viewEntries', 'manageSettings']))).toEqual({ inbox: ['inbox', 'spam'] });
   });
 
   it('shows nothing to a user without any permission, who gets the sentence in the place of the tree', () => {
     const nobody = person([]);
-    expect(seenBy(nobody)).toEqual([]);
+    expect(seenBy(nobody)).toEqual({});
+    expect(meets(nobody, PLACES_NEEDS)).toBe(false);
     expect(meets(nobody, FORMS_NEEDS)).toBe(false);
     const sentence = byType('sectionSidebarApp').find((app) => app.alias.endsWith('.NoForms'));
     expect(sentence?.conditions?.[1]).toEqual({ alias: PERMISSION_CONDITION, needs: FORMS_NEEDS, none: true });

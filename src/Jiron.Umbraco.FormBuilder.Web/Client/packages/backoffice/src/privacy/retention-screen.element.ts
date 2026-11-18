@@ -2,8 +2,8 @@
 // of their own, and what retention deletes within the next 7, 30 or 90 days per form, with the files that go along. The
 // dry run counts with the days as they are typed, before they are saved, with no button to press. A privacy officer
 // reads it all; changing the days needs manageSettings, and a host that locks the privacy section says so once. A state
-// is kept for good only where the host allows it, and where it doesn't, the box names the key that would. The sidebar
-// names the screen, so it has no title of its own (ADR-0021).
+// is kept for good only where the host allows it, and where it doesn't, the box names the key that would. Its
+// its place's tabs along its top name it, so it has no title of its own (ADR-0257).
 import { css, html, live, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
@@ -30,6 +30,7 @@ import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
 import { jfbPhoneColumn } from '../styles/phone';
 import { configKey } from '../ui/config-key';
 import { LeaveGuard } from '../ui/leave-guard';
+import '../section/place-tabs.element';
 
 /** The states retention keeps entries in, in the order the screen names them. */
 export const STATES = ['submitted', 'approved', 'rejected', 'spam'] as const;
@@ -826,6 +827,7 @@ export class RetentionScreenElement extends UmbLitElement {
   override render() {
     const savable = this._model !== undefined && !this._failed && this.#editable();
     return html`<umb-body-layout>
+      <jfb-place-tabs tab="retention"></jfb-place-tabs>
       <div class="page">${this.#body()}</div>
       ${
         savable
@@ -833,7 +835,7 @@ export class RetentionScreenElement extends UmbLitElement {
               slot="actions"
               look="primary"
               color="positive"
-              label=${this.#words('save')}
+              label=${this.#words('save_retention')}
               .state=${this._saving ? 'waiting' : undefined}
               @click=${() => void this.#save()}
             ></uui-button>`

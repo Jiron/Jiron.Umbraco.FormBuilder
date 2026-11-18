@@ -1,5 +1,5 @@
 // The privacy screens' extensions (ROADMAP 13.1, IA 9, ADR-0223): People's legal hold sidebar and its erase dialog. People
-// and Retention themselves are their sidebar items' screens.
+// and Retention themselves are their tabs' screens.
 import { PEOPLE_ERASE_MODAL_ALIAS } from './people-erase.modal.token';
 import { PEOPLE_HOLD_MODAL_ALIAS } from './people-hold.modal.token';
 

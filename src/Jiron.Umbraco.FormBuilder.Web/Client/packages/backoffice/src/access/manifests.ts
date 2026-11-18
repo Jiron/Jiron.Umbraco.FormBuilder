@@ -1,5 +1,5 @@
 // Access's extensions (ROADMAP 12.4a, IA 8, ADR-0218): "Permissions..." in a folder's and a form's "...", for a user
-// who may manage permissions, and the sidebar it opens. Settings > Access itself is the sidebar item's screen.
+// who may manage permissions, and the sidebar it opens. Settings > Access itself is a tab's screen.
 import { FOLDER_ENTITY_TYPE, FORM_ENTITY_TYPE } from '../section/entity-types';
 import { PERMISSION_CONDITION } from '../section/my-permissions';
 import { PERMISSIONS_MODAL_ALIAS } from './permissions.modal.token';

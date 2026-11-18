@@ -21,6 +21,7 @@ import { accessMatrix, matrixStyles, type MatrixPart } from './access-matrix';
 import { changedGrants, type Grants, grantsOf, sentenceOf, withPending, withPermission } from './access-model';
 import { loadAccessWords } from './access-words';
 import { LeaveGuard } from '../ui/leave-guard';
+import '../section/place-tabs.element';
 import { PERMISSIONS_MODAL } from './permissions.modal.token';
 import { jfbPhoneColumn } from '../styles/phone';
 
@@ -412,6 +413,7 @@ export class AccessScreenElement extends UmbLitElement {
   override render() {
     const savable = this._answer !== undefined && !this._failed && !this._answer.lock;
     return html`<umb-body-layout>
+      <jfb-place-tabs tab="access"></jfb-place-tabs>
       <div class="page">${this.#body()}</div>
       <p class="visually-hidden" role="status" aria-live="polite">${this._said}</p>
       ${
@@ -420,7 +422,7 @@ export class AccessScreenElement extends UmbLitElement {
               slot="actions"
               look="primary"
               color="positive"
-              label=${this.#words('save')}
+              label=${this.#words('saveAccess')}
               .state=${this._saving ? 'waiting' : undefined}
               @click=${() => void this.#save()}
             ></uui-button>`

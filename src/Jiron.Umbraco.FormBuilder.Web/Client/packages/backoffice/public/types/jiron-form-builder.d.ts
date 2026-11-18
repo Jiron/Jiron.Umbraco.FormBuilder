@@ -25,7 +25,11 @@ export type JfbLibraryPlaceEntityType = 'jfb-library-root' | 'jfb-folder';
 /** The Form Builder section's address below the backoffice: a form opens at `section/jfb-forms/workspace/jfb-form/edit/<key>`. */
 export type JfbSectionPathname = 'jfb-forms';
 
-/** The menu of the sidebar's Settings group, which a site's `menuItem` names in `meta.menus`. */
+/**
+ * The menu of the Settings place: a site's `menuItem` that names it in `meta.menus` is a tab after Settings' own, shown
+ * by its own conditions, and its workspace a screen of the place, which shows the tabs with
+ * `<jfb-place-tabs tab="<the menu item's alias>"></jfb-place-tabs>` in its `umb-body-layout`.
+ */
 export type JfbSettingsMenuAlias = 'Jiron.FormBuilder.Menu.Settings';
 
 /** A Jiron Form Builder permission, as the management API names it (ADR-0013). */

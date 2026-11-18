@@ -11,6 +11,7 @@ import {
   MANAGE_SETTINGS,
   SETTINGS_ENTITY_TYPE,
   SETTINGS_MENU,
+  SETTINGS_TAB,
 } from './names';
 import { TRANSLATE_MODAL_ALIAS } from './translate/translate.modal.token';
 
@@ -89,9 +90,9 @@ export const manifests: UmbExtensionManifest[] = [
   },
   suggest as unknown as UmbExtensionManifest,
   {
-    // After the core's Settings items, the last of which weighs 100.
+    // A tab after Settings' own (ADR-0257).
     type: 'menuItem',
-    alias: 'Jiron.FormBuilder.AI.MenuItem.Settings',
+    alias: SETTINGS_TAB,
     name: 'Jiron Form Builder AI settings menu item',
     weight: 50,
     meta: { label: '#jfbAI_settingsMenu', icon: 'icon-wand', entityType: SETTINGS_ENTITY_TYPE, menus: [SETTINGS_MENU] },

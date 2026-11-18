@@ -20,6 +20,9 @@ export const FOLDER: JfbLibraryPlaceEntityType = 'jfb-folder';
 export const SECTION_PATHNAME: JfbSectionPathname = 'jfb-forms';
 export const SETTINGS_MENU: JfbSettingsMenuAlias = 'Jiron.FormBuilder.Menu.Settings';
 
+/** Settings > AI's tab, a menu item that names the Settings menu, by its alias (ADR-0257). */
+export const SETTINGS_TAB = 'Jiron.FormBuilder.AI.MenuItem.Settings';
+
 /** The entity type of Settings > AI, the add-on's own screen. */
 export const SETTINGS_ENTITY_TYPE = 'jfb-settings-ai';
 

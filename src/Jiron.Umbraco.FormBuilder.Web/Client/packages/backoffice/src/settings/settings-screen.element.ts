@@ -8,7 +8,7 @@
 // before they go; the server's refusal is said under the field it names, and a save made meanwhile is said with the
 // values now saved. What a section says besides its fields comes with it: Email's line while Umbraco can't send mail and
 // Send test email once it can, the hosts webhooks may call, Files' checks and storage, and the form block type. The
-// sidebar names the screen, so it has no title of its own (ADR-0021).
+// screen's place and tab name it in its header, so it has no title of its own (ADR-0257).
 import { css, html, live, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -31,6 +31,7 @@ import { choiceStyles } from '../designer/settings/choice.styles';
 import { loadWorkspaceWords } from '../designer/workspace-words';
 import { FORM_BLOCK_MODAL } from '../overview/form-block-modal.token';
 import { LeaveGuard } from '../ui/leave-guard';
+import '../section/place-tabs.element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
 import { confirmText } from '../ui/confirm';
 import { jfbSkeleton, skeletonLines } from '../ui/skeleton';
@@ -268,6 +269,9 @@ export class SettingsScreenElement extends UmbLitElement {
 
   /** The section the screen shows, as the management API names it. */
   section = '';
+
+  /** The screen's tab in the sidebar's table, whose place's tabs its header shows. */
+  tab = '';
 
   /** The boxes of the section another screen shows, as Privacy's retention days have Privacy > Retention (ADR-0222). */
   omit: readonly string[] = [];
@@ -874,6 +878,7 @@ export class SettingsScreenElement extends UmbLitElement {
     const savable = ready && !model.locks.some((lock) => lock.field === '*');
     const testable = ready && this.section === 'email' && (model.facts.email?.canSend ?? false);
     return html`<umb-body-layout>
+      <jfb-place-tabs tab=${this.tab}></jfb-place-tabs>
       <div class="page">${this.#body()}</div>
       ${
         testable
@@ -892,7 +897,7 @@ export class SettingsScreenElement extends UmbLitElement {
               slot="actions"
               look="primary"
               color="positive"
-              label=${this.#words('save')}
+              label=${this.#words(`save_${this.section}`)}
               .state=${this._saving ? 'waiting' : undefined}
               @click=${() => void this.#save()}
             ></uui-button>`
@@ -902,10 +907,12 @@ export class SettingsScreenElement extends UmbLitElement {
   }
 }
 
-/** A section's screen: the settings screen for that section without the boxes it omits, defined once under its own tag. */
+/** A section's screen: the settings screen for that section and tab without the boxes it omits, defined once under its
+ * own tag. */
 export function settingsScreen(
   tag: string,
   section: string,
+  tab: string,
   omit: readonly string[] = [],
 ): typeof SettingsScreenElement {
   const known = customElements.get(tag);
@@ -914,6 +921,7 @@ export function settingsScreen(
     constructor() {
       super();
       this.section = section;
+      this.tab = tab;
       this.omit = omit;
     }
   }

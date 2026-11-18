@@ -98,6 +98,7 @@ vi.mock('./people-api', async (original) => {
 
 vi.mock('../section/my-permissions', () => ({
   myPermissions: async () => ({ global: api.global, anywhere: api.global }),
+  myPermissionsNow: () => undefined,
 }));
 
 const { PeopleScreenElement, looksLikeAddress } = await import('./people-screen.element');

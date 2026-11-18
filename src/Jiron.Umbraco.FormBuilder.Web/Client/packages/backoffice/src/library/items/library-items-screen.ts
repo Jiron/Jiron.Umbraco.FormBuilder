@@ -1,10 +1,12 @@
 // A library kind's list screen (ROADMAP 12.1, IA 7, ADR-0214, ADR-0215): the items by name, each with what its kind adds
-// and the forms that use it, a row opening the item. The sidebar names the screen, so it has no title of its own
-// (ADR-0021); the footer holds Create and what else the kind offers. With no item, one sentence says what they are for.
+// and the forms that use it, a row opening the item. Its place's tabs along its top name it, so it has no title of
+// its own (ADR-0257); the footer holds Create and what else the kind offers. With no item, one sentence says what they are for.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../../styles/tokens';
 import { jfbSkeleton, skeletonLines } from '../../ui/skeleton';
+import { PLACES } from '../../section/sidebar';
+import '../../section/place-tabs.element';
 import { itemPath, type LibraryKind } from './library-items';
 
 /** How many items a page holds. */
@@ -137,6 +139,11 @@ export abstract class LibraryItemsScreen<Row extends LibraryRow> extends UmbLitE
 
   /** The kind whose items the screen lists. */
   protected abstract readonly kind: LibraryKind;
+
+  /** The screen's tab: the one whose screen lists the kind. */
+  get #tab(): string {
+    return PLACES.flatMap((place) => place.tabs).find((tab) => tab.entityType === this.kind.listEntityType)?.id ?? '';
+  }
 
   /** A page of the items. */
   protected abstract readRows(skip: number, take: number): Promise<RowsAnswer<Row>>;
@@ -284,6 +291,7 @@ export abstract class LibraryItemsScreen<Row extends LibraryRow> extends UmbLitE
   override render() {
     const ready = this._worded && this._rows.state === 'ready';
     return html`<umb-body-layout>
+      <jfb-place-tabs tab=${this.#tab}></jfb-place-tabs>
       ${this.#body()} ${ready ? this.footer() : nothing}
       ${
         ready

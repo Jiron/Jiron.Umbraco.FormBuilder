@@ -383,6 +383,11 @@ describe('Settings > AI', () => {
 
     picker.value = '';
     picker.dispatchEvent(new Event('change'));
+    // Named for what it saves, under Settings' tabs, which the core draws by its tag (ADR-0257).
+    expect(root.querySelector('uui-button')?.getAttribute('label')).toBe('Save AI settings');
+    expect(root.querySelector('umb-body-layout > jfb-place-tabs')?.getAttribute('tab')).toBe(
+      'Jiron.FormBuilder.AI.MenuItem.Settings',
+    );
     must(root.querySelector('uui-button'), 'Save').click();
     await settle(screen);
 
