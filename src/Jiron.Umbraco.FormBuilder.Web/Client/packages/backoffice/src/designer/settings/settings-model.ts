@@ -1,7 +1,7 @@
 // The form's settings as the Settings view edits them (ROADMAP 10.1a, ADR-0184): each group of the definition's
 // `settings` read with the model's defaults, a setting written back as the server writes it (a value kept even where it
 // is the default, an empty text, list or object left out), where the form check's problems and a Fix it lead in the
-// view, what a typed list of names or a reference holds, and the line a closed group says. Pure.
+// view, what a typed list of names or a reference holds, and the line a group's row says. Pure.
 import type { CaptchaProviderResponseModel, FormSettingsChoicesResponseModel } from '../../api';
 import { parsePath } from '../check/form-check';
 import type { DesignDefinition, DesignField, LocalizedText } from '../definition';
@@ -271,7 +271,7 @@ export function withProtection(definition: DesignDefinition, choice: ProtectionC
   return withSettingAt(leveled, ['protection', 'captcha'], { provider: choice.provider });
 }
 
-// ---- The closed groups' lines ---------------------------------------------------------------------------------------
+// ---- The groups' rows' lines ----------------------------------------------------------------------------------------
 
 /** What a group's line needs from the view: its words, and a date and a number as the user reads them. */
 export interface SummaryWords {
@@ -283,7 +283,7 @@ export interface SummaryWords {
   readonly number: (value: number) => string;
 }
 
-/** The dot between the parts of a closed group's line. */
+/** The dot between the parts of a group's row's line. */
 export const DOT = String.fromCharCode(0xb7);
 
 /** The site's protection, as "Site default" names it: a level, or the provider's label. */
@@ -304,7 +304,7 @@ export function siteProtection(
 export const themeName = (choices: FormSettingsChoicesResponseModel, alias: string): string =>
   choices.themes.find((theme) => theme.alias === alias)?.label ?? alias;
 
-/** The line a closed group says of what is set: a few words for each setting that tells the form apart. */
+/** The line a group's row says of what is set: a few words for each setting that tells the form apart. */
 export function summaryOf(
   group: GroupId,
   definition: DesignDefinition,

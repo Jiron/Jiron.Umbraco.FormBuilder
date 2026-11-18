@@ -3,15 +3,17 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
-import { openRowActions } from '../../support/tree.ts';
+import { addFieldOf, openPicker, pickerClosed, pickerFirstMatch } from '../../support/picker.ts';
+import { loadedIn, openRowActions, shownRow } from '../../support/tree.ts';
 import { splitAxe } from '../../support/ux-walk.ts';
 
 // The section in Umbraco's dark theme (ROADMAP 9.6a, ADR-0182). The theme's filled buttons put their label in a grey
 // that meets 4.3:1 on their fill; the section's elements give those labels white, as Umbraco's light and high-contrast
 // themes do, and their own controls use colours that keep 4.5:1. Axe finds nothing inside the section's own elements
 // with every kind of filled button in sight: a folder's, the Design view's toolbar, selected element and footer, the
-// undo toast, the publish dialog's, the duplicate dialog's, the copied actions' links and the recycle bin's. The forms
-// tree's rows are Umbraco's tree, whose open row is Umbraco's colours; the label we put in it takes them.
+// undo toast, the publish dialog's, the duplicate dialog's, the copied actions' links and the recycle bin's, nor in the
+// field picker's marked first match. The forms tree's rows are Umbraco's tree, whose open row is Umbraco's colours; the
+// label we put in it takes them.
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -83,7 +85,7 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   expect(await ours(page), 'the Design view').toEqual([]);
 
   // The open form's row in the tree: unpublished, its label takes the open row's own colour, not the muted one.
-  const label = page.locator(`umb-section-sidebar uui-menu-item[label="${name}"] > .unpublished`).first();
+  const label = (await shownRow(page, name)).locator(':scope > .unpublished');
   const colours = await label.evaluate((span) => [
     getComputedStyle(span).color,
     getComputedStyle(span.parentElement as Element).color,
@@ -104,6 +106,14 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   expect(await ours(page), 'the publish dialog').toEqual([]);
   await publish.getByRole('button', { name: 'Cancel' }).click();
 
+  // The field picker with a search typed: the match Enter picks is marked, and its name is read on the mark.
+  await openPicker(page, addFieldOf(design));
+  await page.keyboard.type('text');
+  await expect(pickerFirstMatch(page)).toBeVisible();
+  expect(await ours(page), "the field picker's first match").toEqual([]);
+  await page.keyboard.press('Escape');
+  await pickerClosed(page);
+
   // The duplicate dialog, from the form's "..." in the tree.
   await openRowActions(page, name);
   await page.locator('umb-entity-action-list uui-menu-item[label="Duplicate\u2026"]').filter({ visible: true }).click();
@@ -120,7 +130,7 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   const copying = page.locator('jfb-copy-actions-modal');
   await copying.getByRole('button', { name: 'Choose a form\u2026' }).click();
   const picker = page.locator('umb-tree-picker-modal');
-  await picker.locator(`uui-menu-item[label="${target}"]`).click();
+  await (await loadedIn(picker, picker.locator(`uui-menu-item[label="${target}"]`))).click();
   await picker.getByRole('button', { name: 'Choose' }).click();
   await copying.getByRole('button', { name: 'Copy 2 actions' }).click();
   await expect(copying.locator('a').first()).toBeVisible();

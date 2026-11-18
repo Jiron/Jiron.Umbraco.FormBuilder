@@ -76,17 +76,17 @@ describe('a row', () => {
     expect(rowLabel({ title: null, number: 1042 }, term)).toBe('entry 1042');
   });
 
-  it('says its runs, the worst first, and nothing without runs', () => {
+  it('says its runs where something did not go out, the worst first; nothing where all went or none ran', () => {
     expect(runsText(runs({}), term)).toBeNull();
-    expect(runsText(runs({ delivered: 3 }), term)).toEqual({ text: '3/3 delivered', tone: 'default' });
-    expect(runsText(runs({ delivered: 2, skipped: 1 }), term)?.text).toBe('2/2 delivered');
+    expect(runsText(runs({ delivered: 3 }), term)).toBeNull();
+    expect(runsText(runs({ delivered: 2, skipped: 1 }), term)).toBeNull();
+    expect(runsText(runs({ skipped: 2 }), term)).toBeNull();
     expect(runsText(runs({ delivered: 1, failed: 1, uncertain: 1 }), term)).toEqual({
       text: '1 failed',
       tone: 'danger',
     });
     expect(runsText(runs({ delivered: 1, uncertain: 2 }), term)).toEqual({ text: '2 uncertain', tone: 'warning' });
     expect(runsText(runs({ delivered: 1, waiting: 2 }), term)?.text).toBe('2 waiting');
-    expect(runsText(runs({ skipped: 2 }), term)).toEqual({ text: 'Not run', tone: 'muted' });
   });
 
   it('says when it was received: today with the time, another day by its date', () => {

@@ -7,7 +7,7 @@ import { SECTION_PATHNAME } from '../section/entity-types';
 import type { EmailLayoutDetailStore } from './email-layout-detail.store';
 import type { EmailLayoutWorkspaceContext } from './email-layout-workspace.context';
 
-/** The list of email layouts, which the sidebar's item opens (section/sidebar.ts). */
+/** The list of email layouts, Library's Email layouts tab (section/sidebar.ts). */
 export const EMAIL_LAYOUTS_ENTITY_TYPE = 'jfb-email-layouts';
 
 /** One email layout of the library, whose workspace a row opens. */

@@ -16,6 +16,9 @@ export const pickerItem = (page: Page, name: string | RegExp): Locator =>
     .getByRole('button', { name, exact: typeof name === 'string' })
     .first();
 
+/** The match Enter picks, which the picker marks while a search is typed. */
+export const pickerFirstMatch = (page: Page): Locator => pickerOf(page).locator('.item[data-first]');
+
 /** The Add field at the end of the page the canvas shows. */
 export const addFieldOf = (design: Locator): Locator => design.locator('jfb-form-canvas .bo-add-field').last();
 

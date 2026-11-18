@@ -95,23 +95,21 @@ export function receivedText(received: string, now: Date, culture: string, term:
   return `${day}, ${new Intl.DateTimeFormat(culture, { timeStyle: 'short' }).format(when)}`;
 }
 
-/** How an entry's action runs stand, the worst first; null for an entry without runs, which says nothing. */
+/** What an entry's action runs say in a list, the worst first. */
 export interface RunsText {
   text: string;
-  tone: 'danger' | 'warning' | 'muted' | 'default';
+  tone: 'danger' | 'warning' | 'default';
 }
 
-/** An entry's action status: "1 failed", "1 uncertain", "2 waiting", or "3/3 delivered"; runs never run don't count. */
+/**
+ * An entry's actions, where something did not go out (ROADMAP 22.4): "1 failed", "1 uncertain", "2 waiting". An entry
+ * whose actions all went out, or none ran, says nothing: that is most entries, and "none" in every row hid the few.
+ */
 export function runsText(runs: EntryListActionsResponseModel, term: Term): RunsText | null {
-  const total = runs.delivered + runs.failed + runs.uncertain + runs.waiting + runs.skipped;
-  if (total === 0) return null;
   if (runs.failed > 0) return { text: term('jfbEntries_runs_failed', runs.failed), tone: 'danger' };
   if (runs.uncertain > 0) return { text: term('jfbEntries_runs_uncertain', runs.uncertain), tone: 'warning' };
   if (runs.waiting > 0) return { text: term('jfbEntries_runs_waiting', runs.waiting), tone: 'default' };
-  const ran = total - runs.skipped;
-  return ran === 0
-    ? { text: term('jfbEntries_runs_skipped'), tone: 'muted' }
-    : { text: term('jfbEntries_runs_delivered', runs.delivered, ran), tone: 'default' };
+  return null;
 }
 
 /** A field filter that leaves one value, whose column then says nothing the chip doesn't (IA 6.1, say it once). */

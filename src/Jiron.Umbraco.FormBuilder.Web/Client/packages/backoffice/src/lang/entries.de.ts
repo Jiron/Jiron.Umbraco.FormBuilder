@@ -58,11 +58,9 @@ export default {
     memberEntries_failed: 'Die Einträge des Mitglieds konnten nicht geladen werden.',
     memberEntries_retry: 'Erneut versuchen',
 
-    runs_delivered: (delivered: number, total: number) => `${delivered}/${total} zugestellt`,
     runs_failed: (number: number) => `${number} fehlgeschlagen`,
     runs_uncertain: (number: number) => `${number} unklar`,
     runs_waiting: (number: number) => `${number} wartet${number === 1 ? '' : 'n'}`,
-    runs_skipped: 'Nicht ausgeführt',
 
     menu_form: 'Formular',
     menu_state: 'Status',
@@ -97,7 +95,6 @@ export default {
     edit_part_actions: 'Aktionen',
     edit_apply: 'Filter anwenden',
     edit_cancel: 'Abbrechen',
-    edit_states: 'Status',
     edit_span: 'Zeitraum',
     edit_from: 'Von',
     edit_to: 'Bis',
@@ -446,14 +443,12 @@ export default {
     export_readFailed: 'Der Export konnte nicht geöffnet werden. Versuchen Sie es erneut.',
     export_format: 'Format',
     export_entries: 'Einträge',
-    export_entriesAll: (number: number) =>
-      number === 1 ? 'Der 1 Eintrag, keine Filter' : `Alle ${entries(number)}, keine Filter`,
-    export_entriesFiltered: (number: number) =>
-      number === 1 ? '1 Eintrag, der den Filtern entspricht' : `${entries(number)}, die den Filtern entsprechen`,
-    export_entriesMore: 'Mehr als 1.000 Einträge, die der Suche entsprechen',
+    export_entriesAll: 'Alle, keine Filter',
+    export_entriesFiltered: 'Die, die den Filtern entsprechen',
+    export_entriesMore: 'Die, die der Suche entsprechen',
     export_entriesNone: 'Keine Einträge zum Exportieren',
     export_entriesNoneFiltered: 'Keine Einträge entsprechen den Filtern',
-    export_entriesTicked: (number: number) => `${entries(number)} ausgewählt`,
+    export_entriesTicked: 'Die ausgewählten',
     export_entriesFailed: 'Die Einträge konnten nicht gezählt werden. Versuchen Sie es erneut.',
     export_background: 'Dieser Export läuft im Hintergrund weiter; eine Benachrichtigung verlinkt die Datei.',
     export_unconfirmed: (number: number) =>

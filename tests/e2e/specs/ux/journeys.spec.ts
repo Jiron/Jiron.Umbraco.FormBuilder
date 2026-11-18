@@ -434,6 +434,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
 
     walk.write(combo, 'journeys.json');
     expect.soft(walk.reports.flatMap((report) => report.folds.map((fold) => `${report.screen}: ${fold}`))).toEqual([]);
+    expect.soft(walk.reports.flatMap((report) => report.keys.map((key) => `${report.screen}: ${key}`))).toEqual([]);
     expect(walk.reports.filter((report) => report.error).map((report) => `${report.screen}: ${report.error}`)).toEqual(
       [],
     );

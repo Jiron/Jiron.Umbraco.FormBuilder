@@ -69,7 +69,8 @@ export default {
     mail_notice: 'Ein Hinweis auf eine fehlgeschlagene Zustellung',
     otherType: 'Eine Aktion',
     whenNext: (queued: string, next: string) => `${queued}, nächster Versuch ${next}`,
-    deliveriesEmpty: 'Noch keine Zustellungen. E-Mails und Webhooks erscheinen hier, sobald Formulare sie senden.',
+    deliveriesEmpty:
+      'Keine Zustellungen in den letzten 30 Tagen. E-Mails und Webhooks erscheinen hier, sobald Formulare sie senden.',
     deliveriesNoMatch: 'Keine Zustellung passt zur Suche und zu den Filtern.',
     headlineEmail: (to: string) => `E-Mail an ${to}`,
     headlineWebhook: (to: string) => `Webhook an ${to}`,
@@ -125,7 +126,7 @@ export default {
     system: 'Jiron Form Builder',
     userGone: 'Ein gelöschter Benutzer',
     auditEmpty:
-      'Noch ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten.',
+      'In den letzten 30 Tagen ist nichts protokolliert. Das Protokoll füllt sich, wenn Personen mit Formularen, Einträgen und Einstellungen arbeiten.',
     auditNoMatch: 'Keine Aktion passt zur Suche und zu den Filtern.',
     detailWho: 'Wer',
     detailWhen: 'Wann',

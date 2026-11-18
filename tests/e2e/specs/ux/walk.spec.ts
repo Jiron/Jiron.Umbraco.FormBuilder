@@ -1070,23 +1070,30 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     // Insights: the Overview, its range, the Answers and their tables, Data collection and Forms at a glance.
     const insightsView = page.locator('jfb-form-insights-view');
+    // "Show as tables" is the user's own and the looks share one admin, so each shot sets it rather than flips it. It
+    // is the toolbar's last switch: the Overview has Compare before it (ROADMAP 22.4).
+    const tablesSwitch = insightsView.locator('.toolbar uui-toggle').last();
+    const showTables = async (tables: boolean) => {
+      if ((await tablesSwitch.evaluate((toggle) => (toggle as HTMLInputElement).checked)) !== tables)
+        await tablesSwitch.click();
+      const table = insightsView.locator('table');
+      if (tables) await expect(table.first()).toBeVisible();
+      else await expect(table).toHaveCount(0);
+    };
     await walk.shot('insights', async () => {
       await page.goto(`${workspaceOf(made.insights)}/view/insights`);
       await expect(insightsView.locator('dl.stats')).toBeVisible({ timeout: 60_000 });
+      await showTables(false);
     });
     await walk.shot('insights-range', async () => {
       await insightsView.locator('.toolbar uui-button').first().click();
       await expect(insightsView.locator('#range button').first()).toBeVisible();
     });
-    // "Show as tables" is the user's own and the looks share one admin, so each shot sets it rather than flips it.
-    const tablesSwitch = insightsView.locator('.toolbar uui-toggle');
-    const showTables = async (tables: boolean) => {
-      if ((await tablesSwitch.evaluate((toggle) => (toggle as HTMLInputElement).checked)) !== tables)
-        await tablesSwitch.click();
-      const table = insightsView.locator('jfb-insight-answers table');
-      if (tables) await expect(table.first()).toBeVisible();
-      else await expect(table).toHaveCount(0);
-    };
+    // The Overview's charts as tables, by the screen's one switch (ROADMAP 22.4).
+    await walk.shot('insights-tables', async () => {
+      await page.keyboard.press('Escape');
+      await showTables(true);
+    });
     await walk.shot('answers', async () => {
       await page.keyboard.press('Escape');
       await page.goto(`${workspaceOf(made.answers)}/view/insights`);
@@ -1243,9 +1250,10 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     }
 
     walk.write(combo);
-    // A screen that opens a section inside a section fails (22.3), and so does a screen the walk could not reach, which
-    // is the walk's to fix, after the report is written.
+    // A screen that opens a section inside a section fails (22.3), and so does one that draws a raw key of the words
+    // (22.4) or that the walk could not reach, which is the walk's to fix, after the report is written.
     expect.soft(walk.reports.flatMap((report) => report.folds.map((fold) => `${report.screen}: ${fold}`))).toEqual([]);
+    expect.soft(walk.reports.flatMap((report) => report.keys.map((key) => `${report.screen}: ${key}`))).toEqual([]);
     expect(walk.reports.filter((report) => report.error).map((report) => `${report.screen}: ${report.error}`)).toEqual(
       [],
     );

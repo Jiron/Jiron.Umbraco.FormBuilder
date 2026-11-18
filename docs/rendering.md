@@ -47,7 +47,7 @@ Then place a form by its alias or key:
 | `picked` | `FormBuilderFormReference` | The form picker's value, written as code without `@`: `picked="reference"`. Keeps the picker's theme and page after a send, and wins over `form`. |
 | `theme` | text | A theme's alias to render with here, instead of the form's own and the site's default. A theme the site lacks renders as `default`. |
 | `assets` | `true` or `false` | Whether this placement writes the tags for the script and stylesheets. By default it does, once per page ([below](#scripts-and-stylesheets)). |
-| `context-<name>` | text | A context value stored with the entry, such as `context-topic="@Model.Name"`. Only names the form lists under Settings › Developer › Context values are kept ([below](#context-values-and-query-values)). |
+| `context-<name>` | text | A context value stored with the entry, such as `context-topic="@Model.Name"`. Only names the form lists under its Settings view › Developer › Context values are kept ([below](#context-values-and-query-values)). |
 
 The element itself isn't written; its place gets the form.
 
@@ -228,7 +228,7 @@ a major version.
   `<form id>-<alias>`, with `-help` and `-error` beside it.
 - **Classes:** blocks such as `jfb-field`, `jfb-label`, `jfb-help`, `jfb-error`, `jfb-control`, `jfb-choices` and
   `jfb-button-primary`; modifiers such as `jfb-field-<type>`, `jfb-span-<n>`, `jfb-columns-<n>` and `jfb-group-card`.
-  The form's own CSS class (Settings › Appearance) and a field's go on the form and the field.
+  The form's own CSS class (its Settings view › Appearance) and a field's go on the form and the field.
 - **State lives in attributes:** `hidden`, `disabled`, `aria-invalid`, `aria-current="step"`, `data-jfb-hidden` for
   what a rule hides, `data-jfb-busy` while sending, `data-jfb-mark="required"` or `"optional"`.
 - **The form's data** travels in a `<script type="application/json" data-jfb-model>` block, which is data and never
@@ -389,11 +389,11 @@ visitor who sends the old version has their form swapped for the new one in plac
 
 - **Context values** are values a site's code passes when it places a form, such as the product a page is about:
   `context-product="@Model.Name"`, the view component's `context`, or `FormBuilderRenderRequest.Context`. Only names the
-  form lists under Settings › Developer › **Context values** are kept, up to 2,000 characters each, and they are stored
-  with the entry and available as `{{ context.<name> }}`. They are written into the page and posted back, so a visitor
-  could change them: never use them for secrets or to decide what a visitor may do.
+  form lists under its Settings view › Developer › **Context values** are kept, up to 2,000 characters each, and they
+  are stored with the entry and available as `{{ context.<name> }}`. They are written into the page and posted back, so
+  a visitor could change them: never use them for secrets or to decide what a visitor may do.
 - **Query values** are read from the page's address, such as `?plan=pro`, for prefill and rules, when the form lists
-  their names under Settings › Developer › **Query values**.
+  their names under its Settings view › Developer › **Query values**.
 
 ## Right-to-left
 

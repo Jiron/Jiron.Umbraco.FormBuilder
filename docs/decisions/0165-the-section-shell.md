@@ -1,6 +1,8 @@
 # 0165. The section's shell: the whole sidebar at once, one source of health, and what the Overview reads
 
-- Status: accepted
+- Status: accepted; the whole sidebar as a list of items is superseded by
+  [ADR-0257](0257-five-places-before-the-tree.md), in which `section/sidebar.ts` names five places and their tabs and
+  every screen keeps its address. The one source of health and what the Overview reads stay as decided here
 - Date: 2026-11-03
 - Roadmap step: 9.1 (decided and built); 9.2 to 13.3 replace the screens that stand in; 12.5 adds the mirror's check; 13.4 checks that nothing is left
 

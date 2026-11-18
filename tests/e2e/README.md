@@ -103,7 +103,21 @@ project puts each screen's twelve shots on one sheet. Both join the config only 
 
 The walk and the journeys also fail a screen that opens a section inside a section (ROADMAP 22.3): a control with
 `aria-expanded`, or a `details`, inside the region another such control opened, named with both
-(`foldsInFolds` in `support/ux-walk.ts`). A menu, a list box, a combobox, a popover and a tree are not folds.
+(`foldsInFolds` in `support/ux-walk.ts`). A menu, a list box, a combobox, a popover and a tree are not folds, nor is
+what the option editor's rows and the tools that write into a box open (`FOLD_TOOLS`, ADR-0259). They
+fail a screen that draws a raw key of the backoffice's words (ROADMAP 22.4), a word built as a key is, such as
+`jfbGlobalSettings_privacy_retention_rejectedHelp` (`rawKeys` in `support/ux-walk.ts`).
+
+Each shot counts two numbers of words (`measure` in `support/ux-shots.ts`, ADR-0259):
+
+- `words`: what the section's own elements draw, below the fold included, without the forms tree's rows (a site's own
+  names) and without the section's navigation. Until step 22.2 the left side was Umbraco's menu, which no walk counted,
+  so leaving the navigation out compares a screen with every walk made before.
+- `navigation`: what the section's navigation draws, the places on the left (`jfb-places`) and the open place's tabs
+  (`jfb-place-tabs`).
+
+Each look's report, the walk's `summary.json` and the sheets' captions carry both; the comparison with an earlier walk
+reads `words`.
 
 | Variable        | Effect                                                                                                                                              |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |

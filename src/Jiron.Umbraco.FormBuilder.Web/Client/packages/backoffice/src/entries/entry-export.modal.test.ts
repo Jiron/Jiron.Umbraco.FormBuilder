@@ -190,7 +190,7 @@ describe('the export sidebar', () => {
       'ZIP of the uploaded files',
     ]);
     expect(select.options.find((one) => one.selected)?.name).toBe('CSV');
-    expect(text(root.querySelector('.field p'))).toBe('All 214 entries, no filters');
+    expect(text(root.querySelector('.field p'))).toBe('All, no filters');
     expect(checkbox('All fields (2)')?.checked).toBe(true);
     expect(checkbox('Include sensitive fields')?.checked).toBe(false);
     expect(text(root.querySelector('.sensitive .help'))).toBe('Sensitive fields are left out.');
@@ -198,12 +198,12 @@ describe('the export sidebar', () => {
     expect(server.planned).toHaveLength(1);
   });
 
-  it('says under the number how many entries waiting for email confirmation stay out', async () => {
+  it('says under which entries go how many waiting for email confirmation stay out', async () => {
     server.plan = { entries: 212, more: false, background: false, unconfirmed: 2 };
     const { root } = await open();
 
     expect([...root.querySelectorAll('.field p')].slice(0, 2).map((one) => text(one))).toEqual([
-      'All 212 entries, no filters',
+      'All, no filters',
       '2 entries waiting for email confirmation stay out. To export them, filter by their state.',
     ]);
   });
@@ -232,7 +232,7 @@ describe('the export sidebar', () => {
       entries: ['a', 'b', 'c', 'd', 'e', 'f'],
     });
 
-    expect(text(root.querySelector('.field p'))).toBe('6 entries selected');
+    expect(text(root.querySelector('.field p'))).toBe('Those selected');
     expect(checkbox('All fields (2)')?.checked).toBe(false);
     expect([checkbox('Name')?.checked, checkbox('Email')?.checked]).toEqual([false, true]);
     expect(button('More options'), 'JSON takes none').toBeUndefined();

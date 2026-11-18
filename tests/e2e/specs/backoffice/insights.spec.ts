@@ -7,9 +7,9 @@ import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../sup
 
 // Insights (ROADMAP 11.5, IA 5.5, ADR-0211): a form of two pages on a headless page of its own origin sends its
 // beacons as a visitor uses it (a view, a start, the field that stopped them, the page reached), which the host writes
-// within its ten seconds; the form's Insights view then shows the numbers and the charts, each box switching to its
-// table and keeping that for the user; and once the form's own switch in its Settings view's Privacy group is off and
-// published, its page carries no address to count at and sends nothing.
+// within its ten seconds; the form's Insights view then shows the numbers and the charts, one switch showing them all
+// as tables and keeping that for the user; and once the form's own switch in its Settings view's Privacy group is off
+// and published, its page carries no address to count at and sends nothing.
 
 const SECTION = '/umbraco/section/jfb-forms/workspace/jfb-form/edit';
 const EVENTS = '/events';
@@ -130,7 +130,7 @@ test('the beacons arrive, the Insights view fills, and turning the form off in i
     )
     .toBeGreaterThanOrEqual(1);
 
-  // The Insights view: the numbers, the charts, and a box as its table, kept for the user.
+  // The Insights view: the numbers, the charts, and the charts as tables, kept for the user.
   await loginAs('admin');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${SECTION}/${key}/view/insights`);
@@ -149,17 +149,20 @@ test('the beacons arrive, the Insights view fills, and turning the form off in i
   const kept = page.waitForResponse(
     (response) => response.url().endsWith('/insights/tables') && response.request().method() === 'PUT',
   );
-  await fields.getByRole('button', { name: 'Show as table' }).click();
+  // One switch for the screen's charts, beside the range (ROADMAP 22.4): no box has a button of its own.
+  await expect(view.locator('uui-box').getByRole('button', { name: /^Show as/ })).toHaveCount(0);
+  const tables = view.locator('.toolbar uui-toggle[label="Show as tables"]');
+  await tables.click();
   expect((await kept).ok(), 'the choice is kept').toBe(true);
   await expect(fields.locator('table')).toBeVisible();
+  await expect(funnel.locator('table')).toBeVisible();
   await page.reload();
   await expect(view.locator('uui-box', { hasText: 'Fields that stop visitors most' }).locator('table')).toBeVisible({
     timeout: 60_000,
   });
-  await view
-    .locator('uui-box', { hasText: 'Fields that stop visitors most' })
-    .getByRole('button', { name: 'Show as chart' })
-    .click();
+  await expect(view.getByRole('switch', { name: 'Show as tables' })).toBeChecked();
+  await tables.click();
+  await expect(view.locator('uui-box', { hasText: 'Fields that stop visitors most' }).locator('table')).toHaveCount(0);
 
   // The form's own switch, the first of its Privacy group, off, saved and published.
   await page.goto(`${SECTION}/${key}/view/settings`);

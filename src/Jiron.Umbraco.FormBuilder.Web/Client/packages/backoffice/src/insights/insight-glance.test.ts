@@ -62,6 +62,13 @@ describe('Forms at a glance', () => {
       'section/jfb-forms/workspace/jfb-form/edit/key-Contact us/view/insights',
     );
     expect(text(root.querySelector('caption'))).toBe('Forms at a glance');
+    // The table scrolls sideways in a narrow box, which the keyboard reaches: a region of the table's name.
+    const scroller = root.querySelector('.scroll');
+    expect(['role', 'tabindex', 'aria-label'].map((name) => scroller?.getAttribute(name))).toEqual([
+      'region',
+      '0',
+      'Forms at a glance',
+    ]);
   });
 
   it("ends its period on the UTC day the stats count, not the user's own", async () => {

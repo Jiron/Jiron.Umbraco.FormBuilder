@@ -1,6 +1,9 @@
 # 0021. The Forms section's structure
 
-- Status: accepted
+- Status: accepted; how the left side shows the structure is superseded by
+  [ADR-0257](0257-five-places-before-the-tree.md): the groups of items under their headings are five places before
+  the forms tree, each one screen whose tabs are the items. What each group holds, its names and who sees it stay as
+  decided here
 - Date: 2026-10-23
 - Roadmap step: 2.1 (decided); built in 9.1 (the section and its menus) and by every later step that adds a screen to it
 

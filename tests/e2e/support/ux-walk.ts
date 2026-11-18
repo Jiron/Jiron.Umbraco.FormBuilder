@@ -88,11 +88,29 @@ export interface ShotReport {
   readonly scrollers: readonly string[];
   /** Texts cut short with an ellipsis. */
   readonly clipped: readonly string[];
+  /** The raw keys of the words drawn on the screen, as `rawKeys` finds them; the walk fails a screen with one. */
+  readonly keys: readonly string[];
   /**
    * How many words the section's own elements show, below the fold included: what a person has to read. The forms
-   * tree's rows are left out, as they are a site's own names (ROADMAP 21.1).
+   * tree's rows are left out, as they are a site's own names (ROADMAP 21.1), and so is the section's navigation
+   * (`NAVIGATION`), which `navigation` counts: until step 22.2 the left side was Umbraco's menu, which no walk
+   * counted, so a screen's words compare with every walk made before (ADR-0259).
    */
   readonly words: number;
+  /** How many words the section's navigation shows: the places on the left and the open place's tabs (ADR-0259). */
+  readonly navigation: number;
+}
+
+/** The section's navigation, whose words a shot counts by itself (`ShotReport.navigation`): places and tabs. */
+export const NAVIGATION: readonly string[] = ['jfb-places', 'jfb-place-tabs'];
+
+/**
+ * The raw keys of the backoffice's words in a screen's drawn text: a word built as a key is (`jfb`, a capital, then
+ * `_name` parts, as `jfbGlobalSettings_privacy_retention_rejectedHelp`), which a screen draws when a word it asks for
+ * does not exist. Each key once, in the order found.
+ */
+export function rawKeys(text: string): string[] {
+  return [...new Set(text.match(/\bjfb[A-Z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+\b/g) ?? [])];
 }
 
 /** The words two walks of the same build can differ by on a screen: a time of day, a count, a date's month. */
@@ -108,7 +126,10 @@ export interface WordChange {
 
 /** What each shot of a walk found, screen by screen and look by look: a walk's summary.json. */
 export type WalkSummary = Readonly<
-  Record<string, Readonly<Record<string, { readonly words?: number; readonly error?: string }>>>
+  Record<
+    string,
+    Readonly<Record<string, { readonly words?: number; readonly navigation?: number; readonly error?: string }>>
+  >
 >;
 
 /**
@@ -193,10 +214,18 @@ export interface FoldNode {
 const POPUP_ROLES = new Set(['menu', 'listbox', 'dialog', 'tree', 'grid']);
 
 /**
- * The tools that open a picker under the box they write into, and close as the focus leaves it: Insert merge tag and
- * the AI add-on's Suggest help text. They put a value in a box rather than show settings, so they are no folds.
+ * The elements whose own opening and closing is no section (ADR-0259). Tools that open under the box they write into:
+ * Insert merge tag, the AI add-on's Suggest help text and the rich text's Link. And the option editor: a row opens its
+ * own option (its value and its description), its handle the option's place in the list, and Paste options and Paste
+ * rows a box to paste into. They put a value in a box or show one item of a list, not a group of the element's
+ * settings, so they are no folds.
  */
-export const FOLD_TOOLS: readonly string[] = ['jfb-merge-tag-picker', 'jfb-ai-suggest'];
+export const FOLD_TOOLS: readonly string[] = [
+  'jfb-merge-tag-picker',
+  'jfb-ai-suggest',
+  'jfb-rich-text',
+  'jfb-option-editor',
+];
 
 /**
  * The folds that stand inside a region another fold opened, as `"inner" inside "outer"`: a screen that opens a section
@@ -264,6 +293,9 @@ export interface SheetCell {
   readonly combo: Combo;
   readonly image: string | null;
   readonly note?: string;
+  /** The shot's own words and its navigation's, which its caption gives. */
+  readonly words?: number;
+  readonly navigation?: number;
 }
 
 const escape = (text: string): string =>
@@ -271,7 +303,8 @@ const escape = (text: string): string =>
 
 /**
  * A contact sheet's page: the screen's name, then one row per width and one column per look (theme and language), each
- * cell its shot scaled to fit, or a line saying why there is none.
+ * cell its shot scaled to fit, captioned with its look and its words and its navigation's, or a line saying why there
+ * is none.
  */
 export function sheetHtml(screen: string, cells: readonly SheetCell[]): string {
   const looks = COMBOS.filter((combo) => combo.width === WINDOWS[0].width);
@@ -288,7 +321,11 @@ export function sheetHtml(screen: string, cells: readonly SheetCell[]): string {
         const body = cell?.image
           ? `<img src="${cell.image}" alt="">`
           : `<p class="none">${escape(cell?.note ?? 'no shot')}</p>`;
-        return `<figure>${body}<figcaption>${escape(name)}</figcaption></figure>`;
+        const counts =
+          cell?.image && cell.words !== undefined
+            ? `: ${cell.words} words, ${cell.navigation ?? 0} in the navigation`
+            : '';
+        return `<figure>${body}<figcaption>${escape(name + counts)}</figcaption></figure>`;
       })
       .join(''),
   ).join('');

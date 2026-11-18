@@ -120,6 +120,13 @@ describe('the retention screen', () => {
       '30',
     ]);
     expect(text(root.getElementById('days-spam-unit'))).toBe('days');
+    // A help line only where the state's name needs one, each tied to its box; none says a key.
+    expect([...root.querySelectorAll('.row .help')].map((help) => help.id)).toEqual([
+      'days-submitted-help',
+      'days-approved-help',
+    ]);
+    expect(box('days-rejected').getAttribute('aria-describedby')).toBe('days-rejected-unit');
+    expect(root.textContent).not.toMatch(/privacy_retention_/);
     expect([...root.querySelectorAll('jfb-learn-more')].map((link) => link.getAttribute('topic'))).toEqual([
       'retention',
     ]);

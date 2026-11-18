@@ -121,8 +121,23 @@ async function openRules(page: Page, key: string, field: string) {
   const design = page.locator('jfb-form-design-view');
   await design.getByRole('button', { name: new RegExp(`^${field}, `) }).click();
   const inspector = design.locator('jfb-designer-inspector');
-  // A closed Rules section holds Add a rule beside its header.
-  await expect(inspector.locator('[data-section="rules"] .section-head button')).toHaveText(/Rules\s+Always shown/);
+  // A closed Rules section holds Add a rule on its header's first line, in the docked inspector, and is as tall as its
+  // header: its body takes no room (ROADMAP 22.4).
+  const section = inspector.locator('[data-section="rules"]');
+  const toggle = section.locator('.section-head button');
+  await expect(toggle).toHaveText(/Rules\s+Always shown/);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const [head, add, whole] = await Promise.all([
+    toggle.boundingBox(),
+    section.locator('.add-rule').boundingBox(),
+    section.boundingBox(),
+  ]);
+  expect(head && add && whole, 'the section, its header and its Add a rule are drawn').toBeTruthy();
+  expect(add!.y + add!.height / 2, "Add a rule on the header's first line").toBeLessThan(head!.y + head!.height / 2);
+  expect(add!.x, 'beside the header, not under it').toBeGreaterThan(head!.x + 40);
+  expect(whole!.height, 'the closed section no taller than its header and its rule line').toBeLessThan(
+    head!.height + 24,
+  );
   await inspector.getByRole('button', { name: 'Add a rule' }).click();
   const builder = page.locator('jfb-rule-builder-modal');
   await expect(builder.getByRole('heading', { name: 'New rule' })).toBeVisible();

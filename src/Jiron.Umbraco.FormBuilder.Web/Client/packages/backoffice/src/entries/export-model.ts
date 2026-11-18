@@ -156,17 +156,20 @@ export function narrows(filter: EntryListFilterRequestModel | undefined): boolea
 
 type Term = (key: string, ...args: unknown[]) => string;
 
-/** The sentence that names the entries: the ticked ones, those the filters match, or all of them. */
+/**
+ * Which entries go: the ticked ones, those the filters or the search match, or all of them; how many stands on the
+ * button alone (`exportLabel`). Where none would go, it says so, as the button then has no number.
+ */
 export function entriesLine(
   term: Term,
   plan: EntryExportPlanResponseModel,
   ticked: boolean,
   filtered: boolean,
 ): string {
-  if (ticked) return term('export_entriesTicked', plan.entries);
+  if (ticked) return term('export_entriesTicked');
   if (plan.more) return term('export_entriesMore');
   if (plan.entries === 0) return term(filtered ? 'export_entriesNoneFiltered' : 'export_entriesNone');
-  return filtered ? term('export_entriesFiltered', plan.entries) : term('export_entriesAll', plan.entries);
+  return term(filtered ? 'export_entriesFiltered' : 'export_entriesAll');
 }
 
 /** The sentence under it that says how many entries waiting for their email confirmation stay out, if any. */

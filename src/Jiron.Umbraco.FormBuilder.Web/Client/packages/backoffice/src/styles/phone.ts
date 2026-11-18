@@ -2,7 +2,7 @@
 // scrolls sideways and shows only the first part of the 620 px workspace (ADR-0182). While it does, the view's column
 // (its `.page`) starts at the workspace's start and keeps to the window's width: once the workspace is in sight the whole
 // column is too, no line runs past the window's edge, and the column's container queries lay it out for the phone (two
-// boxes one under the other, a closed group's line under its name). A wider window changes nothing.
+// boxes one under the other, a row's line under its name). A wider window changes nothing.
 import { css } from '@umbraco-cms/backoffice/external/lit';
 
 /** Added after a view's own styles, so it wins over the column's own width and centring. */

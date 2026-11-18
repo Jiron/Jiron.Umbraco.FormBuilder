@@ -187,24 +187,17 @@ export const inspectorStyles = css`
   }
 
   /*
-   * Add a rule sits beside the closed header while the rule's sentence keeps about 14rem (the header's 18rem less its
-   * chevron and padding); where it would leave the sentence a narrow column, as at the inspector's usual width, it moves
-   * under the sentence, at the same end.
+   * Add a rule stands at the end of the closed header's first line, beside the section's name (IA 5.1), at every width;
+   * the line of what is set wraps under the name in the room left of it.
    */
   .section-line {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .section-line .section-head {
-    flex: 1 1 18rem;
-    min-inline-size: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
   }
 
   .section-line .add-rule {
-    flex: none;
-    margin-inline: auto var(--uui-size-space-5);
+    margin: calc(var(--uui-size-space-3) - var(--uui-size-space-1)) var(--uui-size-space-5) 0 0;
   }
 
   .add-rule,
@@ -265,6 +258,11 @@ export const inspectorStyles = css`
     display: grid;
     gap: var(--uui-size-space-5);
     padding: var(--uui-size-space-2) var(--uui-size-space-5) var(--uui-size-space-6);
+  }
+
+  /* A closed section is as tall as its header: its body, which aria-controls still names, takes no room. */
+  .section-body[hidden] {
+    display: none;
   }
 
   ${controlStyles}

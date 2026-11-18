@@ -411,8 +411,8 @@ describe("a form's Entries view", () => {
       'Rejected',
     ]);
     expect(text(rows()[0]?.querySelector('.received'))).toMatch(/^Today, \d{1,2}:\d{2}/);
-    // An entry no action ran for reads none (section 4.13).
-    expect(rows().map((one) => text(one.querySelector('.runs')))).toEqual(['2/2 delivered', '1 failed', 'none']);
+    // The column speaks only where something did not go out: all delivered and none run say nothing (ROADMAP 22.4).
+    expect(rows().map((one) => text(one.querySelector('.runs')))).toEqual(['', '1 failed', '']);
     expect(rows()[1]?.querySelector('.runs')?.classList.contains('tone-danger')).toBe(true);
     // The failure is said under the state too, which shows only where the action status gives way.
     expect(text(rows()[1]?.querySelector('td .below'))).toBe('1 failed');
@@ -771,6 +771,26 @@ describe("a form's Entries view", () => {
     expect(server.moves).toEqual([]);
     await press('j');
     expect(rows()[0]?.classList.contains('cursor')).toBe(true);
+  });
+
+  it('offers Export... only while the list shows entries (ROADMAP 22.4)', async () => {
+    const { root, view } = await viewOf((workspace) =>
+      workspace.forms.setValue({ permissions: ['viewEntries', 'export'] }),
+    );
+    const exportButton = () =>
+      must(
+        [...root.querySelectorAll('uui-button')].find((one) => one.getAttribute('label') === 'Export\u2026'),
+        'Export...',
+      );
+    expect(exportButton().hasAttribute('disabled')).toBe(false);
+    server.rows = [];
+    const search = must(root.querySelector<HTMLInputElement>('.search'), 'the search');
+    search.value = 'Jana';
+    search.dispatchEvent(new Event('input'));
+    search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await vi.waitFor(() => expect(root.querySelector('.empty p')).not.toBeNull());
+    await settle(view);
+    expect(exportButton().hasAttribute('disabled')).toBe(true);
   });
 
   it('says on first use what makes entries appear, without a toolbar, in the words of what the user may do', async () => {

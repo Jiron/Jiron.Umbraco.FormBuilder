@@ -80,6 +80,7 @@ export class OptionEditorElement extends UmbLitElement {
     edits: {},
     cards: { attribute: false },
     fixed: { type: Boolean },
+    heading: { attribute: false },
     change: { attribute: false },
     _open: { state: true },
     _pasting: { state: true },
@@ -106,6 +107,8 @@ export class OptionEditorElement extends UmbLitElement {
   declare cards: boolean;
   /** Whether the source is fixed, as a library list's is: its kind's editor alone (ADR-0214). */
   declare fixed: boolean;
+  /** The heading above the editor, which names its options: the editor then draws no label of its own. */
+  declare heading: string;
   declare change: OptionChange;
   /** The rows whose details are open, by an option's value or a row's key. */
   declare private _open: ReadonlySet<string>;
@@ -124,6 +127,7 @@ export class OptionEditorElement extends UmbLitElement {
     this.edits = 'options';
     this.cards = false;
     this.fixed = false;
+    this.heading = '';
     this.culture = '';
     this.defaultCulture = '';
     this.change = () => undefined;
@@ -410,12 +414,17 @@ export class OptionEditorElement extends UmbLitElement {
     const heading = this.#term(grid ? 'options_columns' : 'options_options');
     const drag = this._drag;
     const keys = rowKeys(items.map((item) => item.value));
+    // Under a heading of the page's that names them, the options are not named again (ROADMAP 22.4).
     return html`<div class="item item-options">
-      <p class="label" id="options-heading">${heading}</p>
+      ${this.heading ? nothing : html`<p class="label" id="options-heading">${heading}</p>`}
       ${
         items.length === 0
           ? html`<p class="help">${this.#term('options_none')}</p>`
-          : html`<ol class="option-rows" aria-labelledby="options-heading">
+          : html`<ol
+              class="option-rows"
+              aria-labelledby=${this.heading ? nothing : 'options-heading'}
+              aria-label=${this.heading || nothing}
+            >
               ${repeat(
                 items,
                 (_item, at) => keys[at],

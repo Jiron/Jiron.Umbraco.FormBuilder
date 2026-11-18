@@ -1,10 +1,11 @@
 // The inspector (ROADMAP 9.4a and 22.1, IA 5.1, ADR-0170, ADR-0256): what the selected field or group is ("Email
 // field"), else the open page, and its sections, each a button that opens or closes it, Essentials open and the others
-// as the user left them last. A closed section says in one line what is set; an open one shows seven items at most
-// before "More options". It edits texts in the language the canvas shows, and says so where that is not the default.
-// Every change goes to the Design view as a request, which makes it an edit of the form: typing in one box is one step
-// to undo. Beside the canvas it folds to a rail, and it is never empty, so the form never moves with a selection
-// (ADR-0182); on After sending it is headed so. Over a narrow canvas it carries the element's own bar.
+// as the user left them last. A closed section says in one line what is set; an open one shows all its items, seven at
+// most, with nothing folded inside it (ROADMAP 22.3). It edits texts in the language the canvas shows, and says so
+// where that is not the default. Every change goes to the Design view as a request, which makes it an edit of the form:
+// typing in one box is one step to undo. Beside the canvas it folds to a rail, and it is never empty, so the form never
+// moves with a selection (ADR-0182); on After sending it is headed so. Over a narrow canvas it carries the element's
+// own bar.
 import { compilePattern, LogicError, type Pattern } from '@jfb/logic';
 import { html, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -263,10 +264,9 @@ export class InspectorElement extends UmbLitElement {
   }
 
   /**
-   * Opens the section that holds an item of the element shown, and its More options where the item is among them, and
-   * moves the focus to the item's first box (the form check's Fix it, ADR-0181), its text selected with `select` (a
-   * page's Rename); to the section's header where the box takes no focus, and to the heading where the element shows no
-   * such item.
+   * Opens the section that holds an item of the element shown, and moves the focus to the item's first box (the form
+   * check's Fix it, ADR-0181), its text selected with `select` (a page's Rename); to the section's header where the box
+   * takes no focus, and to the heading where the element shows no such item.
    */
   focusItem(wanted: InspectorItem, select = false) {
     const subject = this.#subject();

@@ -1,14 +1,16 @@
 import type { APIRequestContext } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
-import { API } from '../../support/forms-api.ts';
+import { API, formOf, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
 
 // A form's entries list (ROADMAP 11.1, IA 6.1, ADR-0207), with 1,000 entries sent through the submission pipeline that
 // wait for approval, and a webhook on approval. The list counts them and pages 50 at a time; a search finds one by
 // its name and by its number; a filter set saved here opens in a second browser; a bulk approval is undone from its
 // toast inside the window, every entry back in its state and no approval's webhook sent, and once the window has
-// passed the toast offers no Undo (ADR-0023).
+// passed the toast offers no Undo (ADR-0023). The Actions column speaks only where an entry's action did not go out,
+// and a filter's dialog names its boxes by its headline alone (ROADMAP 22.4).
 
 const SECTION = '/umbraco/section/jfb-forms/workspace/jfb-form/edit';
 
@@ -138,4 +140,68 @@ test('the entries list pages 1,000 entries, searches, keeps a filter set across 
   await expect.poll(() => approvalCalls(api, hook), { timeout: 60_000 }).toBe(1);
   await page.waitForTimeout(2_000);
   expect(await approvalCalls(api, hook)).toBe(1);
+});
+
+/** Gives a published headless form one webhook on each entry, to this address, and publishes it. */
+async function webhookTo(api: APIRequestContext, form: string, url: string): Promise<void> {
+  const draft = (await (await api.get(`${API}/form/${form}/draft`)).json()) as {
+    form: { concurrencyVersion: number };
+    definition: Record<string, unknown>;
+  };
+  const action = { key: randomUUID(), type: 'webhook', name: 'Tell the CRM', enabled: true, trigger: 'submitted' };
+  const saved = await api.put(`${API}/form/${form}/draft`, {
+    data: {
+      concurrencyVersion: draft.form.concurrencyVersion,
+      definition: { ...draft.definition, actions: [{ ...action, stopOnFailure: false, settings: { url } }] },
+    },
+  });
+  expect(saved.ok(), await saved.text()).toBe(true);
+  const published = await api.post(`${API}/form/${form}/publish`, {
+    data: { concurrencyVersion: (await formOf(api, form)).concurrencyVersion },
+  });
+  expect(published.ok(), await published.text()).toBe(true);
+}
+
+test('the Actions column speaks only where an action did not go out, and a filter names its boxes once', async ({
+  page,
+  request,
+  loginAs,
+  apiAs,
+}) => {
+  test.setTimeout(240_000);
+  const api = await apiAs('admin');
+  const form = await headlessPersonForm(api, unique('Runs said'));
+  // The first entry's webhook goes through; the stub knows no second address, so the second entry's fails (404).
+  const hook = `/webhooks/${randomUUID()}`;
+  await webhookTo(api, form, `${STUB_URL}${hook}`);
+  await sendAsVisitor(request, form, { name: 'Ada Visitor', email: 'ada@example.com' });
+  await expect.poll(() => approvalCalls(api, hook), { timeout: 90_000 }).toBe(1);
+  await webhookTo(api, form, `${STUB_URL}/nowhere/${randomUUID()}`);
+  await sendAsVisitor(request, form, { name: 'Bea Visitor', email: 'bea@example.com' });
+
+  await loginAs('admin');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const view = page.locator('jfb-entries-view');
+  const rows = view.locator('tbody tr');
+  await expect(async () => {
+    await page.goto(`${SECTION}/${form}/view/entries`);
+    await expect(rows).toHaveCount(2, { timeout: 30_000 });
+    await expect(rows.first().locator('td.runs')).toHaveText('1 failed', { timeout: 5_000 });
+  }).toPass({ timeout: 120_000 });
+  // The column keeps its header; the entry whose action went out says nothing in it (ROADMAP 22.4).
+  await expect(view.locator('th.runs-column')).toHaveText('Actions');
+  await expect(rows.nth(1).locator('td.runs')).toHaveText('');
+  await axeInside(page, 'jfb-entries-view');
+
+  // The Actions filter's dialog: its headline names its choices, and nothing names them again.
+  await view.getByRole('button', { name: 'Filter', exact: true }).click();
+  await view.locator('#filter-menu').getByRole('button', { name: 'Actions', exact: true }).click();
+  const filter = page.locator('jfb-entry-filter-modal');
+  await expect(filter.getByRole('group', { name: 'Filter by actions', exact: true })).toBeVisible();
+  await expect(filter.locator('legend')).toHaveCount(0);
+  await expect(filter.getByText('Actions', { exact: true })).toHaveCount(0);
+  await filter.locator('uui-radio[label="Failed"]').click();
+  await filter.getByRole('button', { name: 'Apply filter', exact: true }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first().locator('td.runs')).toHaveText('1 failed');
 });

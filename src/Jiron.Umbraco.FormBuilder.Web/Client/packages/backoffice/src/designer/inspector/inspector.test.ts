@@ -7,6 +7,7 @@ import { all, must, registerEnglish, settle, shadow, text } from '../../testing'
 import type { DesignDefinition, DesignField } from '../definition';
 import { builtInTypes } from '../preview/fixtures';
 import { INSPECTOR_REQUEST, InspectorElement, readOpen, type InspectorRequest } from './inspector.element';
+import { inspectorStyles } from './inspector.styles';
 
 // The option editor reads what the site serves; here, the endpoint's snapshot.
 vi.mock('./option-data', async () => ({
@@ -185,6 +186,10 @@ describe('the inspector', () => {
     // Closed, Add a rule sits beside the header's button, not inside it (IA 5.1).
     const add = must(plain.root.querySelector<HTMLButtonElement>('.section-line > .add-rule'), 'Add a rule');
     expect(sectionButton(plain.root, 'rules').contains(add)).toBe(false);
+    // On the header's first line, at its end, at every width: a column of its own beside the header, never a row.
+    const line = /\.section-line\s*\{([^}]*)\}/.exec(inspectorStyles.cssText)?.[1] ?? '';
+    expect(line).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+    expect(line).not.toMatch(/flex-wrap/);
     add.click();
     expect(plain.requests.at(-1)).toEqual({ kind: 'rule', key: 'guests', rule: null });
     // A rule gone leaves the focus on Add a rule, the Rules section open.
@@ -730,6 +735,19 @@ describe('the inspector', () => {
     const heading: DesignField = { key: 'h', type: 'heading', settings: { text: { '': 'Hello' } } };
     expect((await inspectorOf('h', {}, heading)).root.querySelector('.change-type')).toBeNull();
     expect((await inspectorOf('g')).root.querySelector('.change-type')).toBeNull();
+  });
+});
+
+describe('a closed section', () => {
+  it('is as tall as its header: its body, which its button still names, takes no room', async () => {
+    localStorage.clear();
+    const { root } = await inspectorOf('guests');
+    const toggle = sectionButton(root, 'validation');
+    const body = must(root.getElementById(must(toggle.getAttribute('aria-controls'), 'controls')), 'the body');
+    expect([toggle.getAttribute('aria-expanded'), body.hidden]).toEqual(['false', true]);
+    // The body's own display would beat the hidden attribute, so a rule hides it.
+    const rule = /\.section-body\[hidden\]\s*\{([^}]*)\}/.exec(inspectorStyles.cssText)?.[1] ?? '';
+    expect(rule).toMatch(/display:\s*none/);
   });
 });
 

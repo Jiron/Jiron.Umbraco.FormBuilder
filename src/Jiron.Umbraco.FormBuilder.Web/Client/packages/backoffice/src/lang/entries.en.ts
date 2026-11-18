@@ -36,7 +36,7 @@ export default {
     number: (number: number) => `#${number}`,
     entryNumber: (number: number) => `entry ${number}`,
     unseen: 'unseen',
-    // An empty cell: an answer not given, or an entry no action ran for.
+    // An empty cell: an answer not given.
     none: 'none',
     today: 'Today',
     yesterday: 'Yesterday',
@@ -58,11 +58,9 @@ export default {
     memberEntries_failed: "The member's entries couldn't be loaded.",
     memberEntries_retry: 'Try again',
 
-    runs_delivered: (delivered: number, total: number) => `${delivered}/${total} delivered`,
     runs_failed: (number: number) => `${number} failed`,
     runs_uncertain: (number: number) => `${number} uncertain`,
     runs_waiting: (number: number) => `${number} waiting`,
-    runs_skipped: 'Not run',
 
     menu_form: 'Form',
     menu_state: 'State',
@@ -97,7 +95,6 @@ export default {
     edit_part_actions: 'actions',
     edit_apply: 'Apply filter',
     edit_cancel: 'Cancel',
-    edit_states: 'States',
     edit_span: 'Span',
     edit_from: 'From',
     edit_to: 'To',
@@ -439,14 +436,13 @@ export default {
     export_readFailed: "The export couldn't be opened. Try again.",
     export_format: 'Format',
     export_entries: 'Entries',
-    export_entriesAll: (number: number) =>
-      number === 1 ? 'The 1 entry, no filters' : `All ${entries(number)}, no filters`,
-    export_entriesFiltered: (number: number) =>
-      number === 1 ? '1 entry that matches the filters' : `${entries(number)} that match the filters`,
-    export_entriesMore: 'More than 1,000 entries that match the search',
+    // Which entries go, under Entries; how many stands on the button (ROADMAP 22.4).
+    export_entriesAll: 'All, no filters',
+    export_entriesFiltered: 'Those that match the filters',
+    export_entriesMore: 'Those that match the search',
     export_entriesNone: 'No entries to export',
     export_entriesNoneFiltered: 'No entries match the filters',
-    export_entriesTicked: (number: number) => `${entries(number)} selected`,
+    export_entriesTicked: 'Those selected',
     export_entriesFailed: "The entries couldn't be counted. Try again.",
     export_background: 'This export continues in the background; a notification links to the file.',
     export_unconfirmed: (number: number) =>

@@ -1,6 +1,8 @@
 # 0184. The form's Settings view: groups on one page, the site's choices from the server, and Fix it to a setting
 
-- Status: accepted
+- Status: accepted; the groups on one page that open and close are superseded by
+  [ADR-0258](0258-a-forms-views-pick-first.md): a list of the groups to pick from, and the group picked alone. The
+  site's choices from the server and Fix it to a setting stay as decided here
 - Date: 2026-11-05
 - Roadmap step: 10.1a (10.1b adds the outcomes); builds on [ADR-0170](0170-the-inspector.md) (the inspector's editors),
   [ADR-0181](0181-the-form-check-in-the-designer.md) (Fix it) and IA 5.2

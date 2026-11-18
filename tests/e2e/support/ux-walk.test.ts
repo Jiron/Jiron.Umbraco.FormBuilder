@@ -5,6 +5,8 @@ import {
   COMBOS,
   comboName,
   foldsInFolds,
+  NAVIGATION,
+  rawKeys,
   sheetHtml,
   splitAxe,
   walkDir,
@@ -179,9 +181,27 @@ test('a fold inside a region another fold opened is found by both names; a menu,
         node('button', { name: 'Insert merge tag', expanded: 'true', controls: ['2:tags'] }),
         node('div', { id: '2:tags', role: 'group' }, node('button', { name: 'Inner', expanded: 'false' })),
       ),
+      // The option editor: a row opens its own option, its handle the option's place, Paste options a box.
+      node(
+        'jfb-option-editor',
+        {},
+        node('button', { name: 'Move Small', expanded: 'false', controls: ['3:place'] }),
+        node('button', { name: 'Details of Small', expanded: 'true', controls: ['3:details'] }),
+        node('div', { id: '3:details' }, node('input', { name: 'Value' })),
+        node('button', { name: 'Paste options', expanded: 'false', controls: ['3:paste'] }),
+      ),
     ),
   );
   assert.deepEqual(foldsInFolds(popups), []);
+
+  // The same row outside the option editor is a fold in a fold: only the editor's own rows are let through.
+  const stray = node(
+    'body',
+    {},
+    node('button', { name: 'Section', expanded: 'true', controls: ['1:s'] }),
+    node('div', { id: '1:s' }, node('button', { name: 'Details of Small', expanded: 'false', controls: ['1:d'] })),
+  );
+  assert.deepEqual(foldsInFolds(stray), ['"Details of Small" inside "Section"']);
 
   // A details open inside a details.
   const details = node(
@@ -234,4 +254,27 @@ test('two walks are compared screen by screen in the looks both have, what grew 
     { screen: 'settings', look: '1440-light-de', before: 130, after: 101 },
     { screen: 'settings', look: '1440-light-en', before: 120, after: 90 },
   ]);
+});
+
+test('a screen draws no raw key: a word built as a key of the words is found, each once', () => {
+  const text = [
+    'Rejected entries',
+    'jfbGlobalSettings_privacy_retention_rejectedHelp',
+    'Keep for #jfbEntries_export_open, then jfbGlobalSettings_privacy_retention_rejectedHelp again.',
+  ].join('\n');
+  assert.deepEqual(rawKeys(text), ['jfbGlobalSettings_privacy_retention_rejectedHelp', 'jfbEntries_export_open']);
+  // A site's own words, an alias, a CSS class and an element are no keys: no capital after jfb, or no part.
+  assert.deepEqual(rawKeys('jfb-form jfb_field jfbForms jfbname_x Jfb Form Builder contactForm_name'), []);
+});
+
+test("the section's navigation is counted by itself: the places and a place's tabs", () => {
+  assert.deepEqual([...NAVIGATION], ['jfb-places', 'jfb-place-tabs']);
+});
+
+test("a sheet's caption gives a shot's words and its navigation's", () => {
+  const html = sheetHtml('settings', [
+    { combo: COMBOS[0]!, image: 'data:image/png;base64,AAAA', words: 120, navigation: 9 },
+  ]);
+  assert.match(html, /<figcaption>375-light-en: 120 words, 9 in the navigation<\/figcaption>/);
+  assert.match(html, /<figcaption>375-dark-en<\/figcaption>/);
 });

@@ -131,8 +131,8 @@ export const settingsStyles = css`
     outline-offset: 2px;
   }
 
-  /* Beside its group, the row picked says its name alone: its settings say the rest (say it once), as an open group
-     had no line. The rows keep their height, so a pick moves none of them. */
+  /* Beside its group, the row picked says its name alone: its settings say the rest (say it once). The rows keep their
+     height, so a pick moves none of them. */
   @container (min-width: 700px) {
     .groups button {
       align-content: center;

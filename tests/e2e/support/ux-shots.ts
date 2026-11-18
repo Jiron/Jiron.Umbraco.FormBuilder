@@ -7,6 +7,8 @@ import {
   FOLD_TOOLS,
   foldsInFolds,
   LANGUAGE_CODES,
+  NAVIGATION,
+  rawKeys,
   splitAxe,
   wantedScreen,
   type AxeNode,
@@ -80,12 +82,13 @@ export async function axeNodes(page: Page): Promise<AxeNode[]> {
 }
 
 /**
- * How the page lies at this width: its sideways scroll, the boxes that scroll inside it, the texts cut short, and how
- * many words the section's own elements show. The forms tree's names end with Umbraco's ellipsis as its own trees' do
- * (ADR-0221), so its rows are left out.
+ * How the page lies at this width: its sideways scroll, the boxes that scroll inside it, the texts cut short, how many
+ * words the section's own elements show, how many its navigation shows, and the text drawn on the screen, which
+ * `Walk.shot` reads for raw keys and does not keep. The forms tree's names end with Umbraco's ellipsis as its own
+ * trees' do (ADR-0221), so its rows are left out.
  */
 export const measure = (page: Page) =>
-  page.evaluate(() => {
+  page.evaluate((navigation) => {
     const all: HTMLElement[] = [];
     const walk = (root: Document | ShadowRoot) => {
       for (const element of root.querySelectorAll('*')) {
@@ -116,7 +119,9 @@ export const measure = (page: Page) =>
     }
     // The words a person has to read: the text inside the section's own elements that is drawn, wherever the page is
     // scrolled to. A subtree that is not drawn (display: none, hidden, a closed group) and a text heard but not seen
-    // (a box of a pixel) are left out, and so are the forms tree's rows.
+    // (a box of a pixel) are left out, and so are the forms tree's rows. The section's navigation (NAVIGATION: the
+    // places and a place's tabs) is counted by itself, so a screen's words compare with the walks made before it was
+    // the section's own (ADR-0259). Every drawn text, Umbraco's too, is kept for the raw-key check.
     const drawn = (element: HTMLElement): boolean => {
       const style = getComputedStyle(element);
       if (style.display === 'contents') return true;
@@ -124,28 +129,38 @@ export const measure = (page: Page) =>
       const box = element.getBoundingClientRect();
       return style.display.startsWith('inline') || (box.width > 1 && box.height > 1);
     };
-    const count = (node: Node, ours: boolean): number => {
-      let sum = 0;
+    type Where = 'none' | 'words' | 'navigation';
+    const sums = { words: 0, navigation: 0 };
+    const texts: string[] = [];
+    const count = (node: Node, where: Where): void => {
       for (const child of node.childNodes) {
         if (child.nodeType === Node.TEXT_NODE) {
-          if (ours) sum += (child.textContent ?? '').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
+          const text = (child.textContent ?? '').trim();
+          if (text) texts.push(text);
+          if (where !== 'none') sums[where] += text.split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
         } else if (child instanceof HTMLElement) {
           if (['jfb-library-tree-item', 'style', 'script', 'template'].includes(child.localName) || !drawn(child))
             continue;
-          const mine = ours || child.localName.startsWith('jfb-');
-          sum += count(child, mine);
-          if (child.shadowRoot) sum += count(child.shadowRoot, mine);
+          const mine: Where = navigation.includes(child.localName)
+            ? 'navigation'
+            : where === 'none' && child.localName.startsWith('jfb-')
+              ? 'words'
+              : where;
+          count(child, mine);
+          if (child.shadowRoot) count(child.shadowRoot, mine);
         }
       }
-      return sum;
     };
+    count(document.body, 'none');
     return {
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       scrollers: [...new Set(scrollers)].slice(0, 8),
       clipped: [...new Set(clipped)].slice(0, 12),
-      words: count(document.body, false),
+      words: sums.words,
+      navigation: sums.navigation,
+      text: texts.join('\n'),
     };
-  });
+  }, NAVIGATION);
 
 /**
  * The screen as the fold check reads it (`foldsInFolds` in support/ux-walk.ts): the drawn elements as the page composes
@@ -181,10 +196,13 @@ export const foldTree = (page: Page): Promise<FoldNode> =>
       element.id !== '' ||
       ['role', 'aria-expanded', 'popover'].some((name) => element.hasAttribute(name)) ||
       ['details', 'summary', 'uui-menu-item', ...tools].includes(element.localName);
+    // A form answers `form.children` with its control of that name, and the demo's newsletter has a field called
+    // "children": an element's children are read by Element's own getter, which no control stands in front of.
+    const ownChildren = Object.getOwnPropertyDescriptor(Element.prototype, 'children')?.get;
     const inside = (element: Element): Element[] =>
       element instanceof HTMLSlotElement
         ? element.assignedElements({ flatten: true })
-        : [...(element.shadowRoot ?? element).children];
+        : [...(element.shadowRoot?.children ?? (ownChildren?.call(element) as HTMLCollection))];
     const read = (element: Element): Node[] => {
       if (['style', 'script', 'template'].includes(element.localName) || !drawn(element)) return [];
       const children = inside(element).flatMap(read);
@@ -234,7 +252,8 @@ export class Walk {
       await page.screenshot({ path: join(this.dir, file) });
       const { ours, umbraco } = splitAxe(await axeNodes(page));
       const folds = foldsInFolds(await foldTree(page));
-      this.reports.push({ screen, file, axe: ours, axeUmbraco: umbraco, folds, ...(await measure(page)) });
+      const { text, ...measured } = await measure(page);
+      this.reports.push({ screen, file, axe: ours, axeUmbraco: umbraco, folds, keys: rawKeys(text), ...measured });
     } catch (error) {
       const message = (error instanceof Error ? error.message : String(error)).split('\n')[0]?.slice(0, 300) ?? '';
       await page.screenshot({ path: join(this.dir, `${screen}.failed.png`) }).catch(() => undefined);
@@ -245,10 +264,12 @@ export class Walk {
         axe: [],
         axeUmbraco: 0,
         folds: [],
+        keys: [],
         overflowX: 0,
         scrollers: [],
         clipped: [],
         words: 0,
+        navigation: 0,
       });
     }
   }

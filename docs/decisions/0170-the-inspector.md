@@ -1,7 +1,11 @@
 # 0170. The inspector: plain boxes, a section's one line, typing as one step, and languages from the canvas
 
 - Status: accepted; the palette's fold on selection is superseded by [ADR-0182](0182-the-phase-9-ux-walk.md), whose
-  inspector column stays beside the canvas, and so is the closed section's one line, whose summary now wraps
+  inspector column stays beside the canvas, and so is the closed section's one line, whose summary now wraps. "More
+  options" inside a section is superseded by [ADR-0258](0258-a-forms-views-pick-first.md): Messages and Privacy are
+  sections of their own, and no section folds inside. The inspector while nothing is selected (the open page) is
+  [ADR-0256](0256-the-designer-in-three-columns.md)'s, and a closed section's height and the closed Rules section's
+  "Add a rule" are [ADR-0259](0259-the-other-screens-and-the-walks-count.md)'s
 - Date: 2026-11-03
 - Roadmap step: 9.4a (decided and built); builds on ADR-0060 (designer locks), ADR-0168 (the canvas) and ADR-0169 (the
   moves); 9.4b to 9.4d add the option editor, the richer editors and the change of type to the same frame

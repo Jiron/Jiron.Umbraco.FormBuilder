@@ -2,13 +2,13 @@
 // day, week or month, and compared with the period before when the switch says so. One strip of numbers, each change
 // said in words, not in red and green; entries per group of days; who reaches each page with the median time to
 // complete; the fields that stop visitors most, with the kind of error; the website pages entries come from; entries by
-// hour of the site's day; and the members who sent entries, where any did. Every chart has "Show as table", which
-// swaps it for its table in place and is kept for the user. While another range loads, the numbers shown stay, dimmed
-// and marked busy; a read that fails says so in their place, as numbers of another range would mislead. A form whose
-// insights are off says where to turn them on, and nothing else; one with no visit yet says when numbers appear.
-// The segmented switch Overview and Answers (11.5b, ADR-0212) shows instead what the entries of the range answered, with
-// the entries list's filter, its dialog and its chips, and one switch for every chart's table; the answers come from
-// the entries, so they are there while the counting of visits is off.
+// hour of the site's day; and the members who sent entries, where any did. One switch beside Overview and Answers,
+// "Show as tables", swaps every chart for its table in place and is kept for the user (ROADMAP 22.4). While another
+// range loads, the numbers shown stay, dimmed and marked busy; a read that fails says so in their place, as numbers of
+// another range would mislead. A form whose insights are off says where to turn them on, and nothing else; one with no
+// visit yet says when numbers appear. The segmented switch Overview and Answers (11.5b, ADR-0212) shows instead what
+// the entries of the range answered, with the entries list's filter, its dialog and its chips, the same switch showing
+// its tables; the answers come from the entries, so they are there while the counting of visits is off.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -53,6 +53,12 @@ import { FORM_WORKSPACE_CONTEXT } from '../constants';
 
 /** The boxes with a chart, by the name the user's choice of tables keeps them under; `answers` holds every answer's. */
 type Box = 'entries' | 'funnel' | 'fields' | 'origins' | 'hours' | 'answers';
+
+/**
+ * Every box: one switch shows them all as tables or all as charts (ROADMAP 22.4), and keeps the choice as the list of
+ * boxes the server keeps for the user.
+ */
+const BOXES: readonly Box[] = ['entries', 'funnel', 'fields', 'origins', 'hours', 'answers'];
 
 /** What the view shows: what visitors do, or what the entries answered. */
 const MODES = ['overview', 'answers'] as const;
@@ -417,7 +423,7 @@ export class FormInsightsViewElement extends UmbLitElement {
   #byKey: ReadonlyMap<string, EntryListFieldResponseModel> = new Map();
   /** Whether the range changed while the Answers showed, so the Overview reads its report again. */
   #stale = false;
-  /** Whether the user's tables came with a report: from then on, this view's switches are the newer word. */
+  /** Whether the user's tables came with a report: from then on, this view's switch is the newer word. */
   #tablesKnown = false;
   /** The saves of the user's tables, one after the other, so the last choice is the one kept. */
   #keeping: Promise<unknown> = Promise.resolve();
@@ -484,7 +490,8 @@ export class FormInsightsViewElement extends UmbLitElement {
       return;
     }
     this._report = report;
-    // The user's tables come with the first report; after it, this view's switches are the newer word, saved or on their way.
+    // The user's tables come with the first report; after it, this view's switch is the newer word, saved or on its
+    // way.
     if (!this.#tablesKnown) this._tables = new Set(report.tables);
     this.#tablesKnown = true;
     this._state = 'ready';
@@ -596,10 +603,13 @@ export class FormInsightsViewElement extends UmbLitElement {
     this.shadowRoot?.querySelector<HTMLElement & { hidePopover?: () => void }>('#range')?.hidePopover?.();
   }
 
-  #toggleTable(box: Box) {
-    const tables = new Set(this._tables);
-    if (tables.has(box)) tables.delete(box);
-    else tables.add(box);
+  /** Whether the screen shows its charts as tables: every box kept as one. */
+  #asTables(): boolean {
+    return BOXES.every((box) => this._tables.has(box));
+  }
+
+  #showTables(on: boolean) {
+    const tables = new Set<string>(on ? BOXES : []);
     this._tables = tables;
     // The choice is the user's on every device; a keep that fails leaves this view as chosen. Saves go one after the
     // other, so two quick switches never land in the wrong order.
@@ -818,12 +828,7 @@ export class FormInsightsViewElement extends UmbLitElement {
       ${this.#rangeMenu()}
       ${
         answers
-          ? html`${this._answersOpen === 'ready' ? this.#filterMenu() : nothing}
-              <uui-toggle
-                label=${this.#term('showTables')}
-                .checked=${this._tables.has('answers')}
-                @change=${() => this.#toggleTable('answers')}
-              ></uui-toggle>`
+          ? html`${this._answersOpen === 'ready' ? this.#filterMenu() : nothing}`
           : html`<uui-toggle
               label=${this.#term('compare')}
               .checked=${this._compare}
@@ -833,6 +838,11 @@ export class FormInsightsViewElement extends UmbLitElement {
               }}
             ></uui-toggle>`
       }
+      <uui-toggle
+        label=${this.#term('showTables')}
+        .checked=${this.#asTables()}
+        @change=${(event: Event) => this.#showTables((event.target as HTMLInputElement).checked)}
+      ></uui-toggle>
       ${this.#modes()}
     </div>`;
   }
@@ -893,7 +903,7 @@ export class FormInsightsViewElement extends UmbLitElement {
           .form=${this.#form ?? ''}
           .span=${this._span}
           .filter=${this._filter}
-          ?tables=${this._tables.has('answers')}
+          ?tables=${this.#asTables()}
         ></jfb-insight-answers>`;
     }
   }
@@ -926,25 +936,16 @@ export class FormInsightsViewElement extends UmbLitElement {
     </dl>`;
   }
 
-  /** A box with its chart, or its table where the user chose it, and the switch between them. */
+  /** A box with its chart, or its table where the screen's switch shows tables. */
   #box(
-    box: Box,
     heading: string,
     chart: () => TemplateResult,
     table: () => TemplateResult,
     after?: TemplateResult,
     wide = false,
   ) {
-    const asTable = this._tables.has(box);
     return html`<uui-box class=${wide ? 'wide' : ''} headline-variant="h2" headline=${heading}>
-      <uui-button
-        slot="header-actions"
-        compact
-        look="secondary"
-        label=${asTable ? this.#term('showChart') : this.#term('showTable')}
-        @click=${() => this.#toggleTable(box)}
-      ></uui-button>
-      ${asTable ? table() : chart()} ${after ?? nothing}
+      ${this.#asTables() ? table() : chart()} ${after ?? nothing}
     </uui-box>`;
   }
 
@@ -966,7 +967,6 @@ export class FormInsightsViewElement extends UmbLitElement {
     const mostName =
       most >= 0 ? `${values[most]?.label ?? ''} (${this.#number(values[most]?.value ?? 0)})` : this.#number(0);
     return this.#box(
-      'entries',
       heading,
       () =>
         html`<jfb-insight-columns
@@ -1011,7 +1011,6 @@ export class FormInsightsViewElement extends UmbLitElement {
     const share = (value: number) => (starts > 0 ? this.#percent(value / starts) : '\u2013');
     const median = this.#completion(report.medianCompletion);
     return this.#box(
-      'funnel',
       this.#term('funnel'),
       () =>
         html`<jfb-insight-bars
@@ -1033,7 +1032,6 @@ export class FormInsightsViewElement extends UmbLitElement {
     const kind = (key: string) => this.#term(kindKey(key));
     const name = (label: string | null | undefined) => label ?? this.#term('fieldGone');
     return this.#box(
-      'fields',
       this.#term('fields'),
       () =>
         report.fields.length === 0
@@ -1074,7 +1072,6 @@ export class FormInsightsViewElement extends UmbLitElement {
   #origins(report: InsightReportResponseModel): TemplateResult {
     const name = (value: string | null | undefined) => value ?? this.#term('originHidden');
     return this.#box(
-      'origins',
       this.#term('origins'),
       () =>
         report.origins.length === 0
@@ -1106,7 +1103,6 @@ export class FormInsightsViewElement extends UmbLitElement {
     }));
     const most = mostAt(report.hours);
     return this.#box(
-      'hours',
       this.#term('hours'),
       () =>
         html`<jfb-insight-columns

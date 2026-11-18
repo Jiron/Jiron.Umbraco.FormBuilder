@@ -100,9 +100,15 @@ export class FieldPickerModalElement extends UmbModalBaseElement<FieldPickerModa
         flex: none;
       }
 
-      /* What Enter in the search picks, while a search is typed. */
-      .item[data-first] {
-        background: var(--uui-color-current);
+      /*
+       * What Enter in the search picks, while a search is typed: the backoffice's colour for what is current under its
+       * contrast text, as the lists of the section mark their open row (Umbraco's own carries the text at 4.3:1 in the
+       * dark theme). The mark stays under the pointer, which often rests where the first match appears.
+       */
+      .item[data-first],
+      .item[data-first]:hover {
+        background: var(--jfb-bo-color-current);
+        color: var(--uui-color-current-contrast);
       }
 
       .item kbd {
@@ -111,6 +117,7 @@ export class FieldPickerModalElement extends UmbModalBaseElement<FieldPickerModa
         border: 1px solid var(--jfb-bo-color-control-border);
         border-radius: var(--uui-border-radius);
         background: var(--uui-color-surface);
+        color: var(--uui-color-text);
         font: inherit;
         font-size: var(--uui-type-small-size);
       }

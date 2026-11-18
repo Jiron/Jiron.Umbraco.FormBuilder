@@ -47,9 +47,6 @@ export default {
     pointsUp: (points: string, before: string) => `${points} Prozentpunkte mehr als ${before}`,
     pointsDown: (points: string, before: string) => `${points} Prozentpunkte weniger als ${before}`,
 
-    showTable: 'Als Tabelle zeigen',
-    showChart: 'Als Diagramm zeigen',
-
     entries_day: 'Einträge pro Tag',
     entries_week: 'Einträge pro Woche',
     entries_month: 'Einträge pro Monat',
@@ -61,7 +58,7 @@ export default {
     col_entries: 'Einträge',
     col_before: 'Der Zeitraum davor',
     entriesChart: (heading: string, count: number, most: string) =>
-      `${heading}: ${count} Balken, die meisten ${most}. „Als Tabelle zeigen“ liest jeden vor.`,
+      `${heading}: ${count} Balken, die meisten ${most}. „Als Tabellen zeigen“ liest jeden vor.`,
 
     funnel: 'Wer welche Seite erreicht',
     funnelStarted: 'Begonnen',
@@ -116,7 +113,7 @@ export default {
     hoursZone: (zone: string) => `Zeitzone: ${zone}`,
     col_hour: 'Stunde',
     hoursChart: (heading: string, most: string) =>
-      `${heading}: die meisten um ${most}. „Als Tabelle zeigen“ liest jede Stunde vor.`,
+      `${heading}: die meisten um ${most}. „Als Tabellen zeigen“ liest jede Stunde vor.`,
 
     members: 'Mitglieder',
     membersLine: (members: string, entries: string) => `${members} Mitglieder haben ${entries} Einträge gesendet.`,

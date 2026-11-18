@@ -13,7 +13,7 @@ import type { ContentType } from './content-model';
 import type { EmailPreview } from './email-preview';
 
 export interface ActionModalData {
-  /** The action to change; null for a new one, which starts with the first choice of what happens. */
+  /** The action to change; null for a new one, which starts with the kinds to pick from. */
   readonly action: DesignAction | null;
   /** The draft as the view has it, which the action is checked in and its rule built on. */
   readonly definition: DesignDefinition;

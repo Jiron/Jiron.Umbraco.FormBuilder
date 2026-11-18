@@ -59,8 +59,9 @@ the link longer.
 
 ![A form's Entries view: the list with its search, filters and columns](screenshots/entries.png)
 
-Every list shows each entry's title (or its number), its state, when it arrived and its actions: "2/2 delivered", "1
-failed" or "Not run". The list shows 50 entries at a time, with **Show more**.
+Every list shows each entry's title (or its number), its state and when it arrived. Its **Actions** column speaks
+only where an action did not go out ("1 failed", "1 uncertain", "2 waiting") and stays empty where all went out or none
+ran. The list shows 50 entries at a time, with **Show more**.
 
 The **entry title** comes from the form's Settings view, such as `{{ field.name }}, {{ field.company }}`; without one,
 the list shows the number. Each form numbers its entries from 1.
@@ -139,7 +140,8 @@ hand.
 ## Exports
 
 **Export…** in a form's Entries view, or in the Inbox once it is filtered by one form, exports the entries that match
-the filters; **Export selected…** exports the ticked ones.
+the filters, and is not offered while the list shows none; **Export selected…** exports the ticked ones. The sidebar
+says which entries go beside Entries, and how many on its Export button.
 
 | Format | Holds |
 | --- | --- |

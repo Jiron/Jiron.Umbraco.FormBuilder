@@ -522,7 +522,7 @@ export class FormSettingsViewElement extends UmbLitElement {
     return box;
   }
 
-  // The form check's problems by the box they show under, and how many hide in each closed group and More options.
+  // The form check's problems by the box they show under, and how many each group's row and More options count.
   #checked(definition: DesignDefinition): Checked {
     const checked = this._check.definition;
     if (!checked) return NONE_CHECKED;
