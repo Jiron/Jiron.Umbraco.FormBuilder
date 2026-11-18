@@ -33,12 +33,11 @@ import {
   fieldSections,
   groupSections,
   pageSections,
-  splitItems,
+  sectionKey,
   SECTIONS,
   takesSeveral,
   type Item,
   type Section,
-  type SectionId,
 } from './inspector-model';
 import type { InspectorItem } from '../check/form-check';
 import { boxValue } from './box-value';
@@ -107,18 +106,19 @@ const OPEN_KEY = 'jfb.designer.inspector.open';
 const FIELD_TEXTS: ReadonlySet<string> = new Set<JfbFieldText>(['label', 'help', 'placeholder']);
 const ALIAS = /^[a-z][a-zA-Z0-9]{0,63}$/;
 
-/** The sections this browser left open last; Essentials alone at first. */
-export function readOpen(): ReadonlySet<SectionId> {
+/** The sections this browser left open last, by their keys (a section's "more" too); Essentials alone at first. */
+export function readOpen(): ReadonlySet<string> {
   try {
     const kept: unknown = JSON.parse(localStorage.getItem(OPEN_KEY) ?? 'null');
-    if (Array.isArray(kept)) return new Set(SECTIONS.filter((id) => kept.includes(id)));
+    if (Array.isArray(kept))
+      return new Set(SECTIONS.flatMap((id) => [id, `${id}-more`]).filter((key) => kept.includes(key)));
   } catch {
     // A browser that keeps nothing opens Essentials.
   }
-  return new Set<SectionId>(['essentials']);
+  return new Set(['essentials']);
 }
 
-function keepOpen(open: ReadonlySet<SectionId>) {
+function keepOpen(open: ReadonlySet<string>) {
   try {
     localStorage.setItem(OPEN_KEY, JSON.stringify([...open]));
   } catch {
@@ -168,7 +168,6 @@ export class InspectorElement extends UmbLitElement {
     mode: { reflect: true },
     saveGroups: { attribute: false },
     _open: { state: true },
-    _more: { state: true },
     _problems: { state: true },
     _sample: { state: true },
   };
@@ -196,8 +195,7 @@ export class InspectorElement extends UmbLitElement {
   declare mode: InspectorMode;
   /** Whether the user may save a group as a template, which a group's "..." then offers (ADR-0217). */
   declare saveGroups: boolean;
-  declare private _open: ReadonlySet<SectionId>;
-  declare private _more: ReadonlySet<SectionId>;
+  declare private _open: ReadonlySet<string>;
   /** Why a box's last value couldn't be kept, in words, by the box's id, until it can or another element is chosen. */
   declare private _problems: ReadonlyMap<string, string>;
   /** The answer typed into the pattern's tester, never saved; it goes with the element it was typed for. */
@@ -235,7 +233,6 @@ export class InspectorElement extends UmbLitElement {
     this.mode = 'docked';
     this.saveGroups = false;
     this._open = readOpen();
-    this._more = new Set();
     this._problems = new Map();
     this._sample = '';
     this.addEventListener('focusin', () => this.#visit++);
@@ -280,9 +277,7 @@ export class InspectorElement extends UmbLitElement {
       this.focusHeading();
       return;
     }
-    if (!this._open.has(section.id)) this.#toggle(section.id);
-    if (splitItems(section.items).more.some((item) => isItem(item, wanted)) && !this._more.has(section.id))
-      this.#toggleMore(section.id);
+    if (!this._open.has(sectionKey(section))) this.#toggle(sectionKey(section));
     void this.updateComplete.then(() => {
       const root = this.shadowRoot;
       const box =
@@ -375,19 +370,12 @@ export class InspectorElement extends UmbLitElement {
     this._problems = next;
   }
 
-  #toggle(id: SectionId) {
+  #toggle(key: string) {
     const next = new Set(this._open);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     this._open = next;
     keepOpen(next);
-  }
-
-  #toggleMore(id: SectionId) {
-    const next = new Set(this._more);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    this._more = next;
   }
 
   #heading(subject: Subject): string {
@@ -1336,24 +1324,24 @@ export class InspectorElement extends UmbLitElement {
   // ---- Frame --------------------------------------------------------------------------------------------------------
 
   #section(subject: Subject, section: Section): TemplateResult {
-    const open = this._open.has(section.id);
-    const id = `section-${section.id}`;
-    const { shown, more } = splitItems(section.items);
-    const showsMore = this._more.has(section.id);
+    const key = sectionKey(section);
+    const open = this._open.has(key);
+    const id = `section-${key}`;
+    const name = this.#term(`section_${section.id}`);
     const head = html`<h3 class="section-head">
       <button
         type="button"
         aria-expanded=${open ? 'true' : 'false'}
         aria-controls=${id}
-        @click=${() => this.#toggle(section.id)}
+        @click=${() => this.#toggle(key)}
       >
         <uui-icon name=${open ? 'icon-navigation-down' : 'icon-navigation-right'} aria-hidden="true"></uui-icon>
-        <span class="section-name">${this.#term(`section_${section.id}`)}</span>
+        <span class="section-name">${section.more ? this.#term('sectionMore', name) : name}</span>
         ${open ? nothing : html`<span class="summary">${this.#summary(subject, section)}</span>`}
       </button>
     </h3>`;
     // A closed Rules section holds Add a rule beside its header, not inside it (IA 5.1).
-    return html`<section class="section" data-section=${section.id}>
+    return html`<section class="section" data-section=${key}>
       ${
         section.id === 'rules' && !open
           ? html`<div class="section-line">${head}${this.#addRule(this.#keyOf(subject))}</div>`
@@ -1364,20 +1352,7 @@ export class InspectorElement extends UmbLitElement {
           open
             ? section.id === 'rules'
               ? this.#rules(subject)
-              : html`${shown.map((item) => this.#item(subject, item))}
-                ${showsMore ? more.map((item) => this.#item(subject, item)) : nothing}
-                ${
-                  more.length > 0
-                    ? html`<button
-                        type="button"
-                        class="more"
-                        aria-expanded=${showsMore ? 'true' : 'false'}
-                        @click=${() => this.#toggleMore(section.id)}
-                      >
-                        ${this.#term(showsMore ? 'fewerOptions' : 'moreOptions', more.length)}
-                      </button>`
-                    : nothing
-                }`
+              : section.items.map((item) => this.#item(subject, item))
             : nothing
         }
       </div>

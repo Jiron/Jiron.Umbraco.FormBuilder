@@ -14,14 +14,23 @@ export const FIRST_VIEW = 'design';
  */
 export const FIXING_VIEWS: ReadonlySet<string> = new Set(['settings', 'actions']);
 
+/** The views that change the form, which the form's Preview, Save draft and Publish... act on (ADR-0258). */
+const CHANGING_VIEWS: ReadonlySet<string> = new Set([FIRST_VIEW, 'settings', 'actions']);
+
+/** Whether a view changes the form: the footer's buttons show there, and the footer is drawn. */
+export const changesForm = (view: string): boolean => CHANGING_VIEWS.has(view);
+
 const VIEW_AT_END = /\/view\/([^/]+)\/?$/;
 
 /** The address of a view of the form open at this address: its `/view/<name>` in place of the one shown. */
 export const viewPath = (pathname: string, view: string): string =>
   pathname.replace(VIEW_AT_END, '').replace(/\/$/, '') + `/view/${view}`;
 
-/** The view this address shows: the one it names, or the first at the form's own address. */
-export const shownView = (pathname: string): string => VIEW_AT_END.exec(pathname)?.[1] ?? FIRST_VIEW;
+/**
+ * The view this address shows: the one it names, or the first at the form's own address. What a view adds after its
+ * own name (a dialog Umbraco opens by an address) leaves it the view shown.
+ */
+export const shownView = (pathname: string): string => /\/view\/([^/]+)/.exec(pathname)?.[1] ?? FIRST_VIEW;
 
 /**
  * Shows a view of the open form, unless it is the one shown. Umbraco's router builds the view anew at a new address,

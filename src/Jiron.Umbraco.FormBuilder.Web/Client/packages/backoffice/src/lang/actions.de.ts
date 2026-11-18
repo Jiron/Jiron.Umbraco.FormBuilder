@@ -13,7 +13,7 @@ const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 export default {
   jfbActions: {
-    empty: 'Noch keine Aktionen. „Aktion hinzufügen“ beginnt mit einer E-Mail an das Team.',
+    empty: 'Noch keine Aktionen. „Aktion hinzufügen“ zeigt, was nach dem Absenden laufen kann.',
     readOnly:
       'Zum Ändern dieser Aktionen ist die Berechtigung „Aktionen verwalten“ für dieses Formular nötig. Wer Administratorrechte hat, kann sie erteilen.',
     addAction: 'Aktion hinzufügen',
@@ -35,6 +35,7 @@ export default {
     held_verification: 'Diese laufen erst, wenn das Formular die E-Mail-Bestätigung hat:',
     turnOn: 'in den Einstellungen einschalten',
     none: 'Hier noch keine Aktionen.',
+    runsWhen: (when: string) => `Läuft${after(when)}.`,
     triggerNeeds_approval: 'Läuft erst, wenn das Formular die manuelle Genehmigung verwendet.',
     triggerNeeds_verification: 'Läuft erst, wenn das Formular die E-Mail-Bestätigung verwendet.',
 
@@ -83,9 +84,7 @@ export default {
     undoSwitched: 'Eine Aktion ein- oder ausgeschaltet',
 
     headlineNew: 'Neue Aktion',
-    whatHappens: 'Was passiert',
-    whatHappensKept:
-      'Die Art einer Aktion lässt sich nicht ändern. Für etwas anderes fügen Sie eine weitere Aktion hinzu.',
+    otherKinds: 'Andere Arten',
     name: 'Name',
     trigger: 'Wann sie läuft',
     place: 'Reihenfolge',

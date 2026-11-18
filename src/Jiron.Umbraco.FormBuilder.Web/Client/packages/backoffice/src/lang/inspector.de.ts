@@ -23,8 +23,11 @@ export default {
 
     section_essentials: 'Grundlegendes',
     section_validation: 'Validierung',
+    section_messages: 'Meldungen',
     section_rules: 'Regeln',
     section_appearance: 'Darstellung',
+    section_privacy: 'Datenschutz',
+    sectionMore: (name: string) => `${name}, weitere`,
     section_advanced: 'Erweitert',
     summaryNone: 'Standard',
     moreOptions: (count: number) => `Weitere Optionen (${count})`,

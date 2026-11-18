@@ -214,6 +214,15 @@ export default {
     emailNotifyTeam: 'Team per E-Mail benachrichtigen',
     emailConfirmSender: 'Eingangsbestätigung senden',
   },
+  jfbActionLines: {
+    emailNotifyTeam: 'Informiert Ihr Team über jeden Eintrag, mit seinen Antworten.',
+    emailConfirmSender: 'Schickt der Person eine Kopie dessen, was sie gesendet hat.',
+    webhook: 'Sendet jeden Eintrag an eine eigene Adresse.',
+    webhookSlack: 'Postet jeden Eintrag in einen Slack-Kanal.',
+    webhookTeams: 'Postet jeden Eintrag in einen Teams-Kanal.',
+    content: 'Erstellt aus den Antworten eine Seite oder ein anderes Element.',
+    setState: 'Genehmigt oder lehnt den Eintrag ab, oder verschiebt ihn in den Spam.',
+  },
   jfbActionChoices: {
     webhookTargetUrl: 'Eine eigene Adresse',
     webhookTargetSlack: 'Slack',

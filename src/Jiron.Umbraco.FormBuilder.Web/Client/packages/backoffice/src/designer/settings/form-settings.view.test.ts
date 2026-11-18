@@ -54,7 +54,7 @@ vi.mock('../preview/look', async (original) => ({
   },
 }));
 
-const { FormSettingsViewElement, readOpenGroups } = await import('./form-settings.view');
+const { FormSettingsViewElement, readPickedGroup } = await import('./form-settings.view');
 
 const CARD = '6f0a2c1e-58b3-4d97-a3e1-2b7c9d40e611';
 
@@ -215,7 +215,7 @@ async function viewOf(definition = DEFINITION, language: string | null = null) {
     must(root.getElementById(id) as E | null, `#${id}`);
   const head = (group: string) => must(root.querySelector<HTMLButtonElement>(`#group-${group}`), `the ${group} group`);
   const open = async (group: string) => {
-    if (head(group).getAttribute('aria-expanded') !== 'true') head(group).click();
+    if (head(group).getAttribute('aria-current') !== 'true') head(group).click();
     await settle(view);
   };
   /** Types into a box as a person does, a step at a time, and leaves it when `leave`. */
@@ -268,17 +268,20 @@ afterEach(() => {
 });
 
 describe('the groups', () => {
-  it('show Submission open and the others closed, each with the line of what is set, and no After sending', async () => {
+  it('list the six groups, each with a line of what is set, and show Submission picked', async () => {
     const { head, root } = await viewOf();
-    expect(head('submission').getAttribute('aria-expanded')).toBe('true');
-    expect([...root.querySelectorAll('.group')].map((group) => group.getAttribute('data-group'))).toEqual([
-      'submission',
-      'availability',
-      'protection',
-      'privacy',
-      'appearance',
-      'developer',
+    const rows = [...root.querySelectorAll<HTMLButtonElement>('nav.groups button')];
+    expect(must(root.querySelector('nav.groups'), 'the list').getAttribute('aria-label')).toBe('Settings groups');
+    expect(rows.map((row) => row.id)).toEqual([
+      'group-submission',
+      'group-availability',
+      'group-protection',
+      'group-privacy',
+      'group-appearance',
+      'group-developer',
     ]);
+    expect(rows.map((row) => row.getAttribute('aria-current'))).toEqual(['true', null, null, null, null, null]);
+    expect(text(root.querySelector('#picked-name'))).toBe('Submission');
     expect(root.querySelector('jfb-outcome-list')).toBeNull();
     const lines = Object.fromEntries(
       ['availability', 'protection', 'appearance', 'developer'].map((group) => [
@@ -295,16 +298,32 @@ describe('the groups', () => {
     expect(root.querySelectorAll('.group-body')).toHaveLength(1);
   });
 
-  it('stay as this browser left them', async () => {
+  it('show the group picked in place of the one before, and keep the pick for the next visit', async () => {
     const first = await viewOf();
-    await first.click(first.head('submission'));
     await first.click(first.head('developer'));
-    expect([...readOpenGroups()]).toEqual(['developer']);
+    expect(text(first.root.querySelector('#picked-name'))).toBe('Developer');
+    expect(first.root.querySelector('.picked')?.getAttribute('data-group')).toBe('developer');
+    expect(first.root.querySelectorAll('.group-body')).toHaveLength(1);
+    expect(readPickedGroup()).toBe('developer');
     document.body.replaceChildren();
     const again = await viewOf();
-    expect([again.head('submission'), again.head('developer')].map((one) => one.getAttribute('aria-expanded'))).toEqual(
-      ['false', 'true'],
-    );
+    expect([again.head('submission'), again.head('developer')].map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
+      'true',
+    ]);
+  });
+
+  it('show a pick alone where one part fits, the focus on its first setting, back with All settings', async () => {
+    const { root, head, click, view } = await viewOf();
+    await click(head('privacy'));
+    expect(root.querySelector('.page')?.classList.contains('in-group')).toBe(true);
+    // jsdom lays nothing out, so the list counts as off the screen, as in a narrow view: the focus goes to the group.
+    expect(root.querySelector('.group-body')?.contains(root.activeElement)).toBe(true);
+    expect(root.activeElement?.localName).toMatch(/^(input|select|textarea)$/);
+    await click(must(root.querySelector<HTMLButtonElement>('.back'), 'All settings'));
+    await settle(view);
+    expect(root.querySelector('.page')?.classList.contains('in-group')).toBe(false);
+    expect(root.activeElement).toBe(head('privacy'));
   });
 });
 
@@ -477,6 +496,7 @@ describe('the submission', () => {
   it('holds the page buttons, the visitor texts, the summary page, the progress, saving for later and the reference under More options', async () => {
     const { root, click, type, choose, box, settings } = await viewOf();
     const more = must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options');
+    expect(root.getElementById(more.getAttribute('aria-controls') ?? '')?.localName).toBe('div');
     expect([text(more), root.getElementById('next-label')]).toEqual(['More options (6)', null]);
     await click(more);
     expect(more.getAttribute('aria-expanded')).toBe('true');
@@ -510,7 +530,7 @@ describe('the availability', () => {
   it('takes opening and closing in the time zone of all sites, and refuses a closing before the opening', async () => {
     const { open, type, why, settings, root } = await viewOf();
     await open('availability');
-    expect(text(root.querySelector('#body-availability .note'))).toBe(
+    expect(text(root.querySelector('.group-body .note'))).toBe(
       'Times are in the time zone set for all sites: Europe/Berlin.',
     );
     await type('opens-at', '2026-12-01T09:00');
@@ -840,13 +860,13 @@ describe('the form check', () => {
     expect(root.activeElement?.id).toBe('resume');
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.developer.contextValues[0]' });
     await settle(view);
-    expect([head('developer').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual([
+    expect([head('developer').getAttribute('aria-current'), root.activeElement?.id]).toEqual([
       'true',
       'context-values',
     ]);
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.privacy.ip' });
     await settle(view);
-    expect([head('privacy').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual(['true', 'ip']);
+    expect([head('privacy').getAttribute('aria-current'), root.activeElement?.id]).toEqual(['true', 'ip']);
     workspace.requestFix({ kind: 'view', view: 'settings', path: '$.settings.privacy.unknown' });
     await settle(view);
     expect(root.activeElement).toBe(head('submission'));
@@ -862,7 +882,7 @@ describe('the form check', () => {
         protection: { level: 'captcha', captcha: { provider: 'recaptchaV3', settings: { score: '1' } } },
       },
     };
-    const { workspace, view, root, open, why } = await viewOf(definition);
+    const { workspace, view, root, open, why, head } = await viewOf(definition);
     workspace.checks.setValue({
       status: 'checked',
       definition,
@@ -877,9 +897,13 @@ describe('the form check', () => {
     await settle(view);
     expect(why('verification')).toHaveLength(1);
     expect(text(root.querySelector('.more-toggle .flag'))).toBe('1 problem');
+    // Each group's row counts its problems, read with its name.
+    expect(text(head('protection').querySelector('.flag'))).toBe('1 problem');
     await open('availability');
+    const access = why('access').length;
     await open('protection');
-    expect([why('access').length, why('protection').length]).toEqual([1, 1]);
+    expect([access, why('protection').length]).toEqual([1, 1]);
+    await open('submission');
     must(root.querySelector<HTMLButtonElement>('.more-toggle'), 'More options').click();
     await settle(view);
     expect([root.querySelector('.more-toggle .flag'), why('reference-digits')]).toEqual([null, ['In English.']]);
@@ -991,15 +1015,19 @@ describe('the language', () => {
     const { workspace, view, root, box, type, settings } = await viewOf(DEFINITION, 'de-DE');
     expect(reading.cultures).toEqual(['de-DE']);
     expect(box('submit-label').placeholder).toBe('Senden');
-    expect(text(root.querySelector('.toolbar .note'))).toContain(
+    expect(text(root.querySelector('.picked .note'))).toContain(
       'Where a German text is empty, visitors see the English one.',
     );
     await type('submit-label', 'Abschicken');
     expect(settings('submission')['submitLabel']).toEqual({ '': '', 'de-DE': 'Abschicken' });
-    const language = must(root.querySelector<HTMLSelectElement>('.language select'), 'the language');
-    language.focus();
-    language.value = 'en-US';
-    language.dispatchEvent(new Event('change'));
+    // The Design view's button, in the group's head: it names the culture shown and lists the languages by name.
+    const button = must(root.querySelector<HTMLButtonElement>('.picked-head .bo-language'), 'the language button');
+    expect(button.getAttribute('aria-label')).toContain('de-DE');
+    const english = [...root.querySelectorAll<HTMLButtonElement>('#jfb-settings-languages button')].find(
+      (item) => !item.hasAttribute('aria-current'),
+    );
+    button.focus();
+    must(english, 'the other language').click();
     await settle(view);
     expect([workspace.language, box('submit-label').value], "null for the site's default").toEqual([null, '']);
   });
@@ -1067,6 +1095,6 @@ describe('a read that fails', () => {
     must(root.querySelector<HTMLElement>('[role="alert"] uui-button'), 'Try again').click();
     await settle(view);
     expect(server.asked).toBe(2);
-    expect(root.querySelectorAll('.group')).toHaveLength(6);
+    expect(root.querySelectorAll('nav.groups button')).toHaveLength(6);
   });
 });

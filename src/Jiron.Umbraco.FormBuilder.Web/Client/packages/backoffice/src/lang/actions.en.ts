@@ -7,7 +7,7 @@ const count = (number: number, one: string, many: string) => (number === 1 ? `1 
 
 export default {
   jfbActions: {
-    empty: 'No actions yet. Add action starts with an email to the team.',
+    empty: 'No actions yet. Add action lists what can run after a submission.',
     readOnly:
       'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
     addAction: 'Add action',
@@ -29,6 +29,8 @@ export default {
     held_verification: "These don't run until the form has email verification:",
     turnOn: 'turn it on in Settings',
     none: 'No actions here yet.',
+    // Under the moment chosen in an action's sheet: "It runs when an entry comes in."
+    runsWhen: (when: string) => `It runs ${when}.`,
     triggerNeeds_approval: 'It runs once the form has manual approval.',
     triggerNeeds_verification: 'It runs once the form has email verification.',
 
@@ -74,8 +76,7 @@ export default {
     undoSwitched: 'Switched an action on or off',
 
     headlineNew: 'New action',
-    whatHappens: 'What happens',
-    whatHappensKept: 'An action keeps what it does. To do something else, add another action.',
+    otherKinds: 'Other kinds',
     name: 'Name',
     trigger: 'When it runs',
     place: 'Run order',

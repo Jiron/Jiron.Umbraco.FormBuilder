@@ -32,6 +32,8 @@ describe("the form's views", () => {
   it("read the view an address shows, Design at the form's own address", () => {
     expect(shownView(`${FORM}/view/settings`)).toBe('settings');
     expect(shownView(`${FORM}/view/settings/`)).toBe('settings');
+    // A dialog Umbraco opens by an address stands after the view's name.
+    expect(shownView(`${FORM}/view/entries/modal/umb-modal-workspace/x`)).toBe('entries');
     expect(shownView(FORM)).toBe(FIRST_VIEW);
     expect(FIRST_VIEW).toBe('design');
   });

@@ -1,17 +1,19 @@
-// What the inspector shows for the selected element (ROADMAP 9.4a, IA 5.1, ADR-0170): its sections in order, Essentials,
-// Validation, Rules, Appearance and Advanced, each with the items it holds. A field's items are the common properties
-// its type's features allow, then the type's settings by their group; a setting the host locks shows read-only, one it
-// hides not at all. Pure, so the sections of every built-in type are tested without the DOM.
+// What the inspector shows for the selected element (ROADMAP 9.4a, IA 5.1, ADR-0170, ADR-0258): its sections in order,
+// Essentials, Validation, Messages, Rules, Appearance, Privacy and Advanced, each with the items it holds, never more
+// than seven: the rest of one that runs over stands in a section of its own right after it, its "more". A field's items
+// are the common properties its type's features allow, then the type's settings by their group; a setting the host
+// locks shows read-only, one it hides not at all. Pure, so the sections of every built-in type are tested without the
+// DOM.
 import type { FieldSettingResponseModel, FieldTypeResponseModel } from '../../api';
 import type { DesignField, LocalizedText } from '../definition';
 import { lacks } from '../translations';
 import { itemsOf, rowsOf } from './option-values';
 
 /** The inspector's sections, in their order. */
-export const SECTIONS = ['essentials', 'validation', 'rules', 'appearance', 'advanced'] as const;
+export const SECTIONS = ['essentials', 'validation', 'messages', 'rules', 'appearance', 'privacy', 'advanced'] as const;
 export type SectionId = (typeof SECTIONS)[number];
 
-/** How many items a section shows before "More options". */
+/** How many items a section holds at most (section 4.13); the rest stand in its "more". */
 export const MOST_SHOWN = 7;
 
 /**
@@ -68,7 +70,12 @@ export type Item =
 export interface Section {
   readonly id: SectionId;
   readonly items: readonly Item[];
+  /** The rest of a section that runs over seven, which stands right after it ("Essentials, more"). */
+  readonly more?: true;
 }
+
+/** A section's own name, for its open state and its element's ids: its id, the rest of one with "-more". */
+export const sectionKey = (section: Section): string => (section.more ? `${section.id}-more` : section.id);
 
 /** Whether a site's own manifest draws the editor a setting names (ROADMAP 15.1, ADR-0233). */
 export type SiteEditors = (editor: string) => boolean;
@@ -82,16 +89,22 @@ const shownSettings = (type: FieldTypeResponseModel, group: string, site: SiteEd
     .map((setting) => ({ kind: 'setting', setting }));
 
 const sections = (by: Partial<Record<SectionId, Item[]>>, rules: boolean): Section[] =>
-  SECTIONS.filter((id) => (id === 'rules' ? rules : (by[id]?.length ?? 0) > 0)).map((id) => ({
-    id,
-    items: by[id] ?? [],
-  }));
+  SECTIONS.filter((id) => (id === 'rules' ? rules : (by[id]?.length ?? 0) > 0)).flatMap((id): Section[] => {
+    const items = by[id] ?? [];
+    return items.length > MOST_SHOWN
+      ? [
+          { id, items: items.slice(0, MOST_SHOWN) },
+          { id, items: items.slice(MOST_SHOWN), more: true },
+        ]
+      : [{ id, items }];
+  });
 
 /**
- * A field's sections: in Essentials its label, help, Required and placeholder; in Validation its type's checks, the
- * checks no type owns that it allows, and the messages it may say; Rules where its type takes them; in Appearance a
- * hidden label and its width in the group's columns; in Advanced its alias, default value, prefill, autocomplete, what
- * is kept of its answer, and a class. A setting whose editor a site's manifest draws shows with the others.
+ * A field's sections: in Essentials its label, help, Required and placeholder; in Validation its type's checks and the
+ * checks no type owns that it allows; in Messages what it says when it refuses an answer; Rules where its type takes
+ * them; in Appearance a hidden label and its width in the group's columns; in Privacy what is kept of its answer; in
+ * Advanced its alias, default value, prefill, autocomplete and a class. A setting whose editor a site's manifest draws
+ * shows with the others.
  */
 export function fieldSections(
   type: FieldTypeResponseModel,
@@ -113,7 +126,7 @@ export function fieldSections(
   if (has('patternCheck')) validation.push({ kind: 'pattern' });
   if (has('uniquePerFormCheck')) validation.push({ kind: 'unique' });
   if (has('matchesFieldCheck')) validation.push({ kind: 'matches' });
-  validation.push(...type.messages.map((message): Item => ({ kind: 'message', message })));
+  const messages = type.messages.map((message): Item => ({ kind: 'message', message }));
 
   const appearance: Item[] = [];
   if (has('hideLabel')) appearance.push({ kind: 'switch', property: 'hideLabel' });
@@ -125,17 +138,19 @@ export function fieldSections(
   if (has('defaultValue')) advanced.push({ kind: 'defaultValue' });
   if (has('prefill')) advanced.push({ kind: 'prefill' });
   if (has('autocomplete')) advanced.push({ kind: 'plain', property: 'autocomplete' });
-  if (type.holdsValue) {
-    // What is kept of the answer stands next to Sensitive, which masks it where Keep the answer removes it (ADR-0225).
-    advanced.push({ kind: 'switch', property: 'sensitive' });
-    advanced.push({ kind: 'keep' });
-    advanced.push({ kind: 'switch', property: 'includeInEmails' });
-  }
   advanced.push(...shownSettings(type, 'advanced', site));
   advanced.push({ kind: 'plain', property: 'cssClass' });
 
+  // What is kept of the answer stands next to Sensitive, which masks it where Keep the answer removes it (ADR-0225).
+  const privacy: Item[] = type.holdsValue
+    ? [{ kind: 'switch', property: 'sensitive' }, { kind: 'keep' }, { kind: 'switch', property: 'includeInEmails' }]
+    : [];
+
   // Rules where the type takes show and hide rules, or require rules.
-  return sections({ essentials, validation, appearance, advanced }, has('visibilityRules') || has('required'));
+  return sections(
+    { essentials, validation, messages, appearance, privacy, advanced },
+    has('visibilityRules') || has('required'),
+  );
 }
 
 /** A group's sections: its title, columns and style, and its rules. */
@@ -156,15 +171,6 @@ export function takesSeveral(type: FieldTypeResponseModel, field: DesignField): 
   if (type.ruleKind === 'choices' || type.ruleKind === 'files') return true;
   const settings = (field['settings'] as Readonly<Record<string, unknown>> | undefined) ?? {};
   return type.multipleSetting && settings['multiple'] === true;
-}
-
-/** The items a section shows before "More options", and the rest. */
-export function splitItems(items: readonly Item[]): {
-  readonly shown: readonly Item[];
-  readonly more: readonly Item[];
-} {
-  if (items.length <= MOST_SHOWN) return { shown: items, more: [] };
-  return { shown: items.slice(0, MOST_SHOWN), more: items.slice(MOST_SHOWN) };
 }
 
 /**

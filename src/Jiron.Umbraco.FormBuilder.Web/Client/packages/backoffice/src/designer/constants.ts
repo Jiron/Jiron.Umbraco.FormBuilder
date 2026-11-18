@@ -15,6 +15,9 @@ export const FORM_DETAIL_STORE_ALIAS = 'Jiron.FormBuilder.Store.FormDetail';
 /** The condition that shows a view or an action by what the user holds on the open form. */
 export const FORM_PERMISSION_CONDITION = 'Jiron.FormBuilder.Condition.FormPermission';
 
+/** Shows the form's footer actions on the views that change the form (ADR-0258). */
+export const FORM_VIEW_CONDITION = 'Jiron.FormBuilder.Condition.FormChangingView';
+
 /**
  * An action's sidebar (ROADMAP 10.2a): named here, which the backoffice loads at its start, so its token loads with the
  * Actions view (ADR-0188).
@@ -32,9 +35,6 @@ export const VERSION_COMMENT_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionComme
 
 /** Review both versions, after a save someone else's save refused (ROADMAP 10.3c, ADR-0200). */
 export const REVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.ReviewBoth';
-
-/** The earlier versions to restore one from, in the form's "..." (ROADMAP 10.3b, ADR-0198). */
-export const VERSION_PICKER_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.VersionPicker';
 
 /** The preview, from the form workspace's footer (ROADMAP 10.3e, ADR-0203). */
 export const PREVIEW_MODAL_ALIAS = 'Jiron.FormBuilder.Modal.Preview';

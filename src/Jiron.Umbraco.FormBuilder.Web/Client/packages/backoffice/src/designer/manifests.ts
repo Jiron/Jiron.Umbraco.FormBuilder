@@ -8,12 +8,12 @@ import {
   ACTION_RUN_MODAL_ALIAS,
   VERSION_COMMENT_MODAL_ALIAS,
   PREVIEW_MODAL_ALIAS,
-  VERSION_PICKER_MODAL_ALIAS,
   REVIEW_MODAL_ALIAS,
   VERSION_COMPARISON_MODAL_ALIAS,
   FORM_DETAIL_REPOSITORY_ALIAS,
   FORM_DETAIL_STORE_ALIAS,
   FORM_PERMISSION_CONDITION,
+  FORM_VIEW_CONDITION,
   FORM_WORKSPACE_ALIAS,
 } from './constants';
 import { CHANGE_TYPE_MODAL_ALIAS } from './change-type/change-type.modal.token';
@@ -30,6 +30,8 @@ import { RULES_OVERVIEW_MODAL_ALIAS } from './rules/rules-overview.modal.token';
 
 const IN_FORM_WORKSPACE = { alias: 'Umb.Condition.WorkspaceAlias', match: FORM_WORKSPACE_ALIAS };
 const holding = (...anyOf: string[]) => ({ alias: FORM_PERMISSION_CONDITION, anyOf });
+/** On the views that change the form only (ADR-0258). */
+const ON_CHANGING_VIEW = { alias: FORM_VIEW_CONDITION };
 
 type ViewElement = NonNullable<Extract<UmbExtensionManifest, { type: 'workspaceView' }>['element']>;
 
@@ -78,6 +80,12 @@ export const manifests: UmbExtensionManifest[] = [
     alias: FORM_PERMISSION_CONDITION,
     name: 'Jiron Form Builder form permission condition',
     api: () => import('./form-permission.condition'),
+  },
+  {
+    type: 'condition',
+    alias: FORM_VIEW_CONDITION,
+    name: 'Jiron Form Builder form changing view condition',
+    api: () => import('./form-view.condition'),
   },
   {
     type: 'modal',
@@ -154,27 +162,9 @@ export const manifests: UmbExtensionManifest[] = [
   },
   {
     type: 'modal',
-    alias: VERSION_PICKER_MODAL_ALIAS,
-    name: 'Jiron Form Builder earlier versions',
-    element: (() => import('./history/version-picker.modal.element')) as never,
-  },
-  {
-    type: 'modal',
     alias: REVIEW_MODAL_ALIAS,
     name: 'Jiron Form Builder review both versions',
     element: (() => import('./conflict/review.modal.element')) as never,
-  },
-  {
-    // First in the form's "..." in the workspace, not in the tree, where the form isn't open (ADR-0198).
-    type: 'entityAction',
-    kind: 'default',
-    alias: 'Jiron.FormBuilder.EntityAction.RestoreEarlier',
-    name: 'Jiron Form Builder restore an earlier version',
-    forEntityTypes: [FORM_ENTITY_TYPE],
-    weight: 1300,
-    api: () => import('./history/restore-earlier.action'),
-    meta: { icon: 'icon-history', label: '#jfbDesigner_restoreEarlier' },
-    conditions: [IN_FORM_WORKSPACE, holding('design')],
   },
   {
     type: 'modal',
@@ -205,7 +195,7 @@ export const manifests: UmbExtensionManifest[] = [
     element: (() => import('./visitor-preview/preview.modal.element')) as never,
   },
   {
-    // The footer reads Preview, Save draft, then the primary Publish... (IA 5.7).
+    // The footer reads Preview, Save draft, then the primary Publish... (IA 5.7), on Design, Settings and Actions.
     type: 'workspaceAction',
     kind: 'default',
     alias: 'Jiron.FormBuilder.WorkspaceAction.Form.Preview',
@@ -213,7 +203,7 @@ export const manifests: UmbExtensionManifest[] = [
     api: () => import('./visitor-preview/preview.action'),
     weight: 110,
     meta: { label: '#jfbDesigner_preview', look: 'secondary' },
-    conditions: [IN_FORM_WORKSPACE, holding('design')],
+    conditions: [IN_FORM_WORKSPACE, holding('design'), ON_CHANGING_VIEW],
   },
   {
     type: 'workspaceAction',
@@ -224,7 +214,7 @@ export const manifests: UmbExtensionManifest[] = [
     // Umbraco puts the higher weight first: Save draft, then the primary Publish... at the end.
     weight: 100,
     meta: { label: '#jfbDesigner_saveDraft', look: 'secondary' },
-    conditions: [IN_FORM_WORKSPACE, holding('design')],
+    conditions: [IN_FORM_WORKSPACE, holding('design'), ON_CHANGING_VIEW],
   },
   {
     type: 'workspaceAction',
@@ -234,6 +224,6 @@ export const manifests: UmbExtensionManifest[] = [
     api: () => import('./publish.action'),
     weight: 90,
     meta: { label: '#jfbDesigner_publish', look: 'primary', color: 'positive' },
-    conditions: [IN_FORM_WORKSPACE, holding('design')],
+    conditions: [IN_FORM_WORKSPACE, holding('design'), ON_CHANGING_VIEW],
   },
 ];

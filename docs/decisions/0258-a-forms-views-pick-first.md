@@ -92,3 +92,26 @@ The History view. "Restore an earlier version…" leaves the form's "…", with 
 - The browser tests that opened a group, "More options" in the inspector, the kinds in the sheet or the "…"'s
   Restore follow; [information-architecture.md](../ux/information-architecture.md) sections 5 to 5.6, the copy guide
   and the guides describe the views as they now are.
+
+## As built (2026-11-18)
+
+What the build settled where the decision left room:
+
+- **The Settings view's row picked shows its name alone** while its group stands beside it: the group's settings say
+  what its line would, so the line is not said twice, as an open group had no line before. In the list alone every
+  row has its line. The group picked keeps its name as a heading, as Umbraco names the open item in its tree and
+  again in its workspace.
+- **No built-in field type runs over seven** in any section once Messages and Privacy hold their own (before, 12 of
+  the 33 types did: Validation held up to 12 items, Advanced 8). "{Section}, more" is therefore only seen with a
+  site's own field type.
+- **An action's sheet is headed by its kind,** for an action already added too; its name stands in the Name box and
+  nowhere else. The kinds' lines are the backoffice's own words, by the kind's name; a site's own kind gets one by
+  adding its word ([extending.md](../extending.md)). No kind is shown as unavailable: the server lists only the
+  kinds a site offers.
+- **The footer is drawn where it holds the form's buttons:** on Design, Settings and Actions, for who may design the
+  form. On the other views, and for a user who may not design, it is not drawn at all, so what an add-on puts in the
+  footer goes with it there. Umbraco's detail workspace editor draws its footer on every view, so the form's editor
+  draws Umbraco's workspace editor itself, which can leave it out, with the rest that the detail editor does (the
+  form's "…", and Umbraco's own words for a form that can't be opened or isn't there).
+- **The view shown is read from the address** wherever its name stands in it, so a dialog that Umbraco opens by an
+  address over a view leaves the footer as it is.

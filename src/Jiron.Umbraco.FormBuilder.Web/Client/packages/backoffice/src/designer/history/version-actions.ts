@@ -1,8 +1,7 @@
-// What History does with a version, wherever it is offered (ROADMAP 10.3a and 10.3b, IA 5.6, ADR-0196, ADR-0198): two
-// versions compared in Umbraco's medium sidebar, in words, and a version restored as a new draft. A restore names what
-// changed in a toast with Undo, which restores the draft before while the draft is still the restored one; after Restore
-// and publish... the caller opens the publish dialog. The History view and Restore an earlier version... in the form's
-// "..." share it.
+// What the History view does with a version, the one door to an earlier one (ROADMAP 10.3a, IA 5.6, ADR-0196,
+// ADR-0258): two versions compared in Umbraco's medium sidebar, in words, and a version restored as a new draft. A
+// restore names what changed in a toast with Undo, which restores the draft before while the draft is still the
+// restored one; after Restore and publish... the caller opens the publish dialog.
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';

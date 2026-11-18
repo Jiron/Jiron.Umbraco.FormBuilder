@@ -13,7 +13,6 @@ export default {
     insightsFailed: "The insights couldn't be shown. Try again in a moment.",
     entriesFailed: "The entries couldn't be shown. Try again in a moment.",
     // The form's "…": its first item, for who may design the form (ADR-0198).
-    restoreEarlier: 'Restore an earlier version…',
     // A save someone else's save refused, from any view (ADR-0200); Review both versions has its words with the History's.
     conflict_headline: "Your draft wasn't saved",
     conflict_text: (who: string, when: string) =>

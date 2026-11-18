@@ -57,8 +57,7 @@ export const inspectorStyles = css`
   }
 
   .tools button,
-  .menu button,
-  .more {
+  .menu button {
     display: inline-flex;
     align-items: center;
     gap: var(--uui-size-space-2);
@@ -74,24 +73,20 @@ export const inspectorStyles = css`
 
   @media (hover: hover) {
     .tools button:hover,
-    .menu button:hover,
-    .more:hover {
+    .menu button:hover {
       background: var(--uui-color-surface-emphasis);
     }
   }
 
-  .tools button,
-  .more {
+  .tools button {
     transition: transform var(--jfb-bo-motion-fast) var(--jfb-bo-motion-ease);
   }
 
-  .tools button:active,
-  .more:active {
+  .tools button:active {
     transform: scale(0.97);
   }
 
-  .tools button:focus-visible,
-  .more:focus-visible {
+  .tools button:focus-visible {
     outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 2px;
   }
@@ -274,14 +269,6 @@ export const inspectorStyles = css`
 
   ${controlStyles}
 
-  .more {
-    justify-self: start;
-    border-color: transparent;
-    padding-inline: var(--uui-size-space-2);
-    color: var(--uui-color-interactive);
-    font-weight: 600;
-  }
-
   /* The option editor's rows (9.4b): a handle, the label, details and remove on one line, the details below it. */
   jfb-option-editor {
     display: contents;
@@ -451,13 +438,11 @@ export const inspectorStyles = css`
   /* With reduced motion the knob jumps and a press stays still; the track's colour keeps its change. */
   @media (prefers-reduced-motion: reduce) {
     input[role='switch']::before,
-    .tools button,
-    .more {
+    .tools button {
       transition: none;
     }
 
-    .tools button:active,
-    .more:active {
+    .tools button:active {
       transform: none;
     }
 

@@ -134,8 +134,10 @@ describe('the inspector', () => {
     expect(buttons.map((button) => [text(button), button.getAttribute('aria-expanded')])).toEqual([
       ['Essentials', 'true'],
       ['Validation Defaults', 'false'],
+      ['Messages Defaults', 'false'],
       ['Rules Always shown', 'false'],
       ['Appearance Defaults', 'false'],
+      ['Privacy Defaults', 'false'],
       ['Advanced Alias: name', 'false'],
     ]);
     expect(buttons.every((button) => root.getElementById(button.getAttribute('aria-controls') ?? ''))).toBe(true);
@@ -258,7 +260,7 @@ describe('the inspector', () => {
   });
 
   it('sends a click as a step of its own, and leaves a property that is as it comes out of the field', async () => {
-    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['essentials', 'advanced', 'appearance']));
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['essentials', 'privacy', 'appearance']));
     const { root, requests } = await inspectorOf('name');
     const required = must(root.querySelector<HTMLInputElement>('#prop-required'), 'Required');
     expect([required.getAttribute('role'), required.checked]).toEqual(['switch', true]);
@@ -313,20 +315,54 @@ describe('the inspector', () => {
     expect(applied(requests[1], { ...NAME, settings: { maxLength: 80 } })).toEqual(NAME);
   });
 
-  it('shows seven items of a section, then More options for the rest', async () => {
-    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['validation']));
-    const { element, root } = await inspectorOf('guests');
-    const body = must(root.querySelector('#section-validation'), 'Validation');
-    const more = must(body.querySelector<HTMLButtonElement>('.more'), 'More options');
-    expect([text(more), more.getAttribute('aria-expanded')]).toEqual(['More options (5)', 'false']);
-    const items = () => [...body.children].filter((child) => child.classList.contains('item'));
-    expect(items()).toHaveLength(7);
-    more.click();
+  it('leads Fix it to a message in Messages and to Sensitive in Privacy, the focus on its box', async () => {
+    const { element, root } = await inspectorOf('name');
+    element.focusItem({ kind: 'message', message: 'required' });
     await settle(element);
-    expect(items()).toHaveLength(12);
-    expect([text(more), more.getAttribute('aria-expanded')]).toEqual(['Fewer options', 'true']);
+    expect([sectionButton(root, 'messages').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual([
+      'true',
+      'prop-message-required',
+    ]);
+    element.focusItem({ kind: 'switch', property: 'sensitive' });
+    await settle(element);
+    expect([sectionButton(root, 'privacy').getAttribute('aria-expanded'), root.activeElement?.id]).toEqual([
+      'true',
+      'prop-sensitive',
+    ]);
+  });
+
+  it("holds a number's checks in Validation and its messages in Messages, neither folding any away", async () => {
+    localStorage.setItem('jfb.designer.inspector.open', JSON.stringify(['validation', 'messages']));
+    const { root } = await inspectorOf('guests');
+    const items = (id: string) =>
+      [...must(root.querySelector(`#section-${id}`), id).children].filter((child) => child.classList.contains('item'));
+    expect([items('validation').length, items('messages').length]).toEqual([6, 6]);
+    expect(root.querySelector('.section-body .more, .section-body [aria-expanded]')).toBeNull();
     const decimals = must(root.querySelector<HTMLInputElement>('#setting-step'), 'Step');
     expect(decimals.getAttribute('inputmode')).toBe('decimal');
+  });
+
+  it("names the rest of a site's type's section that runs over for it, a section of its own, closed", async () => {
+    const text_ = must(builtInTypes['text'], 'the text type');
+    const own = (name: string) => ({
+      ...must(text_.settings[0], 'a setting'),
+      name,
+      label: name,
+      group: 'essentials',
+      editor: 'text',
+      lock: null,
+    });
+    const types = {
+      ...builtInTypes,
+      text: { ...text_, settings: [...text_.settings, ...['a', 'b', 'c', 'd'].map(own)] },
+    };
+    const { element, root } = await inspectorOf('name', { types });
+    const more = sectionButton(root, 'essentials-more');
+    expect([text(more).startsWith('Essentials, more'), more.getAttribute('aria-expanded')]).toEqual([true, 'false']);
+    more.click();
+    await settle(element);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    expect([...readOpen()]).toEqual(['essentials', 'essentials-more']);
   });
 
   it("shows a locked setting's value and key, read-only, and a hidden one not at all (ADR-0060)", async () => {

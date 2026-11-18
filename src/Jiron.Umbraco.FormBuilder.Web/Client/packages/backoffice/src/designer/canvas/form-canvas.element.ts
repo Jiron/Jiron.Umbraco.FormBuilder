@@ -41,12 +41,14 @@ import {
   FIELD_REQUEST,
   moreMenu,
   popoverMenu,
+  popoverMenuStyles,
   type FieldRequest,
   type FieldState,
   type FieldWords,
 } from './canvas-field.element';
 import './canvas-field.element';
 import { canvasChrome } from './canvas.styles';
+import { languageButton, languageButtonStyles } from './language-button';
 import { CANVAS_WIDTHS, type CanvasWidth } from './widths';
 
 /** Umbraco's device icons for the widths, as its own preview shows them. */
@@ -156,7 +158,7 @@ export class FormCanvasElement extends UmbLitElement {
     _narrowed: { state: true },
   };
 
-  static override styles = [jfbBackofficeTokens, canvasChrome];
+  static override styles = [jfbBackofficeTokens, popoverMenuStyles, languageButtonStyles, canvasChrome];
 
   declare definition: DesignDefinition;
   /** The dictionary items the draft's texts name in the language shown, as the server finds them (ADR-0228). */
@@ -1131,31 +1133,13 @@ export class FormCanvasElement extends UmbLitElement {
   // The language the canvas and the inspector show, on a site with more than one: a button that shows its culture and
   // opens the languages by name.
   #languages(): TemplateResult | typeof nothing {
-    const languages = this.look?.languages ?? [];
-    if (languages.length < 2) return nothing;
-    const shown = this.#culture();
-    const current = languages.find((language) => language.culture.toLowerCase() === shown.toLowerCase());
-    const culture = current?.culture ?? shown;
-    const label = this.localize.term('jfbDesigner_languageButton', culture, current?.name ?? culture);
-    return html`<button
-        type="button"
-        class="bo-language"
-        popovertarget="jfb-canvas-languages"
-        aria-label=${label}
-        title=${label}
-      >
-        <span>${culture}</span><uui-icon name="icon-navigation-down" aria-hidden="true"></uui-icon>
-      </button>
-      ${popoverMenu(
-        'jfb-canvas-languages',
-        languages.map((language) => ({
-          label: language.name,
-          current: language === current,
-          act: () => {
-            if (language !== current) this.#ask({ kind: 'culture', culture: language.culture });
-          },
-        })),
-      )}`;
+    return languageButton(
+      this.localize,
+      'jfb-canvas-languages',
+      this.look?.languages ?? [],
+      this.#culture(),
+      (culture) => this.#ask({ kind: 'culture', culture }),
+    );
   }
 
   // A click on the sheet's empty room, or beside the sheet, lets the selection go; a click on a control is the control's.

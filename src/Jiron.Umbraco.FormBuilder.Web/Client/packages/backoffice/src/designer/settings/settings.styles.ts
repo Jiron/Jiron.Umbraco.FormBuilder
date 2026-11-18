@@ -1,70 +1,41 @@
-// The Settings view's look (ROADMAP 10.1a, IA 5.2, docs/ux/tokens.md): one column of groups on Umbraco's surface, each a
-// box whose header opens it, the settings' boxes as the inspector draws them (control.styles.ts), and nothing that moves
-// when a group opens: groups open many times a day, so they open at once. On a phone a group's line goes under its name
-// and two boxes side by side go one under the other, so no text is squashed.
+// The Settings view's look (ROADMAP 10.1a, IA 5.2, docs/ux/tokens.md, ADR-0258): the groups as a list on Umbraco's
+// surface, each row its name and its line, the row picked marked as Umbraco marks the open item and without its line,
+// and beside it the group picked, its settings' boxes as the inspector draws them (control.styles.ts) and no wider than
+// a text box reads well. Where the view has no room for both, the list stands alone, every row with its line, or the
+// group in its place. On a phone two boxes side by side go one under the other, so no text is squashed.
 import { css } from '@umbraco-cms/backoffice/external/lit';
 
 export const settingsStyles = css`
   :host {
+    container-type: inline-size;
     display: block;
     padding: var(--uui-size-layout-1);
   }
 
+  /* The view takes the workspace's width: the list, and the group picked at a width text boxes read well in. */
   .page {
-    container-type: inline-size;
     display: grid;
-    gap: var(--uui-size-space-5);
-    max-inline-size: 760px;
-    margin-inline: auto;
+    grid-template-columns: minmax(13rem, 18rem) minmax(0, 46rem);
+    gap: var(--uui-size-space-6);
+    align-items: start;
   }
 
-  .toolbar {
+  .groups ul {
     display: grid;
-    gap: var(--uui-size-space-3);
-  }
-
-  .language {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--uui-size-space-3);
-    font-weight: 600;
-  }
-
-  .language select {
-    inline-size: auto;
-    max-inline-size: 100%;
-    font-weight: 400;
-  }
-
-  .note {
     margin: 0;
-    color: var(--jfb-bo-color-text-muted);
-    font-size: var(--uui-type-small-size);
-  }
-
-  .group {
+    padding: var(--uui-size-space-2) 0;
     border-radius: var(--uui-border-radius);
     background: var(--uui-color-surface);
     box-shadow: var(--uui-shadow-depth-1);
+    list-style: none;
   }
 
-  .group-head {
-    margin: 0;
-    font: inherit;
-  }
-
-  .group-head button {
+  .groups button {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    column-gap: var(--uui-size-space-3);
-    row-gap: var(--uui-size-space-1);
-    align-items: center;
+    gap: var(--uui-size-space-1);
     inline-size: 100%;
-    min-block-size: 52px;
-    padding: var(--uui-size-space-4) var(--uui-size-space-5);
+    padding: var(--uui-size-space-3) var(--uui-size-space-5);
     border: 0;
-    border-radius: var(--uui-border-radius);
     background: none;
     color: inherit;
     font: inherit;
@@ -73,12 +44,17 @@ export const settingsStyles = css`
   }
 
   @media (hover: hover) {
-    .group-head button:hover {
+    .groups button:hover {
       background: var(--uui-color-surface-emphasis);
     }
   }
 
-  .group-head button:focus-visible {
+  .groups button[aria-current='true'] {
+    background: var(--uui-color-current);
+    color: var(--uui-color-current-contrast);
+  }
+
+  .groups button:focus-visible {
     outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: -2px;
   }
@@ -87,12 +63,13 @@ export const settingsStyles = css`
     font-weight: 700;
   }
 
-  /* A closed group's line: under the name on a phone, at the end of the row where there is room for it. */
   .summary {
-    grid-column: 2;
-    color: var(--jfb-bo-color-text-muted);
     font-size: var(--uui-type-small-size);
     overflow-wrap: anywhere;
+  }
+
+  .groups button:not([aria-current='true']) .summary {
+    color: var(--jfb-bo-color-text-muted);
   }
 
   .flag {
@@ -104,15 +81,80 @@ export const settingsStyles = css`
     color: var(--jfb-bo-color-warning-text);
   }
 
-  @container (min-width: 560px) {
-    .group-head button {
-      grid-template-columns: auto max-content minmax(0, 1fr);
+  .picked {
+    display: grid;
+    gap: var(--uui-size-space-4);
+  }
+
+  .picked-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--uui-size-space-3);
+    min-block-size: 36px;
+  }
+
+  .picked-head h2 {
+    margin: 0;
+    font-size: var(--uui-type-h5-size);
+  }
+
+  .picked-head .bo-language {
+    margin-inline-start: auto;
+  }
+
+  .note {
+    margin: 0;
+    color: var(--jfb-bo-color-text-muted);
+    font-size: var(--uui-type-small-size);
+  }
+
+  /* "All settings", only where the group stands in the list's place. */
+  .back {
+    display: none;
+    align-items: center;
+    gap: var(--uui-size-space-2);
+    min-block-size: 36px;
+    padding: 0 var(--uui-size-space-2);
+    border: 0;
+    border-radius: var(--uui-border-radius);
+    background: none;
+    color: var(--uui-color-interactive);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .back:focus-visible {
+    outline: 2px solid var(--jfb-bo-color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Beside its group, the row picked says its name alone: its settings say the rest (say it once), as an open group
+     had no line. The rows keep their height, so a pick moves none of them. */
+  @container (min-width: 700px) {
+    .groups button {
+      align-content: center;
+      min-block-size: calc(2lh + var(--uui-size-space-1) + 2 * var(--uui-size-space-3));
     }
 
-    .summary {
-      grid-column: 3;
-      justify-self: end;
-      text-align: end;
+    .groups button[aria-current='true'] .summary {
+      display: none;
+    }
+  }
+
+  @container (max-width: 699px) {
+    .page {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .page:not(.in-group) .picked,
+    .page.in-group .groups {
+      display: none;
+    }
+
+    .back {
+      display: inline-flex;
     }
   }
 
@@ -120,7 +162,13 @@ export const settingsStyles = css`
     display: grid;
     gap: var(--uui-size-space-6);
     padding: var(--uui-size-space-5) var(--uui-size-space-5) var(--uui-size-space-6);
-    border-block-start: 1px solid var(--uui-color-divider-standalone);
+    border-radius: var(--uui-border-radius);
+    background: var(--uui-color-surface);
+    box-shadow: var(--uui-shadow-depth-1);
+  }
+
+  .group-body:focus-visible {
+    outline: 2px solid var(--jfb-bo-color-focus);
   }
 
   .more-toggle {
@@ -153,6 +201,10 @@ export const settingsStyles = css`
   .more-toggle:focus-visible {
     outline: 2px solid var(--jfb-bo-color-focus);
     outline-offset: 2px;
+  }
+
+  .more-body[hidden] {
+    display: none;
   }
 
   .more-body {

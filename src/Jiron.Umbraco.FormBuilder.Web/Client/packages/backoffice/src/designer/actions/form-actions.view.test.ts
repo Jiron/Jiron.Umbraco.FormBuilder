@@ -362,7 +362,9 @@ describe('the Actions view', () => {
   it('starts empty with one sentence, Add action its only button', async () => {
     const { root, sections } = await viewOf(definitionWith([]));
     expect(sections()).toEqual([]);
-    expect(text(root.querySelector('.empty'))).toBe('No actions yet. Add action starts with an email to the team.');
+    expect(text(root.querySelector('.empty'))).toBe(
+      'No actions yet. Add action lists what can run after a submission.',
+    );
   });
 
   it("names each card's action by what it does, its rule in words, and a site's own type by its type", async () => {
