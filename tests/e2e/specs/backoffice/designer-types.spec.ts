@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { openSections } from '../../support/form-views.ts';
 import { addFieldOf, openPicker, pick, pickerClosed, pickerItem } from '../../support/picker.ts';
 
 // Every built-in type and changing a field's type (ROADMAP 9.4d, ADR-0174): a field of every built-in type is added
@@ -29,14 +30,6 @@ async function fieldsOf(api: APIRequestContext, key: string): Promise<DraftField
     definition: { pages: { groups: { fields: DraftField[] }[] }[] };
   };
   return draft.definition.pages.flatMap((page) => page.groups.flatMap((group) => group.fields));
-}
-
-/** Opens every section of the inspector and every "More options" in it. */
-async function openAll(inspector: Locator) {
-  const closed = inspector.locator('.section-head button[aria-expanded="false"]');
-  while ((await closed.count()) > 0) await closed.first().click();
-  const more = inspector.locator('button.more[aria-expanded="false"]');
-  while ((await more.count()) > 0) await more.first().click();
 }
 
 /** Types into a box and leaves it, as a person does. */
@@ -310,7 +303,7 @@ test('a field of every built-in type is added through the picker and configured 
   await expect(pickerItem(page, /^Captcha placement/)).toHaveAttribute('aria-disabled', 'true');
   await page.keyboard.press('Escape');
   await pickerClosed(page);
-  await openAll(inspector);
+  await openSections(inspector);
   await axeInside(page, 'jfb-designer-inspector');
 
   for (const each of TYPES) {
@@ -318,11 +311,11 @@ test('a field of every built-in type is added through the picker and configured 
       // A pick from Add field goes to the page's end, and selects the new one.
       await pick(page, addFieldOf(design), each.name);
       await expect(inspector.getByRole('heading', { name: `${each.name} field` })).toBeVisible();
-      await openAll(inspector);
+      await openSections(inspector);
       const help = inspector.getByLabel('Help text', { exact: true });
       if ((await help.count()) > 0) await typeIn(help, `Help for the ${each.name.toLowerCase()}`);
       await each.configure(inspector, page);
-      await openAll(inspector);
+      await openSections(inspector);
       await axeInside(page, 'jfb-designer-inspector');
     });
   }

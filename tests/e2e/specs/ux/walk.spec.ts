@@ -3,6 +3,20 @@ import { join } from 'node:path';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { API, blankForm, contactForm, created, formOf, KEY, unique } from '../../support/forms-api.ts';
+import {
+  actionSheetOf,
+  addAction,
+  groupPicked,
+  groupRow,
+  groupsList,
+  kindsOf,
+  openSection as openInspectorSectionOf,
+  openSettingsMore,
+  pickGroup,
+  pickKindOfChoice,
+  settingsViewOf,
+  type SettingsGroup,
+} from '../../support/form-views.ts';
 import { STUB_URL } from '../../support/paths.ts';
 import { addFieldOf, openPasteQuestions, openPicker, pickerOf } from '../../support/picker.ts';
 import { openSearch } from '../../support/search.ts';
@@ -474,11 +488,9 @@ async function openAfterSending(design: Locator): Promise<Locator> {
 /** Scrolls an editor into the middle of its scroll box; an editor drawn without a box of its own is never "visible". */
 const scrollTo = (editor: Locator) => editor.evaluate((element) => element.scrollIntoView({ block: 'center' }));
 
-/** Opens an inspector section by its id, unless it is open. */
-async function openInspectorSection(design: Locator, id: string): Promise<void> {
-  const head = design.locator(`jfb-designer-inspector [data-section="${id}"] .section-head button`);
-  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
-}
+/** Opens a section of the designer's inspector by its key, unless it is open. */
+const openInspectorSection = (design: Locator, key: string) =>
+  openInspectorSectionOf(design.locator('jfb-designer-inspector'), key);
 
 for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
   test(`the walk, ${comboName(combo)}`, async ({ page, browser, request, loginAs, apiAs }, testInfo) => {
@@ -642,6 +654,12 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await select(page, design, fieldOf(feedback, 'textarea'));
       for (const id of ['validation', 'appearance', 'advanced']) await openInspectorSection(design, id);
     });
+    // Messages and Privacy, which hold what ran over in Validation and Advanced (22.3, ADR-0258).
+    await walk.shot('inspector-messages', async () => {
+      const design = await openDesign(page, made.feedback);
+      await select(page, design, fieldOf(feedback, 'textarea'));
+      for (const id of ['messages', 'privacy']) await openInspectorSection(design, id);
+    });
     await walk.shot('options', async () => {
       const design = await openDesign(page, made.feedback);
       await select(page, design, fieldOf(feedback, 'dropdown'));
@@ -724,28 +742,28 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       ).toBeVisible();
     });
 
-    // The Settings view (10.1a): Submission open with the others closed, More options, each other group opened in
-    // turn, and the form check's problem under its setting.
-    const settingsView = page.locator('jfb-form-settings-view');
+    // The Settings view (10.1a, 22.3): the groups to pick from with Submission picked beside them (on a phone and a
+    // tablet the list alone), Submission's More options, each other group picked in turn, and the form check's problem
+    // under its setting.
+    const settingsView = settingsViewOf(page);
     const openSettings = async (key: string) => {
       await page.goto(`${workspaceOf(key)}/view/settings`);
-      await expect(settingsView.locator('#group-submission')).toBeVisible();
+      await expect(groupRow(settingsView, 'submission')).toBeAttached();
     };
-    const openSettingsGroup = async (group: string) => {
-      const head = settingsView.locator(`#group-${group}`);
-      if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
-      await expect(head).toHaveAttribute('aria-expanded', 'true');
-      await scrollTo(head);
+    const openSettingsGroup = async (group: SettingsGroup) => {
+      await pickGroup(settingsView, group);
+      await scrollTo(groupPicked(settingsView));
     };
     await walk.shot('settings', async () => {
       await openSettings(made.feedback);
+      await expect(groupsList(settingsView)).toBeVisible();
     });
     await walk.shot('settings-more', async () => {
       await openSettings(made.feedback);
-      await settingsView.locator('.more-toggle').click();
+      await openSettingsMore(settingsView);
       await scrollTo(settingsView.locator('#reference-prefix'));
     });
-    for (const group of ['availability', 'protection', 'appearance', 'developer'])
+    for (const group of ['availability', 'protection', 'appearance', 'developer'] as const)
       await walk.shot(`settings-${group}`, async () => {
         await openSettings(made.feedback);
         await openSettingsGroup(group);
@@ -774,9 +792,10 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await expect(outcomeSidebar.locator('#address')).toBeVisible();
       await expect(outcomeSidebar.locator('jfb-outcome-preview .said')).toBeVisible();
     });
-    // The Actions view (10.2a): the cards by trigger, an action's sidebar, and a new action's.
+    // The Actions view (10.2a, 22.3): the cards by trigger, an action's sidebar, a new action's kinds, and a new
+    // action's sheet once its kind is picked.
     const actionsView = page.locator('jfb-form-actions-view');
-    const actionSidebar = page.locator('jfb-action-modal');
+    const actionSidebar = actionSheetOf(page);
     await walk.shot('actions', async () => {
       await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
       await expect(actionsView.locator('jfb-action-list .card').first()).toBeVisible();
@@ -786,21 +805,22 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await actionsView.locator('jfb-action-list .open').first().click();
       await expect(actionSidebar.locator('#name')).toBeVisible();
     });
-    await walk.shot('action-new', async () => {
+    await walk.shot('action-kinds', async () => {
       await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
-      await actionsView.locator('#add').click();
-      await expect(actionSidebar.locator('input[name="what-happens"]:checked')).toBeVisible();
+      await addAction(page, actionsView);
+      await expect(kindsOf(actionSidebar).first()).toBeFocused();
     });
-    // A new action of each other kind, with its own editor (10.2d, 10.2e): a webhook, content, the entry's state.
+    // A new action of each kind, with its own editor (10.2d, 10.2e): the team's email, a webhook, content, the entry's
+    // state.
     for (const [kind, choice] of [
+      ['action-new', 'email:0'],
       ['action-webhook', 'webhook:0'],
       ['action-content', 'content'],
       ['action-set-state', 'setState'],
     ] as const) {
       await walk.shot(kind, async () => {
         await page.goto(`${workspaceOf(made.withActions)}/view/actions`);
-        await actionsView.locator('#add').click();
-        await actionSidebar.locator(`input[name="what-happens"][value="${choice}"]`).check();
+        await pickKindOfChoice(await addAction(page, actionsView), choice);
         await expect(actionSidebar.locator('[id^="setting-"]').first()).toBeVisible();
       });
     }
@@ -845,8 +865,8 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await expect(actionsView.locator('jfb-action-list .untranslated').first()).toBeVisible();
     });
 
-    // The History view (10.3a, 10.3b): a form's versions, with its draft saves, one beside the current draft, two
-    // compared, and an earlier version chosen from the form's "...".
+    // The History view (10.3a, 10.3b): a form's versions, with its draft saves, one beside the current draft, and two
+    // compared; the History view is the one way to an earlier version (22.3).
     const historyView = page.locator('jfb-form-history-view');
     const comparison = page.locator('jfb-version-comparison-modal');
     const openHistory = async (key: string) => {
@@ -879,12 +899,6 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await boxes.nth(count - 2).click();
       await historyView.locator('.toolbar uui-button').first().click();
       await expect(comparison.locator('.part').first()).toBeVisible();
-    });
-    await walk.shot('history-picker', async () => {
-      await openDesign(page, made.versioned);
-      await page.locator('umb-workspace-entity-action-menu uui-button').first().click();
-      await page.locator(entityAction('RestoreEarlier')).filter({ visible: true }).first().click();
-      await expect(page.locator('jfb-version-picker-modal .version').first()).toBeVisible();
     });
     // Publish with what changed since the published version (10.3d).
     await walk.shot('publish-changes', async () => {
@@ -1229,7 +1243,9 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     }
 
     walk.write(combo);
-    // A screen the walk could not reach is the walk's to fix, so it fails, after the report is written.
+    // A screen that opens a section inside a section fails (22.3), and so does a screen the walk could not reach, which
+    // is the walk's to fix, after the report is written.
+    expect.soft(walk.reports.flatMap((report) => report.folds.map((fold) => `${report.screen}: ${fold}`))).toEqual([]);
     expect(walk.reports.filter((report) => report.error).map((report) => `${report.screen}: ${report.error}`)).toEqual(
       [],
     );

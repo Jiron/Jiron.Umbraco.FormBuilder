@@ -2,6 +2,7 @@ import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { openSections } from '../../support/form-views.ts';
 import { waitForStartupWork } from '../../support/host-health.ts';
 import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
@@ -72,8 +73,7 @@ test('a locked setting shows read-only with its value and key, and a hidden one 
   const design = page.locator('jfb-form-design-view');
   await design.getByRole('button', { name: /^Name, / }).click();
   const inspector = design.locator('jfb-designer-inspector');
-  const closed = inspector.locator('.section-head button[aria-expanded="false"]');
-  while ((await closed.count()) > 0) await closed.first().click();
+  await openSections(inspector);
 
   const locked = inspector.locator('[data-locked="maxLength"]');
   await expect(locked).toContainText('Maximum length');
@@ -132,8 +132,7 @@ test('a change into a type whose setting the site locks neither carries that set
 
   const inspector = design.locator('jfb-designer-inspector');
   await expect(inspector.getByRole('heading', { name: 'Dropdown field' })).toBeVisible();
-  const closed = inspector.locator('.section-head button[aria-expanded="false"]');
-  while ((await closed.count()) > 0) await closed.first().click();
+  await openSections(inspector);
   await expect(inspector.locator('[data-locked="maxSelections"] .locked')).toHaveText('3');
   await expect(inspector.getByLabel('Minimum options chosen')).toHaveValue('2');
   await page.getByRole('button', { name: 'Save draft' }).click();

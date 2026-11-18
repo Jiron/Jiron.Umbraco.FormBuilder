@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { openSections } from '../../support/form-views.ts';
 import { addFieldOf, openPicker, pickerClosed, pickerItem } from '../../support/picker.ts';
 
 // A site's own extensions of the designer (ROADMAP 15.1, ADR-0233), from the samples this host turns on (ADR-0234): the
@@ -88,8 +89,7 @@ test("a site's setting editor draws the colours under their label, and its previ
   await expect.poll(() => shownNames(preview)).toEqual(['Forest', 'Red', 'Sun']);
 
   // The built-in switch beside it hides the names, which stay the swatches' text for a screen reader.
-  const closed = inspector.locator('.section-head button[aria-expanded="false"]');
-  while ((await closed.count()) > 0) await closed.first().click();
+  await openSections(inspector);
   await inspector.getByRole('switch', { name: "Show the colours' names" }).uncheck();
   await expect(preview.locator('.name').first()).toHaveClass(/hidden/);
 

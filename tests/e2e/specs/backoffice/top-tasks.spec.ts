@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '../../fixtures.ts';
+import { actionSheetOf, kindNamed } from '../../support/form-views.ts';
 import { API, contactForm, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
 import { addFieldOf, pickerClosed, pickerItem, pickerSearch } from '../../support/picker.ts';
@@ -8,13 +9,13 @@ import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { shownRow } from '../../support/tree.ts';
 import { goToPlace, goToTab, type Clicker } from '../../support/places.ts';
 
-// The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer and
-// the two that the designer's redraw changed (7 and 10, ROADMAP 22.1), the
-// entry handler, the viewer and the privacy officer, and the three of a user without grants, each done with the mouse
-// from the section's start page at 1440 px, and each path's clicks counted as the document counts them and held to the
-// document's number. The administrator's tasks change what the whole site reads, so the site-wide specs that change
-// and restore those settings count theirs (settings.spec.ts, access.spec.ts), and the setup checklist's own host counts
-// the checklist's (setup-checklist.spec.ts).
+// The top tasks on the built screens (ROADMAP 16.6, docs/ux/top-tasks.md): the first five tasks of the designer and the
+// two that the designer's redraw changed (7 and 10, ROADMAP 22.1) and the one Add action's kinds changed (11, ROADMAP
+// 22.3), the entry handler, the viewer and the privacy officer, and the three of a user without grants, each done with
+// the mouse from the section's start page at 1440 px, and each path's clicks counted as the document counts them and
+// held to the document's number. The administrator's tasks change what the whole site reads, so the site-wide specs
+// that change and restore those settings count theirs (settings.spec.ts, access.spec.ts), and the setup checklist's own
+// host counts the checklist's (setup-checklist.spec.ts).
 
 const SECTION = '/umbraco/section/jfb-forms';
 
@@ -157,6 +158,25 @@ test('the designer starts forms, adds a field, rewords a question and makes it c
   await outcome.getByRole('button', { name: 'Update', exact: true }).click();
   await expect(outcome).toHaveCount(0);
   expectTaskClicks(clicks, 'Designer', 10);
+
+  // 11. The sales team emailed about every entry: Actions, Add action, the kind, then its recipients and Add.
+  await start(page);
+  clicks = new ClickCounter();
+  await clicks.click(await shownRow(page, name));
+  await expect(fields.first()).toBeVisible({ timeout: 60_000 });
+  await clicks.click(page.getByRole('tab', { name: 'Actions', exact: true }));
+  const actions = page.locator('jfb-form-actions-view');
+  await clicks.click(actions.getByRole('button', { name: 'Add action' }));
+  const sheet = actionSheetOf(page);
+  await clicks.click(kindNamed(sheet, 'Email the team'));
+  const to = sheet.getByRole('group', { name: 'To', exact: true });
+  await to.locator('summary', { hasText: 'Add recipient' }).click();
+  await to.getByRole('textbox', { name: 'An address' }).fill('sales@example.com');
+  await to.getByRole('textbox', { name: 'An address' }).press('Enter');
+  await sheet.locator('[slot="actions"]').getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(actions.locator('jfb-action-list .card')).toHaveCount(1);
+  expectTaskClicks(clicks, 'Designer', 11);
 });
 
 test('the entry handler opens the Inbox, reads, approves, rejects and moves an entry to Spam in the clicks the document says', async ({

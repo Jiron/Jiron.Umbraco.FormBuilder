@@ -1,5 +1,6 @@
 import { expect, test } from '../../fixtures.ts';
 import { logicCome } from '../../support/form.ts';
+import { openSettings, openSettingsMore } from '../../support/form-views.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
 import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
 
@@ -31,10 +32,8 @@ test("a designer rewords a message in the form's settings, and the visitor reads
     { type: 'text', alias: 'city', label: { '': 'City' } },
   ]);
   await loginAs('designer');
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/settings`);
-  const view = page.locator('jfb-form-settings-view');
-  await view.locator('.more-toggle').click();
+  const view = await openSettings(page, `/umbraco/section/jfb-forms/workspace/jfb-form/edit/${key}/view/settings`);
+  await openSettingsMore(view);
   const editor = view.locator('jfb-visitor-texts');
   const choose = editor.getByLabel('Reword a text');
   await expect(choose).toBeVisible();

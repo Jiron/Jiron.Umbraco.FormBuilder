@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { showAfterSending } from '../../support/designer-row.ts';
+import { groupsList, settingsViewOf } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 
 // After sending on the Design view (ROADMAP 10.1b and 22.1, IA 5.1, ADR-0185, ADR-0256). The outcomes are a list in the
@@ -197,9 +198,8 @@ test('After sending edits each outcome in its sidebar, with its rule and its mes
 
   // The Settings view holds no After sending: its groups are the form's settings alone (ADR-0256).
   await page.getByRole('tab', { name: 'Settings', exact: true }).click();
-  const settings = page.locator('jfb-form-settings-view');
-  await expect(settings.locator('.group').first()).toBeVisible();
-  await expect(settings.locator('.group')).toHaveCount(6);
+  const settings = settingsViewOf(page);
+  await expect(groupsList(settings).locator('button')).toHaveCount(6);
   await expect(settings.locator('#group-after')).toHaveCount(0);
   await expect(settings.locator('jfb-outcome-list')).toHaveCount(0);
 });
@@ -255,7 +255,7 @@ test("the form check's Fix it of an outcome opens its sidebar on the setting on 
   // From the publish dialog on the Settings view, Fix it leads to the Design view's After sending, the sidebar opening
   // once the router stays still (ADR-0227).
   await page.getByRole('tab', { name: 'Settings', exact: true }).click();
-  await expect(page.locator('jfb-form-settings-view .group').first()).toBeVisible();
+  await expect(groupsList(settingsViewOf(page))).toBeVisible();
   await page.getByRole('button', { name: 'Publish\u2026' }).click();
   const dialog = page.locator('jfb-publish-modal');
   await dialog.getByRole('button', { name: 'Fix it: After sending: outcome 1' }).click();

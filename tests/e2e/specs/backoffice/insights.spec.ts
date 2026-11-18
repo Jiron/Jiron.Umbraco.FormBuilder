@@ -2,6 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formOf, formWithFields, unique } from '../../support/forms-api.ts';
+import { pickGroup, rowLine, settingsViewOf } from '../../support/form-views.ts';
 import { STATIC_SITE_WAIT_MS, startStaticSite, type StaticSite } from '../../support/static-site.ts';
 
 // Insights (ROADMAP 11.5, IA 5.5, ADR-0211): a form of two pages on a headless page of its own origin sends its
@@ -162,11 +163,9 @@ test('the beacons arrive, the Insights view fills, and turning the form off in i
 
   // The form's own switch, the first of its Privacy group, off, saved and published.
   await page.goto(`${SECTION}/${key}/view/settings`);
-  const settings = page.locator('jfb-form-settings-view');
-  const head = settings.locator('#group-privacy');
-  await expect(head).toBeVisible({ timeout: 60_000 });
-  await expect(head).toContainText('Insights on');
-  await head.click();
+  const settings = settingsViewOf(page);
+  await expect(rowLine(settings, 'privacy')).toContainText('Insights on', { timeout: 60_000 });
+  await pickGroup(settings, 'privacy');
   const toggle = settings.getByRole('switch', { name: 'Insights' });
   await expect(toggle).toBeChecked();
   await toggle.uncheck();

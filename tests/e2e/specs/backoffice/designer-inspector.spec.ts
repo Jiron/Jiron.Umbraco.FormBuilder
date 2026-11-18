@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
+import { openSections } from '../../support/form-views.ts';
 import { chooseLanguage } from '../../support/designer-row.ts';
 
 // The inspector (ROADMAP 9.4a, ADR-0170): every setting of the text, number and date types set with the plain editors
@@ -43,15 +44,6 @@ async function draftOf(api: APIRequestContext, key: string) {
   return { pages: draft.definition.pages, fields };
 }
 
-/** Opens every section of the inspector and every "More options" in it. */
-async function openAll(inspector: Locator) {
-  // Each click takes a match away, so the first closed one is clicked until none is left.
-  const closed = inspector.locator('.section-head button[aria-expanded="false"]');
-  while ((await closed.count()) > 0) await closed.first().click();
-  const more = inspector.locator('button.more[aria-expanded="false"]');
-  while ((await more.count()) > 0) await more.first().click();
-}
-
 /** Types into a box and leaves it, as a person does. */
 async function typeIn(box: Locator, value: string) {
   await box.fill(value);
@@ -84,7 +76,7 @@ test('an undo while the save is on its way stays, unsaved against what was saved
   const design = await open(page, key);
   const inspector = design.locator('jfb-designer-inspector');
   await design.getByRole('button', { name: /^Your name, / }).click();
-  await openAll(inspector);
+  await openSections(inspector);
   await typeIn(inspector.getByLabel('Text before'), 'Dr.');
 
   // The save's answer is held back until the undo is done.
@@ -134,7 +126,7 @@ test('every setting of the text, number and date types is set with the plain edi
   // The text field: its lengths, the texts before and after, and the counter.
   await design.getByRole('button', { name: /^Your name, / }).click();
   await expect(inspector.getByRole('heading', { name: 'Short text field' })).toBeVisible();
-  await openAll(inspector);
+  await openSections(inspector);
   await typeIn(inspector.getByLabel('Minimum length'), '2');
   await typeIn(inspector.getByLabel('Maximum length'), '9000');
   await expect(inspector.getByText('Enter 4000 or less.')).toBeVisible();
@@ -149,7 +141,7 @@ test('every setting of the text, number and date types is set with the plain edi
   // The number field: its limits, step and decimals, the texts around it.
   await design.getByRole('button', { name: /^Guests, / }).click();
   await expect(inspector.getByRole('heading', { name: 'Number field' })).toBeVisible();
-  await openAll(inspector);
+  await openSections(inspector);
   await typeIn(inspector.getByLabel('Minimum', { exact: true }), '1');
   await typeIn(inspector.getByLabel('Maximum', { exact: true }), '12');
   await typeIn(inspector.getByLabel('Step', { exact: true }), '0.5');
@@ -161,7 +153,7 @@ test('every setting of the text, number and date types is set with the plain edi
   // The date field: today by default, the earliest from today, the latest a date, weekdays only, dates left out.
   await design.getByRole('button', { name: /^Arrival, / }).click();
   await expect(inspector.getByRole('heading', { name: 'Date field' })).toBeVisible();
-  await openAll(inspector);
+  await openSections(inspector);
   await inspector.getByRole('switch', { name: 'Start with today' }).check();
   const earliest = inspector.getByRole('group', { name: 'Earliest date' });
   await earliest.getByRole('combobox', { name: 'Kind of limit' }).selectOption('today');

@@ -7,6 +7,7 @@ import { inTheme } from '../../support/backoffice-look.ts';
 import { pathOf } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
 import { fillForm, pressOnThePage } from '../../support/form.ts';
+import { openSettings as openSettingsAt, pickGroup } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 import { E2E_BASE_URL, e2eState } from '../../support/paths.ts';
 import { MEMBERS, type Account } from '../../support/users.ts';
@@ -38,19 +39,9 @@ async function look(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: join(e2eState, 'look', `${name}.png`), fullPage: true });
 }
 
-async function openSettings(page: Page, key: string): Promise<Locator> {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
-  const view = page.locator('jfb-form-settings-view');
-  await expect(view.locator('#group-submission')).toBeVisible();
-  return view;
-}
-
-async function openGroup(view: Locator, group: string): Promise<void> {
-  const head = view.locator(`#group-${group}`);
-  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
-  await expect(head).toHaveAttribute('aria-expanded', 'true');
-}
+/** A form's Settings view at 1440 px. */
+const openSettings = (page: Page, key: string): Promise<Locator> =>
+  openSettingsAt(page, `${SECTION}/workspace/jfb-form/edit/${key}/view/settings`);
 
 /** Publishes the form from its workspace, the changes not saved yet with it, and waits until visitors get it. */
 async function publish(page: Page, api: APIRequestContext, key: string): Promise<void> {
@@ -149,7 +140,7 @@ test('a designer turns on One entry per member, and a member who has sent sees s
   // The designer makes the form one for members, which shows the switch under the choice, and turns it on.
   await loginAs('designer');
   const view = await openSettings(page, form.key);
-  await openGroup(view, 'availability');
+  await pickGroup(view, 'availability');
   await expect(view.getByLabel('One entry per member')).toHaveCount(0);
   await view.getByLabel('Who can fill it in').selectOption('members');
   const once = view.getByLabel('One entry per member');
@@ -228,7 +219,7 @@ test('a member signed in sends a form a designer made anonymous, and its entry k
 
   await loginAs('designer');
   const view = await openSettings(page, form.key);
-  await openGroup(view, 'privacy');
+  await pickGroup(view, 'privacy');
   const anonymous = view.locator('#anonymous');
   await expect(anonymous).not.toBeChecked();
   await anonymous.check();
