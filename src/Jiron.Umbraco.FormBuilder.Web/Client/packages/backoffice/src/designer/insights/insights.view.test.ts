@@ -263,6 +263,14 @@ describe('the Insights view', () => {
       'the kind that stops most is words, not a number',
     ).toEqual([false, true, true, false]);
     expect(box('Entries by hour of day').querySelector('table'), 'every box follows the switch').not.toBeNull();
+    // A long table scrolls inside its box, which the keyboard reaches: a region named as its table is.
+    const scroller = must(box('Entries by hour of day').querySelector('.scroll'), "the table's box");
+    expect(['role', 'tabindex', 'aria-label'].map((name) => scroller.getAttribute(name))).toEqual([
+      'region',
+      '0',
+      text(scroller.querySelector('caption')),
+    ]);
+    expect(text(scroller.querySelector('caption'))).not.toBe('');
 
     // Kept: the next visit opens on the tables.
     const again = await viewOf(report({ tables: [...ALL_BOXES] }));

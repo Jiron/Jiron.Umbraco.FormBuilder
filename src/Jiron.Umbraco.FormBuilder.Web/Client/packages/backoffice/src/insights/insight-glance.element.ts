@@ -54,6 +54,11 @@ export class InsightGlanceElement extends UmbLitElement {
         container-type: inline-size;
       }
 
+      .scroll:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 2px;
+      }
+
       table {
         inline-size: 100%;
         border-collapse: collapse;
@@ -240,7 +245,7 @@ export class InsightGlanceElement extends UmbLitElement {
   }
 
   #table(): TemplateResult {
-    return html`<div class="scroll">
+    return html`<div class="scroll" role="region" aria-label=${this.#term('glance')} tabindex="0">
       <table>
         <caption class="visually-hidden">
           ${this.#term('glance')}
