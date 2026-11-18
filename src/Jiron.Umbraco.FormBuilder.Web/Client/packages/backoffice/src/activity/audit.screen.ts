@@ -1,11 +1,12 @@
 // Activity > Audit log (ROADMAP 12.4b, IA 9, ADR-0041, ADR-0219): who did what, when, on which form or setting, the newest
 // first. A screen for reading, so it has no primary action; Export writes the filtered log as CSV. The search finds people
 // and items; the filters narrow by what and when, the last 30 days at first, and by one person, chosen from an action's
-// details and shown as a chip until cleared. A row opens its details. The sidebar names the screen (ADR-0021).
+// details and shown as a chip until cleared. A row opens its details. Its place's tabs name it (ADR-0257).
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import '../section/place-tabs.element';
 import type { AuditEntryResponseModel } from '../api';
 import { controlStyles } from '../designer/inspector/control.styles';
 import { saveBlob } from '../library/actions/export-form.action';
@@ -474,9 +475,13 @@ export class AuditScreenElement extends UmbLitElement {
 
   override render() {
     if (!this._worded) {
-      return html`<umb-body-layout><uui-box class="box--flush">${skeletonLines('')}</uui-box></umb-body-layout>`;
+      return html`<umb-body-layout
+        ><jfb-place-tabs tab="auditLog"></jfb-place-tabs
+        ><uui-box class="box--flush">${skeletonLines('')}</uui-box></umb-body-layout
+      >`;
     }
     return html`<umb-body-layout>
+      <jfb-place-tabs tab="auditLog"></jfb-place-tabs>
       <div class="page">
         ${this._list.state === 'forbidden' ? nothing : html`${this.#tools()}${this.#chips()}`} ${this.#body()}
       </div>

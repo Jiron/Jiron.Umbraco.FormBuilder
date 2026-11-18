@@ -10,7 +10,6 @@ export default {
     overview: 'Übersicht',
     noForms:
       'Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.',
-    entries: 'Einträge',
     inbox: 'Posteingang',
     inboxUnseen: (label: string, count: string) => `${label}, ${count} ungelesen`,
     spam: 'Spam',

@@ -15,7 +15,7 @@ import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
 import { SECTION_ITEMS } from '../activity/audit-words';
 import { CONTENT_GAPS } from '../library/library-changes';
-import { SIDEBAR } from '../section/sidebar';
+import { PLACES } from '../section/sidebar';
 import actionsDe from './actions.de';
 import actionsEn from './actions.en';
 import startDe from './de';
@@ -167,11 +167,11 @@ describe('the dictionaries', () => {
         [...source.matchAll(/(?:'|#)(jfb(?:Section|Overview)_[A-Za-z_]+)'/g)].map((match) => match[1]),
       ),
     );
-    // The keys code builds: an item's and a group's label, the audit log's place of a settings section (Settings > AI
-    // among them, which the AI add-on's sidebar item shows), and a step's texts and a finding's link.
-    for (const group of SIDEBAR) {
-      used.add(`jfbSection_${group.id}`);
-      for (const item of group.items) used.add(`jfbSection_${item.id}`);
+    // The keys code builds: a place's and a tab's label, the audit log's place of a settings section (Settings > AI
+    // among them, which the AI add-on's tab shows), and a step's texts and a finding's link.
+    for (const place of PLACES) {
+      used.add(`jfbSection_${place.id}`);
+      for (const tab of place.tabs) used.add(`jfbSection_${tab.id}`);
     }
 
     for (const [group, item] of Object.values(SECTION_ITEMS)) {

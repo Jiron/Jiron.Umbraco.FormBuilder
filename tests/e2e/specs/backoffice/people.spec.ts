@@ -3,6 +3,7 @@ import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, headlessPersonForm, sendAsVisitor, unique } from '../../support/forms-api.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Privacy > People (ROADMAP 13.1 part 13.2, IA 9, ADR-0223): a privacy officer finds a person's two entries by their
 // address, puts one on legal hold from the sidebar, exports everything as a ZIP from the ready toast, and erases: the
@@ -46,7 +47,7 @@ test('a privacy officer finds a person, holds, exports and erases their entries,
   await loginAs('privacyOfficer');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(SECTION);
-  await page.locator('uui-menu-item[label="People"]').first().click();
+  await goToTab(page, 'Privacy', 'People');
   const screen = page.locator('jfb-people-screen');
   const email = screen.getByLabel('Email address', { exact: true });
   await expect(email).toBeVisible({ timeout: 60_000 });

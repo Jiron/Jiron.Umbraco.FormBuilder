@@ -4,6 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, unique } from '../../support/forms-api.ts';
 import { bodyOf, headerOf, visibleText } from '../../support/mail.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Library > Email layouts (ROADMAP 12.1, IA 7, ADR-0215): a designer makes a layout through the screens: the letter look,
 // the logo from Umbraco's media picker, a link colour too light for text fixed with the colour the check offers, the
@@ -79,10 +80,7 @@ test('a designer makes an email layout through the screens, previews it and gets
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
   await page.goto(SECTION);
-  await page
-    .locator('umb-menu-item-layout[label="Email layouts"], uui-menu-item[label="Email layouts"]')
-    .first()
-    .click();
+  await goToTab(page, 'Library', 'Email layouts');
   await expect(page).toHaveURL(new RegExp(`${LAYOUTS}$`));
   await look(page, info, 'the list screen');
 

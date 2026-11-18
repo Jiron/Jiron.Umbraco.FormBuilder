@@ -19,6 +19,14 @@ follows the Umbraco major).
 
 ### Changed
 
+- **The section's sidebar starts with five places:** Inbox, with its count of unseen entries, Library, Settings, Privacy
+  and Activity, then the tree of forms. Each place opens on the first of its tabs you may use, and its screens show the
+  place's tabs along their top: Inbox · Spam; Option lists · Themes · Email layouts · Templates; General · Email · Spam
+  protection · Files · Access · Integrations; People · Retention · Data collection; Deliveries · Audit log. The
+  "Entries" heading is gone. Every screen keeps its address, so links in mails and bookmarks still open it.
+- **Each Save says what it saves** ("Save email settings"), and leaving a tab with unsaved changes asks first.
+- **Extensions:** a menu item that names the Settings menu is now a tab at the end of Settings' tabs; its screen shows
+  the tabs with the `jfb-place-tabs` element (docs/extending.md).
 - **The designer gives the form the room.** The list of field types beside the form is gone: every **Add field** and
   **Add a field here** opens a field picker, with its search ready (type, then Enter) and the site's saved groups, and
   what you pick lands where you opened it. The form and the inspector share the screen, under one row: the pages as

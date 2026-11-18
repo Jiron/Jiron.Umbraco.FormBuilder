@@ -6,6 +6,7 @@ import { hostEnvironment } from '../../support/host-env.ts';
 import { startHost, type Host } from '../../support/host.ts';
 import { PAUSED_BASE_URL, PAUSED_PORT } from '../../support/paths.ts';
 import { readSecrets } from '../../support/users.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Activity > Deliveries (ROADMAP 12.4b, IA 9, ADR-0219), on a host of its own that pauses sending, so the deliveries a
 // test endpoint seeds stay as they are: the screen says once that sending is paused, with its key; the problems come
@@ -52,7 +53,7 @@ test('Deliveries lists problems first, says once that sending is paused, names a
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('admin');
   await page.goto(SECTION);
-  await page.locator('umb-menu-item-layout[label="Deliveries"], uui-menu-item[label="Deliveries"]').first().click();
+  await goToTab(page, 'Activity', 'Deliveries');
   await expect(page).toHaveURL(/workspace\/jfb-deliveries$/);
   const screen = page.locator('jfb-deliveries-screen');
   const paused = screen.locator('.paused');

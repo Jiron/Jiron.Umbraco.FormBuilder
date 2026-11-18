@@ -55,7 +55,7 @@ export default {
       'Das Profil von Umbraco.AI, das die KI-Funktionen verwenden. Ohne eines verwenden sie das Standard-Chat-Profil von Umbraco.AI.',
     settingsProfile: 'Profil',
     settingsReady: (name: string) => `Die KI-Funktionen verwenden ${name}.`,
-    settingsSave: 'Speichern',
+    settingsSave: 'KI-Einstellungen speichern',
     settingsSaved: 'Gespeichert',
 
     problem_ai_no_profile:

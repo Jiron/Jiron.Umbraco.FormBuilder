@@ -11,6 +11,7 @@ export default {
     failed: 'Der Zugriff konnte nicht gelesen werden.',
     retry: 'Erneut versuchen',
     save: 'Speichern',
+    saveAccess: 'Zugriff speichern',
     cancel: 'Abbrechen',
     saved: 'Der Zugriff ist gespeichert.',
     saveFailed: 'Der Zugriff konnte nicht gespeichert werden. Versuchen Sie es gleich noch einmal.',

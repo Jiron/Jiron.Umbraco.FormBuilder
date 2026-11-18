@@ -28,7 +28,7 @@ type Term = (key: string, ...args: unknown[]) => string;
 /** The names the server answered for a page, by key. */
 export type AuditNames = Readonly<Record<string, AuditNameResponseModel>>;
 
-/** Where each settings section sits in the sidebar: its group and its item (IA 1). */
+/** Where each settings section sits in the sidebar: its place and its tab (IA 1, ADR-0257). */
 export const SECTION_ITEMS: Readonly<Record<string, readonly [string, string]>> = {
   general: ['settings', 'general'],
   email: ['settings', 'email'],

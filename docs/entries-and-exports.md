@@ -19,10 +19,10 @@ exporting them.
 
 ## Where entries are
 
-- **Entries › Inbox** in the sidebar: the entries of every form you may see, entries you haven't seen first, then the
-  newest. Its badge counts the unseen ones.
+- **The Inbox,** the first place in the sidebar: the entries of every form you may see, entries you haven't seen
+  first, then the newest. Its badge counts the unseen ones.
 - **A form's Entries view:** the same list for that form alone.
-- **Entries › Spam:** what the spam checks caught ([below](#spam)).
+- **Spam,** the Inbox's second tab: what the spam checks caught ([below](#spam)).
 - **The Overview's Recent entries:** the latest ten.
 
 ![The Inbox: the newest entries of every form, unseen ones in bold](screenshots/inbox.png)

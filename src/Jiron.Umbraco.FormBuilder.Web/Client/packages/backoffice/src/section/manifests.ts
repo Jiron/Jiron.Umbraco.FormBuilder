@@ -1,6 +1,7 @@
-// The Form Builder section (ADR-0021, ADR-0165, ADR-0171): the section with its one dashboard, the sidebar of docs/ux/information-architecture.md
-// and a workspace behind each item. The table in sidebar.ts holds the items, and each has its screen here: the stand-in
-// of 9.1 is gone, so an item without one fails at once (ADR-0165).
+// The Form Builder section (ADR-0021, ADR-0165, ADR-0171, ADR-0257): the section with its one dashboard, the sidebar of
+// docs/ux/information-architecture.md (the five places, then the tree of forms) and a workspace behind each tab. The
+// table in sidebar.ts holds the places and their tabs, and each tab has its screen here: a tab without one fails at once
+// (ADR-0165).
 import { manifests as access } from '../access/manifests';
 import { manifests as activity } from '../activity/manifests';
 import { manifests as designer } from '../designer/manifests';
@@ -14,7 +15,8 @@ import { manifests as privacy } from '../privacy/manifests';
 import { manifests as tree } from '../tree/manifests';
 import { ENTRY_ENTITY_TYPE, LIBRARY_ROOT_ENTITY_TYPE, SECTION_ALIAS, SECTION_PATHNAME } from './entity-types';
 import { PERMISSION_CONDITION } from './my-permissions';
-import { FORMS_NEEDS, needsOfGroup, SIDEBAR, type SidebarGroup, type SidebarItem } from './sidebar';
+import { SETTINGS_MENU_ALIAS } from './added-tabs';
+import { FORMS_NEEDS, PLACES, PLACES_NEEDS } from './sidebar';
 
 /** The menu of the forms tree. */
 const FORMS_MENU_ALIAS = 'Jiron.FormBuilder.Menu.Forms';
@@ -23,10 +25,7 @@ const INSIDE_SECTION = { alias: 'Umb.Condition.SectionAlias', match: SECTION_ALI
 
 const pascal = (id: string): string => id.charAt(0).toUpperCase() + id.slice(1);
 
-/** The weight that keeps things in the table's order: Umbraco puts the higher first. */
-const weightOf = (index: number, count: number): number => (count - index) * 100;
-
-/** The screen of each item, and of an entry opened on its own. */
+/** The screen of each tab, and of an entry opened on its own. */
 type ScreenLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'workspace' }>['element']>;
 
 const SCREENS: Readonly<Record<string, ScreenLoader>> = {
@@ -50,17 +49,10 @@ const SCREENS: Readonly<Record<string, ScreenLoader>> = {
   entry: () => import('../entries/entry.workspace'),
 };
 
-/** The items drawn by an element of their own: the Inbox carries its unseen count (IA 1, ADR-0209). */
-type ItemLoader = NonNullable<Extract<UmbExtensionManifest, { type: 'menuItem' }>['element']>;
-
-const ITEM_ELEMENTS: Readonly<Record<string, ItemLoader>> = {
-  inbox: () => import('./inbox-menu-item.element'),
-};
-
-/** The screen of an item; one without is a mistake of this table, found as the section loads. */
+/** The screen of a tab; one without is a mistake of this table, found as the section loads. */
 function screenOf(id: string): ScreenLoader {
   const screen = SCREENS[id];
-  if (!screen) throw new Error(`The item ${id} has no screen.`);
+  if (!screen) throw new Error(`The tab ${id} has no screen.`);
   return screen;
 }
 
@@ -71,39 +63,6 @@ const workspaceOf = (id: string, entityType: string): UmbExtensionManifest => ({
   element: screenOf(id),
   meta: { entityType },
 });
-
-const itemManifests = (group: SidebarGroup, item: SidebarItem, index: number): UmbExtensionManifest[] => [
-  {
-    type: 'menuItem',
-    alias: `Jiron.FormBuilder.MenuItem.${pascal(item.id)}`,
-    name: `Jiron Form Builder ${item.id} menu item`,
-    ...(ITEM_ELEMENTS[item.id] ? { element: ITEM_ELEMENTS[item.id] } : {}),
-    weight: weightOf(index, group.items.length),
-    meta: {
-      label: `#jfbSection_${item.id}`,
-      icon: item.icon,
-      entityType: item.entityType,
-      menus: [`Jiron.FormBuilder.Menu.${pascal(group.id)}`],
-    },
-    conditions: [{ alias: PERMISSION_CONDITION, needs: [item] }],
-  },
-  workspaceOf(item.id, item.entityType),
-];
-
-const groupManifests = (group: SidebarGroup, index: number): UmbExtensionManifest[] => [
-  {
-    type: 'sectionSidebarApp',
-    kind: 'menu',
-    alias: `Jiron.FormBuilder.SidebarApp.${pascal(group.id)}`,
-    name: `Jiron Form Builder ${group.id} group`,
-    weight: weightOf(index, SIDEBAR.length),
-    meta: { label: `#jfbSection_${group.id}`, menu: `Jiron.FormBuilder.Menu.${pascal(group.id)}` },
-    // A heading stands only above items the user can see (ADR-0021).
-    conditions: [INSIDE_SECTION, { alias: PERMISSION_CONDITION, needs: needsOfGroup(group) }],
-  },
-  { type: 'menu', alias: `Jiron.FormBuilder.Menu.${pascal(group.id)}`, name: `Jiron Form Builder ${group.id} menu` },
-  ...group.items.flatMap((item, itemIndex) => itemManifests(group, item, itemIndex)),
-];
 
 export const manifests: UmbExtensionManifest[] = [
   {
@@ -121,12 +80,21 @@ export const manifests: UmbExtensionManifest[] = [
     api: () => import('./permission.condition'),
   },
   {
+    // The places come first, before the tree: what grows comes after what is fixed (ADR-0254, ADR-0257).
+    type: 'sectionSidebarApp',
+    alias: 'Jiron.FormBuilder.SidebarApp.Places',
+    name: 'Jiron Form Builder places',
+    weight: 300,
+    element: () => import('./places.element'),
+    conditions: [INSIDE_SECTION, { alias: PERMISSION_CONDITION, needs: PLACES_NEEDS }],
+  },
+  {
     // The sidebar header is Umbraco's own, with the root's "+" and "..." (ADR-0021); the tree sits under it.
     type: 'sectionSidebarApp',
     kind: 'menuWithEntityActions',
     alias: 'Jiron.FormBuilder.SidebarApp.Forms',
     name: 'Jiron Form Builder forms tree',
-    weight: (SIDEBAR.length + 1) * 100,
+    weight: 200,
     meta: { label: '#jfbSection_forms', menu: FORMS_MENU_ALIAS, entityType: LIBRARY_ROOT_ENTITY_TYPE },
     conditions: [INSIDE_SECTION, { alias: PERMISSION_CONDITION, needs: FORMS_NEEDS }],
   },
@@ -135,12 +103,14 @@ export const manifests: UmbExtensionManifest[] = [
     type: 'sectionSidebarApp',
     alias: 'Jiron.FormBuilder.SidebarApp.NoForms',
     name: 'Jiron Form Builder without forms',
-    weight: (SIDEBAR.length + 1) * 100,
+    weight: 200,
     element: () => import('./no-forms.element'),
     conditions: [INSIDE_SECTION, { alias: PERMISSION_CONDITION, needs: FORMS_NEEDS, none: true }],
   },
   { type: 'menu', alias: FORMS_MENU_ALIAS, name: 'Jiron Form Builder forms menu' },
-  ...SIDEBAR.flatMap(groupManifests),
+  // The menu a site's or an add-on's Settings tab names (added-tabs.ts), kept so the public name stays good.
+  { type: 'menu', alias: SETTINGS_MENU_ALIAS, name: 'Jiron Form Builder settings menu' },
+  ...PLACES.flatMap((place) => place.tabs.map((tab) => workspaceOf(tab.id, tab.entityType))),
   workspaceOf('entry', ENTRY_ENTITY_TYPE),
   ...tree(FORMS_MENU_ALIAS, SECTION_ALIAS),
   ...library,

@@ -83,7 +83,7 @@ The Contact template sends no email. To get one for each entry, open the form's 
 
 ## 8. Find it in the Inbox
 
-In the Form Builder sidebar, open **Entries › Inbox**. The new entry is at the top, in bold as unseen. Select it to see the
+In the Form Builder sidebar, open the **Inbox**. The new entry is at the top, in bold as unseen. Select it to see the
 answers, its timeline and its notes. The Overview lists it under **Recent entries** too.
 
 ## What next

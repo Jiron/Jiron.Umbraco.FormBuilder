@@ -3,6 +3,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
 import { chooseLanguage } from '../../support/designer-row.ts';
+import { goToPlace, openPlace, openTab, tabItem, tabsShown } from '../../support/places.ts';
 
 // The AI add-on in the designer (ROADMAP 15.3, ADR-0018), on the fake provider whose chat profile this host chooses in
 // Settings > AI (Testing.AI; no real key, ever): "Draft a form with AI" in the library's create menu turns a pasted
@@ -182,12 +183,29 @@ test('Suggest help text lists what the AI suggests beside the help text, and wri
   expect((await fieldsOf(api, key)).get('dob')?.help).toEqual({ '': 'Fake help for DOB.' });
 });
 
-test('Settings > AI shows the profile the AI features use, once', async ({ page, loginAs }) => {
+test("Settings > AI, the add-on's tab, ends Settings' tabs and shows the profile the AI features use, once", async ({
+  page,
+  loginAs,
+}) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('admin');
   await page.goto(SECTION);
-  await page.locator('umb-section-sidebar').getByRole('link', { name: 'AI', exact: true }).click();
+  // The add-on's menu item names the Settings menu, so it is a tab after Settings' own (ADR-0257).
+  await goToPlace(page, 'Settings');
+  expect(await tabsShown(page)).toEqual([
+    'General',
+    'Email',
+    'Spam protection',
+    'Files',
+    'Access',
+    'Integrations',
+    'AI',
+  ]);
+  await tabItem(page, 'AI').click();
+  await expect(page).toHaveURL(/workspace\/jfb-settings-ai$/);
+  await expect.poll(() => openTab(page)).toBe('AI');
+  await expect.poll(() => openPlace(page)).toBe('Settings');
 
   const screen = page.locator('jfb-ai-settings-screen');
   await expect(screen.getByRole('heading', { name: 'AI profile' })).toBeVisible();

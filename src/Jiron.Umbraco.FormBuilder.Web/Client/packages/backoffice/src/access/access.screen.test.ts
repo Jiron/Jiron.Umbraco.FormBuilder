@@ -18,6 +18,12 @@ const api = vi.hoisted(() => ({
   confirm: true,
 }));
 
+// What the user holds, which the place's tabs draw from.
+vi.mock('../section/my-permissions', () => ({
+  myPermissions: async () => ({ global: ['manageSettings', 'managePermissions'], anywhere: [] }),
+  myPermissionsNow: () => undefined,
+}));
+
 vi.mock('@umbraco-cms/backoffice/resources', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/resources')>()),
   tryExecute: async (_host: unknown, request: Promise<unknown>) => request,
@@ -47,8 +53,8 @@ vi.mock('../ui/confirm', () => ({
 }));
 
 /** The router's event before the address changes; whether the screen stopped it to ask first. */
-const stopsLeaving = (): boolean => {
-  const event = new CustomEvent('willchangestate', { detail: { url: '/umbraco/section/content' }, cancelable: true });
+const stopsLeaving = (url = '/umbraco/section/content'): boolean => {
+  const event = new CustomEvent('willchangestate', { detail: { url }, cancelable: true });
   window.dispatchEvent(event);
   return event.defaultPrevented;
 };
@@ -192,6 +198,12 @@ describe('Settings > Access', () => {
     expect(root.querySelector('.matrix')?.getAttribute('tabindex')).toBe('0');
   });
 
+  it("shows Settings' tabs with Access open, and names its Save for what it saves", async () => {
+    const { root, button } = await open(new AccessScreenElement(), access());
+    expect(root.querySelector('umb-body-layout > jfb-place-tabs')?.getAttribute('tab')).toBe('access');
+    expect(button('Save access')).toBeDefined();
+  });
+
   it('names a group without the section once, with a link to its user group', async () => {
     const { root } = await open(new AccessScreenElement(), access());
     expect(said(root)).toContain("A group can't open Form Builder yet.");
@@ -209,7 +221,7 @@ describe('Settings > Access', () => {
       'View entries is on too: Edit entries needs it.',
     );
     api.saves = [{ data: access() }];
-    must(button('Save'), 'Save').click();
+    must(button('Save access'), 'Save').click();
     await vi.waitFor(() => expect(api.sent).toHaveLength(1));
     expect(api.sent).toEqual([
       { grants: [{ group: 'editors', expected: ['design'], permissions: ['design', 'viewEntries', 'editEntries'] }] },
@@ -222,7 +234,7 @@ describe('Settings > Access', () => {
     box('View entries, Translators').click();
     api.saves = [{ error: new UmbApiError('changed', 409, null, { code: 'concurrency_conflict' } as never) }];
     api.reads = [{ data: access() }];
-    must(button('Save'), 'Save').click();
+    must(button('Save access'), 'Save').click();
     await vi.waitFor(() =>
       expect(said(must(root.querySelector('.alert'), 'alert'))).toContain('Someone else changed access meanwhile'),
     );
@@ -235,7 +247,7 @@ describe('Settings > Access', () => {
       access({ lock: { field: 'grants', configurationKey: 'JironFormBuilder:Access:Grants' } }),
     );
     expect(box('Design forms, Editors').disabled).toBe(true);
-    expect(button('Save')).toBeUndefined();
+    expect(button('Save access')).toBeUndefined();
     expect(said(root)).toContain('JironFormBuilder:Access:Grants');
     expect(button('Add folder or form\u2026')).toBeDefined();
   });
@@ -253,7 +265,7 @@ describe('Settings > Access', () => {
     expect(box('Edit entries, Editors').checked, 'the tick stays').toBe(true);
 
     api.saves = [{ data: access() }];
-    must(button('Save'), 'Save').click();
+    must(button('Save access'), 'Save').click();
     await vi.waitFor(() => expect(api.sent).toHaveLength(1));
     expect(api.sent).toEqual([
       { grants: [{ group: 'editors', expected: ['design'], permissions: ['design', 'viewEntries', 'editEntries'] }] },
@@ -267,6 +279,8 @@ describe('Settings > Access', () => {
     box('Edit entries, Editors').click();
     await settle();
     expect(stopsLeaving(), 'a tick waits to be saved').toBe(true);
+    // A tab is a link to its sibling's own address, so leaving by one asks just the same (ADR-0257).
+    expect(stopsLeaving('/umbraco/section/jfb-forms/workspace/jfb-settings-integrations'), 'by a tab').toBe(true);
 
     api.saves = [
       {
@@ -277,7 +291,7 @@ describe('Settings > Access', () => {
         }),
       },
     ];
-    must(button('Save'), 'Save').click();
+    must(button('Save access'), 'Save').click();
     await vi.waitFor(() => expect(api.sent).toHaveLength(1));
     await settle();
     expect(stopsLeaving(), 'saved').toBe(false);

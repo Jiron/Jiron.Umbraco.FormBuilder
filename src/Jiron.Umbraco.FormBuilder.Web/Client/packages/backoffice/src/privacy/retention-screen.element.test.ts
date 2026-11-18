@@ -37,6 +37,7 @@ vi.mock('../api', async (original) => ({
 
 vi.mock('../section/my-permissions', () => ({
   myPermissions: async () => ({ global: api.global, anywhere: api.anywhere }),
+  myPermissionsNow: () => undefined,
 }));
 
 const { RetentionScreenElement, COUNT_DELAY_MS } = await import('./retention-screen.element');
@@ -91,7 +92,8 @@ async function screenOf(read: RetentionResponseModel = model(), ...counts: Reten
     input.dispatchEvent(new Event('change'));
     await settle(screen);
   };
-  const save = () => [...root.querySelectorAll('uui-button')].find((one) => one.getAttribute('label') === 'Save');
+  const save = () =>
+    [...root.querySelectorAll('uui-button')].find((one) => one.getAttribute('label') === 'Save retention settings');
   return { screen, root, box, type, save, peek };
 }
 
@@ -163,10 +165,16 @@ describe('the retention screen', () => {
     );
   });
 
+  it("shows Privacy's tabs with Retention open, and names its Save for what it saves", async () => {
+    const { root, save } = await screenOf();
+    expect(root.querySelector('umb-body-layout > jfb-place-tabs')?.getAttribute('tab')).toBe('retention');
+    expect(save()).toBeDefined();
+  });
+
   it('asks before the backoffice leaves it with days not saved', async () => {
-    const leaving = (): boolean => {
+    const leaving = (url = '/umbraco/section/content'): boolean => {
       const event = new CustomEvent('willchangestate', {
-        detail: { url: '/umbraco/section/content' },
+        detail: { url },
         cancelable: true,
       });
       window.dispatchEvent(event);
@@ -176,6 +184,8 @@ describe('the retention screen', () => {
     expect(leaving(), 'nothing changed').toBe(false);
     await type('days-spam', '7');
     expect(leaving(), 'days wait to be saved').toBe(true);
+    // A tab is a link to its sibling's own address, so leaving by one asks just the same (ADR-0257).
+    expect(leaving('/umbraco/section/jfb-forms/workspace/jfb-privacy-people'), 'by a tab').toBe(true);
   });
 
   it('counts at once for another span, which this browser keeps', async () => {

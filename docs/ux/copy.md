@@ -82,6 +82,30 @@ The CLAUDE.md vocabulary, and the words around it. Use these and only these; nev
 | entry number | `#1042`, unique per form | Nummer | ID |
 | entry reference | `REQ-2026-00042`, the format shown to visitors | Referenz | ticket |
 
+### The section's places and tabs
+
+The sidebar starts with five places, each a screen with tabs along its top (information-architecture.md, section 1;
+ADR-0257). "Place" and "tab" are the words of these documents and the code; the UI never says "place" for them (in
+the UI a place is an option's seat, above), only their names.
+
+| Place | English | German | Its tabs (English · German) |
+| --- | --- | --- | --- |
+| the entries | Inbox | Posteingang | Inbox · Spam (Posteingang · Spam) |
+| the library | Library | Bibliothek | Option lists · Themes · Email layouts · Templates (Optionslisten · Themes · E-Mail-Layouts · Vorlagen) |
+| the site-wide settings | Settings | Einstellungen | General · Email · Spam protection · Files · Access · Integrations (Allgemein · E-Mail · Spamschutz · Dateien · Zugriff · Integrationen) |
+| privacy | Privacy | Datenschutz | People · Retention · Data collection (Personen · Aufbewahrung · Datenerfassung) |
+| what went out and who did what | Activity | Aktivität | Deliveries · Audit log (Zustellungen · Protokoll) |
+
+- **Running text names a tab with its place:** "Settings › Email", "Privacy › Retention" ("Einstellungen › E-Mail").
+  The Inbox's own tab is "the Inbox", its other tab "Spam"; there is no "Entries" heading any more, so never write
+  "Entries › Inbox".
+- **"Settings" keeps its name** in the sidebar and as a form's view (ADR-0257): running text always says which, "Settings
+  › Email" for the place and "the form's Settings" or "the Settings view" for the view. Umbraco's own section is
+  "Umbraco's Settings section".
+- **The heading for screen readers** on each tab names its place and tab, "Settings: Email" · „Einstellungen: E-Mail“;
+  where the tab has the place's name it says it once, "Inbox" · „Posteingang“.
+- **The list of places** is named for screen readers with the section's name, "Form Builder".
+
 ### State labels
 
 The chips in the lists and panels. The wireframes of step 2.2 use these words.
@@ -103,7 +127,7 @@ The chips in the lists and panels. The wireframes of step 2.2 use these words.
 | the version visitors get, in History | Published | Veröffentlicht |
 | a version the cleanup keeps, in History (a mark with this name) | Pinned | Angeheftet |
 | an entry on legal hold, in Privacy › People | Legal hold until 30 Apr 2027 | Löschsperre bis 30. Apr. 2027 |
-| the Inbox's sidebar item with unseen entries (its badge shows the number, up to 99 and then "99+"; screen readers hear the item's name with it) | Inbox, 12 unseen · Inbox, 99+ unseen | Posteingang, 12 ungelesen · Posteingang, 99+ ungelesen |
+| the Inbox's place in the sidebar with unseen entries (its badge shows the number, up to 99 and then "99+"; screen readers hear the place's name with it) | Inbox, 12 unseen · Inbox, 99+ unseen | Posteingang, 12 ungelesen · Posteingang, 99+ ungelesen |
 | an unseen entry, for screen readers (a dot shows) | unseen | ungelesen |
 
 ### Status lines
@@ -177,7 +201,8 @@ Use Umbraco's own words where Umbraco has the same action, so the section feels 
 | make the draft live (asks first) | Publish… | Veröffentlichen… |
 | take a form offline | Unpublish… | Veröffentlichung zurücknehmen… |
 | see the form as visitors will | Preview | Vorschau |
-| save a settings screen | Save | Speichern |
+| save a tab of Settings or Privacy (it names what it saves, since the place's row of tabs above it could be read as one form; ADR-0257) | Save general settings · Save email settings · Save spam protection settings · Save file settings · Save access · Save integration settings · Save retention settings · Save data collection settings | Allgemeine Einstellungen speichern · E-Mail-Einstellungen speichern · Spamschutz-Einstellungen speichern · Dateieinstellungen speichern · Zugriff speichern · Integrationseinstellungen speichern · Aufbewahrungseinstellungen speichern · Einstellungen zur Datenerfassung speichern |
+| save Settings › AI (the AI add-on) | Save AI settings | KI-Einstellungen speichern |
 | apply a sidebar's changes to the draft | Update (or Add, when new) | Aktualisieren (oder Hinzufügen) |
 | close a sidebar that changes nothing | Close | Schließen |
 | stop without changing anything | Cancel | Abbrechen |

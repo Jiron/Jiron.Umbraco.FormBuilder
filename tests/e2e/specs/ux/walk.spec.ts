@@ -9,6 +9,7 @@ import { openSearch } from '../../support/search.ts';
 import { loadedIn } from '../../support/tree.ts';
 import { dress, Walk } from '../../support/ux-shots.ts';
 import { COMBOS, comboName, walkDir, wantedCombo } from '../../support/ux-walk.ts';
+import { goToScreen } from '../../support/places.ts';
 
 // The UX walk of Phase 9 (ROADMAP 9.6a), of Phase 10 (10.4), Phase 11 (11.6) and Phase 12 (12.6): every screen of the Form
 // Builder section, its library with its lists, themes, email layouts and templates, its designer, a form's settings,
@@ -497,7 +498,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     // Privacy's People, the last screen that showed the stand-in until Phase 13 built it (ADR-0165).
     await walk.shot('people', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-privacy-people`);
+      await goToScreen(page, 'jfb-privacy-people');
       await expect(page.locator('jfb-people-screen input[type="email"]')).toBeVisible();
     });
     await walk.shot('search', async () => {
@@ -952,7 +953,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     // The general settings (10.3b): how long draft saves are kept.
     await walk.shot('general-settings', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-settings-general`);
+      await goToScreen(page, 'jfb-settings-general');
       await expect(page.locator('jfb-settings-general input').first()).toBeVisible();
     });
     // Phase 11: a form's entries, their menus, dialogs and sidebars, the entry panel and its own screen.
@@ -1039,7 +1040,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     });
     // The Inbox, its Form filter and Spam.
     await walk.shot('inbox', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-inbox`);
+      await goToScreen(page, 'jfb-inbox');
       await expect(rows.first()).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('inbox-forms', async () => {
@@ -1050,7 +1051,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot('spam', async () => {
       await page.keyboard.press('Escape');
       await expect(page.locator('jfb-entry-forms-modal')).toHaveCount(0);
-      await page.goto(`${SECTION}/workspace/jfb-spam`);
+      await goToScreen(page, 'jfb-spam');
       await expect(rows.first()).toBeVisible({ timeout: 60_000 });
     });
     // Insights: the Overview, its range, the Answers and their tables, Data collection and Forms at a glance.
@@ -1095,7 +1096,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await openSettingsGroup('privacy');
     });
     await walk.shot('data-collection', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-privacy-collection`);
+      await goToScreen(page, 'jfb-privacy-collection');
       await expect(page.locator('jfb-settings-privacy #setting-insights')).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('glance', async () => {
@@ -1113,7 +1114,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     ] as const) {
       const screen = page.locator(`jfb-${kind}-screen`);
       await walk.shot(shot, async () => {
-        await page.goto(`${SECTION}/workspace/${workspace}`);
+        await goToScreen(page, workspace);
         await expect(screen.locator('table')).toBeVisible({ timeout: 60_000 });
       });
       await walk.shot(`${shot}-editor`, async () => {
@@ -1123,7 +1124,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       });
     }
     await walk.shot('templates', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-templates`);
+      await goToScreen(page, 'jfb-templates');
       await expect(page.locator('jfb-templates-screen .name', { hasText: made.libraryName })).toBeVisible({
         timeout: 60_000,
       });
@@ -1140,20 +1141,20 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       ['settings-integrations', 'jfb-settings-integrations', 'jfb-settings-integrations'],
     ] as const) {
       await walk.shot(shot, async () => {
-        await page.goto(`${SECTION}/workspace/${workspace}`);
+        await goToScreen(page, workspace);
         await expect(page.locator(`${element} uui-box[headline]`).first()).toBeVisible({ timeout: 60_000 });
       });
     }
     // A per-site section with a site chosen: each field the site sets says so, and the others take the value for all sites.
     await walk.shot('settings-site', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-settings-general`);
+      await goToScreen(page, 'jfb-settings-general');
       const site = page.locator('jfb-settings-general select#site');
       await expect(site).toBeVisible({ timeout: 60_000 });
       await site.selectOption({ index: 1 });
       await expect(page.locator('jfb-settings-general uui-box[headline]').first()).toBeVisible();
     });
     await walk.shot('access', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-settings-access`);
+      await goToScreen(page, 'jfb-settings-access');
       await expect(page.locator('jfb-access-screen table')).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('permissions', async () => {
@@ -1165,7 +1166,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
       await expect(sidebar.locator('table')).toBeVisible({ timeout: 30_000 });
     });
     await walk.shot('deliveries', async () => {
-      await page.goto(`${SECTION}/workspace/jfb-deliveries`);
+      await goToScreen(page, 'jfb-deliveries');
       await expect(page.locator('jfb-deliveries-screen tbody tr').first()).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('delivery', async () => {
@@ -1175,7 +1176,7 @@ for (const combo of COMBOS.filter((each) => wantedCombo(each))) {
     await walk.shot('audit-log', async () => {
       await page.keyboard.press('Escape');
       await expect(page.locator('jfb-delivery-modal')).toHaveCount(0);
-      await page.goto(`${SECTION}/workspace/jfb-audit-log`);
+      await goToScreen(page, 'jfb-audit-log');
       await expect(page.locator('jfb-audit-screen tbody tr').first()).toBeVisible({ timeout: 60_000 });
     });
     await walk.shot('audit-entry', async () => {

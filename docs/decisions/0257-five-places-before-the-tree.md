@@ -1,8 +1,7 @@
 # 0257. Five places before the tree, each with tabs along its top
 
-- Status: accepted as the design of step 22.2; nothing of it is built. The owner paused Phase 22 after 22.1 on
-  2026-11-17 ([ADR-0255](0255-phase-22-in-one-stretch.md)), and the step waits for the owner's word. It builds
-  decision 2 of [ADR-0254](0254-a-simpler-backoffice.md). It turns round parts of
+- Status: accepted. Written while the owner had paused Phase 22 after 22.1
+  ([ADR-0255](0255-phase-22-in-one-stretch.md)); the owner said to go on on 2026-11-18. It builds decision 2 of [ADR-0254](0254-a-simpler-backoffice.md). It turns round parts of
   [ADR-0021](0021-forms-section-structure.md) and [ADR-0165](0165-the-section-shell.md): the groups under headings
   below the tree, and one sidebar item for every screen
 - Date: 2026-11-16

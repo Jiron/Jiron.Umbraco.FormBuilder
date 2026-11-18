@@ -21,6 +21,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('../section/my-permissions', () => ({
   myPermissions: async () => ({ global: api.global }),
+  myPermissionsNow: () => undefined,
 }));
 
 vi.mock('../library/library-changes', async (original) => ({

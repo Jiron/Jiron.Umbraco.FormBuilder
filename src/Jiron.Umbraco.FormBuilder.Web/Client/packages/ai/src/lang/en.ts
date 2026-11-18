@@ -54,7 +54,7 @@ export default {
       "The Umbraco.AI profile the AI features use. Without one, they use Umbraco.AI's default chat profile.",
     settingsProfile: 'Profile',
     settingsReady: (name: string) => `The AI features use ${name}.`,
-    settingsSave: 'Save',
+    settingsSave: 'Save AI settings',
     settingsSaved: 'Saved',
 
     problem_ai_no_profile:

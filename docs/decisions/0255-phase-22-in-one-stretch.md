@@ -67,3 +67,10 @@ spare the session's usage. So:
 - **22.2 to 22.4 wait for the owner's word.** When it comes they are the stretch this record describes: built one
   after the other on their quick checks, the long runs once on the last work commit, the three ticks after that.
 - The design of 22.2 is written already ([ADR-0257](0257-five-places-before-the-tree.md)); nothing of it is built.
+
+## Amendment, 2026-11-18: the phase goes on
+
+The owner wrote to proceed. Steps 22.2 to 22.4 are built as this record's decision says: one after the other on
+their quick checks and their own browser specs, the long runs once on the last work commit, the three ticks after
+that. Usage stays a concern, so each step is two runs of the coding agent where it can be (the wireframes and the
+build; then the browser specs and the documents), each judged before the next.

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, created, unique } from '../../support/forms-api.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Activity > Audit log (ROADMAP 12.4b, IA 9, ADR-0041, ADR-0219): a folder an administrator creates and renames is found
 // by its name, newest first, with who did it and where; its details narrow the log to that person, shown as a chip until
@@ -25,7 +26,7 @@ test('the audit log finds what was done by name, narrows to one person, and expo
     await page.setViewportSize({ width: 1440, height: 900 });
     await loginAs('admin');
     await page.goto(SECTION);
-    await page.locator('umb-menu-item-layout[label="Audit log"], uui-menu-item[label="Audit log"]').first().click();
+    await goToTab(page, 'Activity', 'Audit log');
     await expect(page).toHaveURL(/workspace\/jfb-audit-log$/);
     const screen = page.locator('jfb-audit-screen');
     await expect(screen.locator('tbody tr').first()).toBeVisible({ timeout: 60_000 });

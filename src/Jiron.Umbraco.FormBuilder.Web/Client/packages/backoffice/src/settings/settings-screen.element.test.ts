@@ -12,6 +12,8 @@ import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FieldSettingResponseModel, SettingsSectionResponseModel } from '../api';
+import de from '../lang/global-settings.de';
+import en from '../lang/global-settings.en';
 import { must, registerEnglish, settle, shadow, testHost, text } from '../testing';
 
 /** The elements under a root or an element that match a selector. */
@@ -34,6 +36,12 @@ const api = vi.hoisted(() => ({
 vi.mock('@umbraco-cms/backoffice/resources', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/resources')>()),
   tryExecute: async (_host: unknown, request: Promise<unknown>) => request,
+}));
+
+// What the user holds, which the place's tabs draw from: everything Settings has.
+vi.mock('../section/my-permissions', () => ({
+  myPermissions: async () => ({ global: ['manageSettings', 'managePermissions'], anywhere: [] }),
+  myPermissionsNow: () => undefined,
 }));
 
 vi.mock('../api', async (original) => ({
@@ -259,6 +267,18 @@ const refusal = (code: string, errors: readonly { path: string; code: string; me
   error: new UmbApiError('refused', code === 'validation_failed' ? 400 : 409, null, { code, errors } as never),
 });
 
+/** Each section's tab in the sidebar's table, and the Save that names it (ADR-0257). */
+const TABS: Readonly<Record<string, readonly [string, string]>> = {
+  general: ['general', 'Save general settings'],
+  email: ['email', 'Save email settings'],
+  protection: ['spamProtection', 'Save spam protection settings'],
+  files: ['files', 'Save file settings'],
+  integrations: ['integrations', 'Save integration settings'],
+  privacy: ['dataCollection', 'Save data collection settings'],
+};
+const tabOf = (section: string) => TABS[section]?.[0] ?? '';
+const saveOf = (section: string) => TABS[section]?.[1] ?? '';
+
 async function screenOf(section: string, ...reads: SettingsSectionResponseModel[]) {
   api.reads = reads.map((data) => ({ data }));
   api.saves = [];
@@ -268,7 +288,7 @@ async function screenOf(section: string, ...reads: SettingsSectionResponseModel[
   const host = testHost();
   const peek = vi.fn();
   host.provideContext(UMB_NOTIFICATION_CONTEXT, { peek, getHostElement: () => host } as never);
-  const Screen = settingsScreen(`jfb-test-settings-${section}`, section);
+  const Screen = settingsScreen(`jfb-test-settings-${section}`, section, tabOf(section));
   const screen = new Screen();
   host.append(screen);
   await vi.waitFor(() => expect(shadow(screen).querySelector('uui-box[headline]')).not.toBeNull());
@@ -284,7 +304,7 @@ async function screenOf(section: string, ...reads: SettingsSectionResponseModel[
   };
   const button = (label: string) => all(root, 'uui-button').find((one) => one.getAttribute('label') === label);
   const save = async () => {
-    must(button('Save'), 'Save').click();
+    must(button(saveOf(section)), 'Save').click();
     await vi.waitFor(() => expect(api.reads.length + api.saves.length).toBe(0));
     await settle(screen);
   };
@@ -304,13 +324,39 @@ afterEach(() => {
 });
 
 /** The router's event before the address changes; whether the screen stopped it to ask first. */
-const stopsLeaving = (): boolean => {
-  const event = new CustomEvent('willchangestate', { detail: { url: '/umbraco/section/content' }, cancelable: true });
+const stopsLeaving = (url = '/umbraco/section/content'): boolean => {
+  const event = new CustomEvent('willchangestate', { detail: { url }, cancelable: true });
   window.dispatchEvent(event);
   return event.defaultPrevented;
 };
 
 describe('the global settings screen', () => {
+  it("shows its place's tabs with its own open, and names its Save for what it saves, in English and German", async () => {
+    for (const [section, fixture] of [
+      ['general', general()],
+      ['protection', protection()],
+      ['privacy', privacy()],
+    ] as const) {
+      const { root, button } = await screenOf(section, fixture);
+      expect(root.querySelector('umb-body-layout > jfb-place-tabs')?.getAttribute('tab'), section).toBe(tabOf(section));
+      expect(button(saveOf(section)), section).toBeDefined();
+      document.body.replaceChildren();
+    }
+    const words = (lang: typeof en | typeof de) =>
+      Object.keys(TABS).map(
+        (section) => lang.jfbGlobalSettings[`save_${section}` as keyof typeof lang.jfbGlobalSettings],
+      );
+    expect(words(en)).toEqual(Object.values(TABS).map(([, save]) => save));
+    expect(words(de)).toEqual([
+      'Allgemeine Einstellungen speichern',
+      'E-Mail-Einstellungen speichern',
+      'Spamschutz-Einstellungen speichern',
+      'Dateieinstellungen speichern',
+      'Integrationseinstellungen speichern',
+      'Einstellungen zur Datenerfassung speichern',
+    ]);
+  });
+
   it('draws the boxes in the order the section serves them, each setting with its help below it, and no title of its own', async () => {
     const { root } = await screenOf('general', general());
     const boxes = all(root, 'uui-box[headline]');
@@ -395,6 +441,8 @@ describe('the global settings screen', () => {
     expect(stopsLeaving(), 'nothing changed').toBe(false);
     await type('setting-history-draftDays', '30');
     expect(stopsLeaving(), 'a change waits to be saved').toBe(true);
+    // A tab is a link to its sibling's own address, so leaving by one asks just the same (ADR-0257).
+    expect(stopsLeaving('/umbraco/section/jfb-forms/workspace/jfb-settings-email'), 'by a tab').toBe(true);
     api.saves = [{ data: general({ version: 4 }) }];
     await save();
     expect(stopsLeaving(), 'saved').toBe(false);
@@ -404,7 +452,7 @@ describe('the global settings screen', () => {
     const { root, type, button } = await screenOf('general', general());
     await type('setting-history-draftDays', '0');
     expect(text(root.getElementById('setting-history-draftDays-why'))).not.toBe('');
-    must(button('Save'), 'Save').click();
+    must(button('Save general settings'), 'Save').click();
     await vi.waitFor(() => expect(text(root.querySelector('.alert'))).toContain('Some settings need another value'));
     expect(api.sent).toEqual([]);
   });
@@ -456,7 +504,7 @@ describe('the global settings screen', () => {
     const { root, button } = await screenOf('general', locked);
     expect(text(root.querySelector('.note[role="note"]'))).toContain('JironFormBuilder:LockedSections:0');
     expect(root.querySelector('[data-locked="requiredMarker"]')).not.toBeNull();
-    expect(button('Save')).toBeUndefined();
+    expect(button('Save general settings')).toBeUndefined();
   });
 
   it('starts a section a site can set with All sites; a site shows its own fields, says its own values, and can use the value for all sites again', async () => {
@@ -725,7 +773,7 @@ describe('the global settings screen', () => {
   it('tells a user who may not manage settings so', async () => {
     api.reads = [refusal('forbidden')];
     const host = testHost();
-    const Screen = settingsScreen('jfb-test-settings-forbidden', 'general');
+    const Screen = settingsScreen('jfb-test-settings-forbidden', 'general', 'general');
     const screen = new Screen();
     api.reads = [{ error: new UmbApiError('forbidden', 403, null, { code: 'forbidden' } as never) }];
     host.append(screen);

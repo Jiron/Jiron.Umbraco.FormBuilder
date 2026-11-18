@@ -1,5 +1,5 @@
 // The activity screens' extensions (ROADMAP 12.4b, IA 9, ADR-0219): a delivery's details and an action's details, each a
-// sidebar over its list. Deliveries and the audit log themselves are their sidebar items' screens.
+// sidebar over its list. Deliveries and the audit log themselves are their tabs' screens.
 import { AUDIT_ENTRY_MODAL_ALIAS } from './audit-entry.modal.token';
 import { DELIVERY_MODAL_ALIAS } from './delivery.modal.token';
 

@@ -3,6 +3,7 @@ import type { APIRequestContext, Locator, Page, TestInfo } from '@playwright/tes
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, unique } from '../../support/forms-api.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Library > Themes (ROADMAP 12.1, IA 7, ADR-0215): a designer makes a theme on the default theme through the screens.
 // The create dialog asks the base theme first; the colours are set with their contrast checks, one failing check fixed
@@ -87,7 +88,7 @@ test('a designer makes a theme through the screens, its colours checked and its 
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('designer');
   await page.goto(SECTION);
-  await page.locator('umb-menu-item-layout[label="Themes"], uui-menu-item[label="Themes"]').first().click();
+  await goToTab(page, 'Library', 'Themes');
   await expect(page).toHaveURL(new RegExp(`${THEMES}$`));
   await look(page, info, 'the list screen');
 

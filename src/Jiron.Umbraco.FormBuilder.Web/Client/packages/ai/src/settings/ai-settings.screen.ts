@@ -1,11 +1,13 @@
 // Settings > AI (ADR-0018), for who may manage settings: the Umbraco.AI profile the AI features use, chosen with
 // Umbraco.AI's own profile picker, chat profiles only, or none for Umbraco.AI's default chat profile; and, once, what
-// the features use now or why they cannot work. Save keeps the choice, which the audit log records.
+// the features use now or why they cannot work. Save keeps the choice, which the audit log records. The header shows
+// Settings' tabs, drawn by the core's element by its tag, as the add-on loads no module of the core (ADR-0018, ADR-0257).
 import { css, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { aiGetSettings, aiSaveSettings, aiStatus, type AiStatusResponseModel } from '../api';
+import { SETTINGS_TAB } from '../names';
 import { problemKey, refusalOf, refusalText, type Refusal } from '../problems';
 
 export class AISettingsScreenElement extends UmbLitElement {
@@ -73,6 +75,7 @@ export class AISettingsScreenElement extends UmbLitElement {
 
   override render() {
     return html`<umb-body-layout>
+      <jfb-place-tabs tab=${SETTINGS_TAB}></jfb-place-tabs>
       <div class="page">
         <uui-box headline-variant="h2" headline=${this.localize.term('jfbAI_settingsBox')}>
           <p class="lead" id="lead">${this.localize.term('jfbAI_settingsLead')}</p>

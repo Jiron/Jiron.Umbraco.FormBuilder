@@ -12,6 +12,8 @@ export default {
     failed: "Access couldn't be read.",
     retry: 'Try again',
     save: 'Save',
+    // Settings > Access's own Save, named for what it saves (ADR-0257); the folder's dialog keeps the plain one.
+    saveAccess: 'Save access',
     cancel: 'Cancel',
     saved: 'Access is saved.',
     saveFailed: "Access couldn't be saved. Try again in a moment.",

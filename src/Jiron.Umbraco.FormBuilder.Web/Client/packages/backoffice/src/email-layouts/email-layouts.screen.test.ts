@@ -8,6 +8,12 @@ import { loadEmailLayoutWords } from './email-layout-words';
 
 const api = vi.hoisted(() => ({ created: [] as unknown[] }));
 
+// What the user holds, which the place's tabs draw from.
+vi.mock('../section/my-permissions', () => ({
+  myPermissions: async () => ({ global: ['manageLibrary'], anywhere: [] }),
+  myPermissionsNow: () => undefined,
+}));
+
 vi.mock('@umbraco-cms/backoffice/resources', async (original) => ({
   ...(await original<typeof import('@umbraco-cms/backoffice/resources')>()),
   tryExecute: async (_host: unknown, request: Promise<unknown>) => request,

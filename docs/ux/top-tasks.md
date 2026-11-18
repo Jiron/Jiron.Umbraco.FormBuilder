@@ -11,6 +11,9 @@ counted as its "Rules" section says, from the section's start page.
   with manual approval.
 - **Two limits are kept on purpose:** search leaves sensitive answers out, and entries are forwarded only to people
   the site already trusts.
+- **The sidebar starts with five places** (ROADMAP 22.2, ADR-0257): a screen that is its place's first tab is one
+  click away as before, and a later tab is one more. Administrator tasks 1, 2, 3, 9, 12 and 13, privacy officer tasks 5
+  and 10, entry handler task 6 and viewer task 14 grew by that click; no task takes more than 4.
 
 ## Designer
 
@@ -30,7 +33,7 @@ counted as its "Rules" section says, from the section's start page.
 | 12 | Try the team email on a sample entry, without waiting for a real visitor. | the form → Actions → the card's Test | 3 |
 | 13 | Find out which pages show a form. | the form → "Used on 3 pages" | 2 |
 | 14 | Go back to how a form was last week. | the form → History → last week's row → (Restore as a new draft) | 3 |
-| 15 | Make a list of the company's offices that several forms can reuse. | Library › Option lists → Create option list → (the kind, the offices, Save) | 2 |
+| 15 | Make a list of the company's offices that several forms can reuse. | Library (it opens on Option lists) → Create option list → (the kind, the offices, Save) | 2 |
 
 At 620 px the paths are the same: the field picker opens over the form from "Add field" or an insert point, and the
 outcomes of task 10 lie under what visitors get. Task 7 grew by a click when the designer lost its list of types
@@ -40,12 +43,12 @@ outcomes of task 10 lie under what visitors get. Task 7 grew by a click when the
 
 | # | Task | Path | Clicks |
 | --- | --- | --- | --- |
-| 1 | See everything new that came in, from all forms. | Entries › Inbox | 1 |
+| 1 | See everything new that came in, from all forms. | Inbox | 1 |
 | 2 | Read one entry. | Inbox → the entry's row | 2 |
 | 3 | Approve an entry. | Inbox → the entry's row → Approve | 3 |
 | 4 | Reject an entry. | Inbox → the entry's row → Reject | 3 |
 | 5 | Move an obvious junk entry out of the way. | Inbox → the entry's row → Mark as spam | 3 |
-| 6 | Rescue a real entry that was caught as spam. | Spam → the entry's row → Not spam | 3 |
+| 6 | Rescue a real entry that was caught as spam. | Inbox → Spam → the entry's row → Not spam | 4 |
 | 7 | Leave a note for colleagues on an entry. | Inbox → the entry's row → Notes → (the note, Add note) | 3 |
 | 8 | Send an entry to a colleague. | Inbox → the entry's row → Forward… → (the colleague, Forward) | 3 |
 | 9 | Correct a typo in someone's answer. | Inbox → the entry's row → Edit answers → (the fix, Save) | 3 |
@@ -75,7 +78,7 @@ Tasks 3 to 6 take 2 clicks for several entries at once: tick their boxes, then u
 | 11 | See what people answered to a rating question. | the form → Insights → Answers | 3 |
 | 12 | See whether this month went better than last month. | the Overview's Forms at a glance → (This month, in its period menu) | 0 |
 | 13 | Compare all forms at a glance. | the Overview's Forms at a glance | 0 |
-| 14 | Look at what was caught as spam. | Entries › Spam | 1 |
+| 14 | Look at what was caught as spam. | Inbox → Spam | 2 |
 | 15 | Get a weekly summary by email. | Inbox → "…" → Email me a summary… → (Weekly, Save) | 3 |
 
 Task 4's Filter menu names what to filter by first (Received, State, Form and the form's fields), so the period is
@@ -85,41 +88,41 @@ one step in.
 
 | # | Task | Path | Clicks |
 | --- | --- | --- | --- |
-| 1 | Make sure the site can send emails. | Settings › Email → Send test email | 2 |
-| 2 | Change the sender address of all form emails. | Settings › Email → (the sender, Save) | 1 |
-| 3 | Let the support team see entries. | Settings › Access → (tick the support group's entry permissions, Save) | 1 |
+| 1 | Make sure the site can send emails. | Settings → Email → Send test email | 3 |
+| 2 | Change the sender address of all form emails. | Settings → Email → (the sender, Save email settings) | 2 |
+| 3 | Let the support team see entries. | Settings → Access → (tick the support group's entry permissions, Save access) | 2 |
 | 4 | Close the HR folder to everyone but the HR team. | the HR folder's "…" → Permissions… → (the HR team, Only these groups, Save) | 2 |
 | 5 | Create the block that lets editors put forms on pages. | the Overview's checklist item "Put the form on a page" → Create a form block type… | 1 |
-| 6 | Find emails that failed to send. | Activity › Deliveries | 1 |
+| 6 | Find emails that failed to send. | Activity (it opens on Deliveries) | 1 |
 | 7 | Send a failed email again. | Deliveries → the failed row → Retry | 3 |
 | 8 | Find out who changed a form's settings. | the form → History | 2 |
-| 9 | Send entries from throwaway email addresses to Spam. | Settings › Spam protection → (the blocked email domains, Save) | 1 |
+| 9 | Send entries from throwaway email addresses to Spam. | Settings → Spam protection → (the blocked email domains, Save spam protection settings) | 2 |
 | 10 | Allow larger files in a form's upload field. | the form → the upload field → (the largest file) | 2 |
-| 11 | Choose the look that forms get by default. | Settings › General → (the default theme, Save) | 1 |
-| 12 | Give the second site its own sender address. | Settings › Email → (the site switch, the sender, Save) | 1 |
-| 13 | Keep rejected entries for only 30 days. | Privacy › Retention → (Rejected: 30 days, Save) | 1 |
+| 11 | Choose the look that forms get by default. | Settings (it opens on General) → (the default theme, Save general settings) | 1 |
+| 12 | Give the second site its own sender address. | Settings → Email → (the site switch, the sender, Save email settings) | 2 |
+| 13 | Keep rejected entries for only 30 days. | Privacy → Retention → (Rejected: 30 days, Save retention settings) | 2 |
 | 14 | Get rid of the forms in the Recycle Bin for good. | the Recycle Bin → Empty recycle bin… | 2 |
 | 15 | Bring in a form exported from another site. | "+" → Import a form… → (the file, Import as a new copy) | 2 |
 
-Once the checklist is complete, task 5 is Settings › General → Create a form block type… (2). When the site's limit is
-lower than the size wanted, task 10 adds "Change the site's limit" in the field's help (3). Blocked words take the
-same path as task 9, but one word alone doesn't send an entry to Spam: words and extra links add up (ADR-0012;
-information-architecture.md, section 8).
+Once the checklist is complete, task 5 is Settings (it opens on General) → Create a form block type… (2). When the
+site's limit is lower than the size wanted, task 10 adds "Change the site's limit" in the field's help (3). Blocked
+words take the same path as task 9, but one word alone doesn't send an entry to Spam: words and extra links add up
+(ADR-0012; information-architecture.md, section 8).
 
 ## Privacy officer
 
 | # | Task | Path | Clicks |
 | --- | --- | --- | --- |
-| 1 | Find everything stored about a person, by email address. | Privacy › People → (the address, Find) | 1 |
-| 2 | Find everything stored about a website member. | Privacy › People → (the member's email address, Find) | 1 |
-| 3 | Give a person a copy of their data. | Privacy › People → (Find) → Export everything → the ready toast's Download | 3 |
-| 4 | Erase a person's data after a request. | Privacy › People → (Find) → Erase… | 2 |
-| 5 | See what retention will delete in the coming weeks. | Privacy › Retention | 1 |
+| 1 | Find everything stored about a person, by email address. | Privacy (it opens on People) → (the address, Find) | 1 |
+| 2 | Find everything stored about a website member. | Privacy → (the member's email address, Find) | 1 |
+| 3 | Give a person a copy of their data. | Privacy → (Find) → Export everything → the ready toast's Download | 3 |
+| 4 | Erase a person's data after a request. | Privacy → (Find) → Erase… | 2 |
+| 5 | See what retention will delete in the coming weeks. | Privacy → Retention | 2 |
 | 6 | Check what a visitor agreed to when they sent a form. | Inbox → the entry's row | 2 |
 | 7 | See a masked answer in full. | Inbox → the entry's row → Reveal | 3 |
 | 8 | Delete one entry. | Inbox → the entry's row → Delete… | 3 |
 | 9 | Delete several entries at once. | Inbox → (tick the rows) → Delete… | 2 |
-| 10 | Empty the spam folder. | Spam → Empty spam… | 2 |
+| 10 | Empty the spam folder. | Inbox → Spam → Empty spam… | 3 |
 | 11 | See which page and language an entry came from. | Inbox → the entry's row | 2 |
 | 12 | See which emails were sent about an entry. | Inbox → the entry's row → Timeline | 3 |
 | 13 | Find an entry by a person's name. | Inbox → (search the name) → the row | 2 |

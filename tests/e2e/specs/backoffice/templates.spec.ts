@@ -4,6 +4,7 @@ import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, unique } from '../../support/forms-api.ts';
 import { addFieldOf, openPicker, pickerClosed, pickerItem, pickerOf } from '../../support/picker.ts';
 import { openRowActions, treeRow } from '../../support/tree.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Templates (ROADMAP 12.1, IA 4, 5 and 7, ADR-0217): a group saved from its "..." on one form's canvas, with the
 // validation rule on its fields and without the rule and the validation rule that depended on a field outside it,
@@ -216,7 +217,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(toast(page, `${name} was saved as a template.`)).toBeVisible();
 
-  await page.locator('umb-menu-item-layout[label="Templates"], uui-menu-item[label="Templates"]').first().click();
+  await goToTab(page, 'Library', 'Templates');
   const screen = page.locator('jfb-templates-screen');
   await expect(screen.getByRole('heading', { name: 'Built in' })).toBeVisible();
   await expect(screen.getByRole('radio')).toHaveCount(await screen.locator('.card').count());
@@ -239,7 +240,7 @@ test('a form saved as a template is found, used, renamed and deleted in Library 
   await expect(page.getByRole('textbox', { name: 'Form name' })).toHaveValue(renamed);
   await expect(treeRow(page, renamed), 'the tree lists the new form without a reload').toHaveCount(1);
 
-  await page.locator('umb-menu-item-layout[label="Templates"], uui-menu-item[label="Templates"]').first().click();
+  await goToTab(page, 'Library', 'Templates');
   await screen.locator('.card').filter({ hasText: renamed }).click();
   await screen.getByRole('button', { name: `Actions for ${renamed}` }).click();
   await screen.locator('uui-menu-item[label="Delete\u2026"]').click();

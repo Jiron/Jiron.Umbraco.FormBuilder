@@ -2,11 +2,12 @@
 // again, uncertain, limited), then the newest; its state, whom it went to, what it is, its form and when. The search finds
 // recipients and forms; the filters narrow by state, kind and time, the last 30 days at first. On a narrow workspace
 // what a delivery is goes under whom it went to, and its form gives way. A row opens its details,
-// where a failed or uncertain one offers Retry. While the host pauses sending, one line above the list says so. The
-// sidebar names the screen, so it has no title of its own (ADR-0021).
+// where a failed or uncertain one offers Retry. While the host pauses sending, one line above the list says so. Its
+// its place's tabs along its top name it, so it has no title of its own (ADR-0257).
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import '../section/place-tabs.element';
 import type { DeliveryResponseModel } from '../api';
 import { controlStyles } from '../designer/inspector/control.styles';
 import { jfbBackofficeTokens, jfbVisuallyHidden } from '../styles/tokens';
@@ -451,11 +452,15 @@ export class DeliveriesScreenElement extends UmbLitElement {
 
   override render() {
     if (!this._worded) {
-      return html`<umb-body-layout><uui-box class="box--flush">${skeletonLines('')}</uui-box></umb-body-layout>`;
+      return html`<umb-body-layout
+        ><jfb-place-tabs tab="deliveries"></jfb-place-tabs
+        ><uui-box class="box--flush">${skeletonLines('')}</uui-box></umb-body-layout
+      >`;
     }
     const list = this._list;
     const paused = list.state === 'ready' && list.paused;
     return html`<umb-body-layout>
+      <jfb-place-tabs tab="deliveries"></jfb-place-tabs>
       <div class="page">
         ${
           paused

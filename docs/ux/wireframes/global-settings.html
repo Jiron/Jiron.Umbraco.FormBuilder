@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Settings and Data collection · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 site@1440x900 email@1440x900 no-email@1440x900 test-sent@1440x900 spam@1440x900 files@1440x900 integrations@1440x900 locked@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 site@1440x900 email@1440x900 no-email@1440x900 test-sent@1440x900 spam@1440x900 files@1440x900 integrations@1440x900 locked@1440x900 default@920x900 email@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .gs-own { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); margin-top: var(--wf-space-2); font-size: var(--wf-type-small); }
@@ -333,7 +333,15 @@
       </div>
     </div>
 
-    <footer class="wf-foot"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+    <!-- Save names what it saves (ADR-0257): the tabs above could be read as one form. -->
+    <footer class="wf-foot"><div class="wf-foot__end">
+      <button class="wf-btn wf-btn--primary" data-state="default site">Save general settings</button>
+      <button class="wf-btn wf-btn--primary" data-state="email no-email test-sent">Save email settings</button>
+      <button class="wf-btn wf-btn--primary" data-state="spam">Save spam protection settings</button>
+      <button class="wf-btn wf-btn--primary" data-state="files">Save file settings</button>
+      <button class="wf-btn wf-btn--primary" data-state="integrations">Save integration settings</button>
+      <button class="wf-btn wf-btn--primary" data-state="locked">Save data collection settings</button>
+    </div></footer>
   </main>
 
   <div class="wf-toast" data-state="test-sent" role="status">

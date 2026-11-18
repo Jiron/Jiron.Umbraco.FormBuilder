@@ -4,6 +4,7 @@
 // the field picker adds it. A saved template's "..." renames or deletes it, and the focus stays on the "..." or moves
 // to the card that takes the deleted one's place. There is no create button: templates come from Save as template on a
 // form or a group.
+import '../section/place-tabs.element';
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -388,7 +389,7 @@ export class TemplatesScreenElement extends UmbLitElement {
   }
 
   override render() {
-    return html`<umb-body-layout>${this.#body()}</umb-body-layout>`;
+    return html`<umb-body-layout><jfb-place-tabs tab="templates"></jfb-place-tabs>${this.#body()}</umb-body-layout>`;
   }
 }
 

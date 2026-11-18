@@ -1,90 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { openSearch } from '../../support/search.ts';
-import type { Role } from '../../support/users.ts';
 
-// The Forms section's shell (ROADMAP 9.1, ADR-0021, ADR-0165): each role sees exactly its menus, the checklist's form block step
-// turns green, and the Overview holds up in Umbraco's three themes. A confirm that shows a name as text is the library's
-// (library.spec.ts), whose Recycle Bin asks before deleting for good.
+// The Forms section's shell (ROADMAP 9.1, ADR-0021, ADR-0165): the checklist's form block step turns green, and the
+// Overview holds up in Umbraco's three themes. What each persona sees on the section's left side is places.spec.ts's.
+// A confirm that shows a name as text is the library's (library.spec.ts), whose Recycle Bin asks before deleting for
+// good.
 
 const OVERVIEW = '/umbraco/section/jfb-forms';
 const API = '/umbraco/jfb/management/api/v1';
-
-const LIBRARY = ['Option lists', 'Themes', 'Email layouts', 'Templates'];
-const ENTRIES = ['Inbox', 'Spam'];
-
-/** What each persona of ADR-0013 sees below the forms tree, heading by heading; a heading stands only above items they see. */
-const MENUS: Partial<Record<Role, Record<string, string[]>>> = {
-  admin: {
-    Entries: ENTRIES,
-    Library: LIBRARY,
-    // The host installs the AI add-on, whose settings screen is the last (ADR-0018).
-    Settings: ['General', 'Email', 'Spam protection', 'Files', 'Access', 'Integrations', 'AI'],
-    Privacy: ['People', 'Retention', 'Data collection'],
-    Activity: ['Deliveries', 'Audit log'],
-  },
-  designer: { Library: LIBRARY },
-  entryHandler: { Entries: ENTRIES },
-  viewer: { Entries: ENTRIES },
-  privacyOfficer: { Entries: ENTRIES, Privacy: ['People', 'Retention'] },
-  noAccess: {},
-  hr: { Entries: ENTRIES },
-};
-
-/** Whether the role sees the tree, or the sentence in its place. */
-const SEES_TREE: Partial<Record<Role, boolean>> = {
-  admin: true,
-  designer: true,
-  entryHandler: true,
-  viewer: true,
-  privacyOfficer: true,
-  noAccess: false,
-  hr: true,
-};
-
-/** The sidebar as the page shows it: each heading with its items, without the forms tree and its heading. */
-async function sidebarOf(page: Page): Promise<Record<string, string[]>> {
-  const groups = page.locator('umb-section-sidebar umb-section-sidebar-menu');
-  const found: Record<string, string[]> = {};
-  for (const group of await groups.all()) {
-    const heading = await group.locator('h3').textContent();
-    found[(heading ?? '').trim()] = await group.locator('uui-menu-item').evaluateAll((items) =>
-      // What each item shows: the Inbox's name for screen readers adds its unseen count, its label slot shows the name.
-      items.map(
-        (item) => item.querySelector('[slot="label"]')?.textContent?.trim() || (item.getAttribute('label') ?? ''),
-      ),
-    );
-  }
-  return found;
-}
-
-for (const [role, menus] of Object.entries(MENUS) as [Role, Record<string, string[]>][]) {
-  test(`${role} sees exactly the menus of their permissions`, async ({ page, loginAs }) => {
-    await loginAs(role);
-    await page.goto(OVERVIEW);
-    await expect(page.locator('jfb-overview')).toBeVisible();
-
-    // Each sidebar app appears on its own once the answer about the user's permissions has come.
-    if (SEES_TREE[role])
-      await expect(page.locator('umb-section-sidebar umb-section-sidebar-menu-with-entity-actions')).toBeVisible();
-    else await expect(page.locator('jfb-no-forms')).toContainText("You can't see any forms yet.");
-    await expect.poll(async () => Object.keys(await sidebarOf(page)).length).toBe(Object.keys(menus).length);
-    await expect.poll(() => sidebarOf(page)).toEqual(menus);
-
-    await expect(page.locator('jfb-no-forms')).toHaveCount(SEES_TREE[role] ? 0 : 1);
-    await expect(page.locator('umb-section-sidebar umb-section-sidebar-menu-with-entity-actions')).toHaveCount(
-      SEES_TREE[role] ? 1 : 0,
-    );
-  });
-}
-
-test('a menu item opens its place, at the address the sidebar names', async ({ page, loginAs }) => {
-  await loginAs('privacyOfficer');
-  await page.goto(OVERVIEW);
-  await page.locator('umb-section-sidebar uui-menu-item[label="Retention"]').locator('a').first().click();
-  await expect(page).toHaveURL(/section\/jfb-forms\/workspace\/jfb-privacy-retention/);
-});
 
 test("the checklist's button for the form block calls setup/form-block, and its item turns green", async ({
   page,

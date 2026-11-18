@@ -3,7 +3,7 @@
 // everything (prepared in the background, its progress said in the box and its file linked from a toast), Set legal
 // hold... (a sidebar) and Erase... (its preview first, then delete or anonymise). Each row opens its entry. Once erased, one
 // line in the list's place says what went and where it is recorded. Every request names the person again; the server
-// finds the entries again, and the audit log never names whom they were about. The sidebar names the screen.
+// finds the entries again, and the audit log never names whom they were about. Its place's tabs name it.
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -36,6 +36,7 @@ import { startIdleGate } from '../ui/idle-gate';
 import { PEOPLE_ERASE_MODAL } from './people-erase.modal.token';
 import { PEOPLE_HOLD_MODAL } from './people-hold.modal.token';
 import { jfbPhoneColumn } from '../styles/phone';
+import '../section/place-tabs.element';
 
 /** Umbraco's Members section, whose users may list members in its picker. */
 const MEMBERS_SECTION = 'Umb.Section.Members';
@@ -711,12 +712,14 @@ export class PeopleScreenElement extends UmbLitElement {
   override render() {
     if (!this._ready)
       return html`<umb-body-layout
-        ><div class="page">
+        ><jfb-place-tabs tab="people"></jfb-place-tabs>
+        <div class="page">
           <uui-box>${skeletonLines(this.localize.term('general_loading'), [64, 48])}</uui-box>
         </div></umb-body-layout
       >`;
     const found = this._found;
     return html`<umb-body-layout>
+      <jfb-place-tabs tab="people"></jfb-place-tabs>
       <div class="page">
         ${this.#findBox()} ${this.#erasedNote()}
         ${

@@ -1,5 +1,5 @@
 // The theme workspace (ROADMAP 12.1, IA 7, ADR-0215): Umbraco's routable workspace over the theme endpoints, with its one
-// view, Save in its footer, and Duplicate, Export and Delete... in its "...". The list screen itself is the sidebar item's
+// view, Save in its footer, and Duplicate, Export and Delete... in its "...". The list screen itself is the Themes tab's
 // workspace (section/manifests.ts); the create dialog it opens is registered here.
 import { UmbSubmitWorkspaceAction } from '@umbraco-cms/backoffice/workspace';
 import {

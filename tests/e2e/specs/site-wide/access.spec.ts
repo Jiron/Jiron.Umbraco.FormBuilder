@@ -4,6 +4,7 @@ import { axeInside } from '../../support/axe.ts';
 import { API, created, unique } from '../../support/forms-api.ts';
 import { ClickCounter, expectTaskClicks } from '../../support/top-tasks.ts';
 import { openRowActions } from '../../support/tree.ts';
+import { goToTab } from '../../support/places.ts';
 
 // Settings > Access (ROADMAP 12.4a, IA 8, ADR-0013, ADR-0218): an administrator gives a group a permission in the
 // matrix, which brings the one it needs, and saves it; then restricts a new folder to one group from its Permissions
@@ -36,7 +37,7 @@ test('Settings \u203a Access gives a group a permission with the one it needs, a
   await loginAs('admin');
   await page.goto(SECTION);
   const giving = new ClickCounter();
-  await giving.click(page.locator('umb-menu-item-layout[label="Access"], uui-menu-item[label="Access"]').first());
+  await goToTab(page, 'Settings', 'Access', (target) => giving.click(target));
   await expect(page).toHaveURL(/workspace\/jfb-settings-access$/);
   const screen = page.locator('jfb-access-screen');
   const matrix = screen.getByRole('region', { name: 'What each user group may do with every form' });
@@ -49,7 +50,7 @@ test('Settings \u203a Access gives a group a permission with the one it needs, a
     await matrix.getByRole('checkbox', { name: 'Export entries, HR team' }).check();
     await expect(matrix.getByRole('checkbox', { name: 'View entries, HR team' })).toBeChecked();
     await expect(screen.getByRole('status')).toHaveText('View entries is on too: Export entries needs it.');
-    await screen.getByRole('button', { name: 'Save', exact: true }).click();
+    await screen.getByRole('button', { name: 'Save access', exact: true }).click();
     await expect(page.locator('uui-toast-notification').filter({ hasText: 'Access is saved.' })).toBeVisible();
     // The ticks and Save are the task's own.
     expectTaskClicks(giving, 'Administrator', 3);

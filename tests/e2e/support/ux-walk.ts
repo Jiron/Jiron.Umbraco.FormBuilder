@@ -138,14 +138,26 @@ export interface AxeNode {
 
 /**
  * Axe's findings split by whose they are: a node inside one of Jiron Form Builder's elements (a `jfb-` tag on its way
- * from the document) is ours, any other Umbraco's.
+ * from the document) is ours, any other Umbraco's. Two findings are Umbraco's even inside ours, and no other there:
+ * the sidebar's places (ROADMAP 22.2) draw Umbraco's own menu item, unstyled, and axe questions in it what it questions
+ * in Umbraco's tree beside them, its `#menu-item` named "menuitem" whatever it shows, and its label's colours, which
+ * the text given to its label slot takes too (the Inbox's name beside its badge). Any other rule on a menu item of
+ * ours, a missing name for one, stays ours.
  */
 export function splitAxe(nodes: readonly AxeNode[]): { ours: string[]; umbraco: number } {
   const ours: string[] = [];
   let umbraco = 0;
   for (const node of nodes) {
-    if (/(^|[^a-z0-9-])jfb-[a-z]/.test(JSON.stringify(node.ancestry)))
-      ours.push(`${node.rule}: ${JSON.stringify(node.target)}`);
+    const path = JSON.stringify(node.ancestry);
+    const last = node.target.at(-1);
+    const host = Array.isArray(last) ? String(last.at(-2) ?? '') : '';
+    const inner = Array.isArray(last) ? String(last.at(-1) ?? '') : String(last ?? '');
+    const inItem = host.startsWith('uui-menu-item');
+    const itemsOwn =
+      (node.rule === 'label-content-name-mismatch' && inItem && inner === '#menu-item') ||
+      (node.rule === 'color-contrast' &&
+        (inItem || (inner.endsWith('[slot="label"]') && path.includes('uui-menu-item'))));
+    if (!itemsOwn && /(^|[^a-z0-9-])jfb-[a-z]/.test(path)) ours.push(`${node.rule}: ${JSON.stringify(node.target)}`);
     else umbraco++;
   }
   return { ours, umbraco };

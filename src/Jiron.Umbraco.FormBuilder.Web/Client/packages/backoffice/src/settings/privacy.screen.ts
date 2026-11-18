@@ -2,4 +2,4 @@
 // the retention days, which Privacy > Retention shows with its dry run (ADR-0222).
 import { settingsScreen } from './settings-screen.element';
 
-export const element = settingsScreen('jfb-settings-privacy', 'privacy', ['retention']);
+export const element = settingsScreen('jfb-settings-privacy', 'privacy', 'dataCollection', ['retention']);

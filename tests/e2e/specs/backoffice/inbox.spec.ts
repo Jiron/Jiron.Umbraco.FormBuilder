@@ -4,6 +4,7 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API } from '../../support/forms-api.ts';
 import { STUB_URL } from '../../support/paths.ts';
+import { placeItem } from '../../support/places.ts';
 
 // The Inbox and Spam (ROADMAP 11.1 part c, IA 1, 6.1 and 6.2, ADR-0209). The viewer's Inbox holds no entry of the
 // restricted folder's forms, nor offers them in the Form filter, and the Inbox's badge counts what the viewer may view;
@@ -98,12 +99,18 @@ test("the viewer's Inbox holds no entry of the restricted folder's forms, and it
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
 
   // The badge says what the server counts for the viewer, and the item names it for screen readers.
+  // Other specs send entries the viewer may view meanwhile, and the badge reads the count once a minute: the page is
+  // read again until the badge and the server's count, asked right after, agree.
   const viewerApi = await apiAs('viewer');
-  const unseen = (await (await viewerApi.get(`${API}/entries/unseen`)).json()) as { count: number; more: boolean };
-  const said = unseen.more ? `${String(unseen.count)}+` : String(unseen.count);
-  const item = page.locator('jfb-inbox-menu-item uui-menu-item');
-  await expect(item.locator('uui-badge')).toHaveText(said);
-  await expect(item).toHaveAttribute('label', `Inbox, ${said} unseen`);
+  const item = placeItem(page, 'Inbox');
+  await expect(async () => {
+    await page.reload();
+    const badge = (await item.locator('uui-badge').textContent({ timeout: 30_000 }))?.trim();
+    const unseen = (await (await viewerApi.get(`${API}/entries/unseen`)).json()) as { count: number; more: boolean };
+    const said = unseen.more ? `${String(unseen.count)}+` : String(unseen.count);
+    expect(badge).toBe(said);
+    await expect(item).toHaveAttribute('label', `Inbox, ${said} unseen`);
+  }).toPass({ timeout: 120_000 });
   await expect(item).toHaveAttribute('active', '');
 
   // The HR team sees the form's entries in its Inbox.
@@ -179,7 +186,7 @@ test("the Inbox badge's poll never keeps an idle user signed in, and Umbraco end
     await page.clock.install();
     await loginAs('viewer', page);
     await page.goto('/umbraco/section/jfb-forms');
-    await expect(page.locator('jfb-inbox-menu-item uui-menu-item')).toBeVisible({ timeout: 60_000 });
+    await expect(placeItem(page, 'Inbox')).toBeVisible({ timeout: 60_000 });
     let polls = 0;
     let renewals = 0;
     page.on('request', (request) => {
