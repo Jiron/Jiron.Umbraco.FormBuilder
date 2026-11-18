@@ -45,8 +45,9 @@
       the form, or preview it and send a test entry".
     - no-results: the chip row's Clear filters is the only one; the sentence points to the filters above.
     - loading, error.
-    At 920 px the Actions and Position columns give way, and a failed delivery shows in the State column,
-    under the chip, so the names keep their width.
+    The Actions column speaks only where something did not go out ("1 failed", "1 uncertain", "2 waiting"); where every
+    action went out, or none ran, its cell is empty (ROADMAP 22.4). At 920 px the Actions and Position columns give way,
+    and a failed delivery shows in the State column, under the chip, so the names keep their width.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -95,25 +96,25 @@
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214" data-state="default filtered bulk-done export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 214" data-state="bulk"><i data-i="check"></i></span></td>
               <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span></td>
               <td class="en-col-state"><span class="wf-chip wf-chip--warning" data-state="default filtered bulk export">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="bulk-done">Approved</span></td>
-              <td class="wf-muted">3 h ago</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
+              <td class="wf-muted">3 h ago</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Frontend developer</td><td></td>
             </tr>
             <tr class="wf-unseen" data-state="default filtered bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 213" data-state="default filtered bulk-done export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 213" data-state="bulk"><i data-i="check"></i></span></td>
               <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Amira Haddad</a><span class="wf-sr">, unseen</span></span></td>
               <td class="en-col-state"><span class="wf-chip wf-chip--warning" data-state="default filtered bulk export">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="bulk-done">Approved</span></td>
-              <td class="wf-muted">Today, 07:48</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
+              <td class="wf-muted">Today, 07:48</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Frontend developer</td><td></td>
             </tr>
             <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 212"></span></td>
               <td><a href="#">Sofie Vermeulen</a></td>
               <td class="en-col-state"><span class="wf-chip wf-chip--positive">Approved</span></td>
-              <td class="wf-muted">Yesterday, 18:02</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
+              <td class="wf-muted">Yesterday, 18:02</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Office manager</td><td></td>
             </tr>
             <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 211"></span></td>
               <td><a href="#">Ruben Castillo</a></td>
               <td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Backend developer</td><td></td>
             </tr>
             <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 210"></span></td>
@@ -125,39 +126,39 @@
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 209"></span></td>
               <td><a href="#">Oskar Brandt</a></td>
               <td class="en-col-state"><span class="wf-chip wf-chip--positive">Approved</span></td>
-              <td class="wf-muted">19 Oct, 16:44</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+              <td class="wf-muted">19 Oct, 16:44</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Backend developer</td><td></td>
             </tr>
 
             <!-- The rejected applications, every one ticked, for the privacy officer's delete -->
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 211"><i data-i="check"></i></span></td>
               <td><a href="#">Ruben Castillo</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Backend developer</td><td></td>
             </tr>
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 205"><i data-i="check"></i></span></td>
               <td><a href="#">Elif Demir</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">16 Oct, 09:12</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
+              <td class="wf-muted">16 Oct, 09:12</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Office manager</td><td></td>
             </tr>
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 198"><i data-i="check"></i></span></td>
               <td><a href="#">Mateo Rossi</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">9 Oct, 14:30</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
+              <td class="wf-muted">9 Oct, 14:30</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Frontend developer</td><td></td>
             </tr>
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 190"><i data-i="check"></i></span></td>
               <td><a href="#">Sara Nilsson</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">2 Oct, 10:05</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+              <td class="wf-muted">2 Oct, 10:05</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Backend developer</td><td></td>
             </tr>
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 183"><i data-i="check"></i></span></td>
               <td><a href="#">Noah Fischer</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">25 Sep, 16:21</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
+              <td class="wf-muted">25 Sep, 16:21</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Office manager</td><td></td>
             </tr>
             <tr data-state="delete">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 47"><i data-i="check"></i></span></td>
               <td><a href="#">Lena Weber</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">3 Jun, 08:47</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Marketing manager</td><td></td>
+              <td class="wf-muted">3 Jun, 08:47</td><td class="wf-muted en-wide"></td><td class="en-wide en-col-position">Marketing manager</td><td></td>
             </tr>
           </tbody>
         </table>
@@ -235,7 +236,7 @@
         </label>
         <div class="wf-field">
           <span class="wf-label">Entries</span>
-          <span>All 214 entries, no filters</span>
+          <span>All, no filters</span>
         </div>
         <div class="wf-field" role="group" aria-labelledby="ex-fields">
           <span class="wf-label" id="ex-fields">Fields</span>

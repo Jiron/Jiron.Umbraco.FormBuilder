@@ -58,14 +58,15 @@
     Overview, in order: views, starts, entries and conversion; entries per day (the last 30 days against the 30 days
     before, day by day); who reaches each page, with the median time to complete; the fields that stop visitors most,
     with the kind of error; the top website pages the entries came from; entries by hour of day, in the site's time zone;
-    and the members who sent entries (shown on sites with members). Every chart has "Show as table", which swaps it for
-    its table in place; the box remembers the choice per user.
+    and the members who sent entries (shown on sites with members). One switch beside Overview and Answers, "Show as
+    tables", swaps every chart for its table in place, on the Overview and the Answers alike, and is kept for the user
+    (ROADMAP 22.4).
 
     States:
     - scrolled: the same Overview scrolled down to its lower boxes.
     - range: the date range's popover, with Group by. Grouping by week or month renames the chart ("Entries per week").
-    - table: every chart of the Overview as its table (each box switches on its own; the shot shows them all at once).
-    - answers: a summary per field (11.5b). Choice fields as bars with "Show as table"; free text as a list of answers,
+    - table: every chart of the Overview as its table, with "Show as tables" on.
+    - answers: a summary per field (11.5b). Choice fields as bars; free text as a list of answers,
       each linking to its entry, never summarised; other fields say how often they were answered.
     - answers-table: the choice fields as tables.
     - empty, off, loading.
@@ -89,7 +90,9 @@
       <div class="wf-toolbar" style="position: relative" data-state="default scrolled range answers answers-table table empty loading">
         <button class="wf-btn" aria-expanded="false" data-state="default scrolled answers answers-table table empty loading"><i data-i="calendar"></i>Last 30 days<i data-i="chevron-down"></i></button>
         <button class="wf-btn" aria-expanded="true" data-state="range"><i data-i="calendar"></i>Last 30 days<i data-i="chevron-down"></i></button>
-        <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="is-compare"></span><span id="is-compare">Compare with the previous period</span></span>
+        <span class="wf-check" data-state="default scrolled range table empty loading"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="is-compare"></span><span id="is-compare">Compare with the previous period</span></span>
+        <span class="wf-check" data-state="default scrolled range answers empty loading"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="is-tables"></span><span id="is-tables">Show as tables</span></span>
+        <span class="wf-check" data-state="table answers-table"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="is-tables-on"></span><span id="is-tables-on">Show as tables</span></span>
         <div class="wf-seg" role="group" aria-label="View" style="margin-left: auto">
           <button aria-pressed="true" data-state="default scrolled range table empty loading">Overview</button><button aria-pressed="false" data-state="answers answers-table">Overview</button><button aria-pressed="false" data-state="default scrolled range table empty loading">Answers</button><button aria-pressed="true" data-state="answers answers-table">Answers</button>
         </div>
@@ -147,8 +150,6 @@
           <div class="wf-box__head">
             <h2 class="wf-box__title" id="is-per-day">Entries per day</h2>
             <div class="wf-box__end">
-              <button class="wf-btn wf-btn--small" data-state="default scrolled range"><i data-i="list"></i>Show as table</button>
-              <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
             </div>
           </div>
           <div class="wf-box__body" data-state="default scrolled range">
@@ -231,8 +232,6 @@
             <div class="wf-box__head">
               <h2 class="wf-box__title" id="is-dropoff">Who reaches each page</h2>
               <div class="wf-box__end">
-                <button class="wf-btn wf-btn--small" data-state="default scrolled range"><i data-i="list"></i>Show as table</button>
-                <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
               </div>
             </div>
             <div class="wf-box__body" data-state="default scrolled range">
@@ -257,8 +256,6 @@
             <div class="wf-box__head">
               <h2 class="wf-box__title" id="is-stops">Fields that stop visitors most</h2>
               <div class="wf-box__end">
-                <button class="wf-btn wf-btn--small" data-state="default scrolled range"><i data-i="list"></i>Show as table</button>
-                <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
               </div>
             </div>
             <div class="wf-box__body" data-state="default scrolled range">
@@ -280,8 +277,6 @@
             <div class="wf-box__head">
               <h2 class="wf-box__title" id="is-pages">Top website pages</h2>
               <div class="wf-box__end">
-                <button class="wf-btn wf-btn--small" data-state="default scrolled range"><i data-i="list"></i>Show as table</button>
-                <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
               </div>
             </div>
             <div class="wf-box__body" data-state="default scrolled range">
@@ -304,8 +299,6 @@
             <div class="wf-box__head">
               <h2 class="wf-box__title" id="is-hours">Entries by hour of day</h2>
               <div class="wf-box__end">
-                <button class="wf-btn wf-btn--small" data-state="default scrolled range"><i data-i="list"></i>Show as table</button>
-                <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
               </div>
             </div>
             <div class="wf-box__body" data-state="default scrolled range">
@@ -341,8 +334,6 @@
             <h2 class="wf-box__title" id="is-topic">Topic</h2>
             <div class="wf-box__end">
               <span class="wf-muted">389 answers</span>
-              <button class="wf-btn wf-btn--small" data-state="answers"><i data-i="list"></i>Show as table</button>
-              <button class="wf-btn wf-btn--small" data-state="answers-table"><i data-i="chart"></i>Show as chart</button>
             </div>
           </div>
           <div class="wf-box__body" data-state="answers">
@@ -366,8 +357,6 @@
             <h2 class="wf-box__title" id="is-country">Country</h2>
             <div class="wf-box__end">
               <span class="wf-muted">381 answers</span>
-              <button class="wf-btn wf-btn--small" data-state="answers"><i data-i="list"></i>Show as table</button>
-              <button class="wf-btn wf-btn--small" data-state="answers-table"><i data-i="chart"></i>Show as chart</button>
             </div>
           </div>
           <div class="wf-box__body" data-state="answers">
