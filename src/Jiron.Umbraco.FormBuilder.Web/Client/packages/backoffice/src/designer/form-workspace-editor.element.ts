@@ -2,8 +2,8 @@
 // back arrow to the form's folder, the name, which renames the form for who may design it (ADR-0166) and is a heading for
 // everyone else (ADR-0182), and the state chip in Umbraco's words, which goes under the name where the two do not fit
 // side by side and wraps rather than cuts (ADR-0206, ADR-0213). The views draw the rest. The footer holds Preview, Save
-// draft and Publish... on the views that change the form, for who may design it; where it would hold none of them it is
-// not drawn at all (ADR-0258). So this is Umbraco's workspace editor, which can leave its footer out, drawn here as
+// draft and Publish... on the views that change the form, which only who may design it sees; on the others it is not
+// drawn at all (ADR-0258). So this is Umbraco's workspace editor, which can leave its footer out, drawn here as
 // Umbraco's detail workspace editor draws it (the form's "..." where the form is saved, and Umbraco's own words for a
 // form that can't be opened or isn't there), since that one draws its footer on every view. A form put in the Recycle
 // Bin leaves its screen by the action that put it there (library/actions/trash-form.action.ts).
@@ -129,7 +129,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
   declare private _forbidden: boolean;
   declare private _exists: boolean;
   declare private _isNew: boolean | undefined;
-  /** Whether the view shown changes the form, so the footer with its buttons is drawn for who may design it. */
+  /** Whether the view shown changes the form, so the footer with its buttons is drawn. */
   declare private _footer: boolean;
 
   /** The header's own size follows the window and the chip's words; each change reads again where the chip lies. */
@@ -224,7 +224,7 @@ export class FormWorkspaceEditorElement extends UmbLitElement {
       <umb-workspace-editor
         class=${missing ? 'hide' : ''}
         ?loading=${this._loading}
-        .enforceNoFooter=${!this._footer || this._canDesign === false}
+        .enforceNoFooter=${!this._footer}
         .backPath=${this._backPath}
       >
         <div

@@ -20,6 +20,7 @@ import type { EditorView } from '../form-workspace.context';
 import { EditorHistory } from '../history';
 import { builtInTypes, captchaProviders, englishLook } from '../preview/fixtures';
 import { DOT, groupOf } from './settings-model';
+import { settingsStyles } from './settings.styles';
 
 // What the server answers: the site's choices and providers, or nothing while it fails.
 const server = vi.hoisted(() => ({ fails: false, asked: 0, choices: null as unknown, providers: null as unknown }));
@@ -268,6 +269,12 @@ afterEach(() => {
 });
 
 describe('the groups', () => {
+  it("paint the row picked with the backoffice's own current colour, its text readable in both themes", () => {
+    // Umbraco's dark theme puts its light text on its current colour at under 4.5:1; the backoffice's mix keeps it.
+    const rule = /\.groups button\[aria-current='true'\]\s*\{([^}]*)\}/.exec(settingsStyles.cssText)?.[1] ?? '';
+    expect(rule).toMatch(/background:\s*var\(--jfb-bo-color-current\)/);
+  });
+
   it('list the six groups, each with a line of what is set, and show Submission picked', async () => {
     const { head, root } = await viewOf();
     const rows = [...root.querySelectorAll<HTMLButtonElement>('nav.groups button')];

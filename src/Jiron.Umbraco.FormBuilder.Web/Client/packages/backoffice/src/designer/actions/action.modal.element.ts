@@ -456,12 +456,15 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     // The sidebar takes the focus itself as it opens; the box a Fix it leads to, or the first, takes it after.
     const focus = this.data?.focus;
     if (focus?.kind === 'setting' && this.#hidden(focus.path)) this._more = true;
-    requestAnimationFrame(
-      () =>
-        void this.updateComplete.then(() =>
-          this._picking ? this.#focusKind(null) : this.#focus(focus ?? { kind: 'action' }),
-        ),
-    );
+    this.#focusDrawn(() => (this._picking ? this.#focusKind(null) : this.#focus(focus ?? { kind: 'action' })));
+  }
+
+  /**
+   * Moves the focus once the sidebar has drawn what changed: a box slotted into a new body layout takes no focus
+   * until that layout has drawn its slot.
+   */
+  #focusDrawn(move: () => void) {
+    requestAnimationFrame(() => void this.updateComplete.then(move));
   }
 
   // ---- Words --------------------------------------------------------------------------------------------------------
@@ -873,7 +876,10 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   // ---- Drawing ------------------------------------------------------------------------------------------------------
 
-  /** A kind's one line, as the backoffice's words hold one for each built-in choice; none for a site's own. */
+  /**
+   * A kind's one line: the word `jfbActionLines_<key>` for a kind named by the term `#<area>_<key>`, which the
+   * backoffice's words hold for each built-in kind and a site's package may add for its own (extending.md); none else.
+   */
   #lineOf(choice: ActionChoice): string {
     const name = choice.name.startsWith('#') ? choice.name.slice(1) : '';
     const key = `jfbActionLines_${name.slice(name.indexOf('_') + 1)}`;
@@ -891,7 +897,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       // The first pick starts the action; another keeps what was typed since.
       const edit = this._edit.key ? withChoice(this._edit, choice, name) : newEdit(crypto.randomUUID(), choice, name);
       this.#change(edit, BOX.whatHappens, true);
-      void this.updateComplete.then(() => this.#focus({ kind: 'action' }));
+      this.#focusDrawn(() => this.#focus({ kind: 'name' }));
     };
     return html`<ul class="kinds" aria-label=${this.#term('headlineNew')}>
       ${(this.data?.choices ?? []).map((choice) => {
@@ -925,7 +931,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
     const back = () => {
       const picked = this._edit.choice;
       this._picking = true;
-      void this.updateComplete.then(() => this.#focusKind(picked));
+      this.#focusDrawn(() => this.#focusKind(picked));
     };
     return html`<div class="kind-head">
       ${

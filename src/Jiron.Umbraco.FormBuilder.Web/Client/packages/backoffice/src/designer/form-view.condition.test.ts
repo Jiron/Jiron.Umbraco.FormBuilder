@@ -59,17 +59,13 @@ describe('the condition of the footer actions', () => {
 
 describe("the form's workspace editor", () => {
   /** The editor at an address, over a form as the workspace holds it: saved and open to the user unless said. */
-  async function editorAt(
-    path: string,
-    held: { permissions?: string[]; forbidden?: boolean; missing?: boolean; isNew?: boolean } = {},
-  ) {
+  async function editorAt(path: string, held: { forbidden?: boolean; missing?: boolean; isNew?: boolean } = {}) {
     go(path);
     const host = testHost();
     const flag = (on: boolean) => ({ isOn: new UmbObjectState(on).asObservable() });
-    const form = held.permissions ? { name: 'Contact', permissions: held.permissions, folderKey: null } : undefined;
     host.provideContext(FORM_WORKSPACE_CONTEXT, {
       state: new UmbObjectState(undefined).asObservable(),
-      form: new UmbObjectState(form).asObservable(),
+      form: new UmbObjectState(undefined).asObservable(),
       loading: flag(false),
       forbidden: flag(held.forbidden ?? false),
       data: new UmbObjectState(held.missing ? undefined : { form: {} }).asObservable(),
@@ -101,13 +97,6 @@ describe("the form's workspace editor", () => {
     go(`${FORM}/view/actions`);
     await settle(editor);
     expect(workspace().enforceNoFooter).toBe(false);
-  });
-
-  it('draws no footer on Actions for who may not design the form, whom it would hold no button for', async () => {
-    const managing = await editorAt(`${FORM}/view/actions`, { permissions: ['manageActions'] });
-    expect(managing.workspace().enforceNoFooter).toBe(true);
-    const designing = await editorAt(`${FORM}/view/actions`, { permissions: ['design', 'manageActions'] });
-    expect(designing.workspace().enforceNoFooter).toBe(false);
   });
 
   it("keeps the form's menu where the form is saved, and leaves it out of a form not saved yet", async () => {

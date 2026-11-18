@@ -1,8 +1,9 @@
 // The Settings view's look (ROADMAP 10.1a, IA 5.2, docs/ux/tokens.md, ADR-0258): the groups as a list on Umbraco's
-// surface, each row its name and its line, the row picked marked as Umbraco marks the open item and without its line,
-// and beside it the group picked, its settings' boxes as the inspector draws them (control.styles.ts) and no wider than
-// a text box reads well. Where the view has no room for both, the list stands alone, every row with its line, or the
-// group in its place. On a phone two boxes side by side go one under the other, so no text is squashed.
+// surface, each row its name and its line, the row picked marked as the open entry is in the entries' list (the
+// backoffice's own current colour, which keeps its text readable in the dark theme) and without its line, and beside
+// it the group picked, its settings' boxes as the inspector draws them (control.styles.ts) and no wider than a text
+// box reads well. Where the view has no room for both, the list stands alone, every row with its line, or the group
+// in its place. On a phone two boxes side by side go one under the other, so no text is squashed.
 import { css } from '@umbraco-cms/backoffice/external/lit';
 
 export const settingsStyles = css`
@@ -50,7 +51,7 @@ export const settingsStyles = css`
   }
 
   .groups button[aria-current='true'] {
-    background: var(--uui-color-current);
+    background: var(--jfb-bo-color-current);
     color: var(--uui-color-current-contrast);
   }
 

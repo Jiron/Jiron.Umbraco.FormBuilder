@@ -108,10 +108,11 @@ What the build settled where the decision left room:
   nowhere else. The kinds' lines are the backoffice's own words, by the kind's name; a site's own kind gets one by
   adding its word ([extending.md](../extending.md)). No kind is shown as unavailable: the server lists only the
   kinds a site offers.
-- **The footer is drawn where it holds the form's buttons:** on Design, Settings and Actions, for who may design the
-  form. On the other views, and for a user who may not design, it is not drawn at all, so what an add-on puts in the
-  footer goes with it there. Umbraco's detail workspace editor draws its footer on every view, so the form's editor
-  draws Umbraco's workspace editor itself, which can leave it out, with the rest that the detail editor does (the
-  form's "…", and Umbraco's own words for a form that can't be opened or isn't there).
+- **The footer is drawn where it holds the form's buttons:** on Design, Settings and Actions, which only who may
+  design the form sees (managing actions needs design). On the other views, a site's own among them, it is not drawn
+  at all, so what an add-on puts in the footer goes with it there. Umbraco's detail workspace editor draws its footer
+  on every view, so the form's editor draws Umbraco's workspace editor itself, which can leave it out, with the rest
+  that the detail editor does (the form's "…", and Umbraco's own words for a form that can't be opened or isn't
+  there).
 - **The view shown is read from the address** wherever its name stands in it, so a dialog that Umbraco opens by an
   address over a view leaves the footer as it is.

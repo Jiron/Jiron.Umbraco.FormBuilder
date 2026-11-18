@@ -12,6 +12,7 @@
 // problems at their box; and its boxes in words for who may only read them.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { umbLocalizationManager } from '@umbraco-cms/backoffice/localization-api';
 import { UmbObjectState } from '@umbraco-cms/backoffice/observable-api';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionTypeResponseModel } from '../../api';
@@ -284,6 +285,8 @@ describe("an action's sidebar", () => {
     // The sheet, headed by the kind, the focus on its first box.
     expect(text(root.querySelector('#what-happens'))).toBe('Email the team');
     expect(root.querySelector('.kind')).toBeNull();
+    await frame();
+    expect(root.activeElement?.id).toBe('name');
     expect([box('name').value, box('setting-subject').value]).toEqual([
       'Email the team',
       'New entry in {{ form.name }}',
@@ -291,6 +294,7 @@ describe("an action's sidebar", () => {
     // Back to the kinds, the focus on the one picked; another kind replaces the settings, and the name with them.
     must(root.querySelector<HTMLElement>('uui-button[label="Other kinds"]'), 'Other kinds').click();
     await settle();
+    await frame();
     expect(root.activeElement?.getAttribute('data-choice')).toBe('email:0');
     await choose('what-happens', 'email:1');
     expect([box('name').value, box('setting-subject').value]).toEqual([
@@ -318,6 +322,31 @@ describe("an action's sidebar", () => {
       stopOnFailure: false,
     });
     expect(modal.submit).toHaveBeenCalled();
+  });
+
+  it("lists a site's own kinds by their names, with the line its words hold under one named by a term", async () => {
+    // A package's words: its type's name, and the line Add action shows under it, by the key after the name's area.
+    umbLocalizationManager.registerLocalization({
+      $code: 'en',
+      acme_crm: 'Tell the CRM',
+      jfbActionLines_crm: 'Sends each entry to the sales CRM.',
+    } as never);
+    const own = (alias: string, name: string): ActionTypeResponseModel => ({
+      ...(ACTION_TYPES.find((type) => type.alias === 'setState') as ActionTypeResponseModel),
+      alias,
+      name,
+      presets: [],
+    });
+    const types = [...ACTION_TYPES, own('crm', '#acme_crm'), own('ledger', 'Ledger')];
+    const { root } = await sidebarOf({ action: null, actionTypes: types, choices: choicesOf(types) }, null);
+    const shown = (id: string) => {
+      const kind = must(root.querySelector(`.kind[data-choice="${id}"]`), id);
+      return [text(kind.querySelector('.kind-name')), kind.querySelector('.kind-line')?.textContent?.trim() ?? null];
+    };
+    expect([shown('crm'), shown('ledger')]).toEqual([
+      ['Tell the CRM', 'Sends each entry to the sales CRM.'],
+      ['Ledger', null],
+    ]);
   });
 
   it('opens an action of the form on its sheet, headed by its kind, which it keeps, and updates it', async () => {
