@@ -159,6 +159,18 @@ async function answersIn(view: HTMLElement): Promise<InsightAnswersElement> {
 /** A table row's cells, each as its text, apart by one space. */
 const cells = (row: Element): string => [...row.children].map((cell) => text(cell)).join(' ');
 
+/** Every box with a chart, as the user's choice of tables keeps them when the one switch is on. */
+const ALL_BOXES = ['entries', 'funnel', 'fields', 'origins', 'hours', 'answers'];
+
+/** The screen's one switch between charts and tables. */
+const tablesSwitch = (root: ShadowRoot) =>
+  must(
+    all<HTMLInputElement>(root.host, '.toolbar uui-toggle').find(
+      (each) => each.getAttribute('label') === 'Show as tables',
+    ),
+    'Show as tables',
+  );
+
 beforeAll(registerEnglish);
 
 afterEach(() => {
@@ -230,48 +242,54 @@ describe('the Insights view', () => {
     );
   });
 
-  it('switches a box to its table and keeps the choice, and shows a box as its table where it was kept', async () => {
-    const { box, view } = await viewOf(report(), report({ tables: ['hours'] }));
-    const fields = box('Fields that stop visitors most');
-    must(fields.querySelector<HTMLElement>('uui-button[slot="header-actions"]'), 'the switch').click();
+  it('shows every chart as its table by one switch beside Overview and Answers, kept, and none on a box', async () => {
+    const { root, box, view } = await viewOf(report(), report({ tables: [...ALL_BOXES] }));
+    expect(root.querySelector('uui-button[slot="header-actions"]'), 'no box has a switch of its own').toBeNull();
+    expect(all(root.host, '.toolbar uui-toggle').map((each) => each.getAttribute('label'))).toEqual([
+      'Compare with the previous period',
+      'Show as tables',
+    ]);
+    tablesSwitch(root).checked = true;
+    tablesSwitch(root).dispatchEvent(new Event('change'));
     await settle(view);
-    expect(api.kept).toEqual([['fields']]);
+    expect(api.kept).toEqual([[...ALL_BOXES]]);
+    const fields = box('Fields that stop visitors most');
     expect([...fields.querySelectorAll('tbody tr')].map(cells)).toEqual([
       'Email address 212 16.2% the format',
       'A field no longer on the form 25 1.9% left empty',
     ]);
-    expect(fields.querySelector('uui-button[slot="header-actions"]')?.getAttribute('label')).toBe('Show as chart');
     expect(
       [...fields.querySelectorAll('thead th')].map((cell) => cell.classList.contains('numeric')),
       'the kind that stops most is words, not a number',
     ).toEqual([false, true, true, false]);
+    expect(box('Entries by hour of day').querySelector('table'), 'every box follows the switch').not.toBeNull();
 
-    const again = await viewOf(report({ tables: ['hours'] }));
+    // Kept: the next visit opens on the tables.
+    const again = await viewOf(report({ tables: [...ALL_BOXES] }));
     const hours = again.box('Entries by hour of day');
     expect([...hours.querySelectorAll('tbody tr')]).toHaveLength(24);
     expect(cells(must([...hours.querySelectorAll('tbody tr')][10], 'ten'))).toBe('10:00 38');
+    expect(tablesSwitch(again.root).checked).toBe(true);
   });
 
   it('saves two quick switches one after the other, so the last choice is the one kept', async () => {
-    const { box, view } = await viewOf(report());
+    const { root, view } = await viewOf(report());
     let release: (value: unknown) => void = () => undefined;
     api.hold = new Promise((resolve) => (release = resolve));
-    const switchOf = (heading: string) =>
-      must(box(heading).querySelector<HTMLElement>('uui-button[slot="header-actions"]'), heading);
-    switchOf('Fields that stop visitors most').click();
-    switchOf('Entries by hour of day').click();
+    for (const on of [true, false]) {
+      tablesSwitch(root).checked = on;
+      tablesSwitch(root).dispatchEvent(new Event('change'));
+    }
     await settle(view);
-    expect(api.kept, 'the second waits for the first').toEqual([['fields']]);
+    expect(api.kept, 'the second waits for the first').toEqual([[...ALL_BOXES]]);
     release(undefined);
-    await vi.waitFor(() => expect(api.kept).toEqual([['fields'], ['fields', 'hours']]));
+    await vi.waitFor(() => expect(api.kept).toEqual([[...ALL_BOXES], []]));
   });
 
-  it('keeps a box switched while a report is on its way, whatever the report says of the tables', async () => {
+  it('keeps the tables switched while a report is on its way, whatever the report says of them', async () => {
     const { root, box, view } = await viewOf(report(), report({ tables: [] }));
-    must(
-      box('Fields that stop visitors most').querySelector<HTMLElement>('uui-button[slot="header-actions"]'),
-      'the switch',
-    ).click();
+    tablesSwitch(root).checked = true;
+    tablesSwitch(root).dispatchEvent(new Event('change'));
     must(
       all<HTMLButtonElement>(root.host, '.menu button').find((each) => text(each) === 'Last 7 days'),
       'last 7 days',
@@ -415,6 +433,7 @@ describe('the Answers of the Insights view', () => {
     expect(root.querySelector('jfb-insight-answers')).toBeNull();
     expect(all(root.host, 'uui-toggle').map((each) => each.getAttribute('label'))).toEqual([
       'Compare with the previous period',
+      'Show as tables',
     ]);
     expect(api.asked, 'the same range needs no new report').toHaveLength(1);
     await answersIn(view);
@@ -483,13 +502,13 @@ describe('the Answers of the Insights view', () => {
     expect(api.asked[1]?.span).toEqual(span);
   });
 
-  it('show every answer as its table with one switch, kept for the user', async () => {
-    const { root, view } = await viewOf(report({ tables: ['hours'] }));
+  it("show every answer as its table with the screen's one switch, kept for the user", async () => {
+    const { root, view } = await viewOf(report());
     const answers = await answersIn(view);
-    const toggle = must(root.querySelector<HTMLInputElement>('uui-toggle'), 'Show as tables');
-    toggle.dispatchEvent(new Event('change'));
+    tablesSwitch(root).checked = true;
+    tablesSwitch(root).dispatchEvent(new Event('change'));
     await settle(view);
-    expect(api.kept).toEqual([['hours', 'answers']]);
+    expect(api.kept).toEqual([[...ALL_BOXES]]);
     expect(answers.tables).toBe(true);
   });
 

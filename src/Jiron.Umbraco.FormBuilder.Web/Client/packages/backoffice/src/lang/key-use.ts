@@ -2,8 +2,9 @@
 // is used where the code names it whole (`jfbArea_key`, `#jfbArea_key` in a manifest or a server's answer); where a
 // file that builds the area's keys from a prefix (`jfbArea_${key}`, `jfbArea_part_${key}`) holds the rest of it as a
 // literal ('key'); where a file of the area's own folders holds it as a literal, as those hand short keys to the area's
-// term functions; and a key the code builds from a family's name and a part (`section_${id}`) is used for each part
-// the lists naming the family hold, which each check passes in. Only tests read this module.
+// term functions; and a key the code builds from a family's name and a part (`section_${id}`) is used for each part the
+// lists naming the family hold, which each check passes in. The other way round, `builtKeyGaps` finds a key the code
+// builds from a value that the area lacks, which a screen would show as the key. Only tests read this module.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,4 +80,50 @@ export function usedKeys(
   }
   for (const [family, parts] of Object.entries(families)) for (const part of parts) add(`${family}_${part}`);
   return used;
+}
+
+const BUILT = /`([A-Za-z][A-Za-z0-9_]*)\$\{([^}`]+)\}([A-Za-z0-9_]*)`/g;
+
+/**
+ * The keys of an area the code builds from a value but the area lacks, which a screen would show as the key itself.
+ * Keys built in one file from the same prefix and the same value with different endings (`retention_${state}`,
+ * `retention_${state}Help`, `retention_${state}Unit`) are siblings: every value the area holds a sibling for, it must
+ * hold each sibling for. A prefix counts where the area holds a key that starts with it, with or without the area's
+ * own name before it. A word only some values have is named whole, never built (Retention's help lines).
+ */
+export function builtKeyGaps(area: string, keys: Iterable<string>, from: readonly Source[] = sources()): string[] {
+  const held = new Set(keys);
+  const groups = new Map<string, { prefix: string; endings: Set<string> }>();
+  for (const { file, text } of from)
+    for (const [, written = '', value = '', ending = ''] of text.matchAll(BUILT)) {
+      const prefix = written.startsWith(`${area}_`) ? written.slice(area.length + 1) : written;
+      if (![...held].some((key) => key.startsWith(prefix))) continue;
+      const group = groups.get(`${file}|${prefix}|${value}`) ?? { prefix, endings: new Set<string>() };
+      group.endings.add(ending);
+      groups.set(`${file}|${prefix}|${value}`, group);
+    }
+  const gaps = new Set<string>();
+  for (const { prefix, endings } of groups.values()) {
+    if (endings.size < 2) continue;
+    const ends = [...endings];
+    // Each value, by the endings the area holds it with. A value held with the empty ending alone may be another
+    // key's whole rest ('submittedHelp' beside 'submitted'), so a value counts once a written ending or two endings
+    // hold it.
+    const found = new Map<string, Set<string>>();
+    for (const key of held) {
+      if (!key.startsWith(prefix)) continue;
+      const rest = key.slice(prefix.length);
+      for (const ending of ends) {
+        if (!rest.endsWith(ending) || rest.length === ending.length) continue;
+        const value = rest.slice(0, rest.length - ending.length);
+        if (/^[A-Za-z0-9]+$/.test(value)) found.set(value, (found.get(value) ?? new Set()).add(ending));
+      }
+    }
+    const values = [...found]
+      .filter(([, by]) => by.size > 1 || [...by].some((ending) => ending !== ''))
+      .map(([value]) => value);
+    for (const value of values)
+      for (const ending of ends) if (!held.has(prefix + value + ending)) gaps.add(prefix + value + ending);
+  }
+  return [...gaps].sort();
 }

@@ -11,7 +11,7 @@ import { choicesOf } from '../designer/actions/action-model';
 import { CONTEXT_TERMS } from '../designer/rules/rule-words';
 import { SPANS } from '../privacy/retention-screen.element';
 import { LEADS } from '../settings/settings-screen.element';
-import { inFolders, sources, usedKeys } from './key-use';
+import { builtKeyGaps, inFolders, sources, usedKeys } from './key-use';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -265,6 +265,41 @@ describe('every key is used', () => {
       [...kinds].filter((kind) => !keysOf('jfbActionLines').has(kind)),
       'kinds without a line',
     ).toEqual([]);
+  });
+});
+
+describe('every key the code builds from a value', () => {
+  it('is held for each value its siblings are held for, so no screen shows a key', () => {
+    const gaps = [...areas.entries()].flatMap(([area, keys]) =>
+      builtKeyGaps(area, keys).map((key) => `${area}_${key}`),
+    );
+    expect(gaps).toEqual([]);
+  });
+
+  it("is found where the area lacks a sibling's key, as Retention's help lines were, and only there", () => {
+    // The screen built a state's name, its help and its unit from the state; two states had no help word.
+    const screen = [
+      {
+        file: 'privacy/retention-screen.element.ts',
+        text: ['', 'Help', 'Unit'].map((end) => `words(\`privacy_retention_\${state}${end}\`)`).join(' '),
+      },
+    ];
+    const keys = ['submitted', 'approved', 'spam'].flatMap((state) => [
+      `privacy_retention_${state}`,
+      `privacy_retention_${state}Unit`,
+      ...(state === 'spam' ? [] : [`privacy_retention_${state}Help`]),
+    ]);
+    expect(builtKeyGaps('jfbGlobalSettings', keys, screen)).toEqual(['privacy_retention_spamHelp']);
+    // A word some values have is named whole, never built: no sibling then asks for the others.
+    const named = [
+      {
+        file: 'retention.ts',
+        text:
+          ['', 'Unit'].map((end) => `words(\`privacy_retention_\${state}${end}\`)`).join(' ') +
+          " 'privacy_retention_submittedHelp'",
+      },
+    ];
+    expect(builtKeyGaps('jfbGlobalSettings', keys, named)).toEqual([]);
   });
 });
 

@@ -234,6 +234,13 @@ describe('Activity > Deliveries', () => {
     expect(paused[0]?.querySelector('code')?.textContent).toBe('JironFormBuilder:Actions:Paused');
   });
 
+  it('says what it shows at first when it is empty: the last 30 days, before which there may be more', async () => {
+    api.lists = [{ data: list([]) }];
+    const { root } = await mount(new DeliveriesScreenElement(), '.empty');
+    expect(said(root)).toContain('No deliveries in the last 30 days.');
+    expect(said(root)).not.toContain('yet');
+  });
+
   it('asks the server again for a filter, and says when nothing matches', async () => {
     api.lists = [{ data: list([delivery({})]) }, { data: list([]) }];
     const { root } = await mount(new DeliveriesScreenElement(), 'table');
@@ -331,6 +338,12 @@ function entry(more: Partial<AuditEntryResponseModel>): AuditEntryResponseModel 
 }
 
 describe('Activity > Audit log', () => {
+  it('says what it shows at first when it is empty: the last 30 days, before which there may be more', async () => {
+    api.lists = [{ data: audit([]) }];
+    const { root } = await mount(new AuditScreenElement(), '.empty');
+    expect(said(root)).toContain('Nothing recorded in the last 30 days.');
+  });
+
   it('lists who did what where, the last 30 days at first', async () => {
     api.lists = [
       {

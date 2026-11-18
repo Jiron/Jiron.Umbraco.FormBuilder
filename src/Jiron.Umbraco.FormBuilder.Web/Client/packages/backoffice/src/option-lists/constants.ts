@@ -6,7 +6,7 @@ import { screenPath, SECTION_PATHNAME } from '../section/entity-types';
 import type { OptionListDetailStore } from './option-list-detail.store';
 import type { OptionListWorkspaceContext } from './option-list-workspace.context';
 
-/** The list of option lists, which the sidebar's item opens (section/sidebar.ts). */
+/** The list of option lists, Library's first tab (section/sidebar.ts). */
 export const OPTION_LISTS_ENTITY_TYPE = 'jfb-option-lists';
 
 /** One option list, whose workspace a row opens. */

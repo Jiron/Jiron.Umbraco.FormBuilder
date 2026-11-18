@@ -45,9 +45,6 @@ export default {
     pointsUp: (points: string, before: string) => `up ${points} points from ${before}`,
     pointsDown: (points: string, before: string) => `down ${points} points from ${before}`,
 
-    showTable: 'Show as table',
-    showChart: 'Show as chart',
-
     entries_day: 'Entries per day',
     entries_week: 'Entries per week',
     entries_month: 'Entries per month',
@@ -59,7 +56,7 @@ export default {
     col_entries: 'Entries',
     col_before: 'The period before',
     entriesChart: (heading: string, count: number, most: string) =>
-      `${heading}: ${count} bars, the most ${most}. Show as table reads each.`,
+      `${heading}: ${count} bars, the most ${most}. Show as tables reads each.`,
 
     funnel: 'Who reaches each page',
     funnelStarted: 'Started',
@@ -113,7 +110,7 @@ export default {
     hours: 'Entries by hour of day',
     hoursZone: (zone: string) => `Time zone: ${zone}`,
     col_hour: 'Hour',
-    hoursChart: (heading: string, most: string) => `${heading}: the most at ${most}. Show as table reads each hour.`,
+    hoursChart: (heading: string, most: string) => `${heading}: the most at ${most}. Show as tables reads each hour.`,
 
     members: 'Members',
     membersLine: (members: string, entries: string) => `${members} members sent ${entries} entries.`,

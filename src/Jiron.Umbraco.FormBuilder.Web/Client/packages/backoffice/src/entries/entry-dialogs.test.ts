@@ -107,10 +107,24 @@ describe('the State part of the filter', () => {
       'Rejected',
     ]);
     expect(element.shadowRoot?.querySelector('uui-dialog-layout')?.getAttribute('headline')).toBe('Filter by state');
+    // The headline says what the boxes choose, so it names their group, and no label says it again (ROADMAP 22.4).
+    expect(element.shadowRoot?.querySelector('legend')).toBeNull();
+    expect(element.shadowRoot?.querySelector('fieldset')?.getAttribute('aria-label')).toBe('Filter by state');
     // German writes its nouns with a capital, also within a sentence.
     const words = de.jfbEntries;
     expect(words.edit_headline(words.edit_part_state)).toBe('Nach Status filtern');
     expect(words.edit_headline(words.edit_part_form)).toBe('Nach Formular filtern');
+  });
+});
+
+describe('the Actions part of the filter', () => {
+  it('names its choices by its headline alone', async () => {
+    const { element } = await open('jfb-entry-filter-modal', { part: 'actions', filter: emptyFilter() });
+    const root = element.shadowRoot;
+    expect(root?.querySelector('uui-dialog-layout')?.getAttribute('headline')).toBe('Filter by actions');
+    expect(root?.querySelector('legend')).toBeNull();
+    expect(root?.querySelector('fieldset')?.getAttribute('aria-label')).toBe('Filter by actions');
+    expect(root?.querySelectorAll('uui-radio').length).toBeGreaterThan(1);
   });
 });
 

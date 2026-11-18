@@ -39,6 +39,15 @@ export type RetentionState = (typeof STATES)[number];
 /** Days per state; 0 keeps a state's entries for good. */
 export type RetentionDays = Readonly<Record<RetentionState, number>>;
 
+/**
+ * The words under a state's name, where its name alone does not say which entries it holds; Rejected and Spam say it
+ * themselves, so their rows have none.
+ */
+const HELP: Partial<Record<RetentionState, string>> = {
+  submitted: 'privacy_retention_submittedHelp',
+  approved: 'privacy_retention_approvedHelp',
+};
+
 /** The spans the dry run counts, in days (IA 9). */
 export const SPANS = [7, 30, 90] as const;
 type Span = (typeof SPANS)[number];
@@ -603,6 +612,7 @@ export class RetentionScreenElement extends UmbLitElement {
 
   #day(state: RetentionState, model: RetentionResponseModel): TemplateResult {
     const id = `days-${state}`;
+    const help = HELP[state];
     const days = this._days[state];
     const forGood = days === FOR_GOOD;
     const problem = this._problems.get(state);
@@ -610,17 +620,17 @@ export class RetentionScreenElement extends UmbLitElement {
       return html`<div class="row">
         <div class="what">
           <span class="label" id=${`${id}-label`}>${this.#stateName(state)}</span>
-          <p class="help">${this.#words(`privacy_retention_${state}Help`)}</p>
+          ${help ? html`<p class="help">${this.#words(help)}</p>` : nothing}
         </div>
         <p class="value shown" aria-labelledby=${`${id}-label`}>
           ${forGood ? this.#words('retentionForGoodShown') : this.#words('retentionDaysShown', this.#number(days))}
         </p>
       </div>`;
-    const described = [`${id}-help`, `${id}-unit`, ...(problem ? [`${id}-why`] : [])].join(' ');
+    const described = [help ? `${id}-help` : '', `${id}-unit`, problem ? `${id}-why` : ''].filter(Boolean).join(' ');
     return html`<div class="row">
       <div class="what">
         <label class="label" for=${id}>${this.#stateName(state)}</label>
-        <p class="help" id=${`${id}-help`}>${this.#words(`privacy_retention_${state}Help`)}</p>
+        ${help ? html`<p class="help" id=${`${id}-help`}>${this.#words(help)}</p>` : nothing}
       </div>
       <div class="value">
         <div class="with-unit">

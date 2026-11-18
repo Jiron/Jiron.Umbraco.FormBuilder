@@ -71,7 +71,8 @@ export default {
     mail_notice: 'A notice of a failed delivery',
     otherType: 'An action',
     whenNext: (queued: string, next: string) => `${queued}, next try ${next}`,
-    deliveriesEmpty: 'No deliveries yet. Emails and webhooks appear here once forms send them.',
+    // The lists open on the last 30 days, before which there may be more (ROADMAP 22.4).
+    deliveriesEmpty: 'No deliveries in the last 30 days. Emails and webhooks appear here once forms send them.',
     deliveriesNoMatch: 'No deliveries match the search and the filters.',
     headlineEmail: (to: string) => `Email to ${to}`,
     headlineWebhook: (to: string) => `Webhook to ${to}`,
@@ -126,7 +127,7 @@ export default {
     columnWhere: 'Where',
     system: 'Jiron Form Builder',
     userGone: 'A deleted user',
-    auditEmpty: 'Nothing is recorded yet. The log fills as people work with forms, entries and settings.',
+    auditEmpty: 'Nothing recorded in the last 30 days. The log fills as people work with forms, entries and settings.',
     auditNoMatch: 'No actions match the search and the filters.',
     detailWho: 'Who',
     detailWhen: 'When',

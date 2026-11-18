@@ -205,14 +205,18 @@ describe('what the sidebar says', () => {
     unconfirmed,
   });
 
-  it('names the entries: all of them, those the filters match, more than a search counts, or the ticked ones', () => {
-    expect(entriesLine(term, plan(214), false, false)).toBe('All 214 entries, no filters');
-    expect(entriesLine(term, plan(1), false, false)).toBe('The 1 entry, no filters');
-    expect(entriesLine(term, plan(124), false, true)).toBe('124 entries that match the filters');
-    expect(entriesLine(term, plan(1000, true, true), false, true)).toBe(
-      'More than 1,000 entries that match the search',
-    );
-    expect(entriesLine(term, plan(6), true, true)).toBe('6 entries selected');
+  it('names which entries go, without the number the button says: all, filtered, searched, ticked', () => {
+    expect(entriesLine(term, plan(214), false, false)).toBe('All, no filters');
+    expect(entriesLine(term, plan(1), false, false)).toBe('All, no filters');
+    expect(entriesLine(term, plan(124), false, true)).toBe('Those that match the filters');
+    expect(entriesLine(term, plan(1000, true, true), false, true)).toBe('Those that match the search');
+    expect(entriesLine(term, plan(6), true, true)).toBe('Those selected');
+    for (const [entries, ticked, filtered] of [
+      [214, false, false],
+      [124, false, true],
+      [6, true, true],
+    ] as const)
+      expect(entriesLine(term, plan(entries), ticked, filtered)).not.toMatch(/\d/);
     expect(entriesLine(term, plan(0), false, false)).toBe('No entries to export');
     expect(entriesLine(term, plan(0), false, true)).toBe('No entries match the filters');
   });

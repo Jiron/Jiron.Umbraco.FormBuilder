@@ -1,7 +1,8 @@
 // The insights' charts (ROADMAP 11.5, ADR-0211): small SVG drawings, no chart library. Columns stand for groups of days
 // or hours, each beside a quieter column for its counterpart in the period before; bars lie in a list for pages,
-// fields, website pages and the options of an answer (11.5b, ADR-0212), whose bars are shares of the answers. A drawing is one image to assistive technology, named by what it shows, and each box's
-// "Show as table" reads every value; a column's own title says its numbers under the pointer. Nothing moves.
+// fields, website pages and the options of an answer (11.5b, ADR-0212), whose bars are shares of the answers. A
+// drawing is one image to assistive technology, named by what it shows, and the screen's "Show as tables" reads every
+// value; a column's own title says its numbers under the pointer. Nothing moves.
 import { css, html, nothing, svg } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { jfbBackofficeTokens } from '../styles/tokens';

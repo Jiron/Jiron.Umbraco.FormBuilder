@@ -1,6 +1,6 @@
 // The dialogs of a form's Entries view, the Inbox and Spam and of the entry panel (ROADMAP 11.1 and 11.2, ADR-0207 to
 // ADR-0209); the view itself is one of the form workspace's views (designer/manifests.ts), and the Inbox's and Spam's
-// screens are the sidebar's (section/manifests.ts).
+// screens are the Inbox place's tabs (section/manifests.ts).
 import {
   ENTRY_COLUMNS_MODAL_ALIAS,
   ENTRY_DIGEST_MODAL_ALIAS,

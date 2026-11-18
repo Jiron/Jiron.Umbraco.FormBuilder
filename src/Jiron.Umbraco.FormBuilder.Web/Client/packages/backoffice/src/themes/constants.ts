@@ -6,7 +6,7 @@ import { screenPath, SECTION_PATHNAME } from '../section/entity-types';
 import type { ThemeDetailStore } from './theme-detail.store';
 import type { ThemeWorkspaceContext } from './theme-workspace.context';
 
-/** The list of themes, which the sidebar's item opens (section/sidebar.ts). */
+/** The list of themes, Library's Themes tab (section/sidebar.ts). */
 export const THEMES_ENTITY_TYPE = 'jfb-themes';
 
 /** One theme of the library, whose workspace a row opens. */

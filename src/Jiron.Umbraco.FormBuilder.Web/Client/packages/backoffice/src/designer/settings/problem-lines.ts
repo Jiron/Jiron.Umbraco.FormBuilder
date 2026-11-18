@@ -33,7 +33,7 @@ export function whyLine(id: string, problem: Shown, weight: (severity: CheckSeve
 export const whys = (id: string, problems: readonly Shown[], weight: (severity: CheckSeverity) => string) =>
   problems.map((problem, index) => whyLine(`${id}-why-${index}`, problem, weight));
 
-/** Problems counted where they hide, on a closed group's line or an outcome's row; whether an error is among them. */
+/** Problems counted where they hide, on a group's row or an outcome's row; whether an error is among them. */
 export interface Flag {
   readonly count: number;
   readonly error: boolean;

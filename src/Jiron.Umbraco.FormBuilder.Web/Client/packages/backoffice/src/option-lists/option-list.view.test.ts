@@ -177,6 +177,10 @@ describe("an option list's view", () => {
     expect(context.setContents).toHaveBeenCalledWith({ items: [{ value: 'm' }], config: {} });
     // Its own words, the inspector's: no "Options from".
     expect(root.querySelector('#options-source')).toBeNull();
+    // The box's headline names the rows, and nothing names them again (ROADMAP 22.4).
+    await settle(root.host as never);
+    expect(root.querySelector('#options-heading')).toBeNull();
+    expect(root.querySelector('.option-rows')?.getAttribute('aria-label')).toBe('Fixed options');
   });
 
   it('previews the options after a pause as a dropdown and radio buttons, the first eight and how many more', async () => {

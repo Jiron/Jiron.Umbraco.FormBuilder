@@ -522,12 +522,14 @@ export class OptionListViewElement extends UmbLitElement {
   #contents(list: OptionListDetailModel): TemplateResult {
     const kind: ListKind | 'unknown' = list.kind ?? 'unknown';
     const contents = problemsAt(this._problems, 'contents');
-    return html`<uui-box headline=${this.#term(`kind_${kind}`)} headline-variant="h2">
+    const heading = this.#term(`kind_${kind}`);
+    return html`<uui-box headline=${heading} headline-variant="h2">
       <div class="stack">
         ${
           list.kind && list.kind !== 'file'
             ? html`<jfb-option-editor
                 fixed
+                .heading=${heading}
                 .field=${fieldOf(list)}
                 .type=${LIST_TYPE}
                 .culture=${this._culture || this.#defaultCulture}

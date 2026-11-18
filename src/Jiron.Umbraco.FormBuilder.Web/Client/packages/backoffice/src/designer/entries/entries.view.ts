@@ -1067,7 +1067,7 @@ export class EntriesViewElement extends UmbLitElement {
     return one && this._forms.get(one)?.permissions.includes('export') ? one : undefined;
   }
 
-  /** Export...: the sidebar exports the entries the list's filter holds. */
+  /** Export...: the sidebar exports the entries the list's filter holds, once the list shows some. */
   async #exportList() {
     const form = this.#exportForm();
     if (!form) return;
@@ -1769,6 +1769,7 @@ export class EntriesViewElement extends UmbLitElement {
           ? html`<uui-button
               look="outline"
               label=${this.#term('export_open')}
+              ?disabled=${this._total === 0}
               @click=${() => void this.#exportList()}
             ></uui-button>`
           : nothing
@@ -1936,7 +1937,7 @@ export class EntriesViewElement extends UmbLitElement {
           : nothing
       }
       <td class="received">${receivedText(row.received, new Date(), this.localize.lang(), this.#full)}</td>
-      <td class="runs runs-column tone-${runs?.tone ?? 'muted'}">${runs?.text ?? this.#term('none')}</td>
+      <td class="runs runs-column tone-${runs?.tone ?? 'default'}">${runs?.text ?? nothing}</td>
       ${columns.map((field) => {
         // An empty value reads "none", never a blank or a dash (section 4.13).
         const cell = row.cells.find((one) => one.field === field.key);

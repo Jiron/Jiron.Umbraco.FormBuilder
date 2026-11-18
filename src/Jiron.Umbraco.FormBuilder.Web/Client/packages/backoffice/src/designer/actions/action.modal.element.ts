@@ -652,7 +652,7 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
       case 'rule':
         return BOX.rule;
       case 'setting': {
-        // A setting without its editor yet says its problems under what happens.
+        // A setting without its editor yet says its problems at the sheet's top, under its kind.
         const name = setting.path.split('.')[0] ?? setting.path;
         if (!this.#drawable().has(name)) return BOX.whatHappens;
         // A row's part, where its editor draws each row's boxes and the setting holds that row.
@@ -770,8 +770,8 @@ export class ActionModalElement extends UmbModalBaseElement<ActionModalData, Act
 
   async #submit() {
     if (this.#submitting) return;
-    // The first box that says why, as the sidebar shows them, takes the focus. Each is drawn: another choice of what
-    // happens takes the typed problems of the settings it replaces with them, More options stay open over one, and the
+    // The first box that says why, as the sidebar shows them, takes the focus. Each is drawn: another kind picked
+    // takes the typed problems of the settings it replaces with them, More options stay open over one, and the
     // boxes of a recipient map take theirs when they go.
     const typed = [...this._typed.keys()][0];
     if (typed) {

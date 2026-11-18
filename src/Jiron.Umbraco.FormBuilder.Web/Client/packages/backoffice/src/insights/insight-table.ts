@@ -1,4 +1,4 @@
-// The insights' tables (ROADMAP 11.5 and 11.5b, ADR-0211, ADR-0212): what "Show as table" swaps a chart for, in the
+// The insights' tables (ROADMAP 11.5 and 11.5b, ADR-0211, ADR-0212): what "Show as tables" swaps a chart for, in the
 // Overview and in the Answers alike. The first column names each row, the columns that hold numbers are aligned to the
 // end, and a caption names the table for assistive technology; a long table scrolls inside its box.
 import { css, html, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';

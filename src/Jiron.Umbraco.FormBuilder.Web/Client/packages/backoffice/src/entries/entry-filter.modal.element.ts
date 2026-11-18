@@ -255,9 +255,10 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
 
   // ---- Drawing -------------------------------------------------------------------------------------------------------
 
+  // A part whose headline names what its boxes choose (states, actions) gives them no second name: the headline
+  // names the group for a screen reader.
   #states(): TemplateResult {
-    return html`<fieldset>
-      <legend>${this.#term('edit_states')}</legend>
+    return html`<fieldset aria-label=${this.#headline()}>
       ${this.#offered.map(
         (state) =>
           html`<uui-checkbox
@@ -330,8 +331,7 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
   }
 
   #actions(): TemplateResult {
-    return html`<fieldset>
-      <legend>${this.#term('menu_actions')}</legend>
+    return html`<fieldset aria-label=${this.#headline()}>
       <uui-radio-group
         .value=${this._actions}
         @change=${(event: Event) => (this._actions = (event.target as HTMLInputElement).value)}
