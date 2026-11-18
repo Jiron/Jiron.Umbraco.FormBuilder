@@ -196,10 +196,13 @@ export const foldTree = (page: Page): Promise<FoldNode> =>
       element.id !== '' ||
       ['role', 'aria-expanded', 'popover'].some((name) => element.hasAttribute(name)) ||
       ['details', 'summary', 'uui-menu-item', ...tools].includes(element.localName);
+    // A form answers `form.children` with its control of that name, and the demo's newsletter has a field called
+    // "children": an element's children are read by Element's own getter, which no control stands in front of.
+    const ownChildren = Object.getOwnPropertyDescriptor(Element.prototype, 'children')?.get;
     const inside = (element: Element): Element[] =>
       element instanceof HTMLSlotElement
         ? element.assignedElements({ flatten: true })
-        : [...(element.shadowRoot ?? element).children];
+        : [...(element.shadowRoot?.children ?? (ownChildren?.call(element) as HTMLCollection))];
     const read = (element: Element): Node[] => {
       if (['style', 'script', 'template'].includes(element.localName) || !drawn(element)) return [];
       const children = inside(element).flatMap(read);
