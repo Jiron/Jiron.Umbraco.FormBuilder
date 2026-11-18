@@ -1237,3 +1237,10 @@ its reason, and a handover block at the end of every phase.
   - **Code that reads a form in a page** asks `Element`'s own getter for `children` and the like; a control of
     that name stands in front of the property.
 - **Open owner items added:** none.
+- 2026-11-18 · ROADMAP.md changed on the owner's word ("you can do testing on it", on the question 22.4's line
+  left open): **Phase 23, a field may be called anything,** with one open step, 23.1. The look it asked for ran
+  the same day on the demo's contact form with one more text field of each alias, sent with JavaScript and
+  without: `dispatchEvent` cannot be sent with JavaScript, `replaceWith` is stored and shows no outcome, seven
+  names fall back to the post without JavaScript, two throw on the page, and every one is sent as it should be
+  without JavaScript (the phase's opening lines name them). "How to use" names Phase 23. One step and not
+  several (ADR-0197). Reason: the owner's message; a form that cannot be sent is a fault of the product.

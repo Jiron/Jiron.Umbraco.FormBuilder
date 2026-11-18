@@ -6,7 +6,7 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
 
 ## How to use this roadmap
 
-- Work through Phase 0 to Phase 22 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
+- Work through Phase 0 to Phase 23 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
 - **There is no deadline.** Take the time each step needs. Read the relevant sections of this roadmap again before you start a step, check the result in a real browser before you call any UI done, and prefer the robust solution over the quick one.
 - Step markers (only steps use them, always at the start of a line):
   - `[ ]` open
@@ -3433,6 +3433,26 @@ The owner tried the demo after 21.1 (2026-11-16): "I love that there's so much f
     - `node scripts/link-check.mjs` passes, and no guide names a place the section no longer has: the review document lists every place a guide names and where it is now;
     - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
     - `v18/main` has the phase merged in, and its unit, client and integration tests and its whole browser suite pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+
+### Phase 23: A field may be called anything
+
+The owner, after 22.4 (2026-11-18), on what that step's worklog line had noted and not looked into: "you can do testing on it". A browser answers a property read on a form element with the form's control of that name, in front of the element's own properties and methods, and a field's control is named by its alias (ADR-0015). Tried on the demo that day, the contact form with one more text field: called `dispatchEvent`, the form cannot be sent with JavaScript; called `replaceWith`, its entry is stored and no outcome shows; called `dataset`, `elements`, `querySelector`, `addEventListener`, `removeEventListener`, `ownerDocument` or `hasAttribute`, the form falls back to the post without JavaScript; called `classList` or `contains`, it is sent and errors are thrown on the page. Without JavaScript every one of them is sent as it should be.
+
+- [ ] **23.1 The website's script reads a form's own properties, whatever its fields are called, and phase review** (the owner, 2026-11-18)
+  - **Aliases stay free:** no name is reserved for this, and a control's name stays its alias. A list of the names to refuse would have to hold `name` and `title`, or be a guess at what scripts read; an ADR says why, and what else was tried.
+  - **The script:** the runtime and the headless element never read a property of a form's root by plain access, where a control may answer; they ask the element's prototype, with the element as the receiver, through one small module. That holds for everything that can be the root: what is typed as a form, the root a fit or a notice is given, what `closest` finds, a control's `form`, and the target of a listener on the form.
+  - **Kept so:** a lint rule of the client's own refuses a plain read of a form's property in the website's code.
+  - **A plain object by alias:** where the website's code or the shared logic reads a plain object by an alias or another key a person chooses, a field called `constructor` or `toString` meets nothing of `Object.prototype`.
+  - **Told:** the developer docs say what a site's own script meets on a form with a field called `id` or `action`, as on any HTML form; CHANGELOG and `docs/STATUS.md` follow, and `v18/main` gets it by merge.
+  - Done when:
+    - on a page, a form whose fields are called `id`, `dataset`, `dispatchEvent`, `replaceWith`, `querySelector`, `elements` and the others the look found, and which, through controls the test adds, has one of every name a form element's property has in that browser that could be an alias, shows its errors and is sent with JavaScript: the entry is posted with its answers by alias, the outcome shows, and nothing is thrown; the spec fails on the build before the fix;
+    - the runtime's unit tests run its journeys on a form covered the same way, and fail without the fix;
+    - the lint rule fails on a plain read of a form's property, with a test of its own;
+    - a post without JavaScript stores the answers of fields called `id`, `action`, `submit`, `constructor` and `toString`;
+    - the sizes stay inside section 4.12's budgets;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the step merged in, and its unit and client tests and the website's browser tests pass there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
 ---
