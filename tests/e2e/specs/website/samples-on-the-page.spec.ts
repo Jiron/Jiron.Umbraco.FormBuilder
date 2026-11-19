@@ -1,21 +1,15 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
 import { expect, test } from '../../fixtures.ts';
 import { axe } from '../../support/axe.ts';
 import { formOn, submitForm } from '../../support/form.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
-import { pathOf } from '../../support/demo-content.ts';
+import { pageWith } from '../../support/form-page.ts';
 import { STATIC_SITE_WAIT_MS, startStaticSite } from '../../support/static-site.ts';
 
 // The colour sample on the website (ROADMAP 15.2, ADR-0234), a site's own field type: on a Razor page its view writes a
 // radio button for each colour with its swatch and its name, under the field's legend, which the runtime checks as any
 // group of choices and posts as the colour's value; through <jfb-form> on a headless page the control the sample's
 // script registers writes the same, and the entry holds the colour chosen. Axe is clean on both.
-
-const MANAGEMENT_API = '/umbraco/management/api/v1';
-const HOME_KEY = '7bbb6953-972d-499e-a05a-c7cf1d45b1db';
-/** The demo's events page, whose type picks a form in its `form` property. */
-const EVENTS_KEY = '8603878d-af82-4867-92ba-ee28f9f12c86';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -40,35 +34,6 @@ async function colourForm(api: APIRequestContext) {
   });
   expect(published.ok(), await published.text()).toBe(true);
   return { key, alias: form.alias };
-}
-
-/** A page of the events type under the home page that shows the form, published in English; its path. */
-async function pageWith(api: APIRequestContext, form: string): Promise<string> {
-  const model = (await (await api.get(`${MANAGEMENT_API}/document/${EVENTS_KEY}`)).json()) as {
-    documentType: { id: string };
-    template: { id: string } | null;
-  };
-  const name = unique('Colour page');
-  const key = randomUUID();
-  const created = await api.post(`${MANAGEMENT_API}/document`, {
-    data: {
-      id: key,
-      parent: { id: HOME_KEY },
-      documentType: { id: model.documentType.id },
-      template: model.template,
-      values: [{ alias: 'form', value: form, culture: null, segment: null }],
-      variants: [
-        { culture: 'en-US', segment: null, name },
-        { culture: 'de-DE', segment: null, name },
-      ],
-    },
-  });
-  expect(created.status(), await created.text()).toBe(201);
-  const published = await api.put(`${MANAGEMENT_API}/document/${key}/publish`, {
-    data: { publishSchedules: [{ culture: 'en-US' }] },
-  });
-  expect(published.ok(), await published.text()).toBe(true);
-  return pathOf({ name, heading: '' }, 'en');
 }
 
 /** The colour stored for each of the form's entries, oldest first: its one value that is a colour's. */
@@ -102,7 +67,7 @@ test('the colour field on a Razor page: a radio button for each colour under its
   const api = await apiAs('designer');
   const { key, alias } = await colourForm(api);
   const editor = await apiAs('editor');
-  const path = await pageWith(editor, key);
+  const path = await pageWith(editor, key, 'Colour page');
 
   await expect.poll(async () => (await page.goto(path))?.status(), { timeout: 30_000 }).toBe(200);
   const form = formOn(page, key);
