@@ -3,6 +3,7 @@
  * writes it, and the hooks of `FormBuilderHtml` (a text's `data-jfb-text`, a label that recalls answers, a field's
  * mark). A text is always text; only a rich text the server sanitised is parsed, through a `<template>`.
  */
+import { proto } from '@jfb/logic/proto';
 
 /**
  * An attribute's value as a Razor view writes it: left out for null, undefined and false, its own name for true (as
@@ -29,7 +30,7 @@ export function el(
   const element = document.createElement(tag);
   for (const [name, value] of Object.entries(attributes)) {
     if (value === null || value === undefined || value === false) continue;
-    element.setAttribute(name, value === true ? name : String(value));
+    proto(element).setAttribute(name, value === true ? name : String(value));
   }
   append(element, children);
   return element;
@@ -40,9 +41,9 @@ export function append(parent: Node, children: readonly Child[]): void {
   for (const child of children) {
     if (child === null || child === undefined || child === false) continue;
     if (typeof child === 'string')
-      parent.appendChild((parent.ownerDocument ?? (parent as Document)).createTextNode(child));
+      proto(parent).appendChild((proto(parent).ownerDocument ?? (parent as Document)).createTextNode(child));
     else if (Array.isArray(child)) append(parent, child);
-    else parent.appendChild(child as Node);
+    else proto(parent).appendChild(child as Node);
   }
 }
 

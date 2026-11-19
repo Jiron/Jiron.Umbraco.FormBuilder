@@ -9,6 +9,7 @@
 // script says so, once, so the backoffice can load the preview again. A document of sample answers gets a sample file in each
 // file field once the runtime, which loads after this script, has taken its form on, which goes up as a visitor's file
 // does.
+import { proto } from '@jfb/logic/proto';
 import {
   EXPIRED_MESSAGE,
   isPortMessage,
@@ -244,10 +245,10 @@ function giveSampleFiles(win: PreviewWindow): void {
   const given = new WeakSet<EventTarget>();
   win.document.addEventListener('jfb:ready', (event) => {
     const form = event.target as HTMLFormElement | null;
-    if (form === null || given.has(form) || !form.matches('form[data-jfb-form]')) return;
+    if (form === null || given.has(form) || !proto(form).matches('form[data-jfb-form]')) return;
     given.add(form);
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    for (const zone of form.querySelectorAll<HTMLElement>('.jfb-upload')) {
+    proto(form).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    for (const zone of proto(form).querySelectorAll<HTMLElement>('.jfb-upload')) {
       const chooser = zone.querySelector<HTMLInputElement>('input[type="file"]:not(.jfb-upload-camera)');
       const file = chooser === null ? null : sampleFile(chooser.accept);
       if (chooser === null || file === null) continue;

@@ -8,6 +8,7 @@ import { pageErrorsOf } from './errors';
 import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { senderOf, type SendDetail } from './send';
+import { stubMembers } from './testing-cover';
 import { ENGLISH } from './testing';
 import type { PageUploads, UploadedFile } from './uploads';
 
@@ -122,9 +123,11 @@ function wake(shape: Shape = { revision: 1 }, files?: PageUploads) {
   document.body.innerHTML = markup(shape);
   const form = document.querySelector('form') as HTMLFormElement;
   const posted: string[] = [];
-  form.requestSubmit = (button?: HTMLElement | null) => {
-    posted.push(button instanceof HTMLButtonElement ? button.value : '');
-  };
+  stubMembers(form, {
+    requestSubmit: (button?: HTMLElement | null) => {
+      posted.push(button instanceof HTMLButtonElement ? button.value : '');
+    },
+  });
   const heard: SendDetail[] = [];
   document.addEventListener('jfb:error', (event) => heard.push((event as CustomEvent<SendDetail>).detail), {
     once: true,
@@ -139,9 +142,11 @@ function wake(shape: Shape = { revision: 1 }, files?: PageUploads) {
     model: FormModel,
     carried?: { id: string; challenge: string | null },
   ): void => {
-    each.requestSubmit = (button?: HTMLElement | null) => {
-      posted.push(button instanceof HTMLButtonElement ? button.value : '');
-    };
+    stubMembers(each, {
+      requestSubmit: (button?: HTMLElement | null) => {
+        posted.push(button instanceof HTMLButtonElement ? button.value : '');
+      },
+    });
     const deliver = senderOf(each, model, {
       ...(carried === undefined ? { id: ID } : { id: carried.id, challenge: carried.challenge }),
       ...(files === undefined ? {} : { files }),
@@ -488,7 +493,7 @@ describe('what goes the way without JavaScript instead', () => {
     document.body.innerHTML = markup({ revision: 1 }).replace('action="/contact/#jfb-1"', '');
     const form = document.querySelector('form') as HTMLFormElement;
     const posted: string[] = [];
-    form.requestSubmit = () => posted.push('submit');
+    stubMembers(form, { requestSubmit: () => posted.push('submit') });
     pageErrorsOf(form, modelOf(1), engineOf(modelOf(1), null), () => NOW, senderOf(form, modelOf(1), { id: ID }));
     input('n1').value = 'Ana';
     form.dispatchEvent(

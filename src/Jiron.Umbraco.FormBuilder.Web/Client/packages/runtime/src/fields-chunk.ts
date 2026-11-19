@@ -5,6 +5,7 @@
  * server's views write, whose buttons post without JavaScript, and leaves the page as a post would render it: the same names,
  * ids and order, so that the rules, the checks and the send read it as ever.
  */
+import { proto } from '@jfb/logic/proto';
 import { removeSummary } from './display';
 import type { FormModel, ModelField } from './model';
 import { fieldsOf, readPage, type PageReading } from './page';
@@ -28,7 +29,7 @@ interface Offered {
 }
 
 const said = (form: HTMLFormElement, text: string): void => {
-  const live = form.querySelector(':scope > [data-jfb-live]');
+  const live = proto(form).querySelector(':scope > [data-jfb-live]');
   if (live !== null) live.textContent = text;
 };
 
@@ -136,7 +137,7 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
       const number = item.querySelector('span');
       if (number !== null) number.textContent = at < ranked ? String(at + 1) : '';
       if (at < ranked) {
-        const input = position ?? item.appendChild(form.ownerDocument.createElement('input'));
+        const input = position ?? item.appendChild(proto(form).ownerDocument.createElement('input'));
         input.type = 'hidden';
         input.name = `${list.dataset['jfbName'] ?? ''}.${order?.value ?? ''}`;
         input.value = String(at + 1);
@@ -169,7 +170,7 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
 
   /** A counter's line for the text its control holds; an empty control keeps the server's words. */
   function count(control: HTMLInputElement | HTMLTextAreaElement): void {
-    const counter = form.ownerDocument.getElementById(`${control.id}-count`);
+    const counter = proto(form).ownerDocument.getElementById(`${control.id}-count`);
     if (counter === null || !counter.matches('.jfb-counter')) return;
     if (!counted.has(counter)) counted.set(counter, counter.textContent);
     const data = counter.dataset;
@@ -196,7 +197,7 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
 
   /** One that did not show when it last grew, which a rule may have shown since. */
   const growShown = (): void => {
-    for (const area of form.querySelectorAll<HTMLTextAreaElement>('textarea[data-jfb-grow]')) {
+    for (const area of proto(form).querySelectorAll<HTMLTextAreaElement>('textarea[data-jfb-grow]')) {
       if (area.style.blockSize === 'auto') grow(area);
     }
   };
@@ -214,14 +215,15 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
 
   /** What each behaviour shows at the start, for a form as it comes, or a row added. */
   function tidy(root: Element): void {
-    for (const box of root.querySelectorAll<HTMLElement>('.jfb-other')) other(box);
-    for (const control of root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'))
+    for (const box of proto(root).querySelectorAll<HTMLElement>('.jfb-other')) other(box);
+    for (const control of proto(root).querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'))
       count(control);
-    for (const area of root.querySelectorAll<HTMLTextAreaElement>('textarea[data-jfb-grow]')) grow(area);
+    for (const area of proto(root).querySelectorAll<HTMLTextAreaElement>('textarea[data-jfb-grow]')) grow(area);
   }
 
-  form.addEventListener('click', (event) => {
-    const button = (event.target as Element).closest?.<HTMLButtonElement>(NAV);
+  proto(form).addEventListener('click', (event) => {
+    // The target is the form itself for a press beside its controls.
+    const button = proto(event.target as Element).closest?.<HTMLButtonElement>(NAV);
     if (!button) return;
     const [action] = button.value.split(':');
     const box = button.closest<HTMLElement>('.jfb-repeater');
@@ -238,15 +240,15 @@ export function enhanceFields(form: HTMLFormElement, model: FormModel, options: 
     }
   });
 
-  form.addEventListener('input', (event) => {
+  proto(form).addEventListener('input', (event) => {
     const target = event.target;
     if (target instanceof HTMLTextAreaElement && target.hasAttribute('data-jfb-grow')) grow(target);
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) count(target);
     setTimeout(growShown);
   });
-  form.addEventListener('jfb:page', () => setTimeout(growShown));
-  form.addEventListener('change', (event) => {
-    const field = (event.target as Element).closest?.(FIELD);
+  proto(form).addEventListener('jfb:page', () => setTimeout(growShown));
+  proto(form).addEventListener('change', (event) => {
+    const field = proto(event.target as Element).closest?.(FIELD);
     if (field) for (const box of field.querySelectorAll<HTMLElement>('.jfb-other')) other(box);
     setTimeout(growShown);
   });
@@ -290,11 +292,11 @@ function followParents(form: HTMLFormElement, model: FormModel, api: string | un
   const look = (): void => {
     const reading = readPage(form, model);
     for (const { field, parents } of fields) {
-      for (const element of form.querySelectorAll<HTMLElement>(`${FIELD}[data-jfb-field="${field.key}"]`)) {
+      for (const element of proto(form).querySelectorAll<HTMLElement>(`${FIELD}[data-jfb-field="${field.key}"]`)) {
         const row = element.closest<HTMLElement>('[data-jfb-row]')?.dataset['jfbRow'];
         const place = row === undefined ? null : Number(row);
         const query = new URLSearchParams({ culture: model.culture });
-        const content = form.dataset['jfbContent'];
+        const content = proto(form).dataset['jfbContent'];
         if (content) query.set('contentKey', content);
         for (const parent of parents) {
           for (const value of answersOf(reading, parent, place)) query.append(`parent.${parent}`, value);
@@ -307,7 +309,7 @@ function followParents(form: HTMLFormElement, model: FormModel, api: string | un
         if (was === asked || (was === undefined && !asked.includes('parent.'))) continue;
         const at = (asks.get(element) ?? 0) + 1;
         asks.set(element, at);
-        void fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/options/${field.key}?${asked}`)
+        void fetch(`${api}/forms/${proto(form).dataset['jfbForm'] ?? ''}/options/${field.key}?${asked}`)
           .then((response) =>
             response.ok ? (response.json() as Promise<{ available?: boolean; options?: Offered[] }>) : null,
           )
@@ -329,8 +331,8 @@ function followParents(form: HTMLFormElement, model: FormModel, api: string | un
       look();
     });
   };
-  form.addEventListener('input', changed);
-  form.addEventListener('change', changed);
+  proto(form).addEventListener('input', changed);
+  proto(form).addEventListener('change', changed);
   look();
 }
 

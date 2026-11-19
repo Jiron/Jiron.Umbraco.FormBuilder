@@ -9,6 +9,7 @@
  * ADR-0115), shown for a form with either and no rule too.
  */
 import { holdQuery, LogicError, type Context, type FormState, type LogicField, type LogicForm } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { PageEngine } from './engine';
 import type { FormModel } from './model';
 import { showCalculations } from './outputs';
@@ -85,18 +86,19 @@ export function rulesOf(
   const ruled = hasRules(engine.logic);
   if (!ruled && !engine.calculates && engine.texts === null) return null;
   // The page that shows, which moves in the browser too (ADR-0155); one a rule just hid stays the page to come back to.
-  let current = form.querySelector('[data-jfb-page]:not([hidden])');
-  const pageNow = (): Element | null => (current = form.querySelector('[data-jfb-page]:not([hidden])') ?? current);
+  let current = proto(form).querySelector('[data-jfb-page]:not([hidden])');
+  const pageNow = (): Element | null =>
+    (current = proto(form).querySelector('[data-jfb-page]:not([hidden])') ?? current);
   const decide = (): { reading: PageReading; state: FormState } => {
     const reading = readPage(form, model);
     return {
       reading,
-      state: engine.decide(reading.answers, contextOf(model, reading, clock(), form.ownerDocument.URL)),
+      state: engine.decide(reading.answers, contextOf(model, reading, clock(), proto(form).ownerDocument.URL)),
     };
   };
   // A field a rule shows again holds its answer once its controls are enabled, and an element that depends on that
   // answer is decided again with it, until nothing more is shown: at most once per element, as rules have no cycle.
-  const rounds = form.querySelectorAll('[data-jfb-page], [data-jfb-group], [data-jfb-field]').length + 1;
+  const rounds = proto(form).querySelectorAll('[data-jfb-page], [data-jfb-group], [data-jfb-field]').length + 1;
   const settle = (): FormState => {
     let decided = decide();
     for (let round = 1; ruled && show(form, decided.state, pageNow()) && round < rounds; round++) decided = decide();
@@ -131,8 +133,8 @@ export function rulesOf(
       rules.apply();
     });
   };
-  form.addEventListener('input', later);
-  form.addEventListener('change', later);
+  proto(form).addEventListener('input', later);
+  proto(form).addEventListener('change', later);
   return rules;
 }
 
@@ -140,17 +142,17 @@ export function rulesOf(
 function show(form: HTMLFormElement, state: FormState, current: Element | null): boolean {
   const hidden = new Set(state.hidden);
   const required = new Set(state.required);
-  for (const page of form.querySelectorAll<HTMLElement>('[data-jfb-page]')) {
+  for (const page of proto(form).querySelectorAll<HTMLElement>('[data-jfb-page]')) {
     const ruled = hidden.has(page.dataset['jfbPage'] ?? '');
     flag(page, 'hidden', page !== current || ruled);
     flag(page, 'data-jfb-hidden', ruled);
   }
-  for (const group of form.querySelectorAll<HTMLElement>('[data-jfb-group]')) {
+  for (const group of proto(form).querySelectorAll<HTMLElement>('[data-jfb-group]')) {
     const ruled = hidden.has(group.dataset['jfbGroup'] ?? '');
     hide(group, ruled);
   }
   let shown = false;
-  for (const field of form.querySelectorAll<HTMLElement>('[data-jfb-field]')) {
+  for (const field of proto(form).querySelectorAll<HTMLElement>('[data-jfb-field]')) {
     const key = field.dataset['jfbField'] ?? '';
     const row = rowOf(field, state);
     let isHidden = hidden.has(key);
@@ -169,9 +171,9 @@ function show(form: HTMLFormElement, state: FormState, current: Element | null):
     for (const mark of own(field, '[data-jfb-mark]'))
       flag(mark, 'hidden', (mark.dataset['jfbMark'] === 'required') !== isRequired);
   }
-  const note = form.querySelector('[data-jfb-required-note]');
+  const note = proto(form).querySelector('[data-jfb-required-note]');
   if (note !== null) {
-    const asterisk = [...form.querySelectorAll<HTMLElement>('[data-jfb-mark]')].some(
+    const asterisk = [...proto(form).querySelectorAll<HTMLElement>('[data-jfb-mark]')].some(
       (mark) => !mark.hasAttribute('hidden') && mark.closest('[data-jfb-hidden]') === null,
     );
     flag(note, 'hidden', !asterisk);

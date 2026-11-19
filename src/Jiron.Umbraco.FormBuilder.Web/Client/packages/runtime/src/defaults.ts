@@ -10,6 +10,7 @@
  */
 import { own, type Context } from '@jfb/logic';
 import { parsePageTemplate, renderPageTemplate, type MergeValue } from '@jfb/logic/template';
+import { proto } from '@jfb/logic/proto';
 import type { FormModel } from './model';
 import { allFieldsOf } from './page';
 
@@ -29,7 +30,7 @@ export function fillDefaults(form: HTMLFormElement, model: FormModel, context: C
     return found.length === 1 ? found[0] : found.length === 0 ? '' : found;
   };
   const all = allFieldsOf(model);
-  for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-default]')) {
+  for (const element of proto(form).querySelectorAll<HTMLElement>('[data-jfb-default]')) {
     element.removeAttribute('data-jfb-default');
     const field = all.find((each) => each.key === element.dataset['jfbField']);
     const written = field?.defaultValue;

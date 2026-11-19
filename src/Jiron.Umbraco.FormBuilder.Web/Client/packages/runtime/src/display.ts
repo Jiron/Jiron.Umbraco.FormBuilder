@@ -6,6 +6,7 @@
  * templates, which the theme's views render, or the markup contract's when a site's own form view has none.
  */
 import { summaryHeading, type MessageWords } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { ShownError } from './messages';
 
 const FIELD = '[data-jfb-field]';
@@ -14,13 +15,13 @@ const FOCUSABLE =
 
 /** The template of a piece of the form's markup, or null when the form has none. */
 function templateOf(form: HTMLFormElement, selector: string): Element | null {
-  const templates = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
+  const templates = proto(form).querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
   return templates?.content.querySelector(selector) ?? null;
 }
 
 /** A copy of a template in the form's document. */
 const copyOf = (form: HTMLFormElement, template: Element): HTMLElement =>
-  form.ownerDocument.importNode(template, true) as HTMLElement;
+  proto(form).ownerDocument.importNode(template, true) as HTMLElement;
 
 /** The elements of a field that are its own, not a field's inside it (a repeatable group's rows). */
 const ownOf = (field: HTMLElement, selector: string): HTMLElement[] =>
@@ -30,7 +31,7 @@ const ownOf = (field: HTMLElement, selector: string): HTMLElement[] =>
 export const errorIn = (field: HTMLElement): HTMLElement | null => ownOf(field, '[data-jfb-error]')[0] ?? null;
 
 /** Whether the form shows an error at any field. */
-export const showsErrors = (form: HTMLFormElement): boolean => form.querySelector('[data-jfb-error]') !== null;
+export const showsErrors = (form: HTMLFormElement): boolean => proto(form).querySelector('[data-jfb-error]') !== null;
 
 /** Adds a token to an attribute that lists ids, once. */
 function addId(element: Element, name: string, id: string): void {
@@ -65,7 +66,7 @@ export function showFieldError(form: HTMLFormElement, field: HTMLElement, error:
   paragraph.id = id;
   if (paragraph.textContent !== error.message) paragraph.textContent = error.message;
 
-  const control = form.ownerDocument.getElementById(error.target);
+  const control = proto(form).ownerDocument.getElementById(error.target);
   const choices = ownOf(field, 'input[type="radio"], input[type="checkbox"]');
   const marked =
     fieldset === null
@@ -139,21 +140,21 @@ export function showSummary(form: HTMLFormElement, errors: readonly ShownError[]
     }
   }
 
-  const shown = form.querySelector<HTMLElement>(':scope > [data-jfb-summary]');
+  const shown = proto(form).querySelector<HTMLElement>(':scope > [data-jfb-summary]');
   if (shown !== null) {
     shown.replaceChildren(...made.childNodes);
     return shown;
   }
-  let before = form.querySelector(':scope > [data-jfb-page]');
+  let before = proto(form).querySelector(':scope > [data-jfb-page]');
   while (before?.previousElementSibling?.matches('p') === true) before = before.previousElementSibling;
-  if (before === null) form.append(made);
-  else form.insertBefore(made, before);
+  if (before === null) proto(form).append(made);
+  else proto(form).insertBefore(made, before);
   return made;
 }
 
 /** Takes the error summary away. */
 export function removeSummary(form: HTMLFormElement): void {
-  form.querySelector(':scope > [data-jfb-summary]')?.remove();
+  proto(form).querySelector(':scope > [data-jfb-summary]')?.remove();
 }
 
 /**
@@ -162,8 +163,8 @@ export function removeSummary(form: HTMLFormElement): void {
  * in, as a picture taller than the window can leave it. False when the page has no such control.
  */
 export function focusTarget(form: HTMLFormElement, id: string): boolean {
-  const target = form.ownerDocument.getElementById(id);
-  if (target === null || !form.contains(target)) return false;
+  const target = proto(form).ownerDocument.getElementById(id);
+  if (target === null || !proto(form).contains(target)) return false;
   // A choice that is full takes no focus: the field's next control does.
   const named = target.matches(FOCUSABLE)
     ? target
@@ -180,12 +181,12 @@ export function focusTarget(form: HTMLFormElement, id: string): boolean {
 
   label.scrollIntoView?.({ block: 'start', behavior: 'instant' });
   control.focus();
-  return form.ownerDocument.activeElement === control;
+  return proto(form).ownerDocument.activeElement === control;
 }
 
 /** The markup contract's error paragraph, for a form view without templates. */
 function fallbackError(form: HTMLFormElement): HTMLElement {
-  const paragraph = form.ownerDocument.createElement('p');
+  const paragraph = proto(form).ownerDocument.createElement('p');
   paragraph.className = 'jfb-error';
   paragraph.setAttribute('data-jfb-error', '');
   return paragraph;
@@ -193,15 +194,15 @@ function fallbackError(form: HTMLFormElement): HTMLElement {
 
 /** The markup contract's error summary, for a form view without templates. */
 function fallbackSummary(form: HTMLFormElement): HTMLElement {
-  const document = form.ownerDocument;
+  const document = proto(form).ownerDocument;
   const summary = document.createElement('div');
   summary.className = 'jfb-error-summary';
   summary.setAttribute('data-jfb-summary', '');
   summary.setAttribute('role', 'alert');
   summary.setAttribute('tabindex', '-1');
-  summary.setAttribute('aria-labelledby', `${form.id}-summary`);
+  summary.setAttribute('aria-labelledby', `${proto(form).id}-summary`);
   const heading = document.createElement('h2');
-  heading.id = `${form.id}-summary`;
+  heading.id = `${proto(form).id}-summary`;
   const list = document.createElement('ul');
   list.setAttribute('role', 'list');
   const item = document.createElement('li');

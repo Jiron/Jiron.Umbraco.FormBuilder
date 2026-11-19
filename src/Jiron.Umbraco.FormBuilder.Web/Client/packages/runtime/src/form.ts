@@ -12,6 +12,7 @@
  * what the challenge's answer tells of the places left and the member (ADR-0156).
  */
 import type { Context } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import { loadEngine, type PageEngine } from './engine';
 import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
@@ -74,8 +75,8 @@ export function loadDefaults(): Promise<FillDefaults> {
  */
 /** Whether a form holds something, or a row it may add in place does, which its group's template holds. */
 const holds = (form: HTMLFormElement, selector: string): boolean =>
-  form.querySelector(selector) !== null ||
-  [...form.querySelectorAll<HTMLTemplateElement>('.jfb-repeater > template')].some(
+  proto(form).querySelector(selector) !== null ||
+  [...proto(form).querySelectorAll<HTMLTemplateElement>('.jfb-repeater > template')].some(
     (each) => each.content.querySelector(selector) !== null,
   );
 
@@ -101,10 +102,10 @@ async function wake(
   );
   if (loaded === null) return null;
   const [engine, fill] = loaded;
-  fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
+  fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), proto(form).ownerDocument.URL));
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
-  const api = form.dataset['jfbApi'];
+  const api = proto(form).dataset['jfbApi'];
   let places: Places | undefined;
   const showIn = async (root: ParentNode): Promise<void> => {
     if (places !== undefined) await showPlaces(root, places, model).catch(() => undefined);
@@ -123,7 +124,7 @@ async function wake(
             model.culture,
             asked,
             words,
-            form.querySelector(`input[type="checkbox"][name="${CSS.escape(agreeing?.alias ?? '')}"]`),
+            proto(form).querySelector(`input[type="checkbox"][name="${CSS.escape(agreeing?.alias ?? '')}"]`),
           );
         })
         .catch(() => undefined);
@@ -132,11 +133,11 @@ async function wake(
     places = told.places;
     // As an answer does: the rules decide again, and what follows them, the page and its buttons among them.
     void showIn(form).then(() => {
-      if (rules !== null && tells !== undefined) form.dispatchEvent(new Event('input', { bubbles: true }));
+      if (rules !== null && tells !== undefined) proto(form).dispatchEvent(new Event('input', { bubbles: true }));
     });
   };
   // An option the visitor moved off, or options written anew for a parent's answer.
-  form.addEventListener('change', () => void showIn(form));
+  proto(form).addEventListener('change', () => void showIn(form));
   const uploads = takesUploads(form, model);
   const challenges = api === undefined ? undefined : challengesOf(form, api, carried?.challenge, hear);
   const uploading: UploadOptions | undefined =
@@ -160,7 +161,9 @@ async function wake(
           )
           .catch(() => undefined);
   if (
-    form.querySelector('.jfb-repeater,.jfb-ranking,.jfb-counter,.jfb-other,[data-jfb-grow],[data-jfb-cascade]') !== null
+    proto(form).querySelector(
+      '.jfb-repeater,.jfb-ranking,.jfb-counter,.jfb-other,[data-jfb-grow],[data-jfb-cascade]',
+    ) !== null
   ) {
     await import('./fields-chunk')
       .then((module) => {
@@ -169,7 +172,7 @@ async function wake(
           added: (row) => {
             files?.add?.(row);
             void showIn(row);
-            fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
+            fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), proto(form).ownerDocument.URL));
           },
         });
       })
@@ -189,7 +192,7 @@ async function wake(
   });
   const check = deliver.checkPage;
   const pages =
-    check !== undefined && form.querySelectorAll('[data-jfb-page]').length > 1 && movesPages(form)
+    check !== undefined && proto(form).querySelectorAll('[data-jfb-page]').length > 1 && movesPages(form)
       ? await import('./pages-chunk').then((module) => module.enhancePages(form, model, check)).catch(() => undefined)
       : undefined;
   if (model.form.settings?.resume === true && api !== undefined && challenges !== undefined)
@@ -209,9 +212,9 @@ async function wake(
       .catch(() => undefined);
   const errors = pageErrorsOf(form, model, engine, Date.now, deliver, pages);
   const press = (nav: string): boolean => {
-    const button = form.querySelector<HTMLButtonElement>(`button[data-jfb-nav="${nav}"]`);
+    const button = proto(form).querySelector<HTMLButtonElement>(`button[data-jfb-nav="${nav}"]`);
     if (button === null) return false;
-    form.requestSubmit(button);
+    proto(form).requestSubmit(button);
     return true;
   };
   return {

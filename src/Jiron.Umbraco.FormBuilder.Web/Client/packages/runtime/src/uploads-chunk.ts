@@ -8,6 +8,7 @@
  * send waits for it, and stops at a file that failed, whose row takes the focus, until the visitor tries again or takes it off.
  */
 import { hidesMarkup, HEAD_LENGTH, isExecutable, matchesKind } from '@jfb/logic/files';
+import { proto } from '@jfb/logic/proto';
 import { formWords, shownErrors } from './messages';
 import type { FormModel, ModelField } from './model';
 import { fieldsOf, readPage } from './page';
@@ -44,7 +45,7 @@ interface Words {
 
 /** Enhances each file field of the form: its drop zone, its buttons and its list of files. */
 export function enhanceUploads(form: HTMLFormElement, model: FormModel, options: UploadOptions): PageUploads {
-  const key = form.dataset['jfbForm'] ?? '';
+  const key = proto(form).dataset['jfbForm'] ?? '';
   const running = new Set<Promise<void>>();
   const held = new Map<HTMLInputElement, Map<HTMLElement, UploadedFile>>();
   const fields = fieldsOf(model).flatMap((field) => [field, ...(field.fields ?? [])]);
@@ -56,14 +57,14 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       : words.mb.replace('{0}', number.format(bytes / (1024 * 1024)));
 
   const say = (text: string): void => {
-    const live = form.querySelector(':scope > [data-jfb-live]');
+    const live = proto(form).querySelector(':scope > [data-jfb-live]');
     if (live !== null) live.textContent = text;
   };
 
   /** The field's own words for an error, as the page words a check's. */
   async function messageOf(field: ModelField, code: string, row: number | null): Promise<string> {
     const reading = readPage(form, model);
-    const context = contextOf(model, reading, Date.now(), form.ownerDocument.URL);
+    const context = contextOf(model, reading, Date.now(), proto(form).ownerDocument.URL);
     const words = await formWords(model);
     const [shown] = shownErrors(form, model, reading, [{ field: field.key, row, code }], context, words);
     return shown?.message ?? '';
@@ -138,7 +139,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
           answer?.remove();
           answer = null;
         } else {
-          answer ??= row.appendChild(form.ownerDocument.createElement('input'));
+          answer ??= row.appendChild(proto(form).ownerDocument.createElement('input'));
           answer.type = 'hidden';
           answer.name = (input as HTMLInputElement).name;
           answer.value = value;
@@ -264,10 +265,10 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
 
     const thumbnail = (built: ReturnType<typeof rowOf>, file: File): void => {
       if (!zone.hasAttribute('data-jfb-thumbnails') || !file.type.startsWith('image/')) return;
-      const urls = form.ownerDocument.defaultView?.URL;
+      const urls = proto(form).ownerDocument.defaultView?.URL;
       if (urls?.createObjectURL === undefined) return;
       const address = urls.createObjectURL(file);
-      const image = form.ownerDocument.createElement('img');
+      const image = proto(form).ownerDocument.createElement('img');
       image.alt = '';
       const icon = built.row.querySelector('.jfb-icon-file');
       // A site whose policy takes no picture from the page's own memory keeps the icon.
@@ -355,12 +356,12 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
     zone.setAttribute('data-jfb-enhanced', '');
   };
 
-  for (const zone of form.querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
+  for (const zone of proto(form).querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
 
   return {
     async settled(within?: Element): Promise<boolean> {
       while (running.size > 0) await Promise.all(running);
-      const failed = (within ?? form).querySelector<HTMLElement>(`.jfb-file[${ERROR}]`);
+      const failed = proto(within ?? form).querySelector<HTMLElement>(`.jfb-file[${ERROR}]`);
       if (failed === null) return true;
       const retry = failed.querySelector<HTMLElement>('[data-jfb-retry]:not([hidden])');
       (retry ?? failed.querySelector<HTMLElement>('[data-jfb-drop-file]'))?.focus();
@@ -375,7 +376,7 @@ export function enhanceUploads(form: HTMLFormElement, model: FormModel, options:
       );
     },
     add(root: Element): void {
-      for (const zone of root.querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
+      for (const zone of proto(root).querySelectorAll<HTMLElement>('.jfb-upload')) enhance(zone);
     },
   };
 }

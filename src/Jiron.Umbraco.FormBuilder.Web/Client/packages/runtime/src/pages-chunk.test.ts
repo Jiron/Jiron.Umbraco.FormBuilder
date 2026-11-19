@@ -40,11 +40,13 @@ function wake({
   settings = {},
   answer = 'on' as Awaited<ReturnType<CheckPage>>,
   action = 'action="/x"',
+  progress = undefined as string | undefined,
 } = {}) {
   document.body.innerHTML =
     `<form id="jfb-1" data-jfb-form="f" ${action}><template data-jfb-templates data-jfb-sending="Sending">${BUTTONS}</template>` +
     '<button type="submit" class="ready" name="jfb-nav" value="next">Next</button>' +
-    `<div class="progress"><p data-jfb-words="Step {0} of {1}">Step 1 of 3</p><ol data-jfb-untitled="Page {0}">${steps}</ol>${hiddenSteps}</div>` +
+    (progress ??
+      `<div class="progress"><p data-jfb-words="Step {0} of {1}">Step 1 of 3</p><ol data-jfb-untitled="Page {0}">${steps}</ol>${hiddenSteps}</div>`) +
     '<div data-jfb-summary></div><div data-jfb-notice="form_changed"></div>' +
     `${pages}<div class="nav" id="nav"><button type="submit" name="jfb-nav" value="next" data-jfb-nav="next">Next</button></div>` +
     '<input type="hidden" name="jfb-page" value="a"><div data-jfb-live></div></form>';
@@ -239,6 +241,14 @@ describe('what follows a move', () => {
     expect(steps.map((each) => each.getAttribute('aria-current'))).toEqual([null, 'step', null]);
     expect(steps.map((each) => each.hasAttribute('data-jfb-done'))).toEqual([true, false, false]);
     expect(form.querySelector('[data-jfb-live]')?.textContent).toBe('Step 2 of 3');
+  });
+
+  it('says the step in words a view writes straight into the form, which is then their parent', async () => {
+    const { form, next } = wake({ progress: '<p data-jfb-words="Step {0} of {1}">Step 1 of 3</p>' });
+    await next();
+
+    expect(form.querySelector('[data-jfb-words]')?.textContent).toBe('Step 2 of 3');
+    expect(form.hidden, 'two pages and more show it').toBe(false);
   });
 
   it('counts only the pages the rules show, and numbers an untitled one by its place', async () => {

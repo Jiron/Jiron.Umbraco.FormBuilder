@@ -1,10 +1,13 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
+import { coverEveryMember, uncoveredAtReady } from '../../support/form-cover.ts';
 
 // The kitchen sink by keyboard alone (ROADMAP 6.4p): the demo's specimen, a form with a field of every built-in type on two pages,
 // answered and sent with Tab, Space, Enter, the arrows and typing, from the top of the page to the entry the server stores. Reading
-// where the focus stands is the test's; everything that changes the page goes through the keyboard.
+// where the focus stands is the test's; everything that changes the page goes through the keyboard. The journey runs a second
+// time with every member of the form covered as fields of those names would cover it (support/form-cover.ts), the browser's proof
+// that the runtime and its chunks read none of the form's members plainly; so its locators start at the document.
 
 const RUN = Date.now().toString(36);
 
@@ -14,9 +17,9 @@ const pathOfSpecimen = (): string => {
   return pathOf(found.texts.en, 'en');
 };
 
-/** What is typed into a text control, by its name. */
-const TYPED: Readonly<Record<string, string>> = {
-  displayName: `Mira ${RUN}`,
+/** What is typed into a text control, by its name, marked as one run's. */
+const typedFor = (mark: string): Readonly<Record<string, string>> => ({
+  displayName: `Mira ${mark}`,
   email: 'mira.okafor@visitor.jfb.test',
   'email.confirm': 'mira.okafor@visitor.jfb.test',
   copies: '2',
@@ -24,10 +27,10 @@ const TYPED: Readonly<Record<string, string>> = {
   'interests.other': 'The courtyard',
   'contact.first': 'Mira',
   'contact.last': 'Okafor',
-  'guests[0].guestName': `Guest ${RUN}`,
+  'guests[0].guestName': `Guest ${mark}`,
   'signature.typed': 'Mira Okafor',
-  anythingElse: `Sent by keyboard ${RUN}`,
-};
+  anythingElse: `Sent by keyboard ${mark}`,
+});
 
 interface Focused {
   readonly inForm: boolean;
@@ -56,7 +59,7 @@ const focusedOn = (page: Page): Promise<Focused> =>
   });
 
 /** Tabs through a page, answering each control the focus reaches, up to the button that ends the page, which it presses. */
-async function answerByKeyboard(page: Page): Promise<string> {
+async function answerByKeyboard(page: Page, typed: Readonly<Record<string, string>>): Promise<string> {
   const pressed = new Set<string>();
   const once = (what: string): boolean => {
     if (pressed.has(what)) return false;
@@ -82,7 +85,7 @@ async function answerByKeyboard(page: Page): Promise<string> {
         await page.keyboard.press('Enter');
         await expect.poll(async () => (await focusedOn(page)).row, 'the new row takes the focus').toBe(true);
         const row = await focusedOn(page);
-        if (TYPED[row.name] !== undefined) await page.keyboard.type(TYPED[row.name] ?? '');
+        if (typed[row.name] !== undefined) await page.keyboard.type(typed[row.name] ?? '');
       }
       continue;
     }
@@ -104,7 +107,7 @@ async function answerByKeyboard(page: Page): Promise<string> {
       await page.keyboard.press('ArrowRight');
       continue;
     }
-    if (TYPED[at.name] !== undefined && at.value === '') await page.keyboard.type(TYPED[at.name] ?? '');
+    if (typed[at.name] !== undefined && at.value === '') await page.keyboard.type(typed[at.name] ?? '');
   }
   throw new Error('The focus never reached the button that ends the page.');
 }
@@ -117,24 +120,44 @@ async function entriesWith(request: APIRequestContext, mark: string): Promise<st
     .filter((values) => values.includes(mark));
 }
 
+/** The journey, from the top of the page to the stored entry, its texts marked as this run's. */
+async function completeByKeyboard(page: Page, request: APIRequestContext, mark: string): Promise<void> {
+  const typed = typedFor(mark);
+  await page.goto(pathOfSpecimen());
+
+  expect(await answerByKeyboard(page, typed), 'the first page ends with Next').toBe('next');
+  await expect(page.locator('[data-jfb-summary]'), 'every answer it needs was given').toHaveCount(0);
+  await expect(page.locator('[name="anythingElse"]'), 'the second page').toBeVisible();
+
+  expect(await answerByKeyboard(page, typed), 'the second page ends with the send').toBe('submit');
+  await expect(page.locator('main [data-jfb-outcome]')).toBeVisible();
+
+  const [entry, ...others] = await entriesWith(request, `Sent by keyboard ${mark}`);
+  expect(others, 'one entry').toEqual([]);
+  expect(entry).toContain(`Mira ${mark}`);
+  expect(entry, 'its row').toContain(`Guest ${mark}`);
+  expect(entry, 'its "Other"').toContain('The courtyard');
+}
+
 test('the keyboard alone completes the kitchen sink, from the top of the page to the stored entry', async ({
   page,
   request,
 }) => {
   test.setTimeout(240_000);
-  await page.goto(pathOfSpecimen());
+  await completeByKeyboard(page, request, `${RUN}a`);
+});
 
-  expect(await answerByKeyboard(page), 'the first page ends with Next').toBe('next');
-  const form = page.locator('main form.jfb-form');
-  await expect(form.locator('[data-jfb-summary]'), 'every answer it needs was given').toHaveCount(0);
-  await expect(form.locator('[name="anythingElse"]'), 'the second page').toBeVisible();
-
-  expect(await answerByKeyboard(page), 'the second page ends with the send').toBe('submit');
-  await expect(page.locator('main [data-jfb-outcome]')).toBeVisible();
-
-  const [entry, ...others] = await entriesWith(request, `Sent by keyboard ${RUN}`);
-  expect(others, 'one entry').toEqual([]);
-  expect(entry).toContain(`Mira ${RUN}`);
-  expect(entry, 'its row').toContain(`Guest ${RUN}`);
-  expect(entry, 'its "Other"').toContain('The courtyard');
+test('the keyboard alone completes the kitchen sink with every member of the form covered', async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(240_000);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await coverEveryMember(page);
+  await completeByKeyboard(page, request, `${RUN}b`);
+  const uncovered = await uncoveredAtReady(page);
+  expect(uncovered.length, 'a jfb:ready for each form').toBeGreaterThan(0);
+  expect(uncovered.flat(), "names a plain read got a form's member for at jfb:ready").toEqual([]);
+  expect(errors).toEqual([]);
 });

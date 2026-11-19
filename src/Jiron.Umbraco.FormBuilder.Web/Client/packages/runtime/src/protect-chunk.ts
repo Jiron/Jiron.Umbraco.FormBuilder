@@ -14,6 +14,7 @@
  * provider shows none and is asked at the send. Withdrawn, the check goes.
  */
 import type { MessageWords } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 
 /** A challenge's puzzle. */
 export interface Puzzle {
@@ -161,7 +162,7 @@ export function enhanceCaptcha(
   texts: MessageWords,
   agreeing: HTMLInputElement | null,
 ): Captcha {
-  const document = form.ownerDocument;
+  const document = proto(form).ownerDocument;
   const view = document.defaultView as unknown as ProviderWindow & Window;
   const consent = view.JironFormBuilder?.consent;
   const provider = (): Provider | undefined =>
@@ -177,8 +178,8 @@ export function enhanceCaptcha(
     (told.consent === 'cookiebot'
       ? view.Cookiebot?.consent?.[told.category ?? ''] === true
       : ticked?.checked === true || consent?.has('captcha') === true);
-  const nav = form.querySelector('.jfb-navigation');
-  const box = form.querySelector<HTMLElement>('.jfb-captcha') ?? document.createElement('div');
+  const nav = proto(form).querySelector('.jfb-navigation');
+  const box = proto(form).querySelector<HTMLElement>('.jfb-captcha') ?? document.createElement('div');
   if (!box.isConnected) {
     box.className = 'jfb-captcha';
     nav?.before(box);
@@ -193,7 +194,7 @@ export function enhanceCaptcha(
   const button = (text: string, pressed: () => void): HTMLElement => {
     const element = document.createElement('button');
     element.type = 'button';
-    element.className = form.querySelector('[data-jfb-nav]')?.className ?? 'jfb-button';
+    element.className = proto(form).querySelector('[data-jfb-nav]')?.className ?? 'jfb-button';
     element.textContent = text;
     element.onclick = pressed;
     return element;
@@ -248,7 +249,7 @@ export function enhanceCaptcha(
   let failed = false;
   const follow = (): void => {
     // A form that another came in place of.
-    if (!form.isConnected) return;
+    if (!proto(form).isConnected) return;
     if (!agreed()) {
       token = null;
       shown = false;

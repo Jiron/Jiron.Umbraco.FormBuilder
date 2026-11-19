@@ -13,7 +13,9 @@
  * 6.4f the calculation language as one, `@jfb/logic/calc`, which the form engine takes (ADR-0114), and 6.4g the
  * merge tags as two, `@jfb/logic/template` and `@jfb/logic/recall`, which only a form with a text that recalls
  * answers loads (ADR-0115), and 9.5d the rule search, which the rules overview and the form check ask whether rules
- * conflict or an element ever shows (ADR-0179); the website runtime leaves it out of its bundle.
+ * conflict or an element ever shows (ADR-0179); the website runtime leaves it out of its bundle. 23.1 added the view
+ * of an object's members through its prototype chain, `@jfb/logic/proto`, which the website's code reads every member
+ * of a form through (ADR-0260).
  */
 // An email address as the email field checks it, which the backoffice's address boxes check too (ADR-0189).
 export { isEmailAddress } from './forms.ts';

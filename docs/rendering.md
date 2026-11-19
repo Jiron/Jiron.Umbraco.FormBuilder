@@ -318,6 +318,14 @@ document.addEventListener('jfb:submitted', (event) => {
 Jiron Form Builder tracks nothing itself; the events are there for a site's own analytics. To hear `jfb:ready` for the
 forms present when the page loads, add the listener before the asset tags.
 
+**A field's name on the form element.** A control's name is its field's alias, and a form element answers a property
+read with its control of that name before its own property, as on any HTML form: on a form with a field called `id`
+or `action`, `form.id` and `form.action` are those fields' controls. A site's own script reads the attribute,
+`form.getAttribute('action')`, and where a field may carry the method's name too, calls the method from its prototype:
+`Element.prototype.getAttribute.call(form, 'action')`. The runtime and `<jfb-form>` read no member of a form plainly,
+so a form works with them whatever its fields are called
+([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)).
+
 ## Save and continue later
 
 A form with **Save and continue later** on (its Settings view › Submission › More options) offers it with its

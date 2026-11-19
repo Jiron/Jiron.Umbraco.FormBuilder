@@ -6,6 +6,7 @@
  * runtime once per document, hands the runtime its form, and dispatches `jfb:rendered`; an answer it cannot use leaves
  * it empty, says why in the console, and dispatches `jfb:error`.
  */
+import { proto } from '@jfb/logic/proto';
 import type { JfbElementAnswer } from './answer';
 import { writeForm, type ControlWriter } from './views';
 
@@ -47,7 +48,8 @@ export function nextInstance(document: Document): string {
   const used = taken.get(document) ?? new Set<number>();
   taken.set(document, used);
   for (const element of document.querySelectorAll('[id^="jfb-"]')) {
-    const match = /^jfb-([1-9][0-9]*)$/.exec(element.id);
+    // The form itself is among them, whose id a control of that name would hide.
+    const match = /^jfb-([1-9][0-9]*)$/.exec(proto(element).id);
     if (match) used.add(Number(match[1]));
   }
   let next = 1;
@@ -172,28 +174,28 @@ export class JfbFormElement extends HTMLElement {
    * as a document keeps a module that failed.
    */
   #sayLame(form: HTMLFormElement, script: URL): void {
-    const notice = form
+    const notice = proto(form)
       .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
       ?.content.querySelector('[data-jfb-notice="server_error"]')
       ?.cloneNode(true);
     if (notice instanceof HTMLElement) {
-      form.querySelector(':scope > [data-jfb-notice]')?.remove();
-      (form.querySelector(':scope > .jfb-navigation') ?? form.lastElementChild)?.before(notice);
+      proto(form).querySelector(':scope > [data-jfb-notice]')?.remove();
+      (proto(form).querySelector(':scope > .jfb-navigation') ?? proto(form).lastElementChild)?.before(notice);
       notice.focus();
     }
     let alias = '';
     try {
-      const model = JSON.parse(form.querySelector('script[data-jfb-model]')?.textContent ?? '{}') as {
+      const model = JSON.parse(proto(form).querySelector('script[data-jfb-model]')?.textContent ?? '{}') as {
         alias?: unknown;
       };
       if (typeof model.alias === 'string') alias = model.alias;
     } catch {
       // The model is the runtime's to read; the form's key names it.
     }
-    form.dispatchEvent(
+    proto(form).dispatchEvent(
       new CustomEvent('jfb:error', {
         bubbles: true,
-        detail: { key: form.dataset['jfbForm'] ?? '', alias, code: 'server_error' },
+        detail: { key: proto(form).dataset['jfbForm'] ?? '', alias, code: 'server_error' },
       }),
     );
     const again = new URL(script);

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { engineOf } from './engine';
 import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
+import { stubMembers } from './testing-cover';
 import { ENGLISH } from './testing';
 
 vi.mock('./messages', async (importOriginal) => ({
@@ -38,9 +39,11 @@ describe('a page whose words do not load', () => {
     const form = document.querySelector('form');
     if (form === null) throw new Error('no form');
     const sent: string[] = [];
-    form.requestSubmit = (button?: HTMLElement | null) => {
-      sent.push(button instanceof HTMLButtonElement ? button.value : '');
-    };
+    stubMembers(form, {
+      requestSubmit: (button?: HTMLElement | null) => {
+        sent.push(button instanceof HTMLButtonElement ? button.value : '');
+      },
+    });
     pageErrorsOf(form, model, engineOf(model, null));
     const name = document.getElementById('jfb-1-name');
     name?.dispatchEvent(new Event('input', { bubbles: true }));

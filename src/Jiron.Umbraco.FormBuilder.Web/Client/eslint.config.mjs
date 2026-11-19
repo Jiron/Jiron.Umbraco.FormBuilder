@@ -3,6 +3,7 @@ import { defineConfig } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import formMembers from './scripts/form-members.mjs';
 import jfb from './scripts/no-hard-coded-text.mjs';
 
 const noHtmlStrings =
@@ -81,6 +82,16 @@ export default defineConfig(
         { selector: "NewExpression[callee.name='DOMParser']", message: noHtmlStrings },
       ],
     },
+  },
+  {
+    // A form answers a read with its control of that name, and a control is named by its field's alias: the website
+    // code reads a form's members through proto(form) (@jfb/logic/proto). The rule reads the types, so these files
+    // are linted with their project.
+    files: ['packages/runtime/src/**/*.ts', 'packages/element/src/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/testing*.ts'],
+    languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } },
+    plugins: { jfb: formMembers },
+    rules: { 'jfb/form-members': 'error' },
   },
   {
     // The AI add-on's backoffice too (16.1's review): its words come from a model, which Lit's templates escape as any text.

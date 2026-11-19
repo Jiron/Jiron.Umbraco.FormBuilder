@@ -8,6 +8,7 @@
  * the focus is in the form; a default filled in on load, with no act, is not.
  */
 import { calculationText, sliderText, type FormState } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { FormModel, ModelField } from './model';
 import { allFieldsOf, builtIn, rowOf } from './page';
 
@@ -38,9 +39,9 @@ export function showCalculations(form: HTMLFormElement, model: FormModel, state:
   const calculations = ofType(model, 'calculation');
   if (calculations.size === 0) return;
   let wrote = false;
-  const speaks = pauses.has(form) || form.contains(form.ownerDocument.activeElement);
+  const speaks = pauses.has(form) || proto(form).contains(proto(form).ownerDocument.activeElement);
   pauses.set(form, pauses.get(form));
-  for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-field]')) {
+  for (const element of proto(form).querySelectorAll<HTMLElement>('[data-jfb-field]')) {
     const key = element.dataset['jfbField'] ?? '';
     const field = calculations.get(key);
     const output = field === undefined ? null : outputOf(element);
@@ -56,11 +57,11 @@ export function showCalculations(form: HTMLFormElement, model: FormModel, state:
   if (!wrote) return;
   clearTimeout(pauses.get(form));
   const pause = setTimeout(() => {
-    const line = [...form.querySelectorAll('output')]
+    const line = [...proto(form).querySelectorAll('output')]
       .filter((output) => changed.delete(output) && output.textContent && !output.closest('[hidden]'))
       .map((output) => [(output.labels[0]?.textContent ?? '').trim(), output.textContent].filter(Boolean).join(': '))
       .join('; ');
-    const live = form.querySelector(':scope > [data-jfb-live]');
+    const live = proto(form).querySelector(':scope > [data-jfb-live]');
     if (live !== null && line !== '') live.textContent = line;
   }, PAUSE);
   pauses.set(form, pause);
@@ -85,6 +86,6 @@ export function followSliders(form: HTMLFormElement, model: FormModel): void {
     if (output !== null) write(output, text);
   };
   // A value the browser restored, going back to the page, shows as the visitor left it.
-  for (const input of form.querySelectorAll('input[type="range"]')) follow(input);
-  form.addEventListener('input', (event) => follow(event.target));
+  for (const input of proto(form).querySelectorAll('input[type="range"]')) follow(input);
+  proto(form).addEventListener('input', (event) => follow(event.target));
 }

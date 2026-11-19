@@ -7,6 +7,7 @@
  * with, a summary page that a post writes and a form that takes no entry now, goes the way without JavaScript, whose answer
  * does the same; in the element, which has no such way, the visitor reads the notice of a failed send.
  */
+import { proto } from '@jfb/logic/proto';
 import { parseSanitised } from './html';
 import { movesPages } from './uploads';
 import type { FormModel } from './model';
@@ -22,15 +23,15 @@ const NOT_ANSWERS = ['hidden', 'file', 'submit', 'button', 'reset', 'image'];
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
-const answers = (form: Element): Control[] =>
-  [...form.querySelectorAll<Control>(CONTROLS)].filter(
+const answers = (form: HTMLFormElement): Control[] =>
+  [...proto(form).querySelectorAll<Control>(CONTROLS)].filter(
     (control) =>
       control.closest('.jfb-hp') === null &&
       !(control instanceof HTMLInputElement && NOT_ANSWERS.includes(control.type)),
   );
 
-const hash = (form: Element, alias: string): string | undefined =>
-  form.querySelector<HTMLInputElement>(`input[type="hidden"][name="${CSS.escape(CONSENT + alias)}"]`)?.value;
+const hash = (form: HTMLFormElement, alias: string): string | undefined =>
+  proto(form).querySelector<HTMLInputElement>(`input[type="hidden"][name="${CSS.escape(CONSENT + alias)}"]`)?.value;
 
 /**
  * Copies the old form's answers to the new one by each control's name, and the values the page gave it. A control the
@@ -68,12 +69,12 @@ export function copyAnswers(from: HTMLFormElement, to: HTMLFormElement): number 
       if (each !== undefined) control.value = each.value;
     }
   }
-  for (const input of [...to.querySelectorAll<HTMLInputElement>('input[type="hidden"]')]) {
+  for (const input of [...proto(to).querySelectorAll<HTMLInputElement>('input[type="hidden"]')]) {
     if (CARRIED.some((prefix) => input.name.startsWith(prefix))) input.remove();
   }
-  const live = to.querySelector(':scope > [data-jfb-live]');
-  for (const input of from.querySelectorAll<HTMLInputElement>('input[type="hidden"]')) {
-    if (CARRIED.some((prefix) => input.name.startsWith(prefix))) to.insertBefore(input.cloneNode(), live);
+  const live = proto(to).querySelector(':scope > [data-jfb-live]');
+  for (const input of proto(from).querySelectorAll<HTMLInputElement>('input[type="hidden"]')) {
+    if (CARRIED.some((prefix) => input.name.startsWith(prefix))) proto(to).insertBefore(input.cloneNode(), live);
   }
   return unticked;
 }
@@ -83,10 +84,10 @@ export function copyAnswers(from: HTMLFormElement, to: HTMLFormElement): number 
  * the logic into the core with it; this one comes from the server of the same markup contract, so it only has to parse.
  */
 function modelIn(next: HTMLFormElement, form: HTMLFormElement): FormModel | null {
-  if (next.dataset['jfbContract'] !== form.dataset['jfbContract']) return null;
+  if (proto(next).dataset['jfbContract'] !== proto(form).dataset['jfbContract']) return null;
   try {
     return JSON.parse(
-      next.querySelector('script[type="application/json"][data-jfb-model]')?.textContent ?? '',
+      proto(next).querySelector('script[type="application/json"][data-jfb-model]')?.textContent ?? '',
     ) as FormModel;
   } catch {
     return null;
@@ -94,8 +95,8 @@ function modelIn(next: HTMLFormElement, form: HTMLFormElement): FormModel | null
 }
 
 /** The headless element a form is in, which writes the form as it is now itself (ADR-0128). */
-export const hostOf = (form: Element): { fresh(): Promise<HTMLFormElement | null> } | null =>
-  form.closest('jfb-form') as { fresh(): Promise<HTMLFormElement | null> } | null;
+export const hostOf = (form: HTMLFormElement): { fresh(): Promise<HTMLFormElement | null> } | null =>
+  proto(form).closest('jfb-form') as { fresh(): Promise<HTMLFormElement | null> } | null;
 
 /** The form as it is now, with its model, or null for what the page cannot put in the old one's place. */
 export async function markupOf(
@@ -105,21 +106,21 @@ export async function markupOf(
   sent?: string,
 ): Promise<DocumentFragment | null> {
   const query = new URLSearchParams({
-    instance: form.id,
-    page: form.ownerDocument.location.pathname,
+    instance: proto(form).id,
+    page: proto(form).ownerDocument.location.pathname,
     culture: model.culture,
   });
-  const content = form.dataset['jfbContent'];
+  const content = proto(form).dataset['jfbContent'];
   if (content) query.set('contentKey', content);
-  const theme = [...form.classList].find((name) => name.startsWith('jfb-theme-'))?.slice('jfb-theme-'.length);
+  const theme = [...proto(form).classList].find((name) => name.startsWith('jfb-theme-'))?.slice('jfb-theme-'.length);
   if (theme) query.set('theme', theme);
-  const placement = form.dataset['jfbPlacement'];
+  const placement = proto(form).dataset['jfbPlacement'];
   if (placement) query.set('placement', placement);
   if (sent !== undefined) query.set('jfb-sent', sent);
-  const response = await fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/render?${query.toString()}`, {
+  const response = await fetch(`${api}/forms/${proto(form).dataset['jfbForm'] ?? ''}/render?${query.toString()}`, {
     signal: AbortSignal.timeout(WAIT),
   }).catch(() => null);
-  return response?.ok ? parseSanitised(form.ownerDocument, await response.text()) : null;
+  return response?.ok ? parseSanitised(proto(form).ownerDocument, await response.text()) : null;
 }
 
 /**
@@ -132,10 +133,11 @@ export async function swapForm(
   api: string,
 ): Promise<{ readonly form: HTMLFormElement; readonly model: FormModel } | null> {
   // A summary page's rows and a view without the buttons to move with are for a post to write.
-  const several = form.querySelectorAll('[data-jfb-page]').length > 1;
+  const several = proto(form).querySelectorAll('[data-jfb-page]').length > 1;
   if (
-    form.querySelector('.jfb-repeater, .jfb-ranking') !== null ||
-    (several && ((model.form.settings?.summaryPage === true && form.hasAttribute('action')) || !movesPages(form)))
+    proto(form).querySelector('.jfb-repeater, .jfb-ranking') !== null ||
+    (several &&
+      ((model.form.settings?.summaryPage === true && proto(form).hasAttribute('action')) || !movesPages(form)))
   )
     return null;
   const host = hostOf(form);
@@ -144,16 +146,18 @@ export async function swapForm(
     : (await markupOf(form, model, api))?.querySelector<HTMLFormElement>('form[data-jfb-form]');
   const nextModel = next ? modelIn(next, form) : null;
   const template = next
-    ?.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
-    ?.content.querySelector('[data-jfb-notice="form_changed"]');
+    ? proto(next)
+        .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
+        ?.content.querySelector('[data-jfb-notice="form_changed"]')
+    : undefined;
   if (!next || nextModel === null || !template) return null;
   const unticked = copyAnswers(form, next);
   // The visitor stays on the page they were on, if the form still has it: its render knows no answers, so its rules decide at the wake.
-  const at = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
-  const pages = [...next.querySelectorAll<HTMLElement>('[data-jfb-page]')];
+  const at = proto(form).querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
+  const pages = [...proto(next).querySelectorAll<HTMLElement>('[data-jfb-page]')];
   if (pages.some((page) => page.dataset['jfbPage'] === at)) {
     for (const page of pages) page.hidden = page.dataset['jfbPage'] !== at;
-    const named = next.querySelector<HTMLInputElement>(':scope > input[name="jfb-page"]');
+    const named = proto(next).querySelector<HTMLInputElement>(':scope > input[name="jfb-page"]');
     if (named !== null && at !== undefined) named.value = at;
   }
   const notice = template.cloneNode(true) as HTMLElement;
@@ -161,10 +165,10 @@ export async function swapForm(
   if (line !== null && unticked > 0) {
     line.append(' ', line.dataset[unticked === 1 ? 'jfbOne' : 'jfbOther'] ?? '');
   }
-  next.insertBefore(notice, next.querySelector(':scope > [data-jfb-page]'));
-  next.setAttribute('data-jfb-woken', '');
-  if (form.classList.contains('jfb-scheme-dark')) next.classList.add('jfb-scheme-dark');
-  form.replaceWith(next);
+  proto(next).insertBefore(notice, proto(next).querySelector(':scope > [data-jfb-page]'));
+  proto(next).setAttribute('data-jfb-woken', '');
+  if (proto(form).classList.contains('jfb-scheme-dark')) proto(next).classList.add('jfb-scheme-dark');
+  proto(form).replaceWith(next);
   notice.focus();
   return { form: next, model: nextModel };
 }

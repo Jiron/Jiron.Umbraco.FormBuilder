@@ -9,6 +9,7 @@ import { engineOf, loadFormulas, loadTexts } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
 import { wordsFor } from './messages';
 import type { FormModel, ModelField, ModelPage } from './model';
+import { stubMembers } from './testing-cover';
 import { ENGLISH } from './testing';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
@@ -84,9 +85,11 @@ function contact(model: FormModel, fields: string, before = '', beforeWaking: ()
   const form = document.querySelector('form');
   if (form === null) throw new Error('no form');
   const sent: string[] = [];
-  form.requestSubmit = (button?: HTMLElement | null) => {
-    sent.push(button instanceof HTMLButtonElement ? button.value : '');
-  };
+  stubMembers(form, {
+    requestSubmit: (button?: HTMLElement | null) => {
+      sent.push(button instanceof HTMLButtonElement ? button.value : '');
+    },
+  });
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
   beforeWaking();
@@ -200,13 +203,13 @@ describe('leaving a field', () => {
     const pressed = form.querySelector('button');
     if (pressed === null) throw new Error('no button');
     const find = form.querySelector.bind(form);
-    const active = vi
-      .spyOn(form, 'querySelector')
-      .mockImplementation((selector: string) => (selector === ':active' ? pressed : find(selector)));
+    const released = stubMembers(form, {
+      querySelector: (selector: string) => (selector === ':active' ? pressed : find(selector)),
+    });
     leave('jfb-1-email');
     await settle();
     expect(shownOf(form).inline, 'not while the press lasts').toEqual([]);
-    active.mockRestore();
+    released();
     form.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await settle();
     expect(shownOf(form).inline, 'once the press ends with its click').toEqual([
@@ -534,7 +537,8 @@ describe("a grid's error", () => {
 describe('a browser that cannot send on with the button pressed', () => {
   it('posts as without JavaScript, for the server to check', () => {
     const { form, sent } = contact(ONE_PAGE, FIELDS);
-    Reflect.deleteProperty(form, 'requestSubmit');
+    // The test's own stub, then the browser's.
+    Reflect.deleteProperty(Object.getPrototypeOf(form) as object, 'requestSubmit');
     Reflect.deleteProperty(HTMLFormElement.prototype, 'requestSubmit');
     const event = press(form, 'send');
     expect(event.defaultPrevented).toBe(false);

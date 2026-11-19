@@ -1229,7 +1229,7 @@ the current measurements.
 
 | Budget | Target | Measured so far |
 | --- | --- | --- |
-| Website runtime | ≤ 16 KB gzip core, ≤ 100 KB with everything (ADR-0251); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b); core 2.53 KB, everything 59.50 KB with the largest language, default theme 8.06 KB (16.5); core 2.64 KB, everything 62.40 KB of 100 KB with save and continue later (8.6b); core 2.80 KB, everything 63.54 KB after the last pass (21.1) |
+| Website runtime | ≤ 16 KB gzip core, ≤ 100 KB with everything (ADR-0251); theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b); core 2.53 KB, everything 59.50 KB with the largest language, default theme 8.06 KB (16.5); core 2.64 KB, everything 62.40 KB of 100 KB with save and continue later (8.6b); core 2.80 KB, everything 63.54 KB after the last pass (21.1); core 2.94 KB, everything 64.00 KB with the view a form is read through (23.1, ADR-0260) |
 | Rendering a 50-field form | ≤ 20 ms from the cached definition | median 0.12 to 0.15 ms (ADR-0004) |
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
@@ -1241,6 +1241,7 @@ the current measurements.
 | Coverage | ≥ 85% of Core's lines; every endpoint; every vector in both runtimes | Core 97.6%, Web 97.7% of lines (16.5, ADR-0011) |
 | Builds | zero warnings, formatters and analyzers clean | – (3.1) |
 | The backoffice's words | every word from its dictionaries in English and German; every key used | each area held to the keys its code uses (`lang/key-use.test.ts`, ADR-0229); no word in a template (`jfb/no-hard-coded-text`) |
+| A form's own members on the website | read through the prototype chain, so a form works whatever its fields are called | `proto(form)` everywhere, held by the typed lint rule `jfb/form-members`, the covered forms of the runtime's and the element's tests, and the browser tests with every name covered ([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)) |
 
 ## 12. Glossary
 

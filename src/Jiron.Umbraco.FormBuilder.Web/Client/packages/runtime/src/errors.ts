@@ -20,6 +20,7 @@ import {
   showsErrors,
 } from './display';
 import type { MessageWords } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { PageEngine } from './engine';
 import { elementOf, formWords, type ShownError } from './messages';
 import type { FormModel } from './model';
@@ -85,15 +86,15 @@ export function pageErrorsOf(
   let speaking: ReturnType<typeof setTimeout> | undefined;
 
   const fieldOf = (node: EventTarget | null): HTMLElement | null =>
-    node instanceof Element ? node.closest<HTMLElement>(FIELD) : null;
+    node instanceof Element ? proto(node).closest<HTMLElement>(FIELD) : null;
   const ruledOut = (field: HTMLElement): boolean => field.closest('[data-jfb-hidden]') !== null;
   const offPage = (field: HTMLElement | null): boolean => field?.closest('[data-jfb-page][hidden]') != null;
 
   /** The field an error shows at: the one that holds the control it names, else the field by its key. */
   const fieldAt = (error: ShownError): HTMLElement | null => {
     if (error.field === '') return null;
-    const target = form.ownerDocument.getElementById(error.target);
-    if (target !== null && form.contains(target)) return fieldOf(target);
+    const target = proto(form).ownerDocument.getElementById(error.target);
+    if (target !== null && proto(form).contains(target)) return fieldOf(target);
     const group =
       error.row === null
         ? null
@@ -111,7 +112,7 @@ export function pageErrorsOf(
     return found;
   };
 
-  const liveRegion = (): HTMLElement | null => form.querySelector<HTMLElement>(':scope > [data-jfb-live]');
+  const liveRegion = (): HTMLElement | null => proto(form).querySelector<HTMLElement>(':scope > [data-jfb-live]');
   const hush = (): void => {
     clearTimeout(speaking);
     const live = liveRegion();
@@ -133,7 +134,7 @@ export function pageErrorsOf(
     const errors = await safely(() => checkFields(form, model, engine, clock));
     if (errors === null) return;
     const now = byField(errors);
-    for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
+    for (const paragraph of [...proto(form).querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
       const field = fieldOf(paragraph);
       if (field === null) continue;
       if (ruledOut(field) || (!now.has(field) && !kept.has(field))) {
@@ -239,7 +240,7 @@ export function pageErrorsOf(
   function present(errors: readonly ShownError[], scope: CheckScope, words: MessageWords): void {
     hush();
     const shown = byField(errors);
-    for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
+    for (const paragraph of [...proto(form).querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
       const field = fieldOf(paragraph);
       if (field !== null && !shown.has(field)) clearFieldError(field);
     }
@@ -253,11 +254,11 @@ export function pageErrorsOf(
       const first = errors.find((error) => error.field !== '');
       if (first !== undefined) focusTarget(form, first.target);
     }
-    form.dispatchEvent(
+    proto(form).dispatchEvent(
       new CustomEvent<InvalidDetail>('jfb:invalid', {
         bubbles: true,
         detail: {
-          key: form.dataset['jfbForm'] ?? '',
+          key: proto(form).dataset['jfbForm'] ?? '',
           alias: model.alias,
           scope,
           errors: errors.map((error) => ({
@@ -272,13 +273,13 @@ export function pageErrorsOf(
   /** The post goes on as without JavaScript, with the button the visitor pressed. */
   const send = (button: HTMLButtonElement): void => {
     passing = true;
-    form.requestSubmit(button);
+    proto(form).requestSubmit(button);
     passing = false;
   };
 
-  form.addEventListener('submit', (event) => {
+  proto(form).addEventListener('submit', (event) => {
     // A browser that cannot send on with the button pressed posts as without JavaScript, and the server checks it.
-    if (passing || !('requestSubmit' in form)) return;
+    if (passing || !('requestSubmit' in proto(form))) return;
     // No other button leaves the page while a check or a send is on its way: its entry may be stored by then.
     if (checking) {
       event.preventDefault();
@@ -319,17 +320,17 @@ export function pageErrorsOf(
       changed.add(field);
       kept.delete(field);
     }
-    if (queued || (!showsErrors(form) && form.querySelector(':scope > [data-jfb-summary]') === null)) return;
+    if (queued || (!showsErrors(form) && proto(form).querySelector(':scope > [data-jfb-summary]') === null)) return;
     queued = true;
     queueMicrotask(() => {
       queued = false;
       void recheck();
     });
   };
-  form.addEventListener('input', answered);
-  form.addEventListener('change', answered);
+  proto(form).addEventListener('input', answered);
+  proto(form).addEventListener('change', answered);
 
-  form.addEventListener('focusout', (event) => {
+  proto(form).addEventListener('focusout', (event) => {
     const field = fieldOf(event.target);
     if (field === null) return;
     const next = event.relatedTarget;
@@ -337,12 +338,13 @@ export function pageErrorsOf(
     if (!changed.has(field) && errorIn(field) === null) return;
     // The browser marks what a press holds down before the focus moves; its click comes once the press ends, and a
     // press on Next or Send checks the page itself.
-    if (form.querySelector(':active')) form.addEventListener('click', () => void leave(field), { once: true });
+    if (proto(form).querySelector(':active'))
+      proto(form).addEventListener('click', () => void leave(field), { once: true });
     else void leave(field);
   });
 
-  form.addEventListener('click', (event) => {
-    const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+  proto(form).addEventListener('click', (event) => {
+    const link = event.target instanceof Element ? proto(event.target).closest('a[href^="#"]') : null;
     if (link === null || link.closest('[data-jfb-summary]')?.parentElement !== form) return;
     if (focusTarget(form, (link.getAttribute('href') ?? '').slice(1))) event.preventDefault();
   });
@@ -365,10 +367,10 @@ function changedSinceServed(field: HTMLElement): boolean {
 /** The errors the server showed at fields still as it saw them after a post without JavaScript, with their summary links' texts. */
 function keptOf(form: HTMLFormElement): Map<HTMLElement, Kept> {
   const links = new Map<string, string>();
-  for (const link of form.querySelectorAll(':scope > [data-jfb-summary] a[href^="#"]'))
+  for (const link of proto(form).querySelectorAll(':scope > [data-jfb-summary] a[href^="#"]'))
     links.set((link.getAttribute('href') ?? '').slice(1), (link.textContent ?? '').trim());
   const kept = new Map<HTMLElement, Kept>();
-  for (const paragraph of form.querySelectorAll<HTMLElement>('[data-jfb-error]')) {
+  for (const paragraph of proto(form).querySelectorAll<HTMLElement>('[data-jfb-error]')) {
     const field = paragraph.closest<HTMLElement>(FIELD);
     const target = paragraph.id.endsWith('-error') ? paragraph.id.slice(0, -'-error'.length) : '';
     if (field !== null && target.length > 0 && !changedSinceServed(field))
