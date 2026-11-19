@@ -1244,3 +1244,71 @@ its reason, and a handover block at the end of every phase.
   names fall back to the post without JavaScript, two throw on the page, and every one is sent as it should be
   without JavaScript (the phase's opening lines name them). "How to use" names Phase 23. One step and not
   several (ADR-0197). Reason: the owner's message; a form that cannot be sent is a fault of the product.
+- 2026-11-19 · 23.1 The website's script reads a form's own properties, whatever its fields are called, and phase review · 7ac169c7 · ADR-0260. **The fault:** a browser answers a property read on a form element with the form's control of that name, in front of every member of its own, a control is named by its field's alias, and the website's script read a form's members plainly in about 280 places (289 go through the view now); the test DOM does not answer so, which is why 831 unit tests passed on forms that fail in a browser. **Decided:** aliases stay free, and the script asks the prototype. `proto(form)` (`@jfb/logic/proto`) is a view of an object's members as its prototype chain defines them, with the object as the receiver; the runtime and `<jfb-form>` read, write and call every member of a form through it, written where it is read and never held, and so for a root, an event's target and a parent that may be the form (5c04d7b4). **Built** by the one agent on Opus 5.5 in three rounds, judged on its diff and on the main session's own runs, and sent back for: a browser test of the server-rendered page, as the first one covered `<jfb-form>` alone; a test of the unit tests' cover itself, which on its first run found that a plain write by the website's code was never covered (the test DOM's own helper was taken for the writer); the cover's cost, 31 s for suites that had taken 11, and 14.6 s once it reads call sites instead of a stack's text; an element's parent where a view writes its buttons straight into the form, in four places, each with a test that fails without it; and the entry's file (below). **Kept so:** the lint rule `jfb/form-members` reads the types and refuses a read, a write, a call, a destructuring and an `in` on what is or may be a form unless `proto(...)` stands in place (19 cases of its own); every form a unit test of the runtime or the element makes is covered, each alias-shaped name of its prototype chain answering the website's code with a control and refusing its write, and `stubMembers` gives a test its stub; put on the code before the fix, the cover fails 705 of the 831 tests. **Found on the way:** the count of what was sent to Insights was a plain object read by alias, so the check errors of a field called `constructor` or `toString` were never sent; it has no prototype now. **The main session's own fault:** it accepted the first build's shared module as a file of its own, 0.4 KB that the entry imports, as one small request. Its own run of the website's browser tests then failed two: an answer given before a slow runtime woke no longer took its error away, as the entry now started one request later, and the strict site's list of files. The build gives the entry's own modules a copy made from the one source and fails when the entry imports a file (`entryRunsAlone`); the strict site's list was not touched, and all 373 tests passed on the corrected build. **The "Done when" checks:** `aliases-on-the-page.spec.ts` (18 aliases and a control for every other alias-shaped name a form element's member has in the browser; errors, a send, the outcome, nothing thrown; on a page the server renders and through the element; it fails on the build before the fix), the kitchen sink's keyboard journey run a second time covered (19736bb7), `FormPostTests.Aliases` for the post without JavaScript (7ac169c7), the rule's test and the cover's own. **Checked by changing the code:** the cover broken two ways (its own test fails), the four parents read plainly (their tests fail), the entry importing the module (the build fails). **The gate:** `node scripts/verify-clean.mjs` on origin's `main` at 7ac169c7 passed every step in 4,681 s (`.local/verify/202611190101`): 9,123 unit tests (17 skipped, the PHP sample), 2,313 integration tests, 56 of the AI add-on, 6,333 client tests in 237 files, 401 of the scripts, 59 of the browser tests' support and 590 browser tests on their first run; a pack of `17.0.0-dev.202611190207`, the install test on 17.7.1 and on the floor (18 checks each, 4 on the floor's cache), the upgrade with data (53 checks), the secret scan of 1,267 commits clean, and the term guard skipped, the term list not being on this machine. **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from `node scripts/coverage.mjs --run` on 7ac169c7. The name scan finds 0 hits (20 names, 3,205 files and 1,228 commit messages). **`v18/main`:** `main` was merged into it as f9eda3e5 (an automatic merge, 58 files), and the whole gate ran on that commit in a clone of its own (`node scripts/gate-clone.mjs run f9eda3e5`): every stage passed in 5,378 s, with 9,152 unit tests (17 skipped), 2,313 integration tests, 56 of the AI add-on, 6,342 client tests in 238 files and 590 browser tests, its runtime at 63.98 KB of 100 KB and its bundle at 508.30 KB of 512 KB. **The hang marker:** that gate's browser stage ran twice. In its first run the website host's database stalled from 04:55:21 (one write found it locked, the form Umbraco's SQLite limit takes on 18, ADR-0250): two tests of `defaults-on-the-page.spec.ts` ran into their 60 s, one of them in the demo member's sign-in, and ten did not run; the gate ran the browser projects once more on fresh hosts, as ADR-0011 allows once for that cause, and all 590 passed. On `main` the same spec passed in the verification's first run and in the main session's own. The line was pushed then, and the closing records were merged into it after. **Measured:** the runtime's core 2.94 KB of 16 KB (2.80 before) in one file, the runtime with every feature 64.00 KB of 100 KB (63.54 before) in nine files as before; the backoffice, whose previews hold the runtime's code, 508.23 KB of 512 KB, 44.90 KB at a session's start. **While it ran:** the machine was switched off once, in the middle of the agent's browser run; the work stood in the tree, a host's stale PID file was removed, `git fsck` was clean, and the main session ran the checks again itself.
+
+### Handover after Phase 23 (2026-11-19)
+
+- **State:** every step of ROADMAP.md is done, and nothing is half-done or blocked. `main` and `v18/main` (with every
+  commit of `main` merged in) are both on origin. `docs/STATUS.md` is where the owner starts;
+  `docs/decisions/0260-a-field-may-be-called-anything.md` says what was wrong, what was decided and what was ruled
+  out.
+- **How the phase was worked:** one step (ADR-0197). One agent on Opus 5.5 wrote the code in three rounds; the main
+  session tried the fault on the demo first, briefed, judged each diff and its own runs, and sent the work back until
+  it held. The clean-clone verification ran once, on the last work commit, `7ac169c7`, and the Umbraco 18 line's
+  whole gate on that commit merged into it (`f9eda3e5`).
+- **The review:** the first build shared the new module between the entry and the chunks as a file of its own, and
+  the main session accepted it on its size. Two of the website's browser tests failed on it and were right: the
+  entry hears a visitor's first answers while the form chunk loads, and a file to load first makes it start a
+  request later. The entry imports nothing again, the build fails if it does, and the verification passed on
+  `7ac169c7` (every step, in 4,681 s, its 590 browser tests on their first run).
+- **The wiring,** swept over what the step touched:
+  - **The server is as Phase 22 left it.** No `.cs` file of the product changed; the two new files are a test of
+    the post without JavaScript and its view. The markup, the controls' names, the events and
+    `window.JironFormBuilder` are unchanged, so a site's styles and scripts meet what they met.
+  - **One module, `@jfb/logic/proto`,** read in 289 places of `packages/runtime` and `packages/element`. The
+    shared logic and the backoffice do not use it: they read no form of a page. The backoffice's two previews hold
+    the runtime's code, so its sizes moved with it (0.13 KB in the bundle).
+  - **The files a page loads** are the nine they were, under the same names' pattern; the strict site's list of
+    them was not edited. `entryRunsAlone` (`packages/runtime/vite.config.ts`) gives `frame.ts` and `fit.ts`, the
+    entry's modules that read a form, their copy of the module; a module added to the entry that reads a form goes
+    into `ENTRY_MODULES`, or the build says so.
+  - **The lint rule** runs on `packages/runtime/src` and `packages/element/src` with their types, in the client's
+    lint, which the gate runs. **The cover** is a set-up file of both packages' unit tests
+    (`packages/runtime/src/testing-setup.ts`); a new package that reads a form on a page needs both.
+  - **Insights:** `frame.ts` counts what it sent in an object without a prototype. The other objects the
+    website's code and the shared logic read by an alias already had none, or are asked for their own property
+    (`Object.hasOwn`); this was the one place that did neither.
+- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from `node scripts/coverage.mjs --run` on 7ac169c7.
+- **`[~]` steps retried:** none; no step is blocked.
+- **Left for the owner, none of it a fault:** nothing new. A site's own script on a form with a field called `id`
+  or `action` meets the field's control, as on any HTML form; `docs/rendering.md` says so and how to read past it.
+- **Not looked into:** the browser tests run in Edge alone, as every browser test here does. The cover reads the
+  names from the browser it runs in, so a member only another browser has is not covered here; the script asks the
+  prototype for every member all the same, and the lint rule does not depend on a browser.
+- **`.private/`:** nothing of it was staged; the name scan finds 0 hits on `main`.
+- **Budgets to watch:** the backoffice bundle is at 508.23 KB of 512 KB, what a session loads at its start at
+  44.90 KB of 64 KB, and the designer's file at 39.42 KB of 64 KB. The website's runtime is at 64.00 KB of 100 KB
+  and its core at 2.94 KB of 16 KB.
+- **Next:** for the owner, `docs/STATUS.md` "What is left for you" and `docs/OWNER-TODO.md` in full. For a later
+  build, ROADMAP §7 "Later" and the "For later" of `docs/ux/review-22.md`.
+- **Gotchas:**
+  - **The entry runs alone.** It imports no file, as it hears a visitor's first answers while the form chunk
+    loads, and a chunk cannot import from the entry, which a page loads with its fingerprint in the address. A size
+    budget does not show a file the entry waits for; `focus-and-landing.spec.ts` does, so the whole website
+    project runs after any change to how the runtime is bundled.
+  - **The website's assets are embedded in the Web assembly.** `JFB_E2E_SKIP_BUILD=1` after a change to the client
+    tests the old script: a "before" run of the new spec passed that way and was thrown away.
+  - **Playwright on a covered form:** its selector engine asks the form for `matches`, `querySelectorAll` and
+    `getAttribute`, and gets a control. A spec on a covered form uses selectors rooted at the document that find
+    one element, and the keyboard (`aliases-on-the-page.spec.ts`).
+  - **A cover's control is an `<output>`.** The document answers an `<object>`'s name too, and `document.baseURI`
+    then broke the page under test.
+  - **The unit tests' cover tells the website's code from a test by the file of the frame that reads,** through
+    V8's call sites, and passes over two files of the test DOM by name. After an update of the test DOM or of the
+    test runner, `testing-cover.test.ts` is the test that says whether it still covers.
+  - **A test's stub on a form** goes in with `stubMembers`, which puts a link into the form's prototype chain; a
+    covered form answers a member of its own as a browser's would.
+  - **A form held under a wider type** (an `Element`, a `ParentNode`) is not seen by the lint rule; the covered
+    tests see it as far as a test drives the place. A new place that takes a parent or a root asks itself whether
+    it can be the form.
+- **Open owner items added:** none.
