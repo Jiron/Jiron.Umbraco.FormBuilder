@@ -7,6 +7,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFrame, followResumeLinks, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
+import { stubMembers } from './testing-cover';
 
 const model = (alias: string, settings?: Record<string, unknown>): string =>
   JSON.stringify({
@@ -341,8 +342,8 @@ describe('the frame', () => {
     const reported: unknown[] = [];
     vi.stubGlobal('reportError', (error: unknown) => reported.push(error));
     const first = form('jfb-1');
-    Object.defineProperty(first, 'querySelector', {
-      value: () => {
+    stubMembers(first, {
+      querySelector: () => {
         throw broken;
       },
     });
@@ -590,6 +591,31 @@ describe('counting what visitors do with a form', () => {
       { type: 'page', page: 'p2' },
       { type: 'invalid', field: 'email', kind: 'invalid' },
       { type: 'invalid', field: 'guests[0].name', kind: 'required' },
+    ]);
+  });
+
+  it('sends a field that stopped the visitor whatever its alias, the names every object has among them', () => {
+    const sent = beacons();
+    const counted = form('jfb-1');
+    counted.dataset['jfbInsights'] = EVENTS;
+    document.body.append(counted);
+    createFrame(chunk().load).init();
+    const names = ['constructor', 'toString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf'];
+
+    counted.dispatchEvent(
+      new CustomEvent('jfb:invalid', {
+        detail: {
+          key: 'key-jfb-1',
+          alias: 'jfb-1',
+          scope: 'send',
+          errors: names.map((field) => ({ field, kind: 'required' })),
+        },
+      }),
+    );
+
+    expect(sent.map(([, body]) => body)).toEqual([
+      { type: 'view' },
+      ...names.map((field) => ({ type: 'invalid', field, kind: 'required' })),
     ]);
   });
 

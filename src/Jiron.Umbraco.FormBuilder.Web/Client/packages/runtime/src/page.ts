@@ -19,6 +19,7 @@ import {
   type ReadField,
   type ReadPost,
 } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { FormModel, ModelField } from './model';
 
 /** One field's answer read from the page. */
@@ -70,7 +71,7 @@ const NOT_TAKEN = '?';
 export function entriesOf(form: HTMLFormElement): [string, string][] {
   const entries: [string, string][] = [];
   for (const [name, value] of new FormData(form)) if (typeof value === 'string') entries.push([name, value]);
-  for (const control of form.elements) {
+  for (const control of proto(form).elements) {
     if (!(control instanceof HTMLInputElement) || control.disabled || control.validity?.badInput !== true) continue;
     const entry = entries.find(([name, value]) => name === control.name && value === '');
     if (entry !== undefined) entry[1] = NOT_TAKEN;
@@ -171,7 +172,8 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
 
 /** The repeatable group a field's row belongs to and that row's state, if the reading counted it; null outside a row. */
 export function rowOf(field: HTMLElement, state: FormState) {
-  const row = field.parentElement?.closest<HTMLElement>('[data-jfb-row]');
+  const parent = field.parentElement;
+  const row = parent === null ? null : proto(parent).closest<HTMLElement>('[data-jfb-row]');
   if (row == null) return null;
   const group = row.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? '';
   return { group, state: state.rows[group]?.[Number(row.dataset['jfbRow'])] };

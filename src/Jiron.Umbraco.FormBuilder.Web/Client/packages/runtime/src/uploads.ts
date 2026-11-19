@@ -1,4 +1,5 @@
 /** What a form's send knows of its uploads (ROADMAP 6.4m, ADR-0152), whose work is the chunks `uploads-chunk` and `signature-chunk`. */
+import { proto } from '@jfb/logic/proto';
 import type { FormModel } from './model';
 import { fieldsOf } from './page';
 
@@ -40,7 +41,7 @@ export interface UploadOptions {
 
 /** Whether a form of several pages can move through them on the page: its view writes every button for that (ADR-0155). */
 export const movesPages = (form: HTMLFormElement): boolean =>
-  form
+  proto(form)
     .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
     ?.content.querySelector('[data-jfb-nav="next"]') != null;
 
@@ -56,11 +57,11 @@ export const optionsByPost = (model: FormModel): boolean =>
  * that writes no buttons for the page to move with: a post cannot claim a token, and would lose a drawing.
  */
 export function takesUploads(form: HTMLFormElement, model: FormModel): boolean {
-  const templates = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
+  const templates = proto(form).querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
   if (optionsByPost(model) || templates?.hasAttribute('data-jfb-sending') !== true) return false;
   if (
-    form.querySelectorAll('[data-jfb-page]').length > 1 &&
-    ((model.form.settings?.summaryPage === true && form.hasAttribute('action')) || !movesPages(form))
+    proto(form).querySelectorAll('[data-jfb-page]').length > 1 &&
+    ((model.form.settings?.summaryPage === true && proto(form).hasAttribute('action')) || !movesPages(form))
   )
     return false;
   const files = fieldsOf(model)
@@ -69,7 +70,7 @@ export function takesUploads(form: HTMLFormElement, model: FormModel): boolean {
   return (
     files.length > 0 &&
     files.every((field) =>
-      [...form.querySelectorAll(`[data-jfb-field="${field.key}"]`)].every(
+      [...proto(form).querySelectorAll(`[data-jfb-field="${field.key}"]`)].every(
         (each) => each.querySelector('template[data-jfb-file], canvas.jfb-signature-pad') !== null,
       ),
     ) &&

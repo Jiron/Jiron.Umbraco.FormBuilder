@@ -5,6 +5,7 @@
  * progress and the page a later post names follow, the focus goes to the page's title, and `jfb:page` tells the site.
  * A summary page is the server's to write, so the step onto it posts.
  */
+import { proto } from '@jfb/logic/proto';
 import { removeSummary } from './display';
 import type { PageErrors } from './errors';
 import type { FormModel } from './model';
@@ -37,25 +38,25 @@ const NAV = '[data-jfb-nav]';
 
 /** Takes a form's pages over from the post, with the buttons of its templates. */
 export function enhancePages(form: HTMLFormElement, model: FormModel, check: CheckPage): Paging {
-  const templates = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
-  const list = form.querySelector<HTMLElement>('[data-jfb-untitled]');
+  const templates = proto(form).querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
+  const list = proto(form).querySelector<HTMLElement>('[data-jfb-untitled]');
   const steps = new Map<string, HTMLElement>();
   for (const step of [
     ...(list?.children ?? []),
-    ...(form.querySelector<HTMLTemplateElement>('template[data-jfb-steps]')?.content.children ?? []),
+    ...(proto(form).querySelector<HTMLTemplateElement>('template[data-jfb-steps]')?.content.children ?? []),
   ])
     steps.set((step as HTMLElement).dataset['jfbStep'] ?? '', step as HTMLElement);
   let checking = false;
 
-  const all = (): HTMLElement[] => [...form.querySelectorAll<HTMLElement>(PAGE)];
+  const all = (): HTMLElement[] => [...proto(form).querySelectorAll<HTMLElement>(PAGE)];
   const shown = (): HTMLElement[] => all().filter((page) => !page.hasAttribute('data-jfb-hidden'));
-  const current = (): HTMLElement | null => form.querySelector<HTMLElement>(`${PAGE}:not([hidden])`);
+  const current = (): HTMLElement | null => proto(form).querySelector<HTMLElement>(`${PAGE}:not([hidden])`);
   let was = current();
   const number = (words: string, ...values: readonly (string | number)[]): string =>
     values.reduce<string>((text, value, at) => text.replace(`{${String(at)}}`, String(value)), words);
   /** The step onto a summary page, which only a post can write; where no post can go it is a page like another. */
   const posts = (target: HTMLElement, pages: readonly HTMLElement[]): boolean =>
-    model.form.settings?.summaryPage === true && target === pages.at(-1) && form.hasAttribute('action');
+    model.form.settings?.summaryPage === true && target === pages.at(-1) && proto(form).hasAttribute('action');
 
   /** The buttons, the progress and the page a post names, as the server would write them for the page that shows. */
   const write = (): void => {
@@ -64,7 +65,7 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
     was = page ?? was;
     const at = page === null ? -1 : pages.indexOf(page);
     const wanted = [at === pages.length - 1 || at < 0 ? 'submit' : 'next', ...(at > 0 ? ['back'] : [])];
-    const buttons = form.querySelector(`:scope > :not([hidden]) > ${NAV}`)?.parentElement;
+    const buttons = proto(form).querySelector(`:scope > :not([hidden]) > ${NAV}`)?.parentElement;
     if (
       buttons != null &&
       [...buttons.querySelectorAll<HTMLButtonElement>(NAV)].map((each) => each.value).join() !== wanted.join()
@@ -74,25 +75,26 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
       buttons.replaceChildren(
         ...[...(templates?.content.querySelectorAll<HTMLButtonElement>(NAV) ?? [])]
           .filter((each) => wanted.includes(each.value))
-          .map((each) => form.ownerDocument.importNode(each, true)),
+          .map((each) => proto(form).ownerDocument.importNode(each, true)),
         ...others,
       );
     }
     const primary = buttons?.querySelector<HTMLButtonElement>(NAV);
-    const ready = form.querySelector<HTMLButtonElement>(':scope > button[name="jfb-nav"]');
+    const ready = proto(form).querySelector<HTMLButtonElement>(':scope > button[name="jfb-nav"]');
     if (ready !== null && primary != null) {
       ready.value = primary.value;
       ready.textContent = primary.textContent;
     }
-    const named = form.querySelector<HTMLInputElement>(':scope > input[name="jfb-page"]');
+    const named = proto(form).querySelector<HTMLInputElement>(':scope > input[name="jfb-page"]');
     if (named !== null && page !== null) named.value = page.dataset['jfbPage'] ?? '';
 
-    const text = form.querySelector<HTMLElement>('[data-jfb-words]');
+    const text = proto(form).querySelector<HTMLElement>('[data-jfb-words]');
     if (text !== null) {
       text.textContent = number(text.dataset['jfbWords'] ?? '', Math.max(at, 0) + 1, Math.max(pages.length, 1));
-      if (text.parentElement !== null) text.parentElement.hidden = pages.length < 2;
+      const line = text.parentElement;
+      if (line !== null) proto(line).hidden = pages.length < 2;
     }
-    const bar = form.querySelector('progress[aria-labelledby]');
+    const bar = proto(form).querySelector('progress[aria-labelledby]');
     bar?.setAttribute('max', String(pages.length));
     bar?.setAttribute('value', String(at + 1));
     if (list === null) return;
@@ -120,14 +122,14 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
   const show = (page: HTMLElement): void => {
     for (const each of all()) each.hidden = each !== page || each.hasAttribute('data-jfb-hidden');
     removeSummary(form);
-    for (const notice of form.querySelectorAll(':scope > [data-jfb-notice]')) notice.remove();
+    for (const notice of proto(form).querySelectorAll(':scope > [data-jfb-notice]')) notice.remove();
     write();
     const pages = shown();
-    form.dispatchEvent(
+    proto(form).dispatchEvent(
       new CustomEvent<PageDetail>('jfb:page', {
         bubbles: true,
         detail: {
-          key: form.dataset['jfbForm'] ?? '',
+          key: proto(form).dataset['jfbForm'] ?? '',
           alias: model.alias,
           page: page.dataset['jfbPage'] ?? '',
           number: pages.indexOf(page) + 1,
@@ -142,7 +144,7 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
     // The way the visitor moved, which the theme brings the page in from (ADR-0022); a page as it loads has none.
     const pages = all();
     const from = current() ?? was;
-    form.setAttribute(
+    proto(form).setAttribute(
       'data-jfb-direction',
       from !== null && pages.indexOf(page) < pages.indexOf(from) ? 'back' : 'next',
     );
@@ -150,9 +152,9 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
     const title = page.querySelector<HTMLElement>('.jfb-title:not([hidden])') ?? page;
     title.tabIndex = -1;
     title.focus({ preventScroll: true });
-    form.scrollIntoView({ block: 'start' });
-    const live = form.querySelector(':scope > [data-jfb-live]');
-    const text = form.querySelector('[data-jfb-words]');
+    proto(form).scrollIntoView({ block: 'start' });
+    const live = proto(form).querySelector(':scope > [data-jfb-live]');
+    const text = proto(form).querySelector('[data-jfb-words]');
     if (live !== null && text !== null) live.textContent = text.textContent;
   };
 
@@ -170,8 +172,8 @@ export function enhancePages(form: HTMLFormElement, model: FormModel, check: Che
       else land(target);
     });
   };
-  form.addEventListener('input', later);
-  form.addEventListener('change', later);
+  proto(form).addEventListener('input', later);
+  proto(form).addEventListener('change', later);
   write();
 
   return {

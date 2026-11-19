@@ -16,6 +16,7 @@ import {
   type MessageWords,
   type VisitorError,
 } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { PageError } from './checks';
 import type { FormModel, ModelField } from './model';
 import { allFieldsOf, builtIn, fieldsOf, type PageReading } from './page';
@@ -114,7 +115,8 @@ export function shownErrors(
   const add = (field: ModelField, row: number | null, group: ModelField | null): void => {
     const error = first.get(`${field.key} ${String(row)}`);
     if (error === undefined) return;
-    const prefix = row === null || group === null ? form.id : `${form.id}-${group.alias ?? ''}-${String(row)}`;
+    const prefix =
+      row === null || group === null ? proto(form).id : `${proto(form).id}-${group.alias ?? ''}-${String(row)}`;
     const target = `${prefix}-${field.alias ?? field.key.replaceAll('-', '')}`;
     const element = elementOf(form, field.key, row, group?.key ?? null);
     const parts = { ...(error.parts === undefined ? {} : { parts: error.parts }), gridRow: error.gridRow };
@@ -174,9 +176,9 @@ export function shownErrors(
  * without one.
  */
 export function formError(form: HTMLFormElement, model: FormModel, code: string, message: string): ShownError {
-  const page = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])');
+  const page = proto(form).querySelector<HTMLElement>('[data-jfb-page]:not([hidden])');
   const shown = model.form.pages.find((each) => each.key === page?.dataset['jfbPage']);
-  let target = form.id;
+  let target = proto(form).id;
   for (const group of shown?.groups ?? []) {
     if (page?.querySelector(`[data-jfb-group="${group.key}"]`)?.hasAttribute('hidden') === true) continue;
     const field = group.fields.find((each) => {
@@ -184,7 +186,7 @@ export function formError(form: HTMLFormElement, model: FormModel, code: string,
       return element !== null && !element.hasAttribute('hidden') && holdsValue(model, each);
     });
     if (field !== undefined) {
-      target = `${form.id}-${field.alias ?? field.key.replaceAll('-', '')}`;
+      target = `${proto(form).id}-${field.alias ?? field.key.replaceAll('-', '')}`;
       break;
     }
   }
@@ -224,8 +226,8 @@ export function elementOf(
 ): HTMLElement | null {
   if (row === null || group === null)
     return (
-      [...form.querySelectorAll<HTMLElement>(`[data-jfb-field="${key}"]`)].find(
-        (each) => each.parentElement?.closest('[data-jfb-row]') == null,
+      [...proto(form).querySelectorAll<HTMLElement>(`[data-jfb-field="${key}"]`)].find(
+        (each) => !each.parentElement || proto(each.parentElement).closest('[data-jfb-row]') === null,
       ) ?? null
     );
   const rows = elementOf(form, group, null, null)?.querySelector(`[data-jfb-row="${String(row)}"]`);

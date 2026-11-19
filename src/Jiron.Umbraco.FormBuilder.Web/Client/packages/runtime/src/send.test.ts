@@ -9,6 +9,7 @@ import { pageErrorsOf, type InvalidDetail, type PageErrors } from './errors';
 import { wordsFor } from './messages';
 import type { FormModel, ModelField } from './model';
 import { bodyOf, senderOf, submissionId, type SendDetail } from './send';
+import { stubMembers } from './testing-cover';
 import { ENGLISH } from './testing';
 import type { PageUploads } from './uploads';
 import type { Paging } from './pages-chunk';
@@ -115,6 +116,8 @@ interface Options {
   readonly files?: PageUploads;
   readonly pages?: Paging;
   readonly captcha?: Captcha;
+  /** The buttons, in their row by default. */
+  readonly buttons?: string;
 }
 
 function wake({
@@ -126,6 +129,8 @@ function wake({
   files,
   pages,
   captcha,
+  buttons = '<div class="jfb-navigation"><button type="submit" name="jfb-nav" value="submit" data-jfb-nav="submit" id="send">Send</button>' +
+    '<button type="submit" name="jfb-nav" value="back" data-jfb-nav="back" id="back">Back</button></div>',
 }: Options = {}) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" lang="en-US" dir="ltr" data-jfb-form="f" data-jfb-contract="1" ${api} ${action} ${attributes}>` +
@@ -137,16 +142,17 @@ function wake({
     '<section data-jfb-page="p2" hidden><div data-jfb-group="g2">' +
     '<div class="jfb-field" data-jfb-field="k-later" data-jfb-alias="later" data-jfb-type="text"><label for="l">Later</label><input id="l" name="later"></div>' +
     '</div></section>' +
-    '<div class="jfb-navigation"><button type="submit" name="jfb-nav" value="submit" data-jfb-nav="submit" id="send">Send</button>' +
-    '<button type="submit" name="jfb-nav" value="back" data-jfb-nav="back" id="back">Back</button></div>' +
+    buttons +
     '<div class="jfb-hp" aria-hidden="true"><label for="h">Leave this field empty</label><input id="h" name="jfb-hp-1"></div>' +
     '<div data-jfb-live aria-live="polite"></div></form>';
   const form = document.querySelector('form');
   if (form === null) throw new Error('no form');
   const posted: string[] = [];
-  form.requestSubmit = (button?: HTMLElement | null) => {
-    posted.push(button instanceof HTMLButtonElement ? button.value : '');
-  };
+  stubMembers(form, {
+    requestSubmit: (button?: HTMLElement | null) => {
+      posted.push(button instanceof HTMLButtonElement ? button.value : '');
+    },
+  });
   const events: { type: string; detail: SendDetail }[] = [];
   for (const type of ['jfb:submitting', 'jfb:submitted', 'jfb:error']) {
     form.addEventListener(type, (event) => events.push({ type, detail: (event as CustomEvent<SendDetail>).detail }));
@@ -586,6 +592,22 @@ describe('a send that did not go through', () => {
       expect(events.at(-1)).toEqual({ type: 'jfb:error', detail: { key: 'f', alias: 'contact', code } });
     },
   );
+
+  it("shows the notice above a view's buttons written straight into the form, which is then their row", async () => {
+    serve(() => json(500, {}));
+    const { form, press } = wake({
+      buttons:
+        '<button type="submit" name="jfb-nav" value="submit" data-jfb-nav="submit" id="send">Send</button>' +
+        '<button type="submit" name="jfb-nav" value="back" data-jfb-nav="back" id="back">Back</button>',
+    });
+    press();
+    await until(() => expect(document.querySelector('[data-jfb-notice]')).not.toBeNull());
+
+    const shown = document.querySelector<HTMLElement>('[data-jfb-notice]');
+    expect(shown?.getAttribute('data-jfb-notice')).toBe('server_error');
+    expect(shown?.nextElementSibling).toBe(form);
+    expect(document.activeElement).toBe(shown);
+  });
 
   it('sends again with the same id, and the notice goes', async () => {
     let tries = 0;

@@ -7,6 +7,7 @@
  * always holds the server's ink on nothing, so it reads the same on any ground.
  */
 import { cleanName, pngWithName } from '@jfb/logic/signature';
+import { proto } from '@jfb/logic/proto';
 import type { FormModel } from './model';
 import { fieldsOf } from './page';
 import { ON_ITS_WAY, type PageUploads, type UploadedFile, type UploadOptions } from './uploads';
@@ -97,7 +98,7 @@ const pngOf = (canvas: HTMLCanvasElement): Promise<Uint8Array> =>
 
 /** Enhances each signature of the form: its pad, its tools and the way between drawing and typing. */
 export function enhanceSignatures(form: HTMLFormElement, model: FormModel, options: UploadOptions): PageUploads {
-  const key = form.dataset['jfbForm'] ?? '';
+  const key = proto(form).dataset['jfbForm'] ?? '';
   const fields = fieldsOf(model).flatMap((field) => [field, ...(field.fields ?? [])]);
   const sends: (() => Promise<void>)[] = [];
   const held: (() => readonly [string, UploadedFile] | null)[] = [];
@@ -145,7 +146,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
     let strokes: number[][] = restored?.strokes?.map((stroke) => [...stroke]) ?? [];
     let cleared: number[][] | null = null;
     // A visitor who came to the name, the first thing the page shows without its runtime, stays there.
-    let drawing = typed.value.trim() === '' && form.ownerDocument.activeElement !== typed;
+    let drawing = typed.value.trim() === '' && proto(form).ownerDocument.activeElement !== typed;
     let token: string | null = restored?.token ?? null;
     let answer: HTMLInputElement | null = null;
     let pointer: number | null = null;
@@ -173,7 +174,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
         return;
       }
       if (answer === null) {
-        answer = form.ownerDocument.createElement('input');
+        answer = proto(form).ownerDocument.createElement('input');
         answer.type = 'hidden';
         box.append(answer);
       }
@@ -258,7 +259,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
         const at = changes;
         let image: Uint8Array;
         if (drawing) {
-          const clean = form.ownerDocument.createElement('canvas');
+          const clean = proto(form).ownerDocument.createElement('canvas');
           clean.width = canvas.width;
           clean.height = canvas.height;
           paint(clean, strokes, INK);
@@ -266,7 +267,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
         } else {
           const written = cleanName(typed.value) as string;
           const family = getComputedStyle(typed).fontFamily || 'sans-serif';
-          const picture = canvasOfName(form.ownerDocument, written, canvas.width, canvas.height, family);
+          const picture = canvasOfName(proto(form).ownerDocument, written, canvas.width, canvas.height, family);
           image = pngWithName(await pngOf(picture), new TextEncoder().encode(written));
         }
         const sent = await upload(field.key, image);
@@ -288,7 +289,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
     if (answer !== null) box.dispatchEvent(new Event('input', { bubbles: true }));
   };
 
-  for (const box of form.querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
+  for (const box of proto(form).querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
 
   return {
     async settled(): Promise<boolean> {
@@ -303,7 +304,7 @@ export function enhanceSignatures(form: HTMLFormElement, model: FormModel, optio
       return new Map(files.map(([name, file]) => [name, [file]]));
     },
     add(root: Element): void {
-      for (const box of root.querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
+      for (const box of proto(root).querySelectorAll<HTMLElement>('.jfb-signature')) enhance(box);
     },
   };
 }

@@ -5,6 +5,7 @@
  * attribute it writes. An element is written only where its text differs, so the page's own observers see only real
  * changes.
  */
+import { proto } from '@jfb/logic/proto';
 import { parseSanitised } from './html';
 import type { FormModel } from './model';
 
@@ -15,7 +16,7 @@ export function showTexts(form: HTMLFormElement, model: FormModel, texts: Readon
       .filter((each) => each.context === 'html')
       .map((each) => `${each.owner} ${each.text}`),
   );
-  for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-text]')) {
+  for (const element of proto(form).querySelectorAll<HTMLElement>('[data-jfb-text]')) {
     const hook = element.dataset['jfbText'] ?? '';
     const text = texts.get(hook);
     if (text === undefined) continue;

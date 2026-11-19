@@ -15,5 +15,7 @@ export default defineConfig({
   test: {
     name: 'element',
     environment: 'jsdom',
+    // The runtime's cover of forms, as the element writes forms the runtime then reads (testing-cover.ts).
+    setupFiles: ['../runtime/src/testing-setup.ts'],
   },
 });

@@ -10,6 +10,7 @@
  * form's markup names where to count (`data-jfb-insights`), it counts what visitors do with the form (ROADMAP 11.5,
  * ADR-0211). What one form throws is reported as an uncaught error is, and the page's other forms go on (16.4, ADR-0237).
  */
+import { proto } from '@jfb/logic/proto';
 import { checkGround, followSteps } from './fit';
 import type { JironFormBuilderForm } from './global';
 import { parseModel, type FormModel } from './model';
@@ -37,20 +38,21 @@ export interface Chunk {
  * next time), as a beacon that holds no answer and no person. A browser that sends no beacons counts nothing.
  */
 function count(form: HTMLFormElement): void {
-  const to = form.dataset['jfbInsights'];
+  const to = proto(form).dataset['jfbInsights'];
   if (!to) return;
-  const sent: Record<string, boolean | undefined> = {};
+  // Without a prototype: a field's alias names a beacon, and `constructor` or `toString` would find one sent already.
+  const sent: Record<string, boolean | undefined> = Object.create(null) as Record<string, boolean | undefined>;
   const send = (event: Record<string, string>, once = JSON.stringify(event)): void => {
     sent[once] ||= navigator.sendBeacon?.(to, JSON.stringify(event));
   };
   send({ type: 'view' });
   // Not a focus: the page's own script or the preview may move it, which the browser calls trusted too.
   for (const type of TOUCHES.slice(1))
-    form.addEventListener(type, (event) => event.isTrusted && send({ type: 'start' }));
-  form.addEventListener('jfb:page', (event) =>
+    proto(form).addEventListener(type, (event) => event.isTrusted && send({ type: 'start' }));
+  proto(form).addEventListener('jfb:page', (event) =>
     send({ type: 'page', page: (event as CustomEvent<{ page: string }>).detail.page }),
   );
-  form.addEventListener('jfb:invalid', (event) => {
+  proto(form).addEventListener('jfb:invalid', (event) => {
     for (const { field, kind } of (event as CustomEvent<{ errors: { field: string | null; kind: string }[] }>).detail
       .errors)
       if (field) send({ type: 'invalid', field, kind }, field);
@@ -99,9 +101,9 @@ export interface Frame {
 
 /** Whether the address or this tab names a saved form to take up (ADR-0163). */
 function comesBack(form: HTMLFormElement): boolean {
-  if (form.ownerDocument.location.hash.includes('jfb-resume=')) return true;
+  if (proto(form).ownerDocument.location.hash.includes('jfb-resume=')) return true;
   try {
-    return sessionStorage.getItem(`jfb-resume:${form.dataset['jfbForm'] ?? ''}`) !== null;
+    return sessionStorage.getItem(`jfb-resume:${proto(form).dataset['jfbForm'] ?? ''}`) !== null;
   } catch {
     return false;
   }
@@ -136,47 +138,48 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     if (fitted.has(root)) return;
     fitted.add(root);
     checkGround(root);
-    const follows = root.ownerDocument.defaultView?.matchMedia?.('(prefers-color-scheme: dark)');
+    const follows = proto(root).ownerDocument.defaultView?.matchMedia?.('(prefers-color-scheme: dark)');
     follows?.addEventListener('change', () => checkGround(root));
-    const steps = root.querySelector(':scope > .jfb-progress-steps');
+    const steps = proto(root).querySelector(':scope > .jfb-progress-steps');
     if (steps !== null) followSteps(steps);
   }
 
   function enhance(form: HTMLFormElement): void {
-    if (enhanced.has(form) || form.hasAttribute(WOKEN) || form.dataset['jfbContract'] !== CONTRACT) return;
-    const data = form.querySelector('script[type="application/json"][data-jfb-model]');
+    if (enhanced.has(form) || proto(form).hasAttribute(WOKEN) || proto(form).dataset['jfbContract'] !== CONTRACT)
+      return;
+    const data = proto(form).querySelector('script[type="application/json"][data-jfb-model]');
     const model = data === null ? null : parseModel(data.textContent ?? '');
     if (model === null) return;
     enhanced.add(form);
     const touched = (): void => {
       if (sessions.has(form)) return;
-      for (const type of TOUCHES) form.removeEventListener(type, touched);
+      for (const type of TOUCHES) proto(form).removeEventListener(type, touched);
       chunk ??= load().catch(() => null);
       const session = chunk.then((loaded) => loaded?.attach(form, model));
       sessions.set(form, session);
       // A form with no address to post to (the element's) has nothing to answer a press once its logic cannot load:
       // the next press says so in the form's own words, tells the site, and loads the logic again.
-      if (form.hasAttribute('action')) return;
+      if (proto(form).hasAttribute('action')) return;
       const lame = (): void => {
         chunk = undefined;
         sessions.delete(form);
-        form.addEventListener(
+        proto(form).addEventListener(
           'submit',
           (event) => {
             event.preventDefault();
-            const notice = form
+            const notice = proto(form)
               .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
               ?.content.querySelector('[data-jfb-notice="server_error"]')
               ?.cloneNode(true);
             if (notice instanceof HTMLElement) {
-              form.querySelector(':scope > [data-jfb-notice]')?.remove();
-              (form.querySelector(':scope > .jfb-navigation') ?? form.lastElementChild)?.before(notice);
+              proto(form).querySelector(':scope > [data-jfb-notice]')?.remove();
+              (proto(form).querySelector(':scope > .jfb-navigation') ?? proto(form).lastElementChild)?.before(notice);
               notice.focus();
             }
-            form.dispatchEvent(
+            proto(form).dispatchEvent(
               new CustomEvent('jfb:error', {
                 bubbles: true,
-                detail: { key: form.dataset['jfbForm'] ?? '', alias: model.alias, code: 'server_error' },
+                detail: { key: proto(form).dataset['jfbForm'] ?? '', alias: model.alias, code: 'server_error' },
               }),
             );
             touched();
@@ -191,24 +194,24 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     wakes.set(form, touched);
     // Counting is the site's, not the visitor's: a form that cannot count works all the same.
     alone(() => count(form));
-    for (const type of TOUCHES) form.addEventListener(type, touched);
+    for (const type of TOUCHES) proto(form).addEventListener(type, touched);
     if (
-      form.querySelector('[data-jfb-default]') !== null ||
-      form.hasAttribute('data-jfb-asks') ||
+      proto(form).querySelector('[data-jfb-default]') !== null ||
+      proto(form).hasAttribute('data-jfb-asks') ||
       (model.form.settings?.resume === true && comesBack(form))
     )
       touched();
-    form.dispatchEvent(
+    proto(form).dispatchEvent(
       new CustomEvent<ReadyDetail>('jfb:ready', {
         bubbles: true,
-        detail: { key: form.dataset['jfbForm'] ?? '', alias: model.alias },
+        detail: { key: proto(form).dataset['jfbForm'] ?? '', alias: model.alias },
       }),
     );
   }
 
   /** The logic of a form, loaded now if the visitor has not touched it; null where it cannot load. */
   async function sessionOf(form: HTMLFormElement): Promise<Session | null> {
-    if (form.hasAttribute(WOKEN)) {
+    if (proto(form).hasAttribute(WOKEN)) {
       const loaded = await chunk;
       return ((await loaded?.sessionOf?.(form)) as Session | null | undefined) ?? null;
     }
@@ -218,9 +221,9 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
 
   return {
     get(form: Element): JironFormBuilderForm | null {
-      if (!(form instanceof HTMLFormElement) || !form.matches('[data-jfb-form]')) return null;
+      if (!(form instanceof HTMLFormElement) || !proto(form).matches('[data-jfb-form]')) return null;
       alone(() => enhance(form));
-      if (!form.hasAttribute(WOKEN) && !wakes.has(form)) return null;
+      if (!proto(form).hasAttribute(WOKEN) && !wakes.has(form)) return null;
       return Object.freeze({
         validate: async () => (await (await sessionOf(form))?.validate('send')) ?? true,
         submit: async () => (await sessionOf(form))?.submit() ?? false,
@@ -230,12 +233,14 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       });
     },
     init(root: ParentNode = document): void {
-      const roots = root.querySelectorAll(`.jfb-form[data-jfb-contract="${CONTRACT}"]`);
-      if (root instanceof Element && root.matches(`.jfb-form[data-jfb-contract="${CONTRACT}"]`)) alone(() => fit(root));
+      const roots = proto(root).querySelectorAll(`.jfb-form[data-jfb-contract="${CONTRACT}"]`);
+      if (root instanceof Element && proto(root).matches(`.jfb-form[data-jfb-contract="${CONTRACT}"]`))
+        alone(() => fit(root));
       for (const each of roots) alone(() => fit(each));
-      if (root instanceof HTMLFormElement && root.matches('[data-jfb-form]')) alone(() => enhance(root));
-      for (const form of root.querySelectorAll<HTMLFormElement>('form[data-jfb-form]')) alone(() => enhance(form));
-      for (const button of root.querySelectorAll<HTMLButtonElement>(
+      if (root instanceof HTMLFormElement && proto(root).matches('[data-jfb-form]')) alone(() => enhance(root));
+      for (const form of proto(root).querySelectorAll<HTMLFormElement>('form[data-jfb-form]'))
+        alone(() => enhance(form));
+      for (const button of proto(root).querySelectorAll<HTMLButtonElement>(
         `[data-jfb-contract="${CONTRACT}"] [data-jfb-print]`,
       )) {
         if (enhanced.has(button)) continue;

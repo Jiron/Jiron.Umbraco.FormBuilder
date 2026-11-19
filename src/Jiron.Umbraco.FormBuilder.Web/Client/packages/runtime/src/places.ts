@@ -6,6 +6,7 @@
  * option the answer does not name shows nothing; the server still refuses it once it is full.
  */
 import { fill, own, plural } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { FormModel } from './model';
 import { formWords } from './messages';
 
@@ -27,7 +28,7 @@ export async function showPlaces(
   const numbers = new Intl.NumberFormat(model.culture);
   for (const [key, options] of Object.entries(places)) {
     const field = `[data-jfb-field="${CSS.escape(key)}"]`;
-    for (const control of root.querySelectorAll<HTMLInputElement | HTMLOptionElement>(
+    for (const control of proto(root).querySelectorAll<HTMLInputElement | HTMLOptionElement>(
       `${field} input[type="radio"], ${field} input[type="checkbox"], ${field} option`,
     )) {
       const left = own(options, control.value);

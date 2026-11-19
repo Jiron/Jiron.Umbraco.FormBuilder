@@ -81,6 +81,12 @@ follows the Umbraco major).
 
 ### Fixed
 
+- **A form works with JavaScript whatever its fields are called.** A field whose alias is the name of a property of
+  the form element, such as `id`, `dataset`, `dispatchEvent`, `replaceWith` or `querySelector`, could keep its form from
+  being sent, hide the outcome after a send, or make the form fall back to the post without JavaScript. No alias is
+  refused for this; such forms were always sent as they should be without JavaScript. A site's own script still meets
+  the field's control at `form.id` on such a form, as on any HTML form (docs/rendering.md, JavaScript).
+- Insights missed the check errors of a field called `constructor`, `toString` or another name every object has.
 - Privacy › Retention showed the raw keys of two help texts under Rejected and Spam; those rows draw no help line now.
 - At a wide window, **Desktop** shows the form at its full 960 px on the canvas, not 958 px.
 - The mail with the link to a saved form says "1 day", not "1 days", for a link that works one day.

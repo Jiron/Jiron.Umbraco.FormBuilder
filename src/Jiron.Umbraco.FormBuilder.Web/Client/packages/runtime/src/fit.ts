@@ -6,6 +6,7 @@
  * no name breaks inside a word where the browser cannot hyphenate, after layout, once the fonts are in, and on every
  * change of width.
  */
+import { proto } from '@jfb/logic/proto';
 
 const SCHEME = 'jfb-scheme-';
 const DARK = `${SCHEME}dark`;
@@ -59,8 +60,8 @@ const luminance = (red: number, green: number, blue: number): number => {
 };
 
 const hasScheme = (form: Element): boolean => {
-  for (let element: Element | null = form; element !== null; element = element.parentElement) {
-    if ([...element.classList].some((name) => name.startsWith(SCHEME))) return true;
+  for (let element: Element | null = form; element !== null; element = proto(element).parentElement) {
+    if ([...proto(element).classList].some((name) => name.startsWith(SCHEME))) return true;
   }
   return false;
 };
@@ -71,16 +72,16 @@ const madeDark = new WeakSet<Element>();
 /** Gives a form the dark tokens on a dark ground, or takes them back on a light one when the check gave them. */
 export function checkGround(form: Element, read: ReadColour = readColour): void {
   if (madeDark.has(form)) {
-    form.classList.remove(DARK);
+    proto(form).classList.remove(DARK);
     madeDark.delete(form);
   }
   if (hasScheme(form)) return;
-  const view = form.ownerDocument.defaultView;
-  for (let element = form.parentElement; element !== null && view !== null; element = element.parentElement) {
+  const view = proto(form).ownerDocument.defaultView;
+  for (let element = proto(form).parentElement; element !== null && view !== null; element = element.parentElement) {
     const colour = read(view.getComputedStyle(element).backgroundColor);
     if (colour === null || colour[3] !== 255) continue;
     if (luminance(colour[0], colour[1], colour[2]) < DARK_BELOW) {
-      form.classList.add(DARK);
+      proto(form).classList.add(DARK);
       madeDark.add(form);
     }
     return;

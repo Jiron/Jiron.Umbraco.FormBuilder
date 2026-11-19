@@ -7,6 +7,7 @@
  * placed as the page's own (6.4i, ADR-0120).
  */
 import { isEmptyPost } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import { errorsOf, type PageError } from './checks';
 import type { PageEngine } from './engine';
 import { formError, formWords, shownErrors, type ShownError } from './messages';
@@ -89,7 +90,7 @@ async function check(
   clock: () => number,
 ): Promise<ShownError[]> {
   const reading = readPage(form, model);
-  const context = contextOf(model, reading, clock(), form.ownerDocument.URL);
+  const context = contextOf(model, reading, clock(), proto(form).ownerDocument.URL);
   const state = engine.decide(reading.answers, context);
   const words = await formWords(model);
   const server = typeof scope === 'object';
@@ -109,13 +110,13 @@ async function check(
         state,
         context,
         new Set(
-          [...form.querySelectorAll('[data-jfb-enhanced]')].flatMap(
+          [...proto(form).querySelectorAll('[data-jfb-enhanced]')].flatMap(
             (each) => each.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? [],
           ),
         ),
       );
   if (scope === 'page') {
-    const key = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
+    const key = proto(form).querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
     const page = model.form.pages.find((each) => each.key === key);
     const onPage = new Set(
       (page?.groups ?? []).flatMap((group) =>

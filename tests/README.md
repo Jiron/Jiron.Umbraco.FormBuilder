@@ -1680,4 +1680,11 @@ said once per document, the form shown when the runtime cannot load, and no post
   assembly-wide: the listeners, and the providers handed out during the test, disposed and forgotten.
   `Composition/TestHostReleaseTests` holds that a test's runtime listens alone and that a test's host holds its own
   providers alone.
+- A test of the website's runtime or of the `<jfb-form>` element runs with its forms covered
+  (`packages/runtime/src/testing-cover.ts`, through each project's set-up file): for every name of a form's prototype
+  chain that could be an alias, the form answers the website's code with a control, as a browser does for a field of
+  that name ([ADR-0260](../docs/decisions/0260-a-field-may-be-called-anything.md)). A test reads its forms as always;
+  website code that reads a form's member plainly fails its suite. Stub a form's member with
+  `stubMembers(form, { requestSubmit })`: a member set on the form itself is what a control of that name looks like,
+  and the code reads past it. `testing-cover.test.ts` holds that the cover still answers.
 - Read files of the repository in place through `RepositoryRoot.Path(...)`.

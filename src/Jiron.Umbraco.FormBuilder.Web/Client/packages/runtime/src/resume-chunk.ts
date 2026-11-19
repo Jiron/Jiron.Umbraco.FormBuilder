@@ -7,6 +7,7 @@
  * entry that follows in the same tab takes that draft away. Files, consents and sensitive answers do not come back,
  * and the form asks for them as it would.
  */
+import { proto } from '@jfb/logic/proto';
 import type { Captcha } from './protect-chunk';
 import type { FormModel } from './model';
 import { allFieldsOf, readPage } from './page';
@@ -132,7 +133,7 @@ function lookUp(api: string, token: string): Promise<Lookup> {
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 const named = (form: HTMLFormElement, name: string): Control[] => [
-  ...form.querySelectorAll<Control>(`[name="${CSS.escape(name)}"]`),
+  ...proto(form).querySelectorAll<Control>(`[name="${CSS.escape(name)}"]`),
 ];
 
 /**
@@ -169,7 +170,7 @@ function fill(form: HTMLFormElement, name: string, texts: readonly string[]): st
   if (choice === undefined) return [...left];
   choice.checked = true;
   choice.dispatchEvent(new Event('change', { bubbles: true }));
-  const text = form.querySelector<HTMLInputElement>(`input[${OTHER_NAME}="${CSS.escape(`${name}.other`)}"]`);
+  const text = proto(form).querySelector<HTMLInputElement>(`input[${OTHER_NAME}="${CSS.escape(`${name}.other`)}"]`);
   if (text !== null && !text.hasAttribute('name')) text.name = `${name}.other`;
   fill(form, `${name}.other`, [other]);
   return [];
@@ -195,7 +196,7 @@ function fillAsOptionsCome(form: HTMLFormElement, field: Element, name: string, 
 /** Empties the controls of a field the draft holds no answer of, unless the rules have turned them off. */
 function clear(form: HTMLFormElement, name: string): void {
   const prefix = `${name}.`;
-  for (const control of form.querySelectorAll<Control>('input[name], select[name], textarea[name]')) {
+  for (const control of proto(form).querySelectorAll<Control>('input[name], select[name], textarea[name]')) {
     if ((control.name !== name && !control.name.startsWith(prefix)) || control.disabled) continue;
     if (control instanceof HTMLSelectElement) {
       const chosen = [...control.options].filter((option) => option.selected && option.value !== '');
@@ -222,7 +223,7 @@ export function restore(form: HTMLFormElement, model: FormModel, values: Answers
   const fields = allFieldsOf(model);
   const elementOf = (alias: string, row?: number): Element | null => {
     const key = fields.find((field) => field.alias === alias)?.key ?? '';
-    const found = [...form.querySelectorAll(`[data-jfb-field="${CSS.escape(key)}"]`)];
+    const found = [...proto(form).querySelectorAll(`[data-jfb-field="${CSS.escape(key)}"]`)];
     return (
       (row === undefined
         ? found[0]
@@ -251,11 +252,11 @@ export function restore(form: HTMLFormElement, model: FormModel, values: Answers
         give(`${name}[${String(at)}].${child}`, texts, elementOf(child.split('.')[0] ?? child, at));
     });
   }
-  form.dispatchEvent(new Event('input', { bubbles: true }));
+  proto(form).dispatchEvent(new Event('input', { bubbles: true }));
   if (empty.length === 0) return;
   setTimeout(() => {
     for (const name of empty) clear(form, name);
-    form.dispatchEvent(new Event('input', { bubbles: true }));
+    proto(form).dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
 
@@ -264,12 +265,12 @@ export function restore(form: HTMLFormElement, model: FormModel, values: Answers
  * a moment later, after the focus a row added for the answers takes for itself.
  */
 function showNotice(form: HTMLFormElement, code: string): void {
-  const notice = form
+  const notice = proto(form)
     .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
     ?.content.querySelector(`[data-jfb-notice="${code}"]`)
     ?.cloneNode(true);
   if (!(notice instanceof HTMLElement)) return;
-  form.insertBefore(notice, form.querySelector(':scope > [data-jfb-page]'));
+  proto(form).insertBefore(notice, proto(form).querySelector(':scope > [data-jfb-page]'));
   notice.focus();
   setTimeout(() => {
     if (notice.isConnected) notice.focus();
@@ -289,9 +290,9 @@ function dayOf(instant: string, culture: string): string {
 
 /** Puts the link button with the form's buttons, and shows the panel in their place when it is pressed. */
 function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, held: Held): void {
-  const key = form.dataset['jfbForm'] ?? '';
-  const template = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-resume]');
-  const nav = form.querySelector<HTMLElement>(':scope > .jfb-navigation');
+  const key = proto(form).dataset['jfbForm'] ?? '';
+  const template = proto(form).querySelector<HTMLTemplateElement>(':scope > template[data-jfb-resume]');
+  const nav = proto(form).querySelector<HTMLElement>(':scope > .jfb-navigation');
   if (template === null || nav === null) return;
   const words = template.dataset;
   const parts = template.content.cloneNode(true) as DocumentFragment;
@@ -302,7 +303,7 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
   const send = panel?.querySelector<HTMLButtonElement>('[data-jfb-save-send]');
   const cancel = panel?.querySelector<HTMLButtonElement>('[data-jfb-save-close]');
   if (!open || !panel || !email || !error || !send || !cancel) return;
-  const live = form.querySelector<HTMLElement>(':scope > [data-jfb-live]');
+  const live = proto(form).querySelector<HTMLElement>(':scope > [data-jfb-live]');
   const say = (text: string | undefined): void => {
     if (live !== null) live.textContent = text ?? '';
   };
@@ -310,7 +311,7 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
     error.textContent = text ?? '';
     error.hidden = !text;
   };
-  const saved = (): Element | null => form.querySelector(`:scope > [data-jfb-notice="${SAVED}"]`);
+  const saved = (): Element | null => proto(form).querySelector(`:scope > [data-jfb-notice="${SAVED}"]`);
   // The panel takes the place of the buttons while it is open, and gives it back as it closes.
   const show = (shown: boolean): void => {
     panel.hidden = !shown;
@@ -345,8 +346,8 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
       // The captcha says what the visitor still has to do, and takes the focus there.
       if (captchaToken === null && guard?.ask() === true) return say('');
       const reading = readPage(form, model);
-      const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
-      const pageKey = form.querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
+      const honeypot = proto(form).querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
+      const pageKey = proto(form).querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
       const ask = async (): Promise<Response> => {
         const challenge = (await options.challenges.current()) ?? undefined;
         const puzzle = options.challenges.puzzle();
@@ -359,7 +360,7 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
             revision: model.revision,
             email: address,
             culture: model.culture,
-            contentKey: form.dataset['jfbContent'] || undefined,
+            contentKey: proto(form).dataset['jfbContent'] || undefined,
             pageKey,
             values: valuesOf(reading.post),
             resume: held.get() ?? undefined,
@@ -391,7 +392,7 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
       say('');
       panel.hidden = true;
       nav.hidden = false;
-      const notice = form
+      const notice = proto(form)
         .querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
         ?.content.querySelector(`[data-jfb-notice="${SAVED}"]`)
         ?.cloneNode(true);
@@ -437,14 +438,14 @@ function offer(form: HTMLFormElement, model: FormModel, options: ResumeOptions, 
 }
 /** Takes up the draft a link or this tab names, if it is this form's: its answers, its page and the notice. */
 async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOptions, held: Held): Promise<void> {
-  const key = form.dataset['jfbForm'] ?? '';
-  const address = fromAddress(form.ownerDocument.location);
+  const key = proto(form).dataset['jfbForm'] ?? '';
+  const address = fromAddress(proto(form).ownerDocument.location);
   const own = stored(key);
   const token = address.token ?? own;
   if (token === null) return;
   // A form the server wrote from a post, or one that came in another's place, holds its answers already: the draft is
   // only named, so the entry takes it away, and nothing is written over what the visitor gave since.
-  if (form.hasAttribute(POSTED) || options.carried === true) {
+  if (proto(form).hasAttribute(POSTED) || options.carried === true) {
     keep(key, token);
     held.set(token);
     return;
@@ -473,7 +474,7 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
   held.set(token);
   restore(form, model, found.values);
   const page =
-    found.pageKey === undefined ? null : form.querySelector(`[data-jfb-page="${CSS.escape(found.pageKey)}"]`);
+    found.pageKey === undefined ? null : proto(form).querySelector(`[data-jfb-page="${CSS.escape(found.pageKey)}"]`);
   if (page !== null) options.reveal?.(page);
   showNotice(form, RESTORED);
 }
@@ -483,7 +484,7 @@ async function takeUp(form: HTMLFormElement, model: FormModel, options: ResumeOp
  * while its answers are on their way.
  */
 export function enhanceResume(form: HTMLFormElement, model: FormModel, options: ResumeOptions): void {
-  const key = form.dataset['jfbForm'] ?? '';
+  const key = proto(form).dataset['jfbForm'] ?? '';
   let token: string | null = null;
   const held: Held = {
     get: () => token,
@@ -491,17 +492,17 @@ export function enhanceResume(form: HTMLFormElement, model: FormModel, options: 
       token = next;
       options.held(next);
       // A send that posts the form names the draft too, in a hidden input of the form's own.
-      const named = form.querySelector<HTMLInputElement>(`:scope > input[type="hidden"][name="${POST_NAME}"]`);
+      const named = proto(form).querySelector<HTMLInputElement>(`:scope > input[type="hidden"][name="${POST_NAME}"]`);
       if (next === null) return named?.remove();
-      const input = named ?? form.ownerDocument.createElement('input');
+      const input = named ?? proto(form).ownerDocument.createElement('input');
       input.type = 'hidden';
       input.name = POST_NAME;
       input.value = next;
-      if (named === null) form.append(input);
+      if (named === null) proto(form).append(input);
     },
   };
   // The entry is stored: the tab forgets its draft, which went with it.
-  form.addEventListener('jfb:submitted', () => {
+  proto(form).addEventListener('jfb:submitted', () => {
     keep(key, null);
   });
   offer(form, model, options, held);

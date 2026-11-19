@@ -13,6 +13,7 @@
  * language, in the form's templates.
  */
 import type { Context, PostAnswer, ReadPost } from '@jfb/logic';
+import { proto } from '@jfb/logic/proto';
 import type { PageErrors, ServerProblem } from './errors';
 import { hostOf, markupOf, swapForm } from './changed';
 import { countdownFrom } from './countdown';
@@ -215,10 +216,10 @@ export function challengesOf(
   given?: string | null,
   hear?: (told: Told) => void,
 ): Challenges {
-  const content = form.dataset['jfbContent'] || undefined;
+  const content = proto(form).dataset['jfbContent'] || undefined;
   let puzzle: Puzzle | undefined;
   const asked = (previous?: string): Promise<(Told & { challenge?: string; proofOfWork?: Puzzle }) | null> =>
-    fetch(`${api}/forms/${form.dataset['jfbForm'] ?? ''}/challenge`, {
+    fetch(`${api}/forms/${proto(form).dataset['jfbForm'] ?? ''}/challenge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ previous, contentKey: content }),
@@ -262,18 +263,19 @@ const within = <T>(work: Promise<T> | T): Promise<T | null> =>
 /** A form's sender: one submission id for every send of the page, which makes a retry safe. */
 export function senderOf(form: HTMLFormElement, model: FormModel, options: SenderOptions = {}): Deliver {
   const id = options.id ?? submissionId();
-  const go = options.go ?? ((address: string) => form.ownerDocument.defaultView?.location.assign(address));
-  const templates = form.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
-  const api = form.dataset['jfbApi'];
-  const key = form.dataset['jfbForm'] ?? '';
-  const content = form.dataset['jfbContent'] || undefined;
+  const go = options.go ?? ((address: string) => proto(form).ownerDocument.defaultView?.location.assign(address));
+  const templates = proto(form).querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]');
+  const api = proto(form).dataset['jfbApi'];
+  const key = proto(form).dataset['jfbForm'] ?? '';
+  const content = proto(form).dataset['jfbContent'] || undefined;
   const sends = templates?.dataset['jfbSending'] !== undefined && api !== undefined;
   const take =
     sends &&
     !optionsByPost(model) &&
     (options.files !== undefined ||
-      (form.enctype !== 'multipart/form-data' && !Object.values(model.fields).some((field) => field.kind === 'files')));
-  const posts = form.hasAttribute('action');
+      (proto(form).enctype !== 'multipart/form-data' &&
+        !Object.values(model.fields).some((field) => field.kind === 'files')));
+  const posts = proto(form).hasAttribute('action');
   /** Whether the form as it is now can come in this one's place: one with an address, or in the element, which writes it. */
   const comesAnew = posts || hostOf(form) !== null;
   const post = (path: string, body: object): Promise<Response> =>
@@ -294,7 +296,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     notice = templates?.content.querySelector(`[data-jfb-notice="${code}"]`)?.cloneNode(true) as Element | undefined;
     if (!(notice instanceof HTMLElement)) return false;
     wordWait(notice, retryAfter);
-    (primary.parentElement ?? primary).before(notice);
+    proto(primary.parentElement ?? primary).before(notice);
     notice.focus();
     return true;
   };
@@ -307,7 +309,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
 
   /** The form as it is now has come in this one's place, and takes over with what this one holds. */
   const handOver = async (swapped: NonNullable<Awaited<ReturnType<typeof swapForm>>>): Promise<void> => {
-    swapped.form.dispatchEvent(
+    proto(swapped.form).dispatchEvent(
       new CustomEvent<SendDetail>('jfb:error', {
         bubbles: true,
         detail: { key, alias: swapped.model.alias, code: 'form_changed' },
@@ -325,7 +327,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     if (challenges === null) return 'post';
     notice?.remove();
     // Enter in a field presses the hidden button, which stands for this one.
-    const button = form.querySelector<HTMLElement>('[data-jfb-nav="next"]') ?? pressed;
+    const button = proto(form).querySelector<HTMLElement>('[data-jfb-nav="next"]') ?? pressed;
     button.setAttribute(BUSY, '');
     button.setAttribute(DISABLED, 'true');
     let status = 0;
@@ -334,11 +336,11 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
     let swapped: Awaited<ReturnType<typeof swapForm>> = null;
     try {
       // A file that failed on another page has its say when the visitor gets there, or at the send.
-      const here = form.querySelector(`[data-jfb-page="${page}"]`) ?? undefined;
+      const here = proto(form).querySelector(`[data-jfb-page="${page}"]`) ?? undefined;
       if ((await options.files?.settled(here)) === false) return 'answered';
       const reading = readPage(form, model);
-      const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
-      const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
+      const query = contextOf(model, reading, Date.now(), proto(form).ownerDocument.URL).query;
+      const honeypot = proto(form).querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
       // As a send's: a challenge made now says the form was filled in no time, so a form that can post goes that way.
       if ((await challenges.current()) === null && (await challenges.again()) !== null && posts) return 'post';
       const ask = async (): Promise<Response> => {
@@ -386,11 +388,11 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
 
   const deliver = async (button: HTMLButtonElement, errors: PageErrors): Promise<boolean> => {
     if (templates === null || challenges === null) return false;
-    const primary = form.querySelector<HTMLElement>('[data-jfb-nav="submit"]') ?? button;
-    const live = form.querySelector<HTMLElement>(':scope > [data-jfb-live]');
+    const primary = proto(form).querySelector<HTMLElement>('[data-jfb-nav="submit"]') ?? button;
+    const live = proto(form).querySelector<HTMLElement>(':scope > [data-jfb-live]');
     const detail: SendDetail = { key, alias: model.alias };
     const event = (type: string, code?: string): void => {
-      form.dispatchEvent(
+      proto(form).dispatchEvent(
         new CustomEvent<SendDetail>(type, { bubbles: true, detail: code ? { ...detail, code } : detail }),
       );
     };
@@ -428,9 +430,9 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
       // A file that failed has the focus by now, and the answers stay on the page.
       if ((await options.files?.settled()) === false) return true;
       const reading = readPage(form, model);
-      const query = contextOf(model, reading, Date.now(), form.ownerDocument.URL).query;
-      const honeypot = form.querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
-      const placement = form.dataset['jfbPlacement'] || undefined;
+      const query = contextOf(model, reading, Date.now(), proto(form).ownerDocument.URL).query;
+      const honeypot = proto(form).querySelector<HTMLInputElement>(':scope > .jfb-hp input')?.value;
+      const placement = proto(form).dataset['jfbPlacement'] || undefined;
       const draft = options.draft?.() ?? null;
       const send = async (): Promise<Response> => {
         const current = await challenges.current();
@@ -447,7 +449,7 @@ export function senderOf(form: HTMLFormElement, model: FormModel, options: Sende
             ...(placement === undefined ? {} : { placement }),
             ...(draft === null ? {} : { resume: draft }),
             // A view's own id names no form the server wrote, so no copy can be asked for it.
-            ...(/^jfb-\d+$/.test(form.id) ? { instance: form.id } : {}),
+            ...(/^jfb-\d+$/.test(proto(form).id) ? { instance: proto(form).id } : {}),
           }),
         );
       };
@@ -555,7 +557,7 @@ function showOutcome(
   outcome: Outcome,
   reference?: string,
 ): void {
-  const document = form.ownerDocument;
+  const document = proto(form).ownerDocument;
   const url = addressOf(outcome.url, document);
   const delay = outcome.delaySeconds ?? 0;
   if (url !== null && outcome.kind === 'redirect') return go(url);
@@ -574,7 +576,8 @@ function showOutcome(
   const link = shown.querySelector<HTMLAnchorElement>('a[data-jfb-continue]');
   const stay = shown.querySelector('[data-jfb-stay]');
   if (url !== null && link !== null) link.href = url;
-  if (url === null || link === null) link?.parentElement?.remove();
+  const box = link?.parentElement;
+  if ((url === null || link === null) && box) proto(box).remove();
   const from = countdownFrom(delay);
   if (url === null || link === null || count === null || from === null) {
     count?.remove();
@@ -598,13 +601,13 @@ function showOutcome(
   }
   const place = document.createElement('div');
   for (const name of KEPT) {
-    const value = form.getAttribute(name);
+    const value = proto(form).getAttribute(name);
     if (value !== null) place.setAttribute(name, value);
   }
   place.append(shown);
-  form.replaceWith(place);
+  proto(form).replaceWith(place);
   shown.focus();
-  const api = form.dataset['jfbApi'];
+  const api = proto(form).dataset['jfbApi'];
   if (outcome.copy !== undefined && api !== undefined)
     showCopy(form, model, place, api, outcome.copy).catch(() => undefined);
 }
@@ -623,12 +626,12 @@ async function showCopy(
   const print = place.querySelector<HTMLButtonElement>('[data-jfb-print]');
   if (print !== null) {
     print.hidden = false;
-    print.addEventListener('click', () => form.ownerDocument.defaultView?.print());
+    print.addEventListener('click', () => proto(form).ownerDocument.defaultView?.print());
   }
   // The form again is this very address, which a browser only scrolls to: it takes the page anew, as after a post.
   place.querySelector('[data-jfb-copy] a')?.addEventListener('click', (event) => {
     event.preventDefault();
-    const location = form.ownerDocument.defaultView?.location;
+    const location = proto(form).ownerDocument.defaultView?.location;
     location?.assign((event.currentTarget as HTMLAnchorElement).href);
     location?.reload();
   });
