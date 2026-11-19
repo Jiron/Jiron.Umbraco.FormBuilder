@@ -1,8 +1,8 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-18, after the pass that made its backoffice
-simpler to find a way through: what was built, how it is tested, what the budgets measured, what it does not do yet,
-and what only you, the owner, can do next.
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-19, after the pass that made its backoffice
+simpler to find a way through and the fix that lets a field be called anything: what was built, how it is tested, what
+the budgets measured, what it does not do yet, and what only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
 `17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
@@ -33,6 +33,15 @@ of its findings, with the numbers before and after.
 - **Measured:** on the 286 shots of the last walk before the phase, the screens held 59,481 words and now hold
   48,455; none shows more than one word more. Twelve of the 78 top tasks take one click more, ten of them the
   click on a tab; none grew by more than one, and none takes more than four.
+
+**A field may be called anything (Phase 23, 2026-11-19).** You said the question the simpler backoffice had left
+open could be tested, and it was a fault. A browser answers a property of a form element with the form's control of
+that name, and a control is named by its field's alias. So with JavaScript a form with a field called `dispatchEvent`
+could not be sent, one with a field called `replaceWith` stored its entry and showed no outcome, and nine other names
+sent the form by the post without JavaScript or threw errors on the page. No name is refused for it: the website's
+script now reads a form past its controls, and a lint rule, the unit tests' forms and browser tests with a control
+for every such name keep it so ([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)). Insights had missed
+the check errors of a field called `constructor` or `toString`; that is fixed with it.
 
 ## Contents
 
@@ -76,45 +85,48 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of the simpler backoffice (22.4), on 2026-11-18 on
-origin's `main` at `40da2811`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every
-step passed, in 4,890 s, the browser tests on their first run:
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 23 (23.1), on 2026-11-19 on origin's
+`main` at `7ac169c7`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 4,681 s, the browser tests on their first run:
 
 | What ran | Count |
 | --- | --- |
 | Unit tests (.NET), with the shared vectors in the server's engine | 9,123; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,312 |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,313 |
 | The AI add-on's tests (.NET) | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,300 in 234 files |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,333 in 237 files |
 | The repository's scripts (Node) | 401 |
 | The browser tests' own support (Node) | 59 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 587 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 590 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean |
-| A pack of `17.0.0-dev.202611181434` | 4 packages |
+| A pack of `17.0.0-dev.202611190207` | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks |
-| The secret scan of the whole history | 1,257 commits, clean |
+| The secret scan of the whole history | 1,267 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) |
 
-The verification's first run that day, on `4be8f0ac`, failed three browser tests, none of them a fault of the product:
-their specs had not followed the phase. One still pressed Publish on a form's History, which has had none of the
-form's buttons since step 22.3, and two asked the forms tree for a row beyond the hundred it shows at first.
-`40da2811` corrects those specs and changes no file of the product ([review-22.md](ux/review-22.md)).
+Before that run, the first build of Phase 23's fix failed two of the website's browser tests, and they were right.
+The website's first file had come to wait for a second one before it ran, so an answer a visitor gave while the
+form's script was still on its way no longer took its error away. That file loads nothing before it runs again, and
+the build fails if it ever does ([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)).
 
-- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,275 of 11,538), from the .NET tests on
-  `40da2811` (ROADMAP §6 asks 85% of Core).
+- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from the .NET tests on
+  `7ac169c7` (ROADMAP §6 asks 85% of Core).
 - **The walk:** every screen of the backoffice in twelve looks (two themes, two languages, three widths) and five
-  journeys, on `4be8f0ac`, which differs from `40da2811` in browser specs alone: 1,844 shots, none with an error, a
-  fold inside a fold or a key in place of its words, and nothing of the section's own from axe
-  ([review-22.md](ux/review-22.md)).
+  journeys, at the end of the simpler backoffice on `4be8f0ac`: 1,844 shots, none with an error, a fold inside a fold
+  or a key in place of its words, and nothing of the section's own from axe ([review-22.md](ux/review-22.md)). No
+  file of the backoffice's screens has changed since.
 - **Checked by changing the code:** each step put behaviours back wrong one at a time and ran the tests that should
   catch each, until all were caught ([WORKLOG.md](WORKLOG.md) names them per step).
 - **Accessibility:** axe on every backoffice screen and every theme, keyboard paths, and the narrowest widths in the
   browser tests ([accessibility.md](accessibility.md)).
-- **The Umbraco 18 line:** with every commit of `main` merged in, its whole gate passed on 2026-11-18 on `f9fc6ff3`,
-  in a clone of its own: the unit tests (9,152; the same 17 skipped), the integration tests (2,312), the AI add-on's
-  (56), the client's (6,309 in 235 files) and the whole browser suite (587, on its first run). The 17 to 18 upgrade
-  with data last ran at the Phase 19 review, where it passed 53 checks.
+- **The Umbraco 18 line:** with every commit of `main` merged in, its whole gate passed on 2026-11-19 on `f9eda3e5`,
+  in a clone of its own: the unit tests (9,152; the same 17 skipped), the integration tests (2,313), the AI add-on's
+  (56), the client's (6,342 in 238 files) and the whole browser suite (590). The browser suite passed on its second
+  run. In the first, a write found the test site's SQLite database locked: two tests ran out of time, one of them
+  while a demo member signed in, and ten did not run. The gate runs the suite once more on fresh sites for that one
+  cause, never twice ([ADR-0250](decisions/0250-the-umbraco-18-line.md)). The 17 to 18 upgrade with data last ran
+  at the Phase 19 review, where it passed 53 checks.
 
 ## The budgets, measured
 
@@ -123,8 +135,8 @@ how to repeat it. Sizes are gzip.
 
 | Budget | Measured | Limit |
 | --- | --- | --- |
-| The website runtime's core, what every page with a form loads first | 2.80 KB | 16 KB |
-| The runtime with every feature and the largest language's words | 63.54 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
+| The website runtime's core, what every page with a form loads first | 2.94 KB | 16 KB |
+| The runtime with every feature and the largest language's words | 64.00 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
 | The default theme's stylesheet | 8.06 KB | 10 KB |
 | Rendering a 50-field form from its cached definition | 4.8 ms median | 20 ms |
 | A submission, 10 at the same moment, on SQLite | 56.1 ms at p95 | 150 ms |
@@ -134,9 +146,9 @@ how to repeat it. Sizes are gzip.
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
 | The slowest designer interaction on a form of 300 fields | 48 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 44.89 KB | 64 KB |
+| What every backoffice session loads at its start | 44.90 KB | 64 KB |
 | The backoffice's largest file (the designer) | 39.42 KB | 64 KB |
-| The backoffice bundle | 508.10 KB | 512 KB |
+| The backoffice bundle | 508.23 KB | 512 KB |
 
 ## What it does not do yet
 
