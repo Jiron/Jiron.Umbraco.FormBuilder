@@ -300,7 +300,8 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             Type = "webhook",
             Name = "Tell the team",
             Trigger = ActionTrigger.Approved,
-            Settings = SettingsObject.Parse(JsonSerializer.Serialize(new { url = body?.Url ?? "http://127.0.0.1:5560/approved", secret = "$JironFormBuilder:Secrets:E2EWebhook" })),
+            // The host's own stub, whatever port its site gave it (tests/e2e/support/sites.ts); 5560 is the first site's.
+            Settings = SettingsObject.Parse(JsonSerializer.Serialize(new { url = body?.Url ?? new Uri(context.RequestServices.GetService<StubHostedService>()?.Server?.BaseAddress ?? new Uri("http://127.0.0.1:5560/"), "approved").ToString(), secret = "$JironFormBuilder:Secrets:E2EWebhook" })),
         };
         List<FormAction> actions = [hook];
         if (body?.Notice is { Length: > 0 } notice)

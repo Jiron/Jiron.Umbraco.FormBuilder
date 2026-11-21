@@ -87,6 +87,14 @@ npm ci
 npx playwright test --project=smoke
 ```
 
+The gate runs every browser project on two sites side by side, each with its own host, ports, database and
+people, every spec file on one of them, and the `budgets` project alone after them; it fails unless every test ran
+once ([Several sites](tests/e2e/README.md#several-sites)):
+
+```
+node scripts/e2e-gate.mjs
+```
+
 The shared vectors in `tests/vectors/` run in the unit tests and in the client's `npm test`. After changing a suite in
 `tests/vectors/suites/`, write the vector files again:
 

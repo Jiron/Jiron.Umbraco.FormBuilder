@@ -20,9 +20,11 @@
      unit and AI tests beside them; then the tests that hold the product to a time budget (the NUnit category
      "Timed") alone. The stage fails unless the tests that ran add up to exactly the integration assembly's tests. A
      test that hangs fails after 10 minutes and is named.
-  6. The browser projects on a fresh demo host from the Release build, in Edge, through scripts/e2e-gate.mjs. When
-     a host's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and
-     then, and only then, the projects run once more ("Flaky means broken", ROADMAP "How to use").
+  6. The browser projects from the Release build, in Edge, through scripts/e2e-gate.mjs (ADR-0261): two sites side
+     by side, each with a fresh demo host, ports, database and people of its own, every spec file on one site; then
+     the budgets project alone. The stage fails unless the tests that ran add up to exactly the projects' tests. When
+     a site's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and
+     then, and only then, that site runs once more ("Flaky means broken", ROADMAP "How to use").
 
   Every native command is judged by its exit code only: Windows PowerShell 5.1 turns lines a tool writes to stderr
   into error records when the output is redirected, and tools print warnings there.

@@ -12,7 +12,7 @@
  *
  * The log goes to `.local/gate/<short hash>.log` and the verdict to `.local/gate/last.json`; a failed gate's browser
  * results are copied to `.local/gate/<short hash>-e2e/`. Only one gate runs at a time, and none starts while one of
- * the browser projects' ports is taken (they are fixed, `tests/e2e/support/paths.ts`), so this folder's own Playwright
+ * the browser projects' ports is taken (they are fixed, every site's, `tests/e2e/support/sites.ts`), so this folder's own Playwright
  * runs wait for the clone's gate. The PID file records the start time, so a recycled PID that now belongs to another
  * session is never touched (CLAUDE.md rule 6).
  *
@@ -78,7 +78,7 @@ export function browserPorts(pathsSource) {
   const ports = [...pathsSource.matchAll(/^export const [A-Z0-9]+(?:_[A-Z0-9]+)*_PORTS? = ([^;]+);/gm)].flatMap(
     ([, value]) => [...value.matchAll(/\b(\d{4})\b/g)].map(([, port]) => Number(port)),
   );
-  if (ports.length === 0) throw new Error("tests/e2e/support/paths.ts no longer names the browser projects' ports");
+  if (ports.length === 0) throw new Error("tests/e2e/support/sites.ts no longer names the browser projects' ports");
   return ports;
 }
 
@@ -115,6 +115,45 @@ export function removeTree(folder) {
   rmSync(folder, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
 }
 
+/**
+ * Copies what a failed gate's browser stage left in a clone's .local folder: each site's results (traces and
+ * screenshots; the one site's at the top, another site's under its folder's name, site-2 or budgets), what each host
+ * logged, and each site's console log of scripts/e2e-gate.mjs.
+ */
+export function copyBrowserResults(local, target) {
+  const e2e = join(local, 'e2e');
+  rmSync(target, { recursive: true, force: true });
+  const sites = existsSync(e2e)
+    ? [
+        { folder: e2e, name: '' },
+        ...readdirSync(e2e, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory() && /^(site-\d+|budgets)$/.test(entry.name))
+          .map((entry) => ({ folder: join(e2e, entry.name), name: entry.name })),
+      ]
+    : [];
+  for (const { folder, name } of sites) {
+    const results = join(folder, 'results');
+    if (existsSync(results)) cpSync(results, join(target, name), { recursive: true });
+    // What each host logged, as the clone goes with its hosts' folders.
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      const hostLog = join(folder, entry.name, 'host.log');
+      if (entry.isDirectory() && existsSync(hostLog)) {
+        mkdirSync(join(target, 'hosts'), { recursive: true });
+        cpSync(hostLog, join(target, 'hosts', `${name ? `${name}-` : ''}${entry.name}.log`));
+      }
+    }
+  }
+  const gate = join(local, 'e2e-gate');
+  if (existsSync(gate)) {
+    for (const entry of readdirSync(gate, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith('.log')) {
+        mkdirSync(join(target, 'sites'), { recursive: true });
+        cpSync(join(gate, entry.name), join(target, 'sites', entry.name));
+      }
+    }
+  }
+}
+
 const git = (root, args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
 
 function run(root, { commit, keep }) {
@@ -139,7 +178,7 @@ function run(root, { commit, keep }) {
 }
 
 async function checkPorts(root) {
-  const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'paths.ts'), 'utf8'));
+  const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'sites.ts'), 'utf8'));
   const open = await Promise.all(ports.map((port) => portOpen(port)));
   return ports.filter((_, at) => open[at]);
 }
@@ -179,22 +218,7 @@ function gate(root, hash, paths, keep) {
     } finally {
       closeSync(log);
     }
-    const results = join(paths.clone, '.local', 'e2e', 'results');
-    if (code !== 0 && existsSync(results)) {
-      rmSync(paths.results, { recursive: true, force: true });
-      cpSync(results, paths.results, { recursive: true });
-    }
-    // What each host logged, as the clone goes with its hosts' folders.
-    const hosts = join(paths.clone, '.local', 'e2e');
-    if (code !== 0 && existsSync(hosts)) {
-      for (const entry of readdirSync(hosts, { withFileTypes: true })) {
-        const hostLog = join(hosts, entry.name, 'host.log');
-        if (entry.isDirectory() && existsSync(hostLog)) {
-          mkdirSync(join(paths.results, 'hosts'), { recursive: true });
-          cpSync(hostLog, join(paths.results, 'hosts', `${entry.name}.log`));
-        }
-      }
-    }
+    if (code !== 0) copyBrowserResults(join(paths.clone, '.local'), paths.results);
   } finally {
     const verdict = existsSync(paths.log) ? verdictOf(readFileSync(paths.log, 'utf8')) : null;
     const seconds = Math.round((Date.now() - started) / 1000);

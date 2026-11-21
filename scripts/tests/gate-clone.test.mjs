@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for scripts/gate-clone.mjs. Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { browserPorts, gatePaths, linksUnder, parseArgs, removeTree, verdictOf } from '../gate-clone.mjs';
+import { browserPorts, copyBrowserResults, gatePaths, linksUnder, parseArgs, removeTree, verdictOf } from '../gate-clone.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const folders = [];
@@ -45,7 +45,7 @@ describe('gatePaths', () => {
 
 describe('browserPorts', () => {
   test("reads the harness's own ports", () => {
-    const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'paths.ts'), 'utf8'));
+    const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'sites.ts'), 'utf8'));
     assert.ok(ports.length >= 3, `found ${ports.join(', ')}`);
     for (const port of ports) assert.ok(port >= 5500 && port <= 5599, `${port} is in Jiron Form Builder's range`);
   });
@@ -108,5 +108,30 @@ describe('removeTree', () => {
   test('is quiet about a folder that is not there', () => {
     assert.doesNotThrow(() => removeTree(join(tmpdir(), 'jfb-gate-test-missing')));
     assert.deepEqual(linksUnder(join(tmpdir(), 'jfb-gate-test-missing')), []);
+  });
+});
+
+describe('copyBrowserResults', () => {
+  test("keeps every site's results, every host's log and every site's console log of a failed gate", () => {
+    const local = mkdtempSync(join(tmpdir(), 'jfb-gate-results-'));
+    folders.push(local);
+    const put = (path, text = 'x') => {
+      mkdirSync(join(local, path, '..'), { recursive: true });
+      writeFileSync(join(local, path), text);
+    };
+    put('e2e/results/trace-a/trace.zip');
+    put('e2e/host-5520/host.log');
+    put('e2e/site-2/results/trace-b/trace.zip');
+    put('e2e/site-2/host-9002/host.log');
+    put('e2e/budgets/host-5520/host.log');
+    put('e2e/look/not-a-site.png');
+    put('e2e-gate/site-2-of-2.log');
+    put('e2e-gate/site-2-of-2.json');
+    const target = join(local, 'copied');
+    copyBrowserResults(local, target);
+    assert.ok(existsSync(join(target, 'trace-a', 'trace.zip')), "the one site's results at the top");
+    assert.ok(existsSync(join(target, 'site-2', 'trace-b', 'trace.zip')), "another site's under its name");
+    assert.deepEqual(readdirSync(join(target, 'hosts')).sort(), ['budgets-host-5520.log', 'host-5520.log', 'site-2-host-9002.log']);
+    assert.deepEqual(readdirSync(join(target, 'sites')), ['site-2-of-2.log']);
   });
 });

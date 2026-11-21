@@ -1069,6 +1069,7 @@ A settings change raises a notification and a cache refresher: the saving server
 | 5550 | Vite dev server for the client packages (`--port 5550 --strictPort`) |
 | 5551 | Playwright HTML report server |
 | 5560 | Local HTTP stub for webhooks, URL option lists and captcha verification (test hosts only; see §4.10) |
+| 5562 to 5596 | The browser tests' second and third sites, when `scripts/e2e-gate.mjs` runs several side by side: each its own copy of every port the first site's hosts, stubs and static page use, in the same order: 5562 to 5578 and 5580 to 5596 (`tests/e2e/support/sites.ts`) |
 
 Servers that Jiron Form Builder starts use only these ports. Ports the OS assigns automatically are fine. Never touch 1210, 1211 or 5400 to 5499, and never connect to `MSSQL$UMBRACO` (CLAUDE.md rule 6).
 
