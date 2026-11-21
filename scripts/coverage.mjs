@@ -9,7 +9,10 @@
 //                                       merges and checks. The integration tests run in shares through
 //                                       scripts/test-integration.mjs (ADR-0261), the unit and AI tests beside them,
 //                                       each process with the collector and a results folder of its own, so the merge
-//                                       finds one report per process.
+//                                       finds one report per process. A share runs the built assembly, which names no
+//                                       package, so the run names the collector's folder itself, read from the
+//                                       restore of the integration tests' project; a process that ran tests and left
+//                                       no report fails the run.
 //   node scripts/coverage.mjs [--dir .local/coverage] [--min 85] [--package <assembly>]...
 //
 // Prints one line per assembly, sorted by name. Without --package it checks Jiron.Umbraco.FormBuilder.Core. Exits 1
@@ -121,11 +124,31 @@ export const BESIDE = [
   'tests/Jiron.Umbraco.FormBuilder.Tests.AI/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.AI.dll',
 ];
 
+/** The restore's record of the integration tests' project, which names the collector's package and where packages are. */
+export const ASSETS = 'tests/Jiron.Umbraco.FormBuilder.Tests.Integration/obj/project.assets.json';
+
+/** The file that is the collector, in its package's folder. */
+export const COLLECTOR = 'Microsoft.VisualStudio.TraceDataCollector.dll';
+
+/**
+ * The folder of Microsoft's code coverage collector, from a restore's assets: `dotnet test` on a project is told it
+ * by the package's build file, and on a built assembly, as the shares run, by nobody, so the collector is not found and
+ * no report is written. Throws when the restore names no such package, or no package folder holds its collector.
+ */
+export function collectorFolder(assets, exists = existsSync) {
+  const library = Object.entries(assets?.libraries ?? {}).find(([name]) => name.toLowerCase().startsWith('microsoft.codecoverage/'))?.[1];
+  if (!library?.path) throw new Error('the restore names no Microsoft.CodeCoverage package');
+  const folders = Object.keys(assets.packageFolders ?? {}).map((root) => join(root, ...library.path.split('/'), 'build', 'netstandard2.0'));
+  const found = folders.find((folder) => exists(join(folder, COLLECTOR)));
+  if (!found) throw new Error(`no package folder holds ${COLLECTOR} (looked in ${folders.join(', ') || 'none'})`);
+  return found;
+}
+
 /**
  * The arguments of the test run (node): the integration shares, the unit and AI tests beside them, the collector
- * through the run settings, each process's results under the folder.
+ * through the run settings and its folder for every process, each process's results under the folder.
  */
-export function testArguments(dir) {
+export function testArguments(dir, collector) {
   return [
     join(repo, 'scripts', 'test-integration.mjs'),
     '--settings',
@@ -133,7 +156,26 @@ export function testArguments(dir) {
     '--results',
     dir,
     ...BESIDE.flatMap((assembly) => ['--beside', assembly]),
+    '--',
+    '--test-adapter-path',
+    collector,
   ];
+}
+
+/**
+ * The processes of a run that left test results and no coverage report: each folder right under the results folder
+ * that holds a .trx file somewhere and no Cobertura report. Their lines would silently count as not covered.
+ */
+export function withoutReport(dir) {
+  const holds = (folder, matches) =>
+    readdirSync(folder).some((name) => {
+      const path = join(folder, name);
+      return statSync(path).isDirectory() ? holds(path, matches) : matches(name);
+    });
+  return readdirSync(dir)
+    .filter((name) => statSync(join(dir, name)).isDirectory())
+    .filter((name) => holds(join(dir, name), (file) => file.endsWith('.trx')) && !holds(join(dir, name), (file) => file.endsWith('.cobertura.xml')))
+    .sort();
 }
 
 function main(argv) {
@@ -149,7 +191,14 @@ function main(argv) {
       console.error(`coverage: the build failed (exit ${build.status ?? build.signal})`);
       return 1;
     }
-    const tests = spawnSync(process.execPath, testArguments(dir), { cwd: repo, stdio: 'inherit' });
+    let collector;
+    try {
+      collector = collectorFolder(JSON.parse(readFileSync(join(repo, ASSETS), 'utf8')));
+    } catch (error) {
+      console.error(`coverage: the collector was not found through ${ASSETS}: ${error.message}`);
+      return 1;
+    }
+    const tests = spawnSync(process.execPath, testArguments(dir, collector), { cwd: repo, stdio: 'inherit' });
     if (tests.status !== 0) {
       console.error(`coverage: the tests failed (exit ${tests.status ?? tests.signal})`);
       return 1;
@@ -159,6 +208,12 @@ function main(argv) {
   const reports = existsSync(dir) ? findReports(dir) : [];
   if (reports.length === 0) {
     console.error(`coverage: no Cobertura report under ${options.dir}; run node scripts/coverage.mjs --run`);
+    return 1;
+  }
+
+  const silent = withoutReport(dir);
+  if (silent.length > 0) {
+    console.error(`coverage: ${silent.length} process(es) ran tests and left no report: ${silent.join(', ')}`);
     return 1;
   }
 
