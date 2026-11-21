@@ -3455,6 +3455,27 @@ The owner, after 22.4 (2026-11-18), on what that step's worklog line had noted a
     - `v18/main` has the step merged in, and its unit and client tests and the website's browser tests pass there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
+### Phase 24: The same checks in a third of the time
+
+The owner, before the first release (2026-11-21): the tests take hours and may be more than is needed; go through them, remove or combine what is not needed, and narrow the time down, as long as a broken product is still flagged. Measured that day ([ADR-0261](docs/decisions/0261-where-the-test-time-goes.md)): the 15,500 unit and client tests take two and a half minutes; the gate's 90 minutes are the 2,313 integration tests, each starting an Umbraco, one after the other (37 minutes), and the 590 browser tests against one site (23 minutes, and twice when its database stalls). The workflow's test jobs would not have fitted their 45 minutes.
+
+- [ ] **24.1 The gate's long stages run side by side, nothing that flags a break is lost, and phase review** (the owner, 2026-11-21)
+  - **Integration tests in shares:** one script runs the integration assembly in several processes at once, each with a working folder and results of its own, shared out by class; the last share names no class and takes whatever the others do not name. `scripts/ci-local.ps1`, `scripts/coverage.mjs` and the workflow's SQLite and SQL Server jobs run them through it, the workflow as a matrix of jobs.
+  - **Timed tests alone:** an integration test that holds the product to a time budget is marked and runs after the shares with nothing beside it.
+  - **Browser tests against more than one site:** a run may start several sites, each with ports, database, mail folder, sign-in lock and credentials of its own, every spec file given to exactly one, four workers each; `budgets` runs once, alone, last. The hang marker and its one rerun stay.
+  - **What goes:** a test is removed or folded into another only where a named test still runs the same behaviour and fails when it breaks; ADR-0261 lists each with the one that stays. Unit and client tests are left alone.
+  - **Told:** `tests/README.md`, `tests/e2e/README.md`, `CONTRIBUTING.md` and `docs/STATUS.md` say how the tests run now and what the gate takes; `v18/main` gets it by merge.
+  - Done when:
+    - the integration run fails when the tests that ran do not add up to the tests the assembly holds, and when any share fails; the script's own tests show that a class no share names runs in the last share, that no class is in two shares, and that a short count fails the run;
+    - the browser run fails in the same two ways, with tests of its own for the split of the spec files;
+    - the marked timed tests and the `budgets` project each run with no other test process beside them;
+    - with one fault put into the product for each of four layers (the shared logic, a repository, a page a visitor gets, a backoffice screen), the gate fails in the stage that failed before the change, each fault taken out again;
+    - the whole gate (`scripts/ci-local.ps1`) passes twice in a row on the development machine with no test failing in either run, and takes under 30 minutes; `docs/STATUS.md` names both times and the counts of tests before and after;
+    - `node scripts/check-workflows.mjs` passes on the workflow's matrix, and no test job's share is planned to take more than half of its time limit;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the step merged in, and its gate passes there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+
 ---
 
 ## 6. Definition of done for the first release
