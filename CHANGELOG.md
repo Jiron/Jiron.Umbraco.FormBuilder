@@ -103,6 +103,9 @@ follows the Umbraco major).
   at Send.
 - The entries list reads on when every loaded row was deleted; the tree shows a form as published right after
   Publish; Ctrl+S saves what is still being typed.
+- On a slow connection, a visitor who answered a field and left it before the form's scripts had arrived saw its error
+  only at Send. The field is checked as soon as they arrive now, and an answer typed meanwhile is checked when its field
+  is left. Answers the browser restores on reload and default values still show no error by themselves.
 
 ## [17.0.0-alpha.1] - 2026-11-13
 

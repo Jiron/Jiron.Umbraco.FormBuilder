@@ -1,6 +1,6 @@
 // The frame (ROADMAP 6.4b, ADR-0110): the forms of the markup contract found and enhanced once, later ones through
 // init(root), others left to the post without JavaScript, `jfb:ready` once per form, and the chunk with the logic
-// loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118),
+// loaded on a form's first interaction only, what the visitor answered and left until it woke handed to it, or at once for a form with a default the page fills in (6.4h, ADR-0118),
 // the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123), every form
 // root fitted to its page once, a form to work with through `get` (6.4l, section 4.9), and what visitors do with a form
 // counted where its markup names where to (ROADMAP 11.5, ADR-0211).
@@ -368,6 +368,47 @@ describe('the frame', () => {
     await settled();
     await settled();
     expect(failing).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('what the visitor does before the logic woke', () => {
+  it('hands the logic each answer and leaving of the visitor until it woke, in order, and none a script dispatched', async () => {
+    const host = form('jfb-1');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.name = 'agree';
+    host.append(box);
+    document.body.append(host);
+    const text = inputOf(host);
+    let arrive: (loaded: Chunk) => void = () => undefined;
+    let woken: (session: unknown) => void = () => undefined;
+    const handed: [HTMLFormElement, string, readonly Event[]][] = [];
+    createFrame(() => new Promise<Chunk>((resolve) => (arrive = resolve))).init();
+
+    text.focus();
+    box.click();
+    // As a restored draft or a default's filler tells the page: no answer of the visitor's.
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    box.focus();
+    arrive({
+      attach: (element, data, heard) => {
+        handed.push([element, data.alias, heard]);
+        return new Promise((resolve) => (woken = resolve));
+      },
+    });
+    await settled();
+    box.blur();
+    woken({});
+    await settled();
+    box.focus();
+    text.focus();
+
+    const named = (target: EventTarget | null): string => (target === text ? 'text' : target === box ? 'box' : '?');
+    expect(handed.map(([element, alias]) => [element, alias])).toEqual([[host, 'jfb-1']]);
+    expect(
+      handed[0]?.[2].map((event) => `${event.type} ${named(event.target)}`),
+      "the browser's events from the first touch until the logic woke, the leaving while it woke among them",
+    ).toEqual(['input box', 'change box', 'focusout text', 'focusout box']);
   });
 });
 

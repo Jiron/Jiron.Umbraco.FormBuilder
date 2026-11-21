@@ -213,12 +213,27 @@ describe('the form chunk', () => {
       const form = document.querySelector('form');
       if (form === null) throw new Error('no form');
       enhanceResume.mockClear();
-      expect(await attach(form, offering, undefined, carried)).not.toBeNull();
+      expect(await attach(form, offering, undefined, undefined, carried)).not.toBeNull();
       return (enhanceResume.mock.calls[0]?.[2] as { carried?: boolean } | undefined)?.carried;
     };
     expect([await woken(), await woken({ id: 'id-1', challenge: null })]).toEqual([undefined, true]);
     vi.doUnmock('./resume-chunk');
     vi.unstubAllGlobals();
+  });
+
+  it('hands the errors what the visitor answered and left before it woke, so that field is checked as it wakes', async () => {
+    document.body.innerHTML = FORM;
+    const form = document.querySelector('form');
+    if (form === null) throw new Error('no form');
+    const count = document.getElementById('count') as HTMLInputElement;
+    const heard: Event[] = [];
+    for (const kind of ['input', 'focusout']) form.addEventListener(kind, (event) => heard.push(event));
+    count.value = '';
+    count.dispatchEvent(new Event('input', { bubbles: true }));
+    count.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    const { attach } = await import('./form');
+    expect(await attach(form, modelOf([{ ...COUNT, required: true }]), heard)).not.toBeNull();
+    await vi.waitFor(() => expect(form.querySelector('[data-jfb-field="k-count"] [data-jfb-error]')).not.toBeNull());
   });
 
   it("keeps a slider's value with its thumb, on a form without a calculation too", async () => {
@@ -286,7 +301,7 @@ describe('the form chunk', () => {
     if (form === null) throw new Error('no form');
     const { attach, loadDefaults } = await import('./form');
     const filler = vi.fn(loadDefaults);
-    expect(await attach(form, DEFAULTED, filler)).not.toBeNull();
+    expect(await attach(form, DEFAULTED, [], filler)).not.toBeNull();
     expect(filler).not.toHaveBeenCalled();
     const once = loadDefaults();
     expect(loadDefaults()).toBe(once);
@@ -299,7 +314,7 @@ describe('the form chunk', () => {
     if (form === null) throw new Error('no form');
     const { attach } = await import('./form');
     // Without a calculation, so no import of the language outlives the test.
-    expect(await attach(form, defaultedOf(), () => Promise.reject(new Error('offline')))).toBeNull();
+    expect(await attach(form, defaultedOf(), [], () => Promise.reject(new Error('offline')))).toBeNull();
     expect((document.getElementById('count') as HTMLInputElement).value).toBe('');
   });
 

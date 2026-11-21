@@ -1,7 +1,8 @@
 /**
  * The runtime's frame (ROADMAP 6.4b, ADR-0110): it finds the forms of the markup contract (ADR-0015), reads each one's
  * model data and enhances it once, and loads the chunk with the logic on a form's first interaction, so a page whose
- * visitor never touches a form loads the frame alone; a form with a default value for the page to fill in loads it at
+ * visitor never touches a form loads the frame alone, and what the visitor answers and leaves until the logic woke is
+ * handed to it (ADR-0113); a form with a default value for the page to fill in loads it at
  * once, so the default is there before the visitor touches the form (ADR-0118), as does a form whose view says it asks
  * at once, for what only the challenge's answer can tell a cached page (ADR-0156). A form of another contract version,
  * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
@@ -24,9 +25,13 @@ export const CONTRACT = '1';
 /** The interactions that load a form's logic: a field reached, pressed or changed, autofill included. */
 const TOUCHES = ['focusin', 'pointerdown', 'input', 'change'] as const;
 
+/** What the logic hears of a visitor once it woke, which the frame keeps for it until then: an answer and a leaving. */
+const HEARD = ['input', 'change', 'focusout'] as const;
+
 /** What the chunk offers the frame. */
 export interface Chunk {
-  attach(form: HTMLFormElement, model: FormModel): unknown;
+  /** `heard` is what the visitor answered and left before the logic woke, in order, which it holds until it wakes. */
+  attach(form: HTMLFormElement, model: FormModel, heard: readonly Event[]): unknown;
   /** The logic of a form that came in another's place, which the chunk gave it itself (6.4j). */
   sessionOf?(form: HTMLFormElement): unknown;
 }
@@ -151,16 +156,26 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     const model = data === null ? null : parseModel(data.textContent ?? '');
     if (model === null) return;
     enhanced.add(form);
+    // What the visitor answers and leaves until the logic woke, which hears it from then on (ADR-0113): handed to it, so
+    // a field they changed and left meanwhile is checked as it wakes. Only the visitor's: a script's event is no answer.
+    const heard: Event[] = [];
+    const hear = (event: Event): void => {
+      if (event.isTrusted) heard.push(event);
+    };
+    for (const type of HEARD) proto(form).addEventListener(type, hear);
     const touched = (): void => {
       if (sessions.has(form)) return;
       for (const type of TOUCHES) proto(form).removeEventListener(type, touched);
       chunk ??= load().catch(() => null);
-      const session = chunk.then((loaded) => loaded?.attach(form, model));
+      const session = chunk.then((loaded) => loaded?.attach(form, model, heard));
       sessions.set(form, session);
       // A form with no address to post to (the element's) has nothing to answer a press once its logic cannot load:
-      // the next press says so in the form's own words, tells the site, and loads the logic again.
-      if (proto(form).hasAttribute('action')) return;
-      const lame = (): void => {
+      // the next press says so in the form's own words, tells the site, and loads the logic again, which goes on hearing.
+      const settle = (woken?: unknown): void => {
+        if (woken != null || proto(form).hasAttribute('action')) {
+          for (const type of HEARD) proto(form).removeEventListener(type, hear);
+          return;
+        }
         chunk = undefined;
         sessions.delete(form);
         proto(form).addEventListener(
@@ -187,9 +202,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
           { once: true },
         );
       };
-      void session.then((woken) => {
-        if (woken === null || woken === undefined) lame();
-      }, lame);
+      void session.then(settle, () => settle());
     };
     wakes.set(form, touched);
     // Counting is the site's, not the visitor's: a form that cannot count works all the same.
