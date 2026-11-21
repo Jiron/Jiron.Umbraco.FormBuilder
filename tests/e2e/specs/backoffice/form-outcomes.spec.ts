@@ -290,10 +290,17 @@ test("an outcome's preview shows it as visitors get it, the sample entry's answe
   // What visitors get now: the site's thank-you and the sample entry's reference, beside the settings.
   await expect(outcome.locator('p').first()).toHaveText(DEFAULT);
   await expect(outcome.locator('[data-jfb-reference]')).toHaveText(/^Your reference is \d{4}-00042$/);
-  const settings = (await sidebar.locator('.outcome').boundingBox())!;
-  expect((await preview.boundingBox())!.x, 'the preview beside the settings').toBeGreaterThanOrEqual(
-    settings.x + settings.width,
-  );
+  // Both boxes read together, as the sidebar may still be laying its columns out when the preview's text is in.
+  await expect
+    .poll(
+      async () => {
+        const settings = await sidebar.locator('.outcome').boundingBox();
+        const shown = await preview.boundingBox();
+        return settings === null || shown === null ? -1 : shown.x - (settings.x + settings.width);
+      },
+      { message: 'the preview beside the settings' },
+    )
+    .toBeGreaterThanOrEqual(0);
 
   // The message with a tag of each field: the sample's name in its place, the sensitive email masked.
   const message = sidebar.locator('#message [contenteditable="true"]');

@@ -78,6 +78,7 @@ node scripts/e2e-gate.mjs                  two sites side by side, then budgets 
 node scripts/e2e-gate.mjs --sites 3        three sites (1 is the one site of a default run, then budgets)
 node scripts/e2e-gate.mjs --plan           what each site would run, checked, without running it
 node scripts/e2e-gate.mjs --record         and rewrite spec-times.json from this run, when it passed
+node scripts/e2e-gate.mjs --trace          and record traces as the config says (retain-on-failure)
 node scripts/e2e-gate.mjs --site 2/3       one site only, as the gate runs it
 node scripts/e2e-gate.mjs --stop           stops a run it started, each process's whole tree by PID
 node scripts/e2e-gate.mjs -- --grep inbox  arguments after -- go to every playwright test
@@ -92,6 +93,11 @@ budgets starts; the summary names when it ran, and the run fails if its results 
 end the tests that ran are added up from each site's `results.json`, and the run fails unless they are the listed
 tests, each once. The summary gives each site's tests, failures, skips, wall time, planned test seconds and runs,
 budgets' run, the count against the projects and the whole time.
+
+The gate runs without Playwright's trace recorder unless it is given `--trace`: recording every test cost a fifth of
+the stage's test time (ADR-0261). A failed test still leaves its screenshot, and the summary prints, for each failed
+test, the command that runs it again on its site with its trace. `npx playwright test` on its own records as the
+config says.
 
 To look at one site's run again, set both variables: `JFB_E2E_SITES=3 JFB_E2E_SITE=2 npx playwright test` runs site
 2's share of the spec files on site 2's ports and state.

@@ -13,7 +13,7 @@ there seem to be about ten thousand unit tests and a couple of thousand browser 
 needed. Go through them, throw away what is not needed or combine it, and narrow the time down, but only where a
 broken product is still flagged.
 
-**Measured first,** on the development machine (16 cores, 28 GB), from the gate's own log of 2026-11-19
+**Measured first,** on the development machine (8 cores with 16 threads, 28 GB), from the gate's own log of 2026-11-19
 (`ci-local.ps1` on f9eda3e5, 5,375 s) and a result file with every integration test's time:
 
 | What | Tests | Time | Per test |
@@ -46,7 +46,15 @@ release calls that workflow, so the first release would have met the limit. And 
   rose from 2,250 s to 3,320 s, as the processes share the cores; the two tests that hold 100,000 entries to a time
   budget took 70 s and 39 s where they take 46 s and 24 s alone, and passed.
 - The browser tests with eight workers on the one site: 18.5 minutes where four take 23, the tests' own time up from
-  4,324 s to 7,081 s, and two failures that four workers do not have. The site is the limit, not the browsers.
+  4,324 s to 7,081 s, and two failures that four workers do not have. Read at first as "the site is the limit"; the
+  next measurement showed it is the processor.
+- The browser tests against two and three sites of their own, four workers each: 19.4 and 18.9 minutes, the tests' own
+  time 6,665 s on two sites, the processor at 96 to 99% throughout on three. A third site gains half a minute and
+  brings failures of tests that wait on timing. Eight browsers and their hosts fill the eight cores whichever site
+  they ask.
+- The same 111 browser tests with and without Playwright's trace recorder (`retain-on-failure` records every test and
+  keeps the failed ones'): 1,070 s of test time with it, 848 s without. A fifth of the stage went into a file that is
+  read only after a failure.
 
 ## Options
 
@@ -76,10 +84,15 @@ release calls that workflow, so the first release would have met the limit. And 
   each share a job of its own.
 - **Tests that measure time run alone.** A test that holds the product to a time budget is marked as such and runs
   after the shares, with nothing beside it, as the browser tests' `budgets` project already does.
-- **Browser tests against more than one site.** A run may start several sites, each with its own ports, database,
-  mail folder, sign-in lock and credentials, and gives every spec file to exactly one of them; four workers per site
-  as before, since that is what one site on SQLite carries. `budgets` runs once, after everything, alone. The count
-  of tests run is checked against the count the projects hold, as for the shares.
+- **Browser tests against two sites.** A run starts two sites (one to three by its argument), each with its own
+  ports, database, mail folder, sign-in lock and credentials, and gives every spec file to exactly one of them; four
+  workers per site as before. Two is what the development machine's cores carry; more sites need more cores, not
+  more ports. `budgets` runs once, after everything, alone. The tests that ran are checked against the tests the
+  projects hold, as for the shares.
+- **The gate records no trace.** The gate's runner turns the recorder off and prints, for a failed test, the command
+  that runs it again with its trace; a developer's own run records as before, and the screenshot of a failure stays.
+  A failure that does not come again leaves its message, its screenshot and the host's log, and no trace: that is the
+  price, taken because the recorder slowed every passing run by a fifth and changed the timing the tests met.
 - **What may go.** A test is removed or folded into another only where the same behaviour is still run by a test
   that fails when it breaks, at the same layer or a cheaper one, and the record below names both. Unit and client
   tests are left alone: they cost nothing worth a risk.
@@ -93,7 +106,9 @@ release calls that workflow, so the first release would have met the limit. And 
   where it was 67 without a second browser run. `docs/STATUS.md` says what it measures.
 - A phase review's three long runs shrink with it.
 - The processes share the cores, so a single test takes longer than alone. Nothing but the marked tests may depend on
-  how long something takes; a test that does and is not marked is a fault of the test.
+  how long something takes; a test that does and is not marked is a fault of the test. The first runs on two sites
+  showed such tests, and one fault of the product behind them (an answer given and left before a form's logic had
+  loaded got no error at its field); 24.1 fixes each at its cause.
 - The workflow's test jobs become a matrix, each well inside its 45 minutes. Hosted runners have fewer cores, so the
   number of shares per job is the script's argument and not a constant.
 - More than one site at once needs more memory and ports: the port table in `tests/e2e/support/paths.ts` stays the

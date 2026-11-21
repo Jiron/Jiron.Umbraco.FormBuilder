@@ -24,7 +24,8 @@
      by side, each with a fresh demo host, ports, database and people of its own, every spec file on one site; then
      the budgets project alone. The stage fails unless the tests that ran add up to exactly the projects' tests. When
      a site's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and
-     then, and only then, that site runs once more ("Flaky means broken", ROADMAP "How to use").
+     then, and only then, that site runs once more ("Flaky means broken", ROADMAP "How to use"). No traces are
+     recorded; a failed test's summary line gives the command that runs it again with its trace.
 
   Every native command is judged by its exit code only: Windows PowerShell 5.1 turns lines a tool writes to stderr
   into error records when the output is redirected, and tools print warnings there.

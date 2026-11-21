@@ -130,9 +130,12 @@ test('the entries list pages 1,000 entries, searches, keeps a filter set across 
   // Another approval: once its window has passed, its toast offers no Undo and says it is too late.
   await rows.nth(3).locator('uui-checkbox').click();
   await view.locator('.bulk').getByRole('button', { name: 'Approve', exact: true }).click();
-  await expect(toast.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
-  await page.clock.fastForward(11_000);
-  await expect(toast.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
+  const undo = toast.getByRole('button', { name: 'Undo', exact: true });
+  await expect(undo).toBeVisible();
+  // The window ends 10 s after the approval by the server's clock, however late its answer reached the page, and the
+  // toast stays 6 s past it: the clock moves a second at a time until the Undo goes, so the toast is read while it stands.
+  for (let second = 0; second < 11 && (await undo.count()) > 0; second++) await page.clock.fastForward(1_000);
+  await expect(undo).toHaveCount(0);
   await expect(toast).toContainText("It's too late to undo this.");
 
   // Past the windows on the server, that approval's webhook goes and the undone ones' never do. The host's clock is every

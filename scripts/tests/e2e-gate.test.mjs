@@ -17,6 +17,9 @@ import {
   parseSite,
   plannedSeconds,
   projectsOf,
+  recorderArguments,
+  rerunCommand,
+  rerunLines,
   runWithRerun,
   siteArguments,
   siteEnv,
@@ -163,8 +166,15 @@ describe('parseArgs', () => {
     assert.match(parseArgs(['--site', '1/2', '--record']).error, /one site/);
     assert.match(parseArgs(['--plan', '--record']).error, /nothing to record/);
     assert.match(parseArgs(['--stop', '--sites', '2']).error, /no run options/);
+    assert.match(parseArgs(['--stop', '--trace']).error, /no run options/);
     assert.match(parseArgs(['--project=smoke']).error, /after --/);
     assert.match(parseArgs(['--sites']).error, /needs a value/);
+  });
+
+  test('records no trace unless --trace, a whole run or one site', () => {
+    assert.equal(parseArgs([]).trace, false);
+    assert.equal(parseArgs(['--trace']).trace, true);
+    assert.equal(parseArgs(['--site', '2/3', '--trace', '--', '--project=smoke']).trace, true);
   });
 
   test('parseSite reads i/n and budgets only', () => {
@@ -199,6 +209,50 @@ describe("a site's processes", () => {
     assert.deepEqual(siteArguments({ index: 1, count: 1, budgets: true }, projects, []), ['--project=budgets', '--no-deps']);
     assert.equal(siteFileLabel({ index: 2, count: 3, budgets: false }), 'site-2-of-3');
     assert.equal(siteFileLabel({ index: 1, count: 1, budgets: true }), 'budgets');
+  });
+
+  test('run without the trace recorder, unless the run records or the arguments after -- choose a mode', () => {
+    assert.deepEqual(recorderArguments(false, ['--project=smoke']), ['--trace=off']);
+    assert.deepEqual(recorderArguments(true, ['--project=smoke']), []);
+    assert.deepEqual(recorderArguments(false, ['--trace=on']), []);
+    assert.deepEqual(recorderArguments(false, ['--trace', 'on']), []);
+  });
+});
+
+describe('the command for a failed test', () => {
+  const failed = (project, file, line) => ({ project, file, line, status: 'unexpected' });
+  const dependent = new Set(['limits', 'site-wide', BUDGETS]);
+  const env = { JFB_E2E_CONFIGURATION: 'Release', PATH: 'p' };
+
+  test('runs that test on its site with its trace, on the build the run used', () => {
+    assert.equal(
+      rerunCommand(failed('backoffice', 'specs/backoffice/a.spec.ts', 90), { index: 2, count: 2, budgets: false }, env, dependent),
+      'JFB_E2E_SITES=2 JFB_E2E_SITE=2 JFB_E2E_SKIP_BUILD=1 JFB_E2E_CONFIGURATION=Release npx playwright test specs/backoffice/a.spec.ts:90 --project=backoffice --trace=on',
+    );
+    assert.equal(
+      rerunCommand(failed('smoke', 'specs/smoke/b.spec.ts', 7), { index: 1, count: 1, budgets: false }, {}, dependent),
+      'JFB_E2E_SKIP_BUILD=1 npx playwright test specs/smoke/b.spec.ts:7 --project=smoke --trace=on',
+    );
+  });
+
+  test('leaves out the dependencies of a project that has them, and of every project when they are unknown', () => {
+    const budgets = { index: 1, count: 1, budgets: true };
+    assert.equal(
+      rerunCommand(failed(BUDGETS, 'specs/budgets/c.spec.ts', 3), budgets, {}, dependent),
+      'JFB_E2E_SITE=budgets JFB_E2E_SKIP_BUILD=1 npx playwright test specs/budgets/c.spec.ts:3 --project=budgets --no-deps --trace=on',
+    );
+    assert.match(rerunCommand(failed('smoke', 'specs/smoke/b.spec.ts', 7), budgets, {}, null), / --project=smoke --no-deps --trace=on$/);
+  });
+
+  test('is printed once per failed test, under one line that says where to run it, and not at all when none failed', () => {
+    const site = { index: 1, count: 2, budgets: false };
+    const passed = { project: 'smoke', file: 'specs/smoke/b.spec.ts', line: 7, status: 'expected' };
+    const lines = rerunLines([{ site, tests: [passed, failed('backoffice', 'specs/backoffice/a.spec.ts', 90)] }], {}, dependent);
+    assert.deepEqual(lines, [
+      'e2e-gate: to run a failed test again with its trace, in tests/e2e:',
+      'e2e-gate:   JFB_E2E_SITES=2 JFB_E2E_SITE=1 JFB_E2E_SKIP_BUILD=1 npx playwright test specs/backoffice/a.spec.ts:90 --project=backoffice --trace=on',
+    ]);
+    assert.deepEqual(rerunLines([{ site, tests: [passed] }], {}, dependent), []);
   });
 });
 

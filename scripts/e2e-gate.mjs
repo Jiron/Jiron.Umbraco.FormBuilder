@@ -19,11 +19,14 @@
  *   - **The one rerun** ("Flaky means broken"): a site whose host's database hung leaves the hang marker in its host's
  *     folder, and only that site runs once more, on a fresh host; any other failure fails at once. Markers from an
  *     earlier run are removed first. The budgets site follows the same rule.
+ *   - **No trace recorder** unless `--trace`: it cost a fifth of the stage's test time for a file read only after a
+ *     failure. A failed test keeps its screenshot, and the summary gives the command that runs it again with its trace.
  *
  *   node scripts/e2e-gate.mjs                      the sites side by side (default 2), then budgets alone
  *   node scripts/e2e-gate.mjs --sites 2            two sites (1 to 3; one site is a run as it always was, then budgets)
  *   node scripts/e2e-gate.mjs --plan               list and check the plan (each site's tests), start nothing
  *   node scripts/e2e-gate.mjs --record             then rewrite tests/e2e/spec-times.json from this run, if it passed
+ *   node scripts/e2e-gate.mjs --trace              record traces as the config says (retain-on-failure)
  *   node scripts/e2e-gate.mjs --site 2/3           only site 2 of 3, in this process, with its one rerun (each site's
  *                                                  process of a whole run is this)
  *   node scripts/e2e-gate.mjs --site budgets       only the budgets project on its site, with its one rerun
@@ -125,7 +128,7 @@ export function parseSite(text) {
 
 /** The command line, or `{ error }`. */
 export function parseArgs(argv) {
-  const options = { mode: 'run', sites: DEFAULT_SITES, site: null, plan: false, record: false, siteTimeout: 60, passThrough: [] };
+  const options = { mode: 'run', sites: DEFAULT_SITES, site: null, plan: false, record: false, trace: false, siteTimeout: 60, passThrough: [] };
   let sitesGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -149,6 +152,8 @@ export function parseArgs(argv) {
         options.record = true;
       } else if (arg === '--plan') {
         options.plan = true;
+      } else if (arg === '--trace') {
+        options.trace = true;
       } else if (arg === '--site-timeout') {
         options.siteTimeout = Number(value());
         if (!Number.isFinite(options.siteTimeout) || options.siteTimeout <= 0) return { error: '--site-timeout is minutes, more than 0' };
@@ -162,7 +167,7 @@ export function parseArgs(argv) {
     }
   }
   if (options.mode === 'site' && (sitesGiven || options.record || options.plan)) return { error: '--site runs one site; leave out --sites, --plan and --record' };
-  if (options.mode === 'stop' && (sitesGiven || options.record || options.plan || options.site || options.passThrough.length > 0)) return { error: '--stop takes no run options' };
+  if (options.mode === 'stop' && (sitesGiven || options.record || options.plan || options.trace || options.site || options.passThrough.length > 0)) return { error: '--stop takes no run options' };
   if (options.plan && options.record) return { error: '--plan runs nothing to record' };
   return options;
 }
@@ -197,6 +202,41 @@ export function withoutProjects(args) {
 export function siteArguments(site, projects, passThrough) {
   const chosen = site.budgets ? [BUDGETS] : projects.filter((project) => project !== BUDGETS);
   return [...chosen.map((project) => `--project=${project}`), ...(site.budgets ? ['--no-deps'] : []), ...withoutProjects(passThrough)];
+}
+
+/**
+ * The trace recorder's argument of a site's `playwright test`: off unless the run was asked to `--trace`, when the
+ * config's mode records (`retain-on-failure`), or the arguments after `--` choose a mode themselves. The recorder cost a
+ * fifth of the stage's test time, on every passing test, for a file read only after a failure (ADR-0261); a failed
+ * test's command to run it again with its trace is in the summary (`rerunLines`).
+ */
+export function recorderArguments(trace, passThrough) {
+  return trace || passThrough.some((arg) => arg === '--trace' || arg.startsWith('--trace=')) ? [] : ['--trace=off'];
+}
+
+/** The variables a command needs to run a test as it ran on its site: the site's, and the build the run used. */
+function rerunEnv(site, env) {
+  const vars = site.budgets ? { JFB_E2E_SITE: BUDGETS } : site.count > 1 ? { JFB_E2E_SITES: site.count, JFB_E2E_SITE: site.index } : {};
+  vars.JFB_E2E_SKIP_BUILD = 1;
+  for (const name of ['JFB_E2E_CONFIGURATION', 'JFB_E2E_DELIVERY_API']) if (env[name]) vars[name] = env[name];
+  return Object.entries(vars).map(([name, value]) => `${name}=${value}`);
+}
+
+/**
+ * The command, from tests/e2e, that runs one failed test again on its site with its trace. `dependent` is the set of
+ * projects that have dependencies, which the command leaves out (`--no-deps`); null when unknown, which leaves them out
+ * for every project.
+ */
+export function rerunCommand(test, site, env, dependent) {
+  const noDeps = dependent === null || dependent.has(test.project) ? ['--no-deps'] : [];
+  return [...rerunEnv(site, env), 'npx playwright test', `${test.file}:${test.line}`, `--project=${test.project}`, ...noDeps, '--trace=on'].join(' ');
+}
+
+/** The summary's lines for the failed tests of the runs (`{ site, tests }`): a command per test, none when none failed. */
+export function rerunLines(runs, env, dependent) {
+  const failed = runs.flatMap((run) => run.tests.filter((test) => test.status === 'unexpected' || test.status === 'flaky').map((test) => rerunCommand(test, run.site, env, dependent)));
+  if (failed.length === 0) return [];
+  return ['e2e-gate: to run a failed test again with its trace, in tests/e2e:', ...[...new Set(failed)].map((command) => `e2e-gate:   ${command}`)];
 }
 
 /** The file name (without extension) of a site's log and outcome. */
@@ -386,7 +426,7 @@ function runOneSite(options) {
   const run = () => {
     const began = Date.now();
     say(`${siteLabel(site)}: playwright test starts at ${stamp()} (state ${relative(root, state)})`);
-    const result = spawnSync(process.execPath, [PLAYWRIGHT_CLI, 'test', ...passThrough], { cwd: E2E, stdio: 'inherit', env });
+    const result = spawnSync(process.execPath, [PLAYWRIGHT_CLI, 'test', ...passThrough, ...recorderArguments(options.trace, passThrough)], { cwd: E2E, stdio: 'inherit', env });
     const exit = result.status ?? 1;
     const ended = Date.now();
     outcome.runs.push({ exit, startedAt: began, endedAt: ended });
@@ -535,6 +575,16 @@ function readOutcome(site) {
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
 }
 
+/** The projects of the config that depend on others, from the config itself; null when it cannot be read here. */
+async function dependentProjects() {
+  try {
+    const { default: config } = await import(pathToFileURL(join(E2E, 'playwright.config.ts')).href);
+    return new Set((config.projects ?? []).filter((project) => (project.dependencies ?? []).length > 0).map((project) => project.name));
+  } catch {
+    return null;
+  }
+}
+
 function readTimesFile() {
   const path = join(E2E, SPEC_TIMES_FILE);
   return readSpecTimes(existsSync(path) ? readFileSync(path, 'utf8') : null);
@@ -604,7 +654,7 @@ async function runAll(options) {
     const startSite = (site) =>
       runner.start({
         label: siteLabel(site),
-        args: [fileURLToPath(import.meta.url), '--site', site.budgets ? BUDGETS : `${site.index}/${site.count}`, '--', ...siteArguments(site, projects, options.passThrough)],
+        args: [fileURLToPath(import.meta.url), '--site', site.budgets ? BUDGETS : `${site.index}/${site.count}`, ...(options.trace ? ['--trace'] : []), '--', ...siteArguments(site, projects, options.passThrough)],
         env: baseEnv,
         log: join(STATE, `${siteFileLabel(site)}.log`),
         mark: siteLabel(site),
@@ -665,6 +715,8 @@ async function runAll(options) {
     }));
     for (const line of summaryLines(rows, verdict, holds.length, (Date.now() - began) / 1000)) (verdict.ok ? console.log : console.error)(line);
     for (const run of runs) say(`${run.label}: report ${relative(root, join(siteState(root, run.site), 'report'))}, log ${relative(root, join(STATE, `${siteFileLabel(run.site)}.log`))}`);
+    const again = rerunLines(runs, process.env, runs.some((run) => run.tests.some((test) => test.status === 'unexpected' || test.status === 'flaky')) ? await dependentProjects() : null);
+    for (const line of again) console.error(line);
 
     const unknown = runs
       .filter((run) => !run.budgets)

@@ -194,7 +194,19 @@ export async function press(form: Locator, nav: 'next' | 'back'): Promise<void> 
   loaded.catch(() => undefined);
   refused.catch(() => undefined);
   moved.catch(() => undefined);
-  await form.locator(`.jfb-navigation button[data-jfb-nav="${nav}"]`).click();
-  // The post loads the page it leads to; the runtime moves on, or keeps a page that needs answers and moves the focus to its errors.
-  await Promise.any([loaded, refused, moved]);
+  const mainFrame = page.mainFrame();
+  let navigated = false;
+  const onNavigated = (frame: unknown): void => {
+    if (frame === mainFrame) navigated = true;
+  };
+  page.on('framenavigated', onNavigated);
+  try {
+    await form.locator(`.jfb-navigation button[data-jfb-nav="${nav}"]`).click();
+    // The post loads the page it leads to; the runtime moves on, or keeps a page that needs answers and moves the focus to its errors.
+    await Promise.any([loaded, refused, moved]);
+    // A post's next page shows its page's mark while the rest of it still arrives: its fields are there once it loaded.
+    if (navigated) await page.waitForLoadState('load', { timeout: 15_000 });
+  } finally {
+    page.off('framenavigated', onNavigated);
+  }
 }
