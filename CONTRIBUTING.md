@@ -66,11 +66,17 @@ npm run size
 another version (`JFB001`).
 
 **The tests** ([tests/README.md](tests/README.md)): the unit and integration tests run on SQLite and need nothing
-installed.
+installed. The integration tests each start an Umbraco, so a script runs them in several processes at once and then
+the tests that measure time alone; it never builds, and it fails unless every test of the assembly ran once.
 
 ```
-dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
+dotnet build Jiron.Umbraco.FormBuilder.slnx -c Release
+dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --no-build --blame-hang-timeout 10m
+node scripts/test-integration.mjs
 ```
+
+A test that holds the product to a time budget gets `[Category("Timed")]`; no other test may depend on how long
+something takes.
 
 The browser tests (Playwright, [tests/e2e/README.md](tests/e2e/README.md)) start a fresh demo host on port 5520 and
 run in Edge:

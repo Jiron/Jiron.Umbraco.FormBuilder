@@ -49,7 +49,9 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
 
     private static readonly FormField Agreed = new() { Key = Guid.Parse("c6000000-0000-4000-8000-000000000006"), Type = "checkbox", Alias = "agreed", Label = new LocalizedText("Agreed") };
 
+    // A time budget: scripts/test-integration.mjs runs the "Timed" tests alone, after the shares (ADR-0261).
     [Test]
+    [Category("Timed")]
     public async Task TheSummaries_OfAHundredThousandEntries_LoadWithinTheirBudget()
     {
         var form = await PublishAsync(name: "Budget", fields: [NameField, Topic, Interests, Amount, Recommend, Message, Agreed]);

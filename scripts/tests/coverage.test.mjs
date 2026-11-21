@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { check, findReports, merge, parseArguments, summarise, testArguments } from '../coverage.mjs';
+import { BESIDE, buildArguments, check, findReports, merge, parseArguments, summarise, testArguments } from '../coverage.mjs';
 
 const folders = [];
 after(() => {
@@ -49,6 +49,13 @@ describe('merge and summarise', () => {
     assert.deepEqual(summarise(merge([unit, integration])), [
       { name: 'Jiron.Umbraco.FormBuilder.Core', covered: 2, total: 4, percent: 50 },
       { name: 'Jiron.Umbraco.FormBuilder.Web', covered: 1, total: 1, percent: 100 },
+    ]);
+  });
+
+  test('the reports of many processes (the shares): a line hit in only one of them counts once, as covered', () => {
+    const share = (hits) => `<coverage><packages><package name="P"><classes><class name="C" filename="src/C.cs"><lines><line number="1" hits="${hits}" /><line number="2" hits="0" /></lines></class></classes></package></packages></coverage>`;
+    assert.deepEqual(summarise(merge([share(0), share(0), share(3), share(0), share(0)])), [
+      { name: 'P', covered: 1, total: 2, percent: 50 },
     ]);
   });
 
@@ -108,14 +115,24 @@ describe('parseArguments', () => {
 });
 
 describe('the test run', () => {
-  test('runs the solution in Release with the run settings into the folder, and names a hanging test', () => {
-    const args = testArguments('C:/out');
-    assert.equal(args[0], 'test');
+  test('builds the solution in Release, without leaving build nodes behind', () => {
+    const args = buildArguments();
+    assert.equal(args[0], 'build');
     assert.match(args[1], /Jiron\.Umbraco\.FormBuilder\.slnx$/);
-    assert.deepEqual(args.slice(2, 5), ['-c', 'Release', '-nologo']);
+    assert.deepEqual(args.slice(2), ['-c', 'Release', '-nologo', '-nodeReuse:false']);
+  });
+
+  test('runs the integration shares with the unit and AI tests beside them, the run settings, into the folder', () => {
+    const args = testArguments('C:/out');
+    assert.match(args[0], /scripts[\\/]test-integration\.mjs$/);
     assert.match(args[args.indexOf('--settings') + 1], /tests[\\/]coverage\.runsettings$/);
-    assert.equal(args[args.indexOf('--results-directory') + 1], 'C:/out');
-    assert.equal(args[args.indexOf('--blame-hang-timeout') + 1], '10m');
+    assert.equal(args[args.indexOf('--results') + 1], 'C:/out');
+    const beside = args.flatMap((arg, i) => (arg === '--beside' ? [args[i + 1]] : []));
+    assert.deepEqual(beside, BESIDE);
+    assert.deepEqual(
+      beside.map((path) => path.match(/Tests\.(\w+)\.dll$/)[1]),
+      ['Unit', 'AI'],
+    );
   });
 });
 

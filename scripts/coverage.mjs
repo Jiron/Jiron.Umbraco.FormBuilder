@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Line coverage per assembly from the Cobertura reports of Microsoft's code coverage collector ("Code Coverage",
-// instrumenting in memory, ADR-0079), merged across the test projects: a line counts as covered when any report hit
+// instrumenting in memory, ADR-0079), merged across every test process: a line counts as covered when any report hit
 // it. The phase-review gate needs Core at 85% or more from Phase 4 on (ROADMAP "How to use" and section 4.12). Ported
 // from Tandem's script (ROADMAP 3.3).
 //
-//   node scripts/coverage.mjs --run     empties .local/coverage, runs the .NET tests into it, then merges and checks
+//   node scripts/coverage.mjs --run     empties .local/coverage, builds in Release, runs the .NET tests into it, then
+//                                       merges and checks. The integration tests run in shares through
+//                                       scripts/test-integration.mjs (ADR-0261), the unit and AI tests beside them,
+//                                       each process with the collector and a results folder of its own, so the merge
+//                                       finds one report per process.
 //   node scripts/coverage.mjs [--dir .local/coverage] [--min 85] [--package <assembly>]...
 //
 // Prints one line per assembly, sorted by name. Without --package it checks Jiron.Umbraco.FormBuilder.Core. Exits 1
@@ -106,23 +110,29 @@ export function parseArguments(argv) {
   return options;
 }
 
-/** The arguments of the test run: every test project, Release, the collector through the run settings. */
+/** The arguments of the Release build the test run uses; the run itself never builds. */
+export function buildArguments() {
+  return ['build', join(repo, 'Jiron.Umbraco.FormBuilder.slnx'), '-c', 'Release', '-nologo', '-nodeReuse:false'];
+}
+
+/** The test assemblies of the Release build that run beside the integration shares. */
+export const BESIDE = [
+  'tests/Jiron.Umbraco.FormBuilder.Tests.Unit/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.Unit.dll',
+  'tests/Jiron.Umbraco.FormBuilder.Tests.AI/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.AI.dll',
+];
+
+/**
+ * The arguments of the test run (node): the integration shares, the unit and AI tests beside them, the collector
+ * through the run settings, each process's results under the folder.
+ */
 export function testArguments(dir) {
   return [
-    'test',
-    join(repo, 'Jiron.Umbraco.FormBuilder.slnx'),
-    '-c',
-    'Release',
-    '-nologo',
+    join(repo, 'scripts', 'test-integration.mjs'),
     '--settings',
     join(repo, 'tests', 'coverage.runsettings'),
-    '--results-directory',
+    '--results',
     dir,
-    '--blame-hang',
-    '--blame-hang-timeout',
-    '10m',
-    '--blame-hang-dump-type',
-    'none',
+    ...BESIDE.flatMap((assembly) => ['--beside', assembly]),
   ];
 }
 
@@ -133,7 +143,13 @@ function main(argv) {
   if (options.run) {
     // An old report would count lines this run no longer covers.
     rmSync(dir, { recursive: true, force: true });
-    const tests = spawnSync('dotnet', testArguments(dir), { cwd: repo, stdio: 'inherit' });
+    // Build nodes that stay behind would hold the repository's folders (CLAUDE.md rule 6).
+    const build = spawnSync('dotnet', buildArguments(), { cwd: repo, stdio: 'inherit', env: { ...process.env, MSBUILDDISABLENODEREUSE: '1' } });
+    if (build.status !== 0) {
+      console.error(`coverage: the build failed (exit ${build.status ?? build.signal})`);
+      return 1;
+    }
+    const tests = spawnSync(process.execPath, testArguments(dir), { cwd: repo, stdio: 'inherit' });
     if (tests.status !== 0) {
       console.error(`coverage: the tests failed (exit ${tests.status ?? tests.signal})`);
       return 1;

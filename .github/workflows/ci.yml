@@ -90,15 +90,18 @@ jobs:
           node scripts/third-party-notices.mjs --check
       - name: Packages
         run: node scripts/pack.mjs --no-build --output artifacts/packages
-      - name: Unit and integration tests (SQLite)
-        run: dotnet test -c Release --no-build --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/sqlite
+      # The integration tests run in the share jobs below (ADR-0261).
+      - name: Unit and AI tests
+        run: |
+          dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --no-build --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/unit
+          dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.AI -c Release --no-build --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/unit
 
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: test-results-sqlite
-          path: TestResults/sqlite
+          name: test-results-unit
+          path: TestResults/unit
           if-no-files-found: ignore
       - name: Upload the packages
         if: ${{ !cancelled() }}
@@ -108,11 +111,77 @@ jobs:
           path: artifacts/packages
           if-no-files-found: ignore
 
-  sqlserver:
-    name: Integration tests (SQL Server)
+  # The integration tests in shares, one process per job, through scripts/test-integration.mjs (ADR-0261): share i of
+  # n runs the classes tests/integration-times.json gives it, the last share whatever the others do not name, and the
+  # "timed" job the tests that hold the product to a time budget, alone on its runner. The `shares` job adds up what
+  # every job ran and fails unless it is exactly the assembly's tests.
+  #
+  # How many shares, estimated (a hosted runner cannot be measured from the development machine): on that machine one
+  # process runs the 2,313 tests in 37.5 minutes (2,250 s of test time, 2,170 s without the timed ones; ADR-0261).
+  # Taken as twice as slow on a hosted runner, and the plan's shares as up to 10% uneven:
+  #   - SQLite, 6 shares: 2,170 s x 2 / 6 x 1.1 = about 13 minutes of tests per job;
+  #   - SQL Server, 10 shares, taken as half as slow again as SQLite: 2,170 s x 3 / 10 x 1.1 = about 12 minutes;
+  #   - the timed job: 80 s on the development machine, so about 3 minutes;
+  # plus about 7 minutes per job for the checkout, the client build and the Release build of the test project. That
+  # plans every job at 20 minutes at most, under half of its 45. When the jobs' times are known, change the share
+  # count (the matrix's numbers and JFB_SHARES together) so the longest job stays under 22 minutes.
+  sqlite:
+    name: Integration tests (SQLite, share ${{ matrix.share }})
     if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        share: ['1', '2', '3', '4', '5', '6', 'timed']
+    env:
+      JFB_SHARES: '6'
+      SHARE: ${{ matrix.share }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      # The website assets are embedded in the build, as in the build job and the gate.
+      - name: Client build
+        working-directory: src/Jiron.Umbraco.FormBuilder.Web/Client
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Build the integration tests
+        run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
+      - name: Integration tests (SQLite)
+        run: |
+          if [ "$SHARE" = timed ]; then share=timed; else share="$SHARE/$JFB_SHARES"; fi
+          node scripts/test-integration.mjs --share "$share" --results TestResults/integration
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-sqlite-${{ matrix.share }}
+          path: TestResults/integration
+          if-no-files-found: ignore
+
+  sqlserver:
+    name: Integration tests (SQL Server, share ${{ matrix.share }})
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # One process per job: two on one server would collide on the test databases' names.
+    strategy:
+      fail-fast: false
+      matrix:
+        share: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'timed']
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -131,25 +200,66 @@ jobs:
       # Umbraco's integration test base reads these (Tests:Database) and creates its test databases on this server.
       Tests__Database__DatabaseType: SqlServer
       Tests__Database__SQLServerMasterConnectionString: Server=localhost,1433;User Id=sa;Password=${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }};TrustServerCertificate=True
+      JFB_SHARES: '10'
+      SHARE: ${{ matrix.share }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
+      - name: Client build
+        working-directory: src/Jiron.Umbraco.FormBuilder.Web/Client
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Build the integration tests
+        run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
       - name: Integration tests (SQL Server)
-        run: dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/sqlserver
+        run: |
+          if [ "$SHARE" = timed ]; then share=timed; else share="$SHARE/$JFB_SHARES"; fi
+          node scripts/test-integration.mjs --share "$share" --results TestResults/integration
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: test-results-sqlserver
-          path: TestResults/sqlserver
+          name: integration-sqlserver-${{ matrix.share }}
+          path: TestResults/integration
           if-no-files-found: ignore
+
+  # Every share of both databases reported, none failed, and together they ran exactly the assembly's tests, each once.
+  shares:
+    name: Integration tests add up
+    needs: [sqlite, sqlserver]
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: integration-sqlite-*
+          path: shares/sqlite
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: integration-sqlserver-*
+          path: shares/sqlserver
+      - name: The SQLite shares add up
+        run: node scripts/test-integration.mjs --sum shares/sqlite
+      - name: The SQL Server shares add up
+        run: node scripts/test-integration.mjs --sum shares/sqlserver
 
   smoke:
     name: Browser tests (smoke)

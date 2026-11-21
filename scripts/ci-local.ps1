@@ -15,7 +15,11 @@
   4. Packages: the four packages from the Release build (the three a site installs and the AI add-on), through
      scripts/pack.mjs as CI and the release pack them, which checks every entry against the allowlist and every
      nuspec (scripts/check-packages.mjs).
-  5. Unit and integration tests on SQLite; a test that hangs fails after 10 minutes and is named.
+  5. Unit and integration tests on SQLite, through scripts/test-integration.mjs (ADR-0261): the integration tests in
+     shares, several processes at once (half the cores, at most eight), each with a working folder of its own; the
+     unit and AI tests beside them; then the tests that hold the product to a time budget (the NUnit category
+     "Timed") alone. The stage fails unless the tests that ran add up to exactly the integration assembly's tests. A
+     test that hangs fails after 10 minutes and is named.
   6. The browser projects on a fresh demo host from the Release build, in Edge, through scripts/e2e-gate.mjs. When
      a host's SQLite database hung (Umbraco 17's start-up stall, ADR-0011), the harness leaves the hang marker, and
      then, and only then, the projects run once more ("Flaky means broken", ROADMAP "How to use").
@@ -110,7 +114,11 @@ try {
     }
 
     Invoke-Stage 'Unit and integration tests (SQLite)' {
-        Invoke-Native 'dotnet' @('test', '-c', 'Release', '--no-build', '-nologo', '--blame-hang', '--blame-hang-timeout', '10m', '--blame-hang-dump-type', 'none')
+        # The integration tests in shares side by side, the unit and AI tests beside them, then the timed tests alone;
+        # it fails unless the tests that ran are exactly the integration assembly's (scripts/test-integration.mjs).
+        Invoke-Native 'node' @('scripts/test-integration.mjs',
+            '--beside', 'tests/Jiron.Umbraco.FormBuilder.Tests.Unit/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.Unit.dll',
+            '--beside', 'tests/Jiron.Umbraco.FormBuilder.Tests.AI/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.AI.dll')
     }
 
     if ($SkipE2E) {

@@ -793,7 +793,9 @@ public sealed class EntryExportTests : ActionTestBase
         });
     }
 
+    // A time budget: scripts/test-integration.mjs runs the "Timed" tests alone, after the shares (ADR-0261).
     [Test]
+    [Category("Timed")]
     public async Task TenThousandEntriesOfTwelveValues_ExportAsCsvWithinFiveSeconds_WhileSubmissionsArrive_AndOneMoreGoesToTheBackground()
     {
         const int Count = 10_000;
