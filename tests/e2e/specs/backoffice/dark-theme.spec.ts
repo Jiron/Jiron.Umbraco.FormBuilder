@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { inTheme } from '../../support/backoffice-look.ts';
 import { API, blankForm, contactForm, created, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
@@ -35,6 +35,25 @@ async function ours(page: Page): Promise<string[]> {
       })),
     ),
   ).ours.filter((finding) => !finding.includes('umb-section-sidebar'));
+}
+
+/**
+ * How much of an element shows through: its opacity times that of everything around it, through the shadow roots and
+ * slots it sits in. Umbraco's toast has its box from its first frame and fades in after it, so it is visible to
+ * Playwright, and has no animation running yet, while it is still clear: axe then reads its colours mixed with the
+ * page behind (the Undo button's label failed its contrast so, once, on a busy machine, ROADMAP 24.1).
+ */
+async function shows(element: Locator): Promise<number> {
+  return await element.evaluate((start) => {
+    let shown = 1;
+    let node: Node | null = start;
+    while (node) {
+      if (node instanceof Element) shown *= Number(getComputedStyle(node).opacity);
+      node =
+        (node instanceof Element ? node.assignedSlot : null) ?? node.parentNode ?? (node as ShadowRoot).host ?? null;
+    }
+    return shown;
+  });
 }
 
 async function trash(api: APIRequestContext, key: string): Promise<void> {
@@ -95,6 +114,7 @@ test("in the dark theme, axe finds nothing in the section's own elements, its fi
   // Delete, with its Undo toast in Umbraco's corner.
   await design.locator('jfb-canvas-field .bo-tools button').filter({ visible: true }).nth(2).click();
   await expect(page.locator('jfb-undo-notification')).toBeVisible();
+  await expect.poll(() => shows(page.locator('jfb-undo-notification')), 'the toast has faded in').toBe(1);
   expect(await ours(page), 'the undo toast').toEqual([]);
   // Each surface on its own: the toast closes before a dialog could open over it.
   await expect(page.locator('jfb-undo-notification')).toHaveCount(0, { timeout: 20_000 });
