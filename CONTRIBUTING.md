@@ -119,7 +119,9 @@ node scripts/render-markdown.mjs
 
 **Before you push**, format everything, then run the gate. `scripts/ci-local.ps1` runs what CI runs, except the SQL
 Server and load-balancing jobs (`.github/workflows/ci.yml`), stops at the first failure and prints the time of every
-stage. `-SkipE2E` leaves out the browser tests for a quicker run while working; that run is not the gate.
+stage. Its cheap checks and builds run as lanes side by side (`scripts/lanes.mjs`), each line of output marked with its
+lane; its script header lists what each stage holds. `-SkipE2E` leaves out the browser tests for a quicker run while
+working; that run is not the gate.
 
 ```
 node scripts/fix.mjs

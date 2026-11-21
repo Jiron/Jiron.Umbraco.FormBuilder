@@ -93,6 +93,20 @@ release calls that workflow, so the first release would have met the limit. And 
   that runs it again with its trace; a developer's own run records as before, and the screenshot of a failure stays.
   A failure that does not come again leaves its message, its screenshot and the host's log, and no trace: that is the
   price, taken because the recorder slowed every passing run by a fifth and changed the timing the tests met.
+- **The test hosts do Umbraco's start-up work at once.** A site's first test started 79 s after its host: 17 s to
+  start, the rest the start-up wait idling through the minute after which Umbraco registers its distributed jobs
+  (`Umbraco:CMS:DistributedJobs:Delay`, a setting) and rebuilds its indexes (a minute fixed in its handler of the
+  started notification). Every host the harness starts sets the first to zero, and the Testing project takes
+  Umbraco's handler out and rebuilds the same indexes itself with no delay, once per host; a host whose Umbraco no
+  longer has that handler stops at start-up rather than rebuild twice. The wait stays as strict, both lines and the
+  settle time (ADR-0011, ADR-0253): only the idling goes. One site's set-up went from 81 s to 22 s.
+- **Three workers per site on two or three sites.** Four each put eight browsers and two hosts on eight cores: the
+  tests' own time rose to 5,100 s, and three of five whole runs failed on tests that read a page too early (each fixed
+  at its cause). Three each took 4,355 s and passed, 70 s longer. One site keeps the config's four.
+- **The gate's cheap stages side by side.** The repository checks, the client's build and the browser tests'
+  set-up need nothing of each other, nor do the client's lint and tests and the .NET build, which needs only the
+  client's build: `scripts/lanes.mjs` runs each group as lanes at once, every line marked with its lane, the first
+  failure stopping the rest. Every command of the gate still runs and still fails it.
 - **What may go.** A test is removed or folded into another only where the same behaviour is still run by a test
   that fails when it breaks, at the same layer or a cheaper one, and the record below names both. Unit and client
   tests are left alone: they cost nothing worth a risk.

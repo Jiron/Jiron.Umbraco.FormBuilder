@@ -197,7 +197,7 @@ describe('the release workflow (ADR-0247)', () => {
     const runs = (job) => job.steps.map((step) => step.run ?? '').join('\n');
     assert.match(runs(release.jobs.pack), /node scripts\/pack\.mjs --version "\$JFB_VERSION" --output artifacts\/packages/);
     assert.match(runs(ci.jobs.build), /node scripts\/pack\.mjs --no-build --output artifacts\/packages/);
-    assert.match(read('scripts/ci-local.ps1'), /Invoke-Native 'node' @\('scripts\/pack\.mjs', '--no-build', '--output', \$Packages\)/);
+    assert.match(read('scripts/ci-local.ps1'), /'node scripts\/pack\.mjs --no-build --output \.local\/ci-packages'/);
   });
 
   test('drafts the release on a tag only, with the write permission there and no token in a checkout', () => {
