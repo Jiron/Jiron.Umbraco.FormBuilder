@@ -3,7 +3,7 @@
 /**
  * Runs the browser projects for the gate (ROADMAP 3.5 and 24.1, ADR-0011, ADR-0261) against several sites side by side.
  * A site is a whole copy of a run (tests/e2e/support/sites.ts): its own demo host, database, mail pickup folder, log,
- * ports, sign-in lock, credentials, results and report, four workers as always.
+ * ports, sign-in lock, credentials, results and report.
  *
  *   - **Every spec file on one site.** The sites share the spec files out by time (tests/e2e/spec-times.json, which
  *     `--record` rewrites from the run it just did); the last site names no file and takes every spec file the others
@@ -24,6 +24,8 @@
  *
  *   node scripts/e2e-gate.mjs                      the sites side by side (default 2), then budgets alone
  *   node scripts/e2e-gate.mjs --sites 2            two sites (1 to 3; one site is a run as it always was, then budgets)
+ *   node scripts/e2e-gate.mjs --workers 4          Playwright's workers per site (default: three for two or three
+ *                                                  sites, SEVERAL_SITES_WORKERS; the config's four for one site)
  *   node scripts/e2e-gate.mjs --plan               list and check the plan (each site's tests), start nothing
  *   node scripts/e2e-gate.mjs --record             then rewrite tests/e2e/spec-times.json from this run, if it passed
  *   node scripts/e2e-gate.mjs --trace              record traces as the config says (retain-on-failure)
@@ -74,6 +76,14 @@ export const STATE = join(root, '.local', 'e2e-gate');
  * all the time, and three only made each test slower, with five failures more of tests that wait on time.
  */
 export const DEFAULT_SITES = 2;
+
+/**
+ * Playwright's workers per site when a run has more than one site; one site keeps the config's number (four). Measured
+ * on the development machine (8 cores, 2026-11-21): two sites of four workers put eight browsers and two hosts on eight
+ * cores, the tests' own time rose to 5,100 s and tests that read a page too early failed in three of five runs; with
+ * three workers each the tests took 4,355 s, every one passed, and the run took 70 s longer.
+ */
+export const SEVERAL_SITES_WORKERS = 3;
 
 /** The project that runs alone, after every site (ADR-0169). */
 export const BUDGETS = 'budgets';
@@ -128,7 +138,7 @@ export function parseSite(text) {
 
 /** The command line, or `{ error }`. */
 export function parseArgs(argv) {
-  const options = { mode: 'run', sites: DEFAULT_SITES, site: null, plan: false, record: false, trace: false, siteTimeout: 60, passThrough: [] };
+  const options = { mode: 'run', sites: DEFAULT_SITES, site: null, plan: false, record: false, trace: false, siteTimeout: 60, workers: null, passThrough: [] };
   let sitesGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -154,6 +164,9 @@ export function parseArgs(argv) {
         options.plan = true;
       } else if (arg === '--trace') {
         options.trace = true;
+      } else if (arg === '--workers') {
+        options.workers = Number(value());
+        if (!Number.isInteger(options.workers) || options.workers < 1 || options.workers > 16) return { error: '--workers is a whole number from 1 to 16' };
       } else if (arg === '--site-timeout') {
         options.siteTimeout = Number(value());
         if (!Number.isFinite(options.siteTimeout) || options.siteTimeout <= 0) return { error: '--site-timeout is minutes, more than 0' };
@@ -166,8 +179,8 @@ export function parseArgs(argv) {
       return { error: error.message };
     }
   }
-  if (options.mode === 'site' && (sitesGiven || options.record || options.plan)) return { error: '--site runs one site; leave out --sites, --plan and --record' };
-  if (options.mode === 'stop' && (sitesGiven || options.record || options.plan || options.trace || options.site || options.passThrough.length > 0)) return { error: '--stop takes no run options' };
+  if (options.mode === 'site' && (sitesGiven || options.record || options.plan || options.workers !== null)) return { error: '--site runs one site; leave out --sites, --plan, --record and --workers' };
+  if (options.mode === 'stop' && (sitesGiven || options.record || options.plan || options.trace || options.workers !== null || options.site || options.passThrough.length > 0)) return { error: '--stop takes no run options' };
   if (options.plan && options.record) return { error: '--plan runs nothing to record' };
   return options;
 }
@@ -202,6 +215,20 @@ export function withoutProjects(args) {
 export function siteArguments(site, projects, passThrough) {
   const chosen = site.budgets ? [BUDGETS] : projects.filter((project) => project !== BUDGETS);
   return [...chosen.map((project) => `--project=${project}`), ...(site.budgets ? ['--no-deps'] : []), ...withoutProjects(passThrough)];
+}
+
+/** The workers each site of a run gets: the number asked for, else three for several sites, else the config's (null). */
+export function workersPerSite(workers, sites) {
+  return workers ?? (sites > 1 ? SEVERAL_SITES_WORKERS : null);
+}
+
+/**
+ * The workers argument of a site's `playwright test`: none for the config's own number, for budgets (one worker, as
+ * its project says) and when the arguments after `--` choose the workers themselves.
+ */
+export function workerArguments(workers, site, passThrough) {
+  const chosen = passThrough.some((arg) => arg === '--workers' || arg.startsWith('--workers=') || /^-j\d*$/.test(arg));
+  return workers === null || site.budgets || chosen ? [] : [`--workers=${workers}`];
 }
 
 /**
@@ -634,7 +661,8 @@ async function runAll(options) {
     const planned = new Map(lists.map((list) => [siteLabel(list.site), plannedSeconds(list.tests, times)]));
     const withBudgets = lists.some((list) => list.site.budgets && list.tests.length > 0);
     const active = lists.filter((list) => !list.site.budgets && list.tests.length > 0).map((list) => list.site);
-    say(`${holds.length} tests in ${projects.length} project(s) (${projects.join(', ')}); ${active.length} site(s) side by side${withBudgets ? ', then budgets alone' : ''}`);
+    const workers = workersPerSite(options.workers, active.length);
+    say(`${holds.length} tests in ${projects.length} project(s) (${projects.join(', ')}); ${active.length} site(s) side by side, ${workers ?? "the config's"} workers each${withBudgets ? ', then budgets alone' : ''}`);
     for (const list of lists) {
       say(`  ${siteLabel(list.site).padEnd(10)} ${String(list.tests.length).padStart(4)} tests in ${new Set(list.tests.map((test) => test.file)).size} spec file(s), ${Math.round(planned.get(siteLabel(list.site)) ?? 0)} s of test time planned`);
     }
@@ -654,7 +682,15 @@ async function runAll(options) {
     const startSite = (site) =>
       runner.start({
         label: siteLabel(site),
-        args: [fileURLToPath(import.meta.url), '--site', site.budgets ? BUDGETS : `${site.index}/${site.count}`, ...(options.trace ? ['--trace'] : []), '--', ...siteArguments(site, projects, options.passThrough)],
+        args: [
+          fileURLToPath(import.meta.url),
+          '--site',
+          site.budgets ? BUDGETS : `${site.index}/${site.count}`,
+          ...(options.trace ? ['--trace'] : []),
+          '--',
+          ...siteArguments(site, projects, options.passThrough),
+          ...workerArguments(workers, site, options.passThrough),
+        ],
         env: baseEnv,
         log: join(STATE, `${siteFileLabel(site)}.log`),
         mark: siteLabel(site),

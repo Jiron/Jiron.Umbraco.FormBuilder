@@ -27,7 +27,9 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
 - **The start-up wait:** Umbraco 17 registers its jobs and rebuilds its indexes about a minute after it starts, and
   the tests start only after that (`support/host-health.ts`). The wait ends on a log line that appears whether the
   Content Delivery API is on or off. If the work does not finish, the set-up fails with the reason and the end of
-  the host's log.
+  the host's log. Every host the harness starts does both at once, so the wait is seconds and not that minute:
+  `hostEnvironment` sets Umbraco's `Umbraco:CMS:DistributedJobs:Delay` to zero, and the Testing project puts a rebuild
+  of its own without the delay in place of Umbraco's (`IndexRebuildAtOnceHandler`), so the indexes are rebuilt once.
 - **The hang marker:** when the host's database hung, the run leaves `.local/e2e/host-5520/database-hung.txt`, and
   the gate runs that site's projects once more, on a fresh host. That is the only rerun ("Flaky means broken").
 - **The static page** on `http://127.0.0.1:5521` (`support/static-site.ts`, ADR-0031): a site of its own whose page
@@ -69,13 +71,15 @@ was. With `JFB_E2E_SITES` above 1, each site is a whole copy of the run, and not
 - **`budgets`** runs on no site, but on the budgets site (`JFB_E2E_SITE=budgets`: site 1's ports, `.local/e2e/budgets/`)
   once every site has ended, so nothing else shares the machine while it measures (ADR-0169).
 
-`scripts/e2e-gate.mjs` runs them, four workers each, as one site on SQLite carries (eight on one site failed tests).
-Two sites is the default: on the development machine two already keep the processor busy all the time, and a third
-only made every test slower (19.4 minutes with two, 18.9 with three, each with budgets):
+`scripts/e2e-gate.mjs` runs them. Two sites is the default: on the development machine two already keep the processor
+busy all the time, and a third only made every test slower (19.4 minutes with two, 18.9 with three, each with budgets).
+Several sites get three workers each, where the config's four filled the eight cores with eight browsers and two hosts
+and tests that read a page too early failed; one site keeps the config's four (eight on one site failed tests):
 
 ```
-node scripts/e2e-gate.mjs                  two sites side by side, then budgets alone
+node scripts/e2e-gate.mjs                  two sites side by side, three workers each, then budgets alone
 node scripts/e2e-gate.mjs --sites 3        three sites (1 is the one site of a default run, then budgets)
+node scripts/e2e-gate.mjs --workers 4      Playwright's workers per site
 node scripts/e2e-gate.mjs --plan           what each site would run, checked, without running it
 node scripts/e2e-gate.mjs --record         and rewrite spec-times.json from this run, when it passed
 node scripts/e2e-gate.mjs --trace          and record traces as the config says (retain-on-failure)

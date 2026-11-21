@@ -63,7 +63,7 @@ npx playwright test --project=smoke
 ```
 
 The gate runs them through `scripts/e2e-gate.mjs`: two sites side by side, each a whole copy of the run with its own
-host, ports, database, mail folder, sign-in lock and people, four workers each; every spec file runs on one site,
+host, ports, database, mail folder, sign-in lock and people, three workers each; every spec file runs on one site,
 shared out by the seconds in `e2e/spec-times.json`, the last site taking every spec file the others do not name; then
 the `budgets` project alone. The run fails when a site fails and unless the tests that ran are exactly the tests the
 projects hold, each once; only a site whose database hung runs once more ([e2e/README.md](e2e/README.md#several-sites)).

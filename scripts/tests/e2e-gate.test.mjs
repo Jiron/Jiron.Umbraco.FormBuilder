@@ -21,6 +21,7 @@ import {
   rerunCommand,
   rerunLines,
   runWithRerun,
+  SEVERAL_SITES_WORKERS,
   siteArguments,
   siteEnv,
   siteFileLabel,
@@ -28,6 +29,8 @@ import {
   summaryLines,
   testsOfReport,
   withoutProjects,
+  workerArguments,
+  workersPerSite,
 } from '../e2e-gate.mjs';
 import { siteState } from '../../tests/e2e/support/sites.ts';
 
@@ -171,6 +174,16 @@ describe('parseArgs', () => {
     assert.match(parseArgs(['--sites']).error, /needs a value/);
   });
 
+  test('takes the workers per site of a whole run, 1 to 16, and none for one site or a stop', () => {
+    assert.equal(parseArgs([]).workers, null);
+    assert.equal(parseArgs(['--workers', '4']).workers, 4);
+    assert.equal(parseArgs(['--sites', '1', '--workers', '2']).workers, 2);
+    for (const bad of ['0', '17', '2.5', 'x']) assert.match(parseArgs(['--workers', bad]).error, /1 to 16/, bad);
+    assert.match(parseArgs(['--workers']).error, /needs a value/);
+    assert.match(parseArgs(['--site', '1/2', '--workers', '3']).error, /one site/);
+    assert.match(parseArgs(['--stop', '--workers', '3']).error, /no run options/);
+  });
+
   test('records no trace unless --trace, a whole run or one site', () => {
     assert.equal(parseArgs([]).trace, false);
     assert.equal(parseArgs(['--trace']).trace, true);
@@ -209,6 +222,20 @@ describe("a site's processes", () => {
     assert.deepEqual(siteArguments({ index: 1, count: 1, budgets: true }, projects, []), ['--project=budgets', '--no-deps']);
     assert.equal(siteFileLabel({ index: 2, count: 3, budgets: false }), 'site-2-of-3');
     assert.equal(siteFileLabel({ index: 1, count: 1, budgets: true }), 'budgets');
+  });
+
+  test("run three workers each when there are several sites, the config's for one site, and what was asked for", () => {
+    assert.equal(SEVERAL_SITES_WORKERS, 3);
+    assert.equal(workersPerSite(null, 1), null);
+    assert.equal(workersPerSite(null, 2), 3);
+    assert.equal(workersPerSite(null, 3), 3);
+    assert.equal(workersPerSite(4, 2), 4);
+    assert.equal(workersPerSite(2, 1), 2);
+    const site = { index: 1, count: 2, budgets: false };
+    assert.deepEqual(workerArguments(3, site, ['--grep', 'x']), ['--workers=3']);
+    assert.deepEqual(workerArguments(null, site, []), [], "the config's number");
+    assert.deepEqual(workerArguments(3, { index: 1, count: 1, budgets: true }, []), [], 'budgets keeps its one worker');
+    for (const chosen of [['--workers', '2'], ['--workers=2'], ['-j', '2'], ['-j2']]) assert.deepEqual(workerArguments(3, site, chosen), [], chosen.join(' '));
   });
 
   test('run without the trace recorder, unless the run records or the arguments after -- choose a mode', () => {

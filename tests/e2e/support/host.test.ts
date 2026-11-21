@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { deliveryApiOn, hostEnvironment, INSTRUCTION_PRUNING, INSTRUCTION_SYNC } from './host-env.ts';
+import {
+  deliveryApiOn,
+  DISTRIBUTED_JOBS_DELAY,
+  hostEnvironment,
+  INSTRUCTION_PRUNING,
+  INSTRUCTION_SYNC,
+} from './host-env.ts';
 import { MARKER_NOT_LAST, STARTUP_LINES } from './host-health.ts';
 import { checkPort, demoDll, FAILED_LINES, hostProcessEnvironment, READY_LINES } from './host.ts';
 import {
@@ -135,7 +141,7 @@ test('the host environment turns on what the browser tests need, and the Deliver
   const off = hostEnvironment(secrets, { deliveryApi: false });
   const on = hostEnvironment(secrets, { deliveryApi: true });
 
-  for (const name of ['Endpoints', 'Clock', 'StartupMarker'])
+  for (const name of ['Endpoints', 'Clock', 'StartupMarker', 'IndexRebuildAtOnce'])
     assert.equal(off[`JironFormBuilderTesting__${name}`], 'true', name);
   assert.equal(off.JironFormBuilderTesting__FakeAI, 'Chosen');
   assert.equal(off.JironFormBuilderTesting__StubPort, String(STUB_PORT));
@@ -153,6 +159,17 @@ test("a host of one server reads and prunes cache instructions once a day, and s
   assert.equal(one[INSTRUCTION_PRUNING], '1.00:00:00');
   assert.equal(INSTRUCTION_SYNC in several, false);
   assert.equal(INSTRUCTION_PRUNING in several, false);
+});
+
+test("every host does Umbraco's start-up work at once, one server or several, with the option the C# code reads", () => {
+  assert.equal(DISTRIBUTED_JOBS_DELAY, 'Umbraco__CMS__DistributedJobs__Delay');
+  for (const severalServers of [false, true]) {
+    const env = hostEnvironment(secrets, { deliveryApi: false, severalServers });
+    assert.equal(env[DISTRIBUTED_JOBS_DELAY], '00:00:00');
+    assert.equal(env.JironFormBuilderTesting__IndexRebuildAtOnce, 'true');
+  }
+  const options = source(testingProject, 'FormBuilderTestingOptions.cs');
+  assert.match(options, /public bool IndexRebuildAtOnce \{ get; set; \}/);
 });
 
 test('JFB_E2E_DELIVERY_API is on, off or unset', () => {

@@ -13,6 +13,13 @@ export const INSTRUCTION_PRUNING = 'Umbraco__CMS__Global__DatabaseServerMessenge
 /** What a host of one server waits between two reads, and between two prunings: a day, longer than any run. */
 export const ONE_SERVER_WAIT = '1.00:00:00';
 
+/**
+ * Umbraco's setting for how long it waits after the start before it registers its distributed jobs (a minute unless
+ * set). Its options bind to `Umbraco:CMS:DistributedJobs` (`Constants.Configuration.ConfigDistributedJobs`); the
+ * settings schema in Umbraco's packages calls the section `DistributedJobSettings`, which a host does not read.
+ */
+export const DISTRIBUTED_JOBS_DELAY = 'Umbraco__CMS__DistributedJobs__Delay';
+
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
 export function deliveryApiOn(env: NodeJS.ProcessEnv = process.env): boolean {
   const value = (env.JFB_E2E_DELIVERY_API ?? 'off').trim().toLowerCase();
@@ -49,6 +56,12 @@ export function hostEnvironment(
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // Umbraco's two pieces of start-up work, the distributed jobs' registration and the index rebuild, each start a
+    // minute after the start; the start-up wait (support/host-health.ts) waits for both lines all the same, so the
+    // host does them at once and no test idles through that minute (ROADMAP 24.1). The Testing project puts its own
+    // rebuild without the delay in place of Umbraco's (IndexRebuildAtOnceHandler).
+    [DISTRIBUTED_JOBS_DELAY]: '00:00:00',
+    JironFormBuilderTesting__IndexRebuildAtOnce: 'true',
     // The AI add-on's fake provider, its connection and chat profile chosen in Settings > AI (ROADMAP 15.3, ADR-0018).
     JironFormBuilderTesting__FakeAI: 'Chosen',
     // The extension samples the backoffice specs show (ROADMAP 15.1, ADR-0234): a site's own setting editor, field
