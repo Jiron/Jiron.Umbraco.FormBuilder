@@ -129,7 +129,9 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(outcomeHtml.QuerySelector("#jfb-1 .jfb-reference")!.TextContent, Does.StartWith("Your reference is "));
             Assert.That(outcomeHtml.QuerySelector("#jfb-1 [data-jfb-continue]"), Is.Null, "a message alone");
             Assert.That(outcomeHtml.QuerySelector("form#jfb-2"), Is.Not.Null, "the page's other form, as for any visitor");
-            Assert.That(location, Does.Not.Contain("Ada"));
+            // The long answer, not "Ada": the token is random letters and digits, and three of them spell a short
+            // name about once in a thousand runs, which failed this test on 2026-11-21 (ROADMAP 24.1).
+            Assert.That(location, Does.Not.Contain("Lovelace"), "no answer in the address");
         });
     }
 
