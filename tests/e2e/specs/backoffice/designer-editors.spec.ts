@@ -95,7 +95,7 @@ test("a field's tag goes into a heading through the picker, and a consent's word
   await tags.getByRole('button', { name: 'Your name {{ field.name }}' }).click();
   await expect(tags).toBeHidden();
   await expect(heading).toHaveValue('Welcome, {{ field.name }}');
-  expect(await holdsFocus(heading)).toBe(true);
+  await expect.poll(() => holdsFocus(heading)).toBe(true);
 
   await fieldAt(design, 2).click();
   const wording = inspector.getByRole('textbox', { name: 'Consent text' });
@@ -104,6 +104,9 @@ test("a field's tag goes into a heading through the picker, and a consent's word
   await inspector.getByRole('button', { name: 'Insert merge tag' }).click();
   await tags.getByRole('button', { name: 'Name of the form {{ form.name }}' }).click();
   await expect(tags).toBeHidden();
+  // The picker gives the focus back to the text before the next key: typed earlier, the first letters go nowhere (a
+  // busy run lost ", I").
+  await expect.poll(() => holdsFocus(wording)).toBe(true);
   await page.keyboard.type(', I agree to the ');
   await inspector.getByRole('button', { name: 'Bold' }).click();
   await expect(inspector.getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true');
