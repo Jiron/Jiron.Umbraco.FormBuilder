@@ -87,6 +87,24 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
 
+### 17.0.0-beta.1 (2026-11-22)
+
+The first beta, for Umbraco 17.6 or later (within 17). A site on 17.0.0-alpha.1 keeps its forms, entries and
+settings: the upgrade was tested from that version's schema with data.
+
+- **Migrations:** none. The plan still ends at `jfb-015-entry-site`, and the released schema stays
+  `baseline/schema-v2` ([how upgrades are tested](upgrade-testing.md)).
+- **Theme views:** every view still carries contract version 1.
+- **To check:**
+  - The website runtime may weigh up to 100 KB gzip with every feature (it was 60 KB); what every page with a form
+    loads first stays within 16 KB.
+  - A package's menu item that named the Settings menu is now a tab at the end of Settings' tabs
+    ([extending.md](extending.md)).
+  - Saving a form for later answers with a `resume` value in the public API, which the next save and the entry send
+    back.
+  - A user group other than the administrators needs its permissions in Form Builder › Settings › Access, as
+    before; its screen in Umbraco's Users › User groups now shows them ([permissions.md](permissions.md)).
+
 ### 17.0.0-alpha.1 (2026-11-13)
 
 The first prerelease, for Umbraco 17.6 or later (within 17). There is nothing to upgrade from: install it on a site

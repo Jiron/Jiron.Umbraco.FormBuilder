@@ -1394,3 +1394,32 @@ its reason, and a handover block at the end of every phase.
 - **Open for the owner** (`docs/OWNER-TODO.md`, unchanged): the items of publishing. On the first site, the
   permissions of the owner's own group in Settings > Access, and a new pack if this step is wanted there. The ten
   findings from the first site and the SQLite driver note still wait until after the release.
+
+- 2026-11-22 · owner message · after 25.1 the owner said yes to that version on the first site and to their own
+  group's permissions there. A local pack `17.0.0-dev.202611222036` of d76d950a (nothing was published) replaced the
+  one of the morning; it differs in the backoffice only and has no migration. **Rehearsed** on a throwaway copy of
+  the site, published from the staged tree and started through the site's own start script on an empty database:
+  the Form Builder view is on a user group's screen and its link opens Settings > Access, the form refused an
+  incomplete send and took a whole one with and without JavaScript, and the site's log had no error. **Deployed:**
+  the site was down for 32 s and came back on the new pack (its page and the package manifest say the version); on
+  the live site the form refused an incomplete send with and without JavaScript and fits a phone. **Not done:** the
+  group's permissions were not ticked. After the deploy the owner's browser was signed out of the site's backoffice,
+  and the password is theirs to type. No file of this repository changed but this log.
+
+- 2026-11-22 · owner message · the owner signed in to the first site's backoffice again and said to go. In Settings >
+  Access there, their own group got every permission but Manage permissions, as offered and agreed: the ten boxes
+  ticked, "Access is saved", and still ticked after the page was read again. On that group's screen in Umbraco the
+  Form Builder view of 25.1 lists the ten by part and links to Settings > Access. **Not seen:** the section as a
+  user of that group, whose password is theirs. No file of this repository changed but this log.
+
+- 2026-11-22 · owner message · the owner said "Yes, cut beta.1". **17.0.0-beta.1** is cut as `docs/releasing.md`
+  has it: the changes since 17.0.0-alpha.1 moved from Unreleased to the version's section of `CHANGELOG.md`, the
+  upgrade notes say that it runs no migration (the plan still ends at `jfb-015-entry-site`, the definition schema is
+  still 1, so the released schema stays `baseline/schema-v2` and no new baseline tag or fixture is due), and the
+  props named the version (d15f2fe4). On exactly that version the install test passed on Umbraco 17.7.1 (18 checks,
+  run and published, 237 s) and on the floor, 17.6.0, with the update after it (18 and 4 checks, 296 s); the clean-
+  clone verification had passed that day on cbcddb2f, which differs from the release commit in documents and in the
+  name of the version only. The
+  tag `v17.0.0-beta.1` is on d15f2fe4 and pushed; `main` names `17.0.0-beta.1.dev` since. **Not seen:** the release
+  workflow's run on GitHub, which nobody can watch from this machine. **Nothing is published:** the publish job
+  runs only with the owner's variable, and the repository is private (`docs/OWNER-TODO.md`).

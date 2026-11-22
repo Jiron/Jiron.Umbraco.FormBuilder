@@ -233,3 +233,8 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   files, the four `.nupkg` and the three `.snupkg` (the meta package has no code, so no symbols), with the notes of
   `CHANGELOG.md`'s section. Publish the draft only when the version should be visible; nothing reaches nuget.org until
   `JFB_NUGET_PUBLISH` is set ([releasing.md](releasing.md)). Nobody could watch the run from the development machine.
+  **The tag `v17.0.0-beta.1` was pushed on 2026-11-22** (the owner: "Yes, cut beta.1") and starts the same run: check
+  it the same way. Its install tests passed on the development machine on exactly that version, on Umbraco 17.7.1
+  and on the floor, 17.6.0. If the variables of publishing are set before a tag is pushed, that tag's run publishes;
+  a tag pushed before them stays unpublished, so `17.0.0-beta.1` reaches nuget.org only by a run started again
+  after they are set, or by hand.
