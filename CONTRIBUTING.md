@@ -61,6 +61,11 @@ npm run build
 npm run size
 ```
 
+`npm test` gives every test a minute, which is a hang's limit and no measure: the gate runs these tests beside the
+.NET build, where a test takes several times what it takes alone. A test must not depend on how long something takes;
+what holds the product to a time budget is the browser tests' `budgets` project and the integration tests marked
+`Timed`, which run alone.
+
 `node scripts/pack.mjs` builds the client for the version it packs and writes the packages to
 `.local/nuget-feed`. A plain `dotnet pack` refuses client assets that are missing, stale or built for
 another version (`JFB001`).
