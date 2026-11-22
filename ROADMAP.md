@@ -3497,6 +3497,26 @@ The owner, before the first release (2026-11-22): on the first site they made a 
     - `v18/main` has the step merged in, and its unit and client tests and the user group view's browser test pass there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
+### Phase 26: The workflow passes where it runs
+
+The owner, after 17.0.0-beta.1 was tagged (2026-11-23): "Yes, fix CI". Seen that day in the owner's browser (WORKLOG): the release run of `v17.0.0-beta.1` failed in CI, as the run of `v17.0.0-alpha.1` had, so neither tag has a draft release. It was the first time the workflow's tests ran on Linux and on SQL Server; everything before ran on one Windows machine with SQLite. What failed: a script test of the lanes' PID file on Linux; four rendering fixtures whose culture data (a time pattern, the countries) Linux writes differently; a time zone the browser lists under an older name, which a Linux server refuses; the blob store's tests without their emulator; on SQL Server, queries past their budget that are not stopped as the tests expect, a date outside SQL Server's `datetime` in the answers of Insights, and the answer summaries of 100,000 entries at 3.95 s against 1 s; and the browser jobs' test host, whose fake AI is set up before the AI package has made its tables. The owner allowed Docker on the development machine for Linux runs and the download of the run's artifact.
+
+- [ ] **26.1 The workflow's tests pass on Linux and on SQL Server, a release run drafts its release, and phase review** (the owner, 2026-11-23)
+  - **Each failure at its cause:** what is a fault of the product (the time zone on a Linux server, the date on SQL Server, a budget that does not stop a query there, if that is what it is) is fixed in the product with a test that fails without the fix; what is a fault of a test or of the workflow is fixed there. No test is skipped on a system to make it pass.
+  - **No test depends on the system's culture data:** a fixture or an expectation that holds what the operating system's ICU writes (date and time patterns, region names, a culture's sort order) is compared so that Windows and Linux agree, and a test of the product's own says what it does with each form the systems write.
+  - **Linux on the development machine:** a script runs the workflow's Linux steps in a container (the build job's checks and tests, the integration tests on SQLite, the browser smoke tests), so a Linux failure is found before a run on GitHub; `tests/README.md` says how. It makes no SQL Server.
+  - **The answer summaries' budget on SQL Server:** measured again on the workflow's runner once the rest passes; then the query is made to meet its budget, or an ADR says what the budget is on which hardware and why.
+  - **Told:** CHANGELOG, `docs/STATUS.md`, `docs/OWNER-TODO.md` and the testing guides follow; `v18/main` gets it by merge.
+  - Done when:
+    - in a Linux container on the development machine, the build job's script tests, the client's lint, tests and build, the Release build, the unit and AI tests, every share of the integration tests on SQLite and the browser smoke tests pass, each with the command the workflow runs;
+    - a Linux server saves a time zone the browser lists under an older name and gives it back as it was saved, with a test that fails without the fix on Linux;
+    - the answers of Insights are read on SQL Server without a date it cannot hold, with a test of the query's parameters that runs on SQLite too;
+    - a dry run of the release workflow on GitHub (Run workflow) passes every CI job, the SQL Server shares and load balancing among them, and packs; its run is read in the owner's browser and its job times are in `docs/STATUS.md`;
+    - the tag of the next prerelease is pushed, its release run passes and drafts a release with seven files, read in the owner's browser;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the step merged in, and its unit and client tests pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+
 ---
 
 ## 6. Definition of done for the first release
