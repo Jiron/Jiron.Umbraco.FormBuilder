@@ -84,22 +84,25 @@ release calls that workflow, so the first release would have met the limit. And 
   each share a job of its own.
 - **Tests that measure time run alone.** A test that holds the product to a time budget is marked as such and runs
   after the shares, with nothing beside it, as the browser tests' `budgets` project already does.
-- **Browser tests against two sites.** A run starts two sites (one to three by its argument), each with its own
-  ports, database, mail folder, sign-in lock and credentials, and gives every spec file to exactly one of them; four
-  workers per site as before. Two is what the development machine's cores carry; more sites need more cores, not
-  more ports. `budgets` runs once, after everything, alone. The tests that ran are checked against the tests the
-  projects hold, as for the shares.
+- **Browser tests against two sites.** A run starts two sites (one to three by its argument), each with its own ports,
+  database, mail folder, sign-in lock and credentials, and gives every spec file to exactly one of them. Two is what
+  the development machine's cores carry; more sites need more cores, not more ports. `budgets` runs once, after
+  everything, alone. The tests that ran are checked against the tests the projects hold, as for the shares.
 - **The gate records no trace.** The gate's runner turns the recorder off and prints, for a failed test, the command
   that runs it again with its trace; a developer's own run records as before, and the screenshot of a failure stays.
   A failure that does not come again leaves its message, its screenshot and the host's log, and no trace: that is the
   price, taken because the recorder slowed every passing run by a fifth and changed the timing the tests met.
-- **The test hosts do Umbraco's start-up work at once.** A site's first test started 79 s after its host: 17 s to
-  start, the rest the start-up wait idling through the minute after which Umbraco registers its distributed jobs
-  (`Umbraco:CMS:DistributedJobs:Delay`, a setting) and rebuilds its indexes (a minute fixed in its handler of the
-  started notification). Every host the harness starts sets the first to zero, and the Testing project takes
-  Umbraco's handler out and rebuilds the same indexes itself with no delay, once per host; a host whose Umbraco no
-  longer has that handler stops at start-up rather than rebuild twice. The wait stays as strict, both lines and the
-  settle time (ADR-0011, ADR-0253): only the idling goes. One site's set-up went from 81 s to 22 s.
+- **The test hosts do Umbraco's start-up work as soon as their own seeding has finished.** A site's first test
+  started 79 s after its host: 17 s to start, the rest the start-up wait idling through the minute after which
+  Umbraco registers its distributed jobs (`Umbraco:CMS:DistributedJobs:Delay`, a setting) and rebuilds its indexes (a
+  minute fixed in its handler of the started notification). With `JironFormBuilderTesting:StartupWorkAtOnce`, the
+  Testing project takes Umbraco's rebuild handler and its jobs' hosted service out, and starts the same rebuild,
+  once per host, and Umbraco's jobs service with no delay once every seeder of the host has reported. That goes by
+  order and not by time. With the jobs started at once, their first run came five seconds later, while the seeding
+  could still be writing users, and on the Umbraco 18 line four hosts of twelve hung there on SQLite. A host whose
+  Umbraco no longer has either of the two to take out stops at start-up rather than run them twice. The wait stays as
+  strict, both lines and the settle time (ADR-0011, ADR-0253): only the idling goes. One site's set-up went from
+  81 s to 22 s.
 - **Three workers per site on two or three sites.** Four each put eight browsers and two hosts on eight cores: the
   tests' own time rose to 5,100 s, and three of five whole runs failed on tests that read a page too early (each fixed
   at its cause). Three each took 4,355 s and passed, 70 s longer. One site keeps the config's four.
@@ -117,7 +120,17 @@ release calls that workflow, so the first release would have met the limit. And 
 ## Consequences
 
 - The gate's time is the longest share's and not the sum; the target on the development machine is under 30 minutes
-  where it was 67 without a second browser run. `docs/STATUS.md` says what it measures.
+  where it was 67 without a second browser run. **Measured on 2026-11-21 and 22,** two whole runs in a row on
+  `8809766a`, no test failing and no site run twice: 1,729 s and 1,671 s; and two in a row on the final work commit,
+  `f2c19a25`: 1,746 s and 1,753 s (29 min 6 s and 29 min 13 s). By stage in the last: checks and builds 79 s, the
+  client's lint and tests beside the .NET build 158 s, unit and integration tests 599 s, browser tests 917 s. The
+  same stages took 320 s, 2,256 s and 1,380 s before, one after the other. Eight passing runs took between 1,671 s
+  and 1,815 s, the slowest inside a clean-clone verification that fetches every package anew: the same tests take
+  up to 15% longer from one run to the next, so the half hour holds with about a minute to spare.
+  `docs/STATUS.md` names the runs.
+- Moving a check between the lanes buys nothing by itself: the .NET formatting check (85 to 114 s) was tried in the
+  first group of lanes, where it slowed the client's build by as much as it freed after the .NET build. The lanes
+  share one processor; what is left to gain is in the two long stages.
 - A phase review's three long runs shrink with it.
 - The processes share the cores, so a single test takes longer than alone. Nothing but the marked tests may depend on
   how long something takes; a test that does and is not marked is a fault of the test. The first runs on two sites
@@ -127,5 +140,34 @@ release calls that workflow, so the first release would have met the limit. And 
   number of shares per job is the script's argument and not a constant.
 - More than one site at once needs more memory and ports: the port table in `tests/e2e/support/paths.ts` stays the
   one place they are given out, inside 5500 to 5599.
-- **Removed or folded:** kept current by 24.1 as the list of each test that went, with the test that still runs its
-  behaviour.
+- The coverage run goes through the shares too, and its first run there wrote no report: `dotnet test` on a built
+  assembly is not told where the test SDK's collector is. The run now names the collector's folder, read from the
+  restore, and fails when a process leaves test results and no report. Core stood at 97.6% of its lines through the
+  shares, 35,800 of 36,681, the figure of the run in one process before.
+- More whole runs in a day meet the rare faults sooner. The first clean-clone run failed on a test that asked a
+  redirect's address not to hold "Ada": the address carries a random token, and three of its characters spell a name
+  that short about once in two thousand runs. The check asks for the long answer now. The second failed on a client
+  test beside the .NET build: it looked a moment after a request to find a dialog still closed, and the moment
+  outlasted the 200 ms the dialog waits. It and its sibling now measure the time from the request to the dialog.
+  The third failed on a browser test that ran axe over Umbraco's toast while it was still clear: the toast has its
+  box before it fades in, so it was "visible" with no animation running yet. The test waits for full opacity now.
+- **The client's tests get a minute each, not the runner's five seconds.** Beside the .NET build a test takes
+  several times what it takes alone, more so in a fresh clone: one that compares 5,000 templates and one that pauses
+  three times for the designer's 400 ms ran past five seconds and failed a gate, measuring nothing. The limit is
+  a hang's now, set where `npm test` starts the runner. What holds the product to a time is still tested where
+  nothing else runs: the `budgets` project and the `Timed` tests.
+- **The Umbraco 18 line on SQLite** met a fault of its own in these runs, beyond the start-up order above: a write
+  that begins by reading can wait for good when another connection commits in between (a publish that never came
+  back on a test site, and a write refused as "database is locked", for which a site's tests run once more). It
+  was there before this work, as the 18 line's gate of 2026-11-19 shows. `docs/STATUS.md` and `docs/OWNER-TODO.md`
+  say what is known and what is not.
+- A settings test took a save for landed when a "saved" toast stood, which could be the toast of the save before;
+  on a busy 18 host its read came first. Each save waits for the answer to its own request now.
+- **Removed or folded: nothing.** 24.1 measured what each layer costs and found no removal that would pay. The
+  15,500 unit and client tests take two and a half minutes together. Folding the 264 table rows of the integration
+  tests would save their starts only, about half a minute of the gate now that eight processes share them, and a
+  failure would then name the table and not the row. The 590 browser tests take fifteen minutes on two sites, so
+  taking out a tenth of them would save a minute and a half; they were not read one by one for overlap, which that
+  saving does not pay for. The gate went from 67 minutes to under 29 with every test it had and a few
+  more (2,316 integration tests where there were 2,313, and the tests of the new runners). Should a later step
+  remove a test under the rule above, it lists it here with the test that stays.
