@@ -1423,3 +1423,31 @@ its reason, and a handover block at the end of every phase.
   tag `v17.0.0-beta.1` is on d15f2fe4 and pushed; `main` names `17.0.0-beta.1.dev` since. **Not seen:** the release
   workflow's run on GitHub, which nobody can watch from this machine. **Nothing is published:** the publish job
   runs only with the owner's variable, and the repository is private (`docs/OWNER-TODO.md`).
+
+- 2026-11-23 · owner message · the owner said to look at the release run on GitHub in their browser ("take ur time u
+  can go thru everything u need"), and asked whether the runs are free. **Seen, read only:** Release #2 of
+  `v17.0.0-beta.1` (d15f2fe4) failed after 21 min; 13 of its CI jobs failed, so Pack, Draft GitHub Release and
+  Publish did not run. Release #1 of `v17.0.0-alpha.1` had failed too, after 22 min, unseen since 2026-11-13. The
+  CI runs of pushes are skipped, as `JFB_CI` is not set. It is the first time the workflow's tests ran anywhere but
+  on this Windows machine, and what failed is of eight kinds:
+  1. **Build, checks and tests:** `scripts/tests/lanes.test.mjs:170`, "records its processes in the PID file while
+     they run", fails on Linux (its lane never finds its own process in the file and leaves with code 3). The job
+     stops there, so the client's lint, tests and build, the .NET build and the unit tests have still never run
+     on Linux.
+  2. **The rendering fixtures** differ on Linux, in English and German: `ElementFixtureTests`, `ErrorFixtureTests`,
+     `CalculationFixtureTests` and `RecallFixtureTests`. The first differences are a culture's time pattern and
+     the list of countries, which the two systems' culture data write differently.
+  3. **`SettingsApiTests.ATimeZoneFromTheList_Saves…`:** Linux does not resolve the zone the test saves under an
+     older name (`America/Buenos_Aires`).
+  4. **`BlobFileStoreTests`** (every test): "Azurite is missing"; the integration jobs do not install it.
+  5. **On SQL Server, a query past its budget** answers with the provider's error where `AuditRepositoryTests` and
+     `EntryQueryRepositoryTests` expect the query timeout or a cancellation (five tests).
+  6. **On SQL Server, `InsightApiTests.TheAnswers_NeedTheRightToViewTheFormsEntries…`:** "SqlDateTime overflow".
+  7. **On SQL Server, the timed share:** the answer summaries of 100,000 entries took 3.95 s against 1 s.
+  8. **Browser smoke tests and load balancing:** the test host logged "Jiron Form Builder fake AI failed" at its
+     start; the reason is further up in the host's log, which is in the run's artifacts and was not downloaded.
+  Kinds 5 and 6 may be faults of the product on SQL Server; the others are the tests' or the workflow's. **Cost:**
+  the run's usage page says 4 h 21 min 42 s over its jobs; the account's billing page shows
+  this month's metered usage wholly covered by what the plan includes. **Not done:** nothing was changed, on
+  GitHub or here but this log and the owner's list; no artifact was downloaded; the full logs of the failed tests
+  were not read, only the ends the pages show.

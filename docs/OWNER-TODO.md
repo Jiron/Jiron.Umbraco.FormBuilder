@@ -238,3 +238,8 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   and on the floor, 17.6.0. If the variables of publishing are set before a tag is pushed, that tag's run publishes;
   a tag pushed before them stays unpublished, so `17.0.0-beta.1` reaches nuget.org only by a run started again
   after they are set, or by hand.
+  **Seen on 2026-11-23, in the owner's browser on their word:** both release runs failed in CI, #1 of
+  `v17.0.0-alpha.1` after 22 minutes and #2 of `v17.0.0-beta.1` after 21, so neither tag has a draft release and
+  nothing was packed there. Run #2 used 4 h 22 min of runner time over its 26 jobs; the account's plan covered it.
+  What failed in #2 is in `docs/WORKLOG.md` under that date: it is the first run of the workflow's tests on Linux
+  and on SQL Server, and none of it is something the gate on the development machine can show.
