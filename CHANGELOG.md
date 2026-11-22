@@ -7,6 +7,13 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.0-beta.1] - 2026-11-22
+
+The first beta of Jiron Form Builder for Umbraco 17.6 or later (within 17), on .NET 10, with SQLite or SQL Server. A
+first site outside the demo has run it since 2026-11-19. Its database schema is the one 17.0.0-alpha.1 released, so
+an upgrade from that version runs no migration and keeps its data. It is still a preview: expect changes before
+17.0.0.
+
 ### Added
 
 - **Save and continue later** on the website: a form can offer visitors a link by email to finish later, on the page
