@@ -11,6 +11,19 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 // answers check every page they show, also where the page runs no script.
 
 /**
+ * Waits until nothing on the page is fading or moving: axe measures what a visitor reads, and a colour halfway through
+ * a transition (a choice just picked, an error fading in) reads as too little contrast. An animation that never ends,
+ * a spinner, is left to run. A spec that calls axe itself calls this first.
+ */
+export async function settled(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((animation) => animation.playState !== 'running' || animation.effect?.getTiming().iterations === Infinity),
+  );
+}
+
+/**
  * Axe's WCAG 2.2 A and AA rules on the whole page, once the theme's fades have ended. Axe runs as a script of the page,
  * which a page without JavaScript runs none of: its markup is then checked in a twin with the same address, the same
  * size and the same stylesheets, whose own scripts are blocked, so neither the runtime nor the site's scripts run.

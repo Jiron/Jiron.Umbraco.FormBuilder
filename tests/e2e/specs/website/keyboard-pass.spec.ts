@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { fillForm, logicCome } from '../../support/form.ts';
 import { pageOf, pathOf, formPages } from '../../support/demo-content.ts';
 
@@ -297,6 +298,7 @@ for (const theme of THEMES) {
       await holdsLaterFocusShown(page);
       await page.goto(urlOf(theme, scheme));
 
+      await settled(page);
       const result = await new AxeBuilder({ page })
         .include('main form.jfb-form')
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { randomInt, randomUUID } from 'node:crypto';
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
-import { axe } from '../../support/axe.ts';
+import { axe, settled } from '../../support/axe.ts';
 import { pageOf, pathOf } from '../../support/demo-content.ts';
 import { fillForm, press, pressOnThePage } from '../../support/form.ts';
 
@@ -28,6 +28,7 @@ const formOf = (page: Page): Locator => page.locator('main form.jfb-form');
 
 /** Axe's WCAG 2.2 A and AA rules on the backoffice page, the violations inside the picker's elements only. */
 async function axeOnThePicker(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

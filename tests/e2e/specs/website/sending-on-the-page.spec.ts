@@ -2,6 +2,7 @@ import type { Locator, Page, Route } from '@playwright/test';
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { logicCome, pressOnThePage } from '../../support/form.ts';
 import { formPages, pathOf, type Language } from '../../support/demo-content.ts';
 
@@ -40,6 +41,7 @@ async function answersKept(form: Locator): Promise<void> {
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

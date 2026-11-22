@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { pageOf, pathOf } from '../../support/demo-content.ts';
 
 // The unstyled theme on the demo's specimen, a form with a field of every type (ROADMAP 6.3c, ADR-0015, ADR-0107):
@@ -51,6 +52,7 @@ async function check(page: Page, width: number, what: string): Promise<void> {
     scrollWidth,
     `${what} scrolls sideways: ${(await outsideTheWindow(page, width)).join(', ')}`,
   ).toBeLessThanOrEqual(width);
+  await settled(page);
   const axe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

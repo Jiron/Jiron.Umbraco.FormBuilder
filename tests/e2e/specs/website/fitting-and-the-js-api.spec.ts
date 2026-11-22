@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { formPages, pathOf, type Language } from '../../support/demo-content.ts';
 
 // Fitting a form to its page, and the developer surface (ROADMAP 6.4l, ADR-0022, section 4.9). The ground check: a form
@@ -33,6 +34,7 @@ async function rewrite(page: Page, change: (html: string) => string): Promise<vo
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
