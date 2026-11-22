@@ -1405,3 +1405,9 @@ its reason, and a handover block at the end of every phase.
   the live site the form refused an incomplete send with and without JavaScript and fits a phone. **Not done:** the
   group's permissions were not ticked. After the deploy the owner's browser was signed out of the site's backoffice,
   and the password is theirs to type. No file of this repository changed but this log.
+
+- 2026-11-22 · owner message · the owner signed in to the first site's backoffice again and said to go. In Settings >
+  Access there, their own group got every permission but Manage permissions, as offered and agreed: the ten boxes
+  ticked, "Access is saved", and still ticked after the page was read again. On that group's screen in Umbraco the
+  Form Builder view of 25.1 lists the ten by part and links to Settings > Access. **Not seen:** the section as a
+  user of that group, whose password is theirs. No file of this repository changed but this log.
