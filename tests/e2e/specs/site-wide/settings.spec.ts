@@ -78,6 +78,20 @@ const saveIn = async (screen: Locator) => {
   await screen.getByRole('button', { name: SAVES[tag], exact: true }).click();
 };
 
+/**
+ * Saves a screen and waits for the server's answer, then for the toast. The toast alone says too little: the one of the
+ * save before may still stand, and a read right after it met the settings before this save had landed (a busy host,
+ * ROADMAP 24.1).
+ */
+const save = async (screen: Locator, page: Page) => {
+  const answered = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes(`${API}/settings/`),
+  );
+  await saveIn(screen);
+  expect((await answered).ok(), 'the save is taken').toBe(true);
+  await saved(page);
+};
+
 test.describe.configure({ mode: 'serial' });
 
 test('Settings \u203a General keeps draft saves, picks the time zone from the list, and lets a site keep its own', async ({
@@ -123,8 +137,7 @@ test('Settings \u203a General keeps draft saves, picks the time zone from the li
     await days.fill('30');
     await count.fill('5');
     await zone.selectOption(buenosAires);
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     await page.reload();
     await expect(days).toHaveValue('30', { timeout: 60_000 });
     await expect(zone).toHaveValue(buenosAires);
@@ -138,13 +151,11 @@ test('Settings \u203a General keeps draft saves, picks the time zone from the li
     await expect(days).toHaveCount(0);
     await zone.selectOption('Europe/Lisbon');
     await expect(screen.getByText('This site has its own value.')).toBeVisible();
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     expect((await read(api, 'general', site!.key)).overrides).toContain('timeZone');
     await screen.getByRole('button', { name: 'Use the value for all sites' }).click();
     await expect(zone).toHaveValue(buenosAires);
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     expect((await read(api, 'general', site!.key)).overrides).not.toContain('timeZone');
     await axeInside(page, 'jfb-settings-general');
   } finally {
@@ -213,8 +224,7 @@ test('Settings \u203a Spam protection names the keys a captcha lacks and the key
     await expect(screen.getByRole('textbox', { name: 'Puzzle strength' })).toHaveValue('16');
     await screen.getByRole('radio', { name: 'Follow a Cookiebot category' }).check();
     await screen.getByRole('combobox', { name: 'Cookiebot category' }).selectOption('marketing');
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     const now = await read(api, 'protection');
     expect([now.values['level'], now.values['captchaConsent'], now.values['cookiebotCategory']]).toEqual([
       'proofOfWork',
@@ -252,8 +262,7 @@ test("Settings \u203a Files keeps its types and its largest file under the host'
     await expect(screen.locator('#setting-maxFileBytes-why')).toContainText('up to 50');
     await size.fill('20');
     await screen.getByRole('checkbox', { name: 'Archives' }).uncheck();
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     const now = await read(api, 'files');
     expect(now.values['maxFileBytes']).toBe(20 * 1_048_576);
     expect(now.values['allowedTypes']).toEqual(['images', 'pdf', 'office', 'text']);
@@ -284,8 +293,7 @@ test('Settings \u203a Integrations takes a secret only as a reference, and says 
     await expect(screen.locator('#setting-signingSecret-why')).toContainText('never the secret itself');
     await secret.fill('$JironFormBuilder:Secrets:SettingsTest');
     await secret.blur();
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     await expect(
       screen.getByText('Not in host configuration yet: JironFormBuilder:Secrets:SettingsTest'),
     ).toBeVisible();
@@ -307,8 +315,7 @@ test('Privacy \u203a Data collection saves the insights switch', async ({ page, 
   try {
     await expect(insights).toBeChecked({ checked: before.values['insights'] === true });
     await insights.click();
-    await saveIn(screen);
-    await saved(page);
+    await save(screen, page);
     expect((await read(api, 'privacy')).values['insights']).toBe(before.values['insights'] !== true);
   } finally {
     await restore(api, 'privacy', before);
