@@ -1354,3 +1354,19 @@ its reason, and a handover block at the end of every phase.
   the SQLite driver note above wait, as the owner said, until after the release.
 
 - 2026-11-22 · owner message · after 24.1 the owner asked for the package as it stands to be tested on the first site and deployed there, and for what publishing still needs. A local pack `17.0.0-dev.202611221242` of 0fddabcc (nothing was published) replaced the one of 2026-11-19 in that site; since that pack the product changed in one place, the runtime fix of 3dc00ec7, and has no new migration. **Rehearsed first** on a throwaway copy of the site: installed with the old pack, two entries sent, then the new build published over the same database and started through the site's own start script. Its update step found the package's database up to date; the form refused an incomplete send and took a whole one, with and without JavaScript, on a desktop and a phone; the backoffice listed all four entries; the site's log had no error. On the old pack a wrong address typed and left while the form's logic was held back got no error, on the new one it got its error at the field. **Deployed:** the site was down for 36 s and came back on the new pack (`JironFormBuilder.version` on its page). On the live site the same checks passed short of a whole send. **Not done:** a whole send on the live site, and reading its log and its backoffice after the deploy: the owner's browser was signed in to neither the site's backoffice nor its host, so it could not be seen whether a send would mail the site's customer. No file of this repository changed but this log, and the roadmap stays at 228 of 228.
+
+- 2026-11-22 · owner message · the owner had made a user group of their own on the first site for the person who
+  will manage it, signed in as that user and found every place of the section refused, with no switch for it on
+  Umbraco's user group screen; they asked whether the setting exists and whether it works. **Checked on the demo**
+  in Edge: a new group with Content, Media and the Form Builder section and a user in it. Before any grant the user
+  saw what the owner saw: "You can't see any forms yet", and on Library, Settings and Activity "This needs the …
+  permission. An administrator can grant it in Settings > Access". As the administrator, Form Builder's own
+  Settings > Access listed the group as a column; Design forms, View entries, Edit entries and Manage the library
+  ticked and saved there, the same user then saw every form, the Inbox with its entries and the Library, and
+  Settings and Activity stayed refused, as they should. So the model works as ADR-0013 and `docs/permissions.md`
+  describe it. **Three findings**, which wait with the ten from the first site: (11) the refusals say "Settings >
+  Access" without naming Form Builder, to a user who sees no Settings place in the section, so an administrator
+  looks in Umbraco's own settings or on the user group; (12) Umbraco's user group screen says nothing about Form
+  Builder once the section is added, although a group needs a second step; (13) Privacy > People, opened by its
+  address without the privacy tools permission, shows its search, and Find then says "The entries couldn't be
+  found" where the server answered 403. The test group was removed and the demo reset; no product file changed.
