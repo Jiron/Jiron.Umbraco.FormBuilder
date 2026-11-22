@@ -29,6 +29,9 @@ async function choose(form: Locator, name: string, value: string): Promise<void>
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  // A choice just picked changes its colours over the theme's transition; axe measures what the visitor reads after
+  // it, not a frame of it (a busy run caught the "no" of the guests' question halfway, as too little contrast).
+  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'));
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
