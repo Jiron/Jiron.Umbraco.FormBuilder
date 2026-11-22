@@ -6,8 +6,8 @@ hours to half an hour and the change that leads an administrator to a user group
 it is tested, what the budgets measured, what it does not do yet, and what only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
-`17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
-`18.0.0-alpha.0`. Nothing is published, and the repository is private.
+`17.0.0-beta.1.dev`; its prereleases `17.0.0-alpha.1` and, since 2026-11-22, `17.0.0-beta.1` are tagged. `v18/main`
+is the Umbraco 18 line at `18.0.0-alpha.0`. Nothing is published, and the repository is private.
 
 **The simpler backoffice you asked for on 2026-11-16 is built:** Phase 22 of the roadmap, four steps
 ([ADR-0254](decisions/0254-a-simpler-backoffice.md)). [The concept](ux/simpler-backoffice.md) says what became of each
@@ -277,8 +277,8 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    protect `main`.
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true`, raise the Dependabot limits, and check the first run:
    the first on Linux, and the first of the parts above that never ran.
-4. **Check the draft release** of `v17.0.0-alpha.1` under Actions › Release and Releases: seven files and the changelog's
-   notes.
+4. **Check the draft releases** of `v17.0.0-alpha.1` and `v17.0.0-beta.1` under Actions › Release and Releases: seven
+   files each and the changelog's notes.
 5. **Publishing:** reserve the NuGet prefix `Jiron.`, create the trusted-publishing policy and set `JFB_NUGET_USER` and
    `JFB_NUGET_PUBLISH`, then publish and validate both Marketplace listings ([releasing.md](releasing.md)).
 6. **Real-world checks** of the stubbed services and screen readers above, and of how GitHub and nuget.org render the

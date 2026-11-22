@@ -1411,3 +1411,15 @@ its reason, and a handover block at the end of every phase.
   ticked, "Access is saved", and still ticked after the page was read again. On that group's screen in Umbraco the
   Form Builder view of 25.1 lists the ten by part and links to Settings > Access. **Not seen:** the section as a
   user of that group, whose password is theirs. No file of this repository changed but this log.
+
+- 2026-11-22 · owner message · the owner said "Yes, cut beta.1". **17.0.0-beta.1** is cut as `docs/releasing.md`
+  has it: the changes since 17.0.0-alpha.1 moved from Unreleased to the version's section of `CHANGELOG.md`, the
+  upgrade notes say that it runs no migration (the plan still ends at `jfb-015-entry-site`, the definition schema is
+  still 1, so the released schema stays `baseline/schema-v2` and no new baseline tag or fixture is due), and the
+  props named the version (d15f2fe4). On exactly that version the install test passed on Umbraco 17.7.1 (18 checks,
+  run and published, 237 s) and on the floor, 17.6.0, with the update after it (18 and 4 checks, 296 s); the clean-
+  clone verification had passed that day on cbcddb2f, which differs from the release commit in documents and in the
+  name of the version only. The
+  tag `v17.0.0-beta.1` is on d15f2fe4 and pushed; `main` names `17.0.0-beta.1.dev` since. **Not seen:** the release
+  workflow's run on GitHub, which nobody can watch from this machine. **Nothing is published:** the publish job
+  runs only with the owner's variable, and the repository is private (`docs/OWNER-TODO.md`).
