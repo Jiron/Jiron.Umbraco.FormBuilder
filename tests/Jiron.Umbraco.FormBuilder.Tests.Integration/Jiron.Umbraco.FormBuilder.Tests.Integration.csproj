@@ -6,8 +6,9 @@
     and the adapter come from tests/Directory.Build.props. The harness follows Tandem's lessons (section 3.3):
     - this project has its own appsettings.Tests.json (the package's copy is not copied to the output), with unattended
       package migrations off, so a pending plan cannot hang the test host, and ModelsBuilder off;
-    - run it with dotnet test and a blame hang timeout of 10 minutes (CONTRIBUTING), so a hanging test is named
-      instead of stalling the gate.
+    - run the built assembly with scripts/test-integration.mjs (tests/README.md, ADR-0261): in shares, several
+      processes at once, each with a working folder of its own, then the "Timed" tests alone, with a blame hang
+      timeout of 10 minutes, so a hanging test is named instead of stalling the gate; it fails unless every test ran.
   -->
   <PropertyGroup>
     <!-- It runs a whole Umbraco site, so the host-only audit entries apply (NuGetAudit.props, ADR-0024). -->

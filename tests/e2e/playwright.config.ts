@@ -1,11 +1,35 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type PlaywrightTestConfig } from '@playwright/test';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { E2E_BASE_URL, e2eState } from './support/paths.ts';
+import { E2E_BASE_URL, E2E_SITE, e2eState } from './support/paths.ts';
+import { isShared, planSites, readSpecTimes, siteMatch, SPEC_TIMES_FILE, timesBelow } from './support/sites.ts';
 
 const ci = Boolean(process.env.CI);
 
 // Edge is installed on the development machine; CI installs Playwright's Chromium (D19, ADR-0011).
 const browser = ci ? { ...devices['Desktop Chrome'] } : { ...devices['Desktop Edge'], channel: 'msedge' };
+
+type Project = NonNullable<PlaywrightTestConfig['projects']>[number];
+
+/**
+ * The projects as one site runs them (support/sites.ts, ROADMAP 24.1). The one site of a default run runs every spec
+ * file, as always. One of several sites runs its share of the spec files, weighed by spec-times.json, and the last one
+ * every spec file the others do not name; `budgets` runs on none of them but on the budgets site, alone and after
+ * them, where it is the only project with tests (ADR-0169). The order of the projects inside a site stays as below.
+ */
+function onThisSite(projects: Project[]): Project[] {
+  if (E2E_SITE.budgets)
+    return projects.map((project) => (project.name === 'budgets' ? project : { ...project, testMatch: [] }));
+  if (!isShared(E2E_SITE)) return projects;
+  const shared = projects.filter((project) => project.name !== 'budgets');
+  const timesFile = join(import.meta.dirname, SPEC_TIMES_FILE);
+  const times = readSpecTimes(existsSync(timesFile) ? readFileSync(timesFile, 'utf8') : null);
+  const folders = shared.map((project) => (project.testDir ?? '').replace(/^\.\//, ''));
+  const match = siteMatch(planSites(timesBelow(times, folders), E2E_SITE.count), E2E_SITE);
+  return projects.map((project) =>
+    project.name === 'budgets' ? { ...project, testMatch: [] } : { ...project, ...match },
+  );
+}
 
 export default defineConfig({
   globalSetup: './global-setup.ts',
@@ -17,7 +41,12 @@ export default defineConfig({
   workers: ci ? 2 : 4,
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: [['list'], ['html', { open: 'never', outputFolder: join(e2eState, 'report') }]],
+  // The JSON results are what scripts/e2e-gate.mjs adds up: every test once, across the sites.
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: join(e2eState, 'report') }],
+    ['json', { outputFile: join(e2eState, 'results.json') }],
+  ],
   use: {
     baseURL: E2E_BASE_URL,
     locale: 'en-GB',
@@ -25,7 +54,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   // Each project joins together with its first spec (ADR-0011).
-  projects: [
+  projects: onThisSite([
     {
       // Fast checks that the host, its people, its mail pickup and the form helpers work; every later suite builds on them.
       name: 'smoke',
@@ -89,5 +118,5 @@ export default defineConfig({
       name: 'startup',
       testDir: './specs/startup',
     },
-  ],
+  ]),
 });

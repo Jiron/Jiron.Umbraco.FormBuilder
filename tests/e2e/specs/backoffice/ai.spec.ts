@@ -191,17 +191,12 @@ test("Settings > AI, the add-on's tab, ends Settings' tabs and shows the profile
   await page.setViewportSize({ width: 1440, height: 900 });
   await loginAs('admin');
   await page.goto(SECTION);
-  // The add-on's menu item names the Settings menu, so it is a tab after Settings' own (ADR-0257).
+  // The add-on's menu item names the Settings menu, so it is a tab after Settings' own (ADR-0257). It comes with the
+  // add-on's own bundle, which may arrive after Settings' tabs have drawn: the row is read until it holds every tab.
   await goToPlace(page, 'Settings');
-  expect(await tabsShown(page)).toEqual([
-    'General',
-    'Email',
-    'Spam protection',
-    'Files',
-    'Access',
-    'Integrations',
-    'AI',
-  ]);
+  await expect
+    .poll(() => tabsShown(page))
+    .toEqual(['General', 'Email', 'Spam protection', 'Files', 'Access', 'Integrations', 'AI']);
   await tabItem(page, 'AI').click();
   await expect(page).toHaveURL(/workspace\/jfb-settings-ai$/);
   await expect.poll(() => openTab(page)).toBe('AI');

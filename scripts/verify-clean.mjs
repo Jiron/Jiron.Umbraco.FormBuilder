@@ -104,7 +104,7 @@ export function summaryOf(results) {
 const git = (cwd, args, env) => spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8', env });
 
 async function run(root, { keep }) {
-  const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'paths.ts'), 'utf8'));
+  const ports = browserPorts(readFileSync(join(root, 'tests', 'e2e', 'support', 'sites.ts'), 'utf8'));
   const taken = (await Promise.all(ports.map((port) => portOpen(port)))).flatMap((open, at) => (open ? [ports[at]] : []));
   if (taken.length > 0) {
     console.error(`verify-clean: port ${taken.join(', ')} is taken; the browser projects need it free`);

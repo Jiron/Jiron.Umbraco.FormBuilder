@@ -3,10 +3,10 @@ import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { addAction } from '../../support/form-views.ts';
 import { API, formWithFields, unique } from '../../support/forms-api.ts';
-import { E2E_WEBHOOK_SECRET, STUB_URL } from '../../support/paths.ts';
+import { E2E_WEBHOOK_SECRET, STUB_PORT, STUB_URL } from '../../support/paths.ts';
 
 // The webhook, Slack and Teams editors (ROADMAP 10.2d, IA 5.3, ADR-0191): each is configured in its sidebar and tested
-// before it is added, against the stub on 5560, and what the stub got is what the editors set: the names and values
+// before it is added, against the site's stub (5560 on site 1), and what the stub got is what the editors set: the names and values
 // chosen, a header and the signing secret by their references, never as themselves, and a chat's message as the chat
 // reads it, its first line saying it is a test. The form check's Fix it of a webhook's names and values lands on them.
 
@@ -140,7 +140,7 @@ test('a webhook is configured with its names and values, a header and its secret
   expect(header(call, 'X-Jfb-Signature')).toMatch(/^t=\d+, v1=[0-9a-f]{64}$/);
 
   // Added as the editors set it, every secret a reference.
-  await add(page, view, sidebar, /^Webhook to 127\.0\.0\.1:5560$/);
+  await add(page, view, sidebar, new RegExp(`^Webhook to 127\\.0\\.0\\.1:${STUB_PORT}$`));
   const saved = page.waitForResponse(
     (response) => response.request().method() === 'PUT' && response.url().endsWith(`/form/${key}/draft`),
   );

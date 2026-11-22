@@ -24,6 +24,7 @@ import { UNCHECKED, type CheckState } from './check/form-checker';
 import { FORM_WORKSPACE_CONTEXT } from './constants';
 import { locate, type DesignDefinition, type DesignField, type DesignPage, type DesignRule } from './definition';
 import type { Edit, EditorState } from './editor-model';
+import { ROUTER_QUIET } from './form-views';
 import { readOnce, traitsOf, type EditorView } from './form-workspace.context';
 import { EditorHistory } from './history';
 import type { FieldPick } from './picker/field-picker.modal.token';
@@ -2091,10 +2092,11 @@ describe('the form check in the Design view (ADR-0181)', () => {
       ).toBe(true),
     );
     expect(opened.dialogs).toHaveLength(1);
+    // Not "still closed after a moment": on a busy machine the moment outlasts the wait. The time it took says it.
+    const asked = performance.now();
     workspace.fixes.setValue({ kind: 'outcome', path: '$.outcomes[0].showAnswers', key: 'o1' });
-    await settle(view);
-    expect(opened.dialogs).toHaveLength(1);
     await vi.waitFor(() => expect(opened.dialogs).toHaveLength(2));
+    expect(performance.now() - asked).toBeGreaterThanOrEqual(ROUTER_QUIET - 5);
     expect((opened.dialogs[1]?.data as OutcomeModalData).focus).toBe('showAnswers');
     expect(workspace.fixes.getValue()).toBeNull();
   });
@@ -2151,13 +2153,13 @@ describe('the form check in the Design view (ADR-0181)', () => {
         },
       ],
     };
-    const { view, workspace } = await viewOf(definition);
+    const { workspace } = await viewOf(definition);
+    const asked = performance.now();
     workspace.fixes.setValue({ kind: 'rule', key: 'email', rule: 'r1' });
-    await settle(view);
-    expect(opened.dialogs).toHaveLength(0);
     await vi.waitFor(() =>
       expect(opened.dialogs.map((dialog) => dialog.alias)).toEqual(['Jiron.FormBuilder.Modal.RuleBuilder']),
     );
+    expect(performance.now() - asked).toBeGreaterThanOrEqual(ROUTER_QUIET - 5);
     expect(workspace.fixes.getValue()).toBeNull();
   });
 });

@@ -110,6 +110,21 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     }
 
     [Test]
+    public void Boot_WithoutTheRebuildAtOnce_KeepsUmbracosStartupRebuild()
+    {
+        var handlers = _services!
+            .Where(descriptor => descriptor.ServiceType == typeof(INotificationAsyncHandler<UmbracoApplicationStartedNotification>))
+            .Select(descriptor => descriptor.ImplementationType)
+            .ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(handlers, Has.Member(typeof(RebuildOnStartedHandler)), "a site rebuilds as Umbraco does");
+            Assert.That(handlers, Has.No.Member(typeof(IndexRebuildAtOnceHandler)));
+        });
+    }
+
+    [Test]
     public void Boot_WithoutTheStrictCsp_RegistersNoNonceProvider()
     {
         Assert.That(Services.GetService<IFormBuilderCspNonceProvider>(), Is.Null, "a site has none by default, and the test host's policy is off");

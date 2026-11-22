@@ -396,7 +396,9 @@ describe("the page's templates", () => {
         differ.push(`${context}: ${show(text)}`);
     }
     expect(differ.slice(0, 5)).toEqual([]);
-  });
+    // It compares 5,000 templates and measures nothing: alone it takes a few seconds, more beside the gate's .NET build
+    // (it ran past vitest's 5 s there), so its limit is a hang's, as the timed test's below is.
+  }, 60_000);
 });
 
 describe('random templates', () => {

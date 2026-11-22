@@ -21,12 +21,24 @@ const sectionsOf = (role: (typeof ROLES)[number]): Set<string> =>
 
 for (const role of ROLES.filter((each) => !TWINS.has(each))) {
   test(`${role} signs in through the backoffice login screen`, async ({ page, loginAs }) => {
+    // The top bar draws a tab for each section as its package's manifests arrive, Umbraco's before the Form Builder's,
+    // whose bundle registers its section together with its words: once the words are asked for, the section is known,
+    // so a tab it must not draw is not drawn later. The tabs it must draw are waited for, then all are read.
+    const registered = page.waitForResponse((response) =>
+      /\/App_Plugins\/JironFormBuilder\/chunks\/en-[^/]+\.js$/.test(new URL(response.url()).pathname),
+    );
     await loginAs(role);
+    await registered;
 
     await expect(page.locator('umb-current-user-header-app')).toBeVisible();
-    const labels = await page
-      .locator('umb-backoffice-header-sections uui-tab')
-      .evaluateAll((tabs) => tabs.map((tab) => tab.getAttribute('label')));
+    const header = page.locator('umb-backoffice-header-sections');
+    const drawn = [
+      ...(role === 'admin' ? ['Settings'] : []),
+      ...(WITHOUT_FORMS.has(role) ? [] : ['Form Builder']),
+      ...(role !== 'admin' && (WITHOUT_FORMS.has(role) || sectionsOf(role).has('content')) ? ['Content'] : []),
+    ];
+    for (const label of drawn) await expect(header.locator(`uui-tab[label="${label}"]`)).toBeVisible();
+    const labels = await header.locator('uui-tab').evaluateAll((tabs) => tabs.map((tab) => tab.getAttribute('label')));
     // Only the admin group opens Settings in a fresh install; Content shows for the personas whose groups open it.
     expect(labels.includes('Settings'), 'Settings').toBe(role === 'admin');
     // The section is "Form Builder" in the top bar for every persona that has it (ADR-0171).

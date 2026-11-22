@@ -535,7 +535,8 @@ test.describe('the Recycle Bin', () => {
     const toast = page.locator('jfb-undo-notification');
     await expect(toast).toContainText(`${name} moved to the Recycle Bin.`);
     await toast.getByRole('button', { name: 'Undo' }).click();
-    await expect(treeRow(page, name)).toBeVisible();
+    // The tree reads its first page again, which the row can fall past late in a run: it is read as far as the row.
+    await expect(await shownRow(page, name)).toBeVisible();
   });
 
   test('both confirmations name the page that picks a form, and Restore brings it back', async ({

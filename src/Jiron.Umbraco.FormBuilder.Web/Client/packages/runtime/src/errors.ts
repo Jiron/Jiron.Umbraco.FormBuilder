@@ -1,6 +1,6 @@
 /**
  * When the page shows errors (ROADMAP 6.4e, ADR-0113): a field's as the visitor leaves it, once they changed it or
- * while it shows one, and when they leave it with a press in the form, after the press's click, so the error never moves
+ * while it shows one, or as this wakes for a field they changed and left before, and when they leave it with a press in the form, after the press's click, so the error never moves
  * what was pressed, such as Next, from under the pointer; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
  * the error summary, which takes the focus, and `jfb:invalid`. A passing check lets the post go on as without
  * JavaScript, or the sender sends it (6.4i, ADR-0120), whose refusal the server's errors show as the page's own. The
@@ -77,6 +77,7 @@ export function pageErrorsOf(
   clock: () => number = Date.now,
   deliver?: Deliver,
   pages?: Paging,
+  heard: readonly Event[] = [],
 ): PageErrors {
   const changed = new WeakSet<HTMLElement>();
   const kept = keptOf(form);
@@ -88,6 +89,11 @@ export function pageErrorsOf(
   const fieldOf = (node: EventTarget | null): HTMLElement | null =>
     node instanceof Element ? proto(node).closest<HTMLElement>(FIELD) : null;
   const ruledOut = (field: HTMLElement): boolean => field.closest('[data-jfb-hidden]') !== null;
+  /** Whether a focus that left a control stays in its field, as between a group's choices. */
+  const stays = (field: HTMLElement, event: Event): boolean => {
+    const next = (event as FocusEvent).relatedTarget;
+    return next instanceof Node && field.contains(next);
+  };
   const offPage = (field: HTMLElement | null): boolean => field?.closest('[data-jfb-page][hidden]') != null;
 
   /** The field an error shows at: the one that holds the control it names, else the field by its key. */
@@ -332,9 +338,7 @@ export function pageErrorsOf(
 
   proto(form).addEventListener('focusout', (event) => {
     const field = fieldOf(event.target);
-    if (field === null) return;
-    const next = event.relatedTarget;
-    if (next instanceof Node && field.contains(next)) return;
+    if (field === null || stays(field, event)) return;
     if (!changed.has(field) && errorIn(field) === null) return;
     // The browser marks what a press holds down before the focus moves; its click comes once the press ends, and a
     // press on Next or Send checks the page itself.
@@ -349,6 +353,19 @@ export function pageErrorsOf(
     if (focusTarget(form, (link.getAttribute('href') ?? '').slice(1))) event.preventDefault();
   });
 
+  // What the visitor did before this woke, as the frame heard it for this (in order): an answer they changed then counts
+  // as changed, and a field they left then, changed or showing an error, is checked now, as it would have been then.
+  // An answer the browser restored or a default the page filled in is no answer of theirs and raises nothing by itself.
+  const left = new Set<HTMLElement>();
+  for (const event of heard) {
+    const field = fieldOf(event.target);
+    if (field === null) continue;
+    if (event.type !== 'focusout') {
+      changed.add(field);
+      kept.delete(field);
+    } else if (!stays(field, event) && (changed.has(field) || errorIn(field) !== null)) left.add(field);
+  }
+  for (const field of left) void leave(field);
   // An answer given before this woke changed nothing it heard: its error goes now if the answer fixed it.
   if (showsErrors(form)) void recheck();
   const errors: PageErrors = { validate, server };

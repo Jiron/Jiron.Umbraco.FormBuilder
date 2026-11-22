@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Line coverage per assembly from the Cobertura reports of Microsoft's code coverage collector ("Code Coverage",
-// instrumenting in memory, ADR-0079), merged across the test projects: a line counts as covered when any report hit
+// instrumenting in memory, ADR-0079), merged across every test process: a line counts as covered when any report hit
 // it. The phase-review gate needs Core at 85% or more from Phase 4 on (ROADMAP "How to use" and section 4.12). Ported
 // from Tandem's script (ROADMAP 3.3).
 //
-//   node scripts/coverage.mjs --run     empties .local/coverage, runs the .NET tests into it, then merges and checks
+//   node scripts/coverage.mjs --run     empties .local/coverage, builds in Release, runs the .NET tests into it, then
+//                                       merges and checks. The integration tests run in shares through
+//                                       scripts/test-integration.mjs (ADR-0261), the unit and AI tests beside them,
+//                                       each process with the collector and a results folder of its own, so the merge
+//                                       finds one report per process. A share runs the built assembly, which names no
+//                                       package, so the run names the collector's folder itself, read from the
+//                                       restore of the integration tests' project; a process that ran tests and left
+//                                       no report fails the run.
 //   node scripts/coverage.mjs [--dir .local/coverage] [--min 85] [--package <assembly>]...
 //
 // Prints one line per assembly, sorted by name. Without --package it checks Jiron.Umbraco.FormBuilder.Core. Exits 1
@@ -106,24 +113,69 @@ export function parseArguments(argv) {
   return options;
 }
 
-/** The arguments of the test run: every test project, Release, the collector through the run settings. */
-export function testArguments(dir) {
+/** The arguments of the Release build the test run uses; the run itself never builds. */
+export function buildArguments() {
+  return ['build', join(repo, 'Jiron.Umbraco.FormBuilder.slnx'), '-c', 'Release', '-nologo', '-nodeReuse:false'];
+}
+
+/** The test assemblies of the Release build that run beside the integration shares. */
+export const BESIDE = [
+  'tests/Jiron.Umbraco.FormBuilder.Tests.Unit/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.Unit.dll',
+  'tests/Jiron.Umbraco.FormBuilder.Tests.AI/bin/Release/net10.0/Jiron.Umbraco.FormBuilder.Tests.AI.dll',
+];
+
+/** The restore's record of the integration tests' project, which names the collector's package and where packages are. */
+export const ASSETS = 'tests/Jiron.Umbraco.FormBuilder.Tests.Integration/obj/project.assets.json';
+
+/** The file that is the collector, in its package's folder. */
+export const COLLECTOR = 'Microsoft.VisualStudio.TraceDataCollector.dll';
+
+/**
+ * The folder of Microsoft's code coverage collector, from a restore's assets: `dotnet test` on a project is told it
+ * by the package's build file, and on a built assembly, as the shares run, by nobody, so the collector is not found and
+ * no report is written. Throws when the restore names no such package, or no package folder holds its collector.
+ */
+export function collectorFolder(assets, exists = existsSync) {
+  const library = Object.entries(assets?.libraries ?? {}).find(([name]) => name.toLowerCase().startsWith('microsoft.codecoverage/'))?.[1];
+  if (!library?.path) throw new Error('the restore names no Microsoft.CodeCoverage package');
+  const folders = Object.keys(assets.packageFolders ?? {}).map((root) => join(root, ...library.path.split('/'), 'build', 'netstandard2.0'));
+  const found = folders.find((folder) => exists(join(folder, COLLECTOR)));
+  if (!found) throw new Error(`no package folder holds ${COLLECTOR} (looked in ${folders.join(', ') || 'none'})`);
+  return found;
+}
+
+/**
+ * The arguments of the test run (node): the integration shares, the unit and AI tests beside them, the collector
+ * through the run settings and its folder for every process, each process's results under the folder.
+ */
+export function testArguments(dir, collector) {
   return [
-    'test',
-    join(repo, 'Jiron.Umbraco.FormBuilder.slnx'),
-    '-c',
-    'Release',
-    '-nologo',
+    join(repo, 'scripts', 'test-integration.mjs'),
     '--settings',
     join(repo, 'tests', 'coverage.runsettings'),
-    '--results-directory',
+    '--results',
     dir,
-    '--blame-hang',
-    '--blame-hang-timeout',
-    '10m',
-    '--blame-hang-dump-type',
-    'none',
+    ...BESIDE.flatMap((assembly) => ['--beside', assembly]),
+    '--',
+    '--test-adapter-path',
+    collector,
   ];
+}
+
+/**
+ * The processes of a run that left test results and no coverage report: each folder right under the results folder
+ * that holds a .trx file somewhere and no Cobertura report. Their lines would silently count as not covered.
+ */
+export function withoutReport(dir) {
+  const holds = (folder, matches) =>
+    readdirSync(folder).some((name) => {
+      const path = join(folder, name);
+      return statSync(path).isDirectory() ? holds(path, matches) : matches(name);
+    });
+  return readdirSync(dir)
+    .filter((name) => statSync(join(dir, name)).isDirectory())
+    .filter((name) => holds(join(dir, name), (file) => file.endsWith('.trx')) && !holds(join(dir, name), (file) => file.endsWith('.cobertura.xml')))
+    .sort();
 }
 
 function main(argv) {
@@ -133,7 +185,20 @@ function main(argv) {
   if (options.run) {
     // An old report would count lines this run no longer covers.
     rmSync(dir, { recursive: true, force: true });
-    const tests = spawnSync('dotnet', testArguments(dir), { cwd: repo, stdio: 'inherit' });
+    // Build nodes that stay behind would hold the repository's folders (CLAUDE.md rule 6).
+    const build = spawnSync('dotnet', buildArguments(), { cwd: repo, stdio: 'inherit', env: { ...process.env, MSBUILDDISABLENODEREUSE: '1' } });
+    if (build.status !== 0) {
+      console.error(`coverage: the build failed (exit ${build.status ?? build.signal})`);
+      return 1;
+    }
+    let collector;
+    try {
+      collector = collectorFolder(JSON.parse(readFileSync(join(repo, ASSETS), 'utf8')));
+    } catch (error) {
+      console.error(`coverage: the collector was not found through ${ASSETS}: ${error.message}`);
+      return 1;
+    }
+    const tests = spawnSync(process.execPath, testArguments(dir, collector), { cwd: repo, stdio: 'inherit' });
     if (tests.status !== 0) {
       console.error(`coverage: the tests failed (exit ${tests.status ?? tests.signal})`);
       return 1;
@@ -143,6 +208,12 @@ function main(argv) {
   const reports = existsSync(dir) ? findReports(dir) : [];
   if (reports.length === 0) {
     console.error(`coverage: no Cobertura report under ${options.dir}; run node scripts/coverage.mjs --run`);
+    return 1;
+  }
+
+  const silent = withoutReport(dir);
+  if (silent.length > 0) {
+    console.error(`coverage: ${silent.length} process(es) ran tests and left no report: ${silent.join(', ')}`);
     return 1;
   }
 

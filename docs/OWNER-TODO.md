@@ -91,6 +91,11 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
      ADR-0036), which has never run against a server. The PHP sample that verifies a webhook's signature
      (`docs/samples/webhook-signature/verify.php`, ROADMAP 8.4, ADR-0161) also runs for the first time here:
      this machine has no PHP, so `ThePhpSample` is skipped on it, and on a CI runner without PHP it fails.
+  4. Read how long the integration jobs took (ROADMAP 24.1, ADR-0261). They run in shares, one job each: six
+     for SQLite and ten for SQL Server, each planned at about 20 minutes of its 45, and that plan is an
+     estimate made on this machine. If the longest job takes more than 22 minutes, raise the number of
+     shares: the matrix's numbers and `JFB_SHARES` together, in `.github/workflows/ci.yml`. The job
+     "Integration tests add up" must pass: it fails when a share did not report or a test never ran.
 
 ## Publishing
 

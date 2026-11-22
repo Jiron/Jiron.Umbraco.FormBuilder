@@ -44,6 +44,13 @@ public sealed class FormBuilderTestingOptions
     public bool StartupMarker { get; set; }
 
     /// <summary>
+    /// True to rebuild Umbraco's search indexes as soon as the host has started, where Umbraco waits a minute first
+    /// (<see cref="Startup.IndexRebuildAtOnceHandler"/>): the browser tests' hosts then do their start-up work at once
+    /// instead of idling. Umbraco's own start-up rebuild is taken out, so the indexes are rebuilt once.
+    /// </summary>
+    public bool IndexRebuildAtOnce { get; set; }
+
+    /// <summary>
     /// True to give every response the strict Content Security Policy of <see cref="Csp.TestCspMiddleware"/>, with a nonce
     /// for the requests that ask for one (ROADMAP 6.4k); only a host in the Development environment sets it.
     /// </summary>

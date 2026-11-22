@@ -5,7 +5,19 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { check, findReports, merge, parseArguments, summarise, testArguments } from '../coverage.mjs';
+import {
+  BESIDE,
+  buildArguments,
+  check,
+  COLLECTOR,
+  collectorFolder,
+  findReports,
+  merge,
+  parseArguments,
+  summarise,
+  testArguments,
+  withoutReport,
+} from '../coverage.mjs';
 
 const folders = [];
 after(() => {
@@ -49,6 +61,13 @@ describe('merge and summarise', () => {
     assert.deepEqual(summarise(merge([unit, integration])), [
       { name: 'Jiron.Umbraco.FormBuilder.Core', covered: 2, total: 4, percent: 50 },
       { name: 'Jiron.Umbraco.FormBuilder.Web', covered: 1, total: 1, percent: 100 },
+    ]);
+  });
+
+  test('the reports of many processes (the shares): a line hit in only one of them counts once, as covered', () => {
+    const share = (hits) => `<coverage><packages><package name="P"><classes><class name="C" filename="src/C.cs"><lines><line number="1" hits="${hits}" /><line number="2" hits="0" /></lines></class></classes></package></packages></coverage>`;
+    assert.deepEqual(summarise(merge([share(0), share(0), share(3), share(0), share(0)])), [
+      { name: 'P', covered: 1, total: 2, percent: 50 },
     ]);
   });
 
@@ -108,15 +127,70 @@ describe('parseArguments', () => {
 });
 
 describe('the test run', () => {
-  test('runs the solution in Release with the run settings into the folder, and names a hanging test', () => {
-    const args = testArguments('C:/out');
-    assert.equal(args[0], 'test');
+  test('builds the solution in Release, without leaving build nodes behind', () => {
+    const args = buildArguments();
+    assert.equal(args[0], 'build');
     assert.match(args[1], /Jiron\.Umbraco\.FormBuilder\.slnx$/);
-    assert.deepEqual(args.slice(2, 5), ['-c', 'Release', '-nologo']);
-    assert.match(args[args.indexOf('--settings') + 1], /tests[\\/]coverage\.runsettings$/);
-    assert.equal(args[args.indexOf('--results-directory') + 1], 'C:/out');
-    assert.equal(args[args.indexOf('--blame-hang-timeout') + 1], '10m');
+    assert.deepEqual(args.slice(2), ['-c', 'Release', '-nologo', '-nodeReuse:false']);
   });
+
+  test('runs the integration shares with the unit and AI tests beside them, the run settings, into the folder', () => {
+    const args = testArguments('C:/out', 'C:/packages/collector');
+    assert.match(args[0], /scripts[\\/]test-integration\.mjs$/);
+    assert.match(args[args.indexOf('--settings') + 1], /tests[\\/]coverage\.runsettings$/);
+    assert.equal(args[args.indexOf('--results') + 1], 'C:/out');
+    const beside = args.flatMap((arg, i) => (arg === '--beside' ? [args[i + 1]] : []));
+    assert.deepEqual(beside, BESIDE);
+    assert.deepEqual(
+      beside.map((path) => path.match(/Tests\.(\w+)\.dll$/)[1]),
+      ['Unit', 'AI'],
+    );
+  });
+
+  test("gives every process the collector's folder, after the runner's own arguments", () => {
+    const args = testArguments('C:/out', 'C:/packages/collector');
+    assert.deepEqual(args.slice(args.indexOf('--')), ['--', '--test-adapter-path', 'C:/packages/collector']);
+    assert.equal(args.indexOf('--'), args.length - 3, 'nothing of the runner comes after it');
+  });
+});
+
+describe("the collector's folder", () => {
+  const assets = (libraries, packageFolders = { '/first/': {}, '/second/': {} }) => ({ libraries, packageFolders });
+  const library = { 'Microsoft.CodeCoverage/18.9.0': { path: 'microsoft.codecoverage/18.9.0' }, 'NUnit/4.0.0': { path: 'nunit/4.0.0' } };
+  const inFolder = (root) => join(root, 'microsoft.codecoverage', '18.9.0', 'build', 'netstandard2.0');
+
+  test("is the package's build folder in the package folder that holds the collector", () => {
+    const only = (root) => (path) => path === join(inFolder(root), COLLECTOR);
+    assert.equal(collectorFolder(assets(library), only('/first/')), inFolder('/first/'));
+    assert.equal(collectorFolder(assets(library), only('/second/')), inFolder('/second/'), 'a fallback folder');
+  });
+
+  test('a restore without the package, or a package folder without the collector, is an error that says which', () => {
+    assert.throws(() => collectorFolder(assets({ 'NUnit/4.0.0': { path: 'nunit/4.0.0' } }), () => true), /names no Microsoft.CodeCoverage package/);
+    assert.throws(() => collectorFolder({}, () => true), /names no Microsoft.CodeCoverage package/);
+    assert.throws(() => collectorFolder(assets(library), () => false), /no package folder holds Microsoft.VisualStudio.TraceDataCollector.dll/);
+    assert.throws(() => collectorFolder(assets(library, {}), () => true), /looked in none/);
+  });
+});
+
+test('withoutReport names each process that left test results and no report, and only those', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'jfb-coverage-'));
+  folders.push(dir);
+  const write = (...parts) => {
+    mkdirSync(join(dir, ...parts.slice(0, -1)), { recursive: true });
+    writeFileSync(join(dir, ...parts), '');
+  };
+  write('share-1-of-2', 'share-1-of-2.trx');
+  write('share-1-of-2', 'a1b2', 'machine.cobertura.xml');
+  write('share-2-of-2', 'share-2-of-2.trx');
+  write('share-2-of-2', 'console.log');
+  write('beside-Unit', 'deep', 'beside-Unit.trx');
+  write('notes', 'console.log');
+  write('loose.trx');
+  assert.deepEqual(withoutReport(dir), ['beside-Unit', 'share-2-of-2']);
+  write('share-2-of-2', 'c3', 'machine.cobertura.xml');
+  write('beside-Unit', 'd4', 'machine.cobertura.xml');
+  assert.deepEqual(withoutReport(dir), []);
 });
 
 test('findReports finds every Cobertura report under the folder, as each collector names it, and nothing else', () => {

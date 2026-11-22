@@ -70,7 +70,8 @@ export function loadDefaults(): Promise<FillDefaults> {
 }
 
 /**
- * Gives a form its logic; the frame calls it once per form. A form whose calculation language or defaults' filler
+ * Gives a form its logic; the frame calls it once per form, with what the visitor answered and left before it woke
+ * (`heard`), which the errors take up. A form whose calculation language or defaults' filler
  * cannot load is left to the post without JavaScript (null), as one whose chunk cannot.
  */
 /** Whether a form holds something, or a row it may add in place does, which its group's template holds. */
@@ -83,10 +84,11 @@ const holds = (form: HTMLFormElement, selector: string): boolean =>
 export function attach(
   form: HTMLFormElement,
   model: FormModel,
+  heard: readonly Event[] = [],
   defaults: () => Promise<FillDefaults> = loadDefaults,
   carried?: Carried,
 ): Promise<FormSession | null> {
-  const session = wake(form, model, defaults, carried);
+  const session = wake(form, model, heard, defaults, carried);
   sessions.set(form, session);
   return session;
 }
@@ -94,6 +96,7 @@ export function attach(
 async function wake(
   form: HTMLFormElement,
   model: FormModel,
+  heard: readonly Event[],
   defaults: () => Promise<FillDefaults>,
   carried?: Carried,
 ): Promise<FormSession | null> {
@@ -187,7 +190,7 @@ async function wake(
     captcha: () => captcha,
     rewake: (next, nextModel, carry) => {
       tellMember(nextModel, member);
-      void attach(next, nextModel, defaults, carry);
+      void attach(next, nextModel, [], defaults, carry);
     },
   });
   const check = deliver.checkPage;
@@ -210,7 +213,7 @@ async function wake(
         }),
       )
       .catch(() => undefined);
-  const errors = pageErrorsOf(form, model, engine, Date.now, deliver, pages);
+  const errors = pageErrorsOf(form, model, engine, Date.now, deliver, pages, heard);
   const press = (nav: string): boolean => {
     const button = proto(form).querySelector<HTMLButtonElement>(`button[data-jfb-nav="${nav}"]`);
     if (button === null) return false;

@@ -29,7 +29,9 @@ public sealed class EntryListBudgetTests : ActionTestBase
         Label = new LocalizedText("Amount"),
     };
 
+    // A time budget: scripts/test-integration.mjs runs the "Timed" tests alone, after the shares (ADR-0261).
     [Test]
+    [Category("Timed")]
     public async Task TheFirstPage_OfAHundredThousandEntries_LoadsWithinItsBudget()
     {
         var form = await PublishAsync(

@@ -8,11 +8,37 @@ project is described in [ADR-0029](../docs/decisions/0029-testing-project.md), t
 ## Running them
 
 ```
-dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
+dotnet build Jiron.Umbraco.FormBuilder.slnx -c Release
+dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --no-build --blame-hang-timeout 10m
+node scripts/test-integration.mjs
 ```
 
-The hang timeout names a test that hangs instead of stalling the run. The integration tests use SQLite and need nothing
-installed; Umbraco works in `Tests.Integration/TEMP/`, which git ignores.
+The unit tests take about a minute. The integration tests use SQLite and need nothing installed, but each one starts
+an Umbraco of its own, so `scripts/test-integration.mjs` runs the built integration assembly in shares, several
+processes at once (half the cores, at most eight; `--shares N` to choose), and then the tests that hold the product to
+a time budget (the NUnit category `Timed`) in one process with nothing beside it
+([ADR-0261](../docs/decisions/0261-where-the-test-time-goes.md)). It never builds, so build first.
+
+- **The split is by class.** `tests/integration-times.json` holds the seconds of each class and weighs the shares; the
+  last share names no class and runs every class the others do not name, so a new class runs without anyone listing
+  it. When the summary says the last share ran classes the file does not know, run it once with `--record`, which
+  rewrites the file from that run.
+- **Every test is counted.** The run fails unless the tests that ran are exactly the tests the assembly holds, each
+  once (a test skipped while it runs counts and is named), and it fails when any process fails, naming the share and
+  the failed tests. A test that hangs fails after 10 minutes and is named; a process that runs past `--share-timeout`
+  minutes (60) is stopped.
+- **Each process works in a folder of its own**, `.local/test-integration/work/<share>/`, where Umbraco's test harness
+  puts its files; the results, the trx file and the console log of each are in `.local/test-integration/<share>/`.
+- **A test that measures time** gets `[Category("Timed")]`; no other test may depend on how long something takes,
+  since the shares share the cores.
+- `--share 2/6` runs only that share and `--share timed` only the timed tests, each writing a `result.json`; CI gives
+  each a job of its own, and `--sum <folder>` adds the result files up with the same checks. `--beside <assembly>`
+  runs another test assembly beside the shares (the gate runs the unit and AI tests so), `--settings <file>` gives a
+  base run settings file, and arguments after `--` go to every `dotnet test` as they are. `--stop` stops a run this
+  script started.
+
+The AI add-on's tests run with `dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.AI -c Release --no-build`. The gate
+(`scripts/ci-local.ps1`) runs all three this way.
 
 Every phase review measures the line coverage of Core, which must be 85% or more (ROADMAP §4.12 and the phase-review
 gate):
@@ -21,10 +47,12 @@ gate):
 node scripts/coverage.mjs --run
 ```
 
-It empties `.local/coverage`, runs the .NET tests in Release with Microsoft's code coverage collector over Core and
-Web only (`tests/coverage.runsettings`), which instruments in memory and rewrites no file, so Smart App Control lets
-the assemblies load (ADR-0079), merges the reports of both test projects (a line counts once, as covered when any
-report hit it) and prints each assembly's coverage. Without `--run` it reads the reports already there.
+It empties `.local/coverage`, builds in Release and runs the .NET tests with Microsoft's code coverage collector over
+Core and Web only (`tests/coverage.runsettings`), which instruments in memory and rewrites no file, so Smart App Control
+lets the assemblies load (ADR-0079): the integration tests in shares through `scripts/test-integration.mjs`, the unit
+and AI tests beside them, each process writing its report into a folder of its own under `.local/coverage`. It merges
+every process's report (a line counts once, as covered when any report hit it) and prints each assembly's coverage.
+Without `--run` it reads the reports already there.
 
 The browser tests start a fresh demo host of their own and run in Edge (Playwright's Chromium in CI):
 
@@ -33,6 +61,12 @@ cd tests/e2e
 npm ci
 npx playwright test --project=smoke
 ```
+
+The gate runs them through `scripts/e2e-gate.mjs`: two sites side by side, each a whole copy of the run with its own
+host, ports, database, mail folder, sign-in lock and people, three workers each; every spec file runs on one site,
+shared out by the seconds in `e2e/spec-times.json`, the last site taking every spec file the others do not name; then
+the `budgets` project alone. The run fails when a site fails and unless the tests that ran are exactly the tests the
+projects hold, each once; only a site whose database hung runs once more ([e2e/README.md](e2e/README.md#several-sites)).
 
 ## The projects
 

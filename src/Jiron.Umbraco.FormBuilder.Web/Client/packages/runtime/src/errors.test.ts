@@ -76,7 +76,13 @@ const BUTTONS =
   '<button type="submit" name="jfb-nav" value="submit" id="send">Send</button></div>';
 
 /** A one-page contact form as the views write it, with its templates, its note, its live region. */
-function contact(model: FormModel, fields: string, before = '', beforeWaking: () => void = () => undefined) {
+function contact(
+  model: FormModel,
+  fields: string,
+  before = '',
+  beforeWaking: () => void = () => undefined,
+  heard: readonly Event[] = [],
+) {
   document.body.innerHTML =
     `<form id="jfb-1" class="jfb-form" data-jfb-form="f" data-jfb-contract="1">${TEMPLATES}${before}` +
     `<p class="jfb-help">Questions marked * need an answer.</p>` +
@@ -93,8 +99,31 @@ function contact(model: FormModel, fields: string, before = '', beforeWaking: ()
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
   beforeWaking();
-  const errors = pageErrorsOf(form, model, engineOf(model, null), () => NOW);
+  const errors = pageErrorsOf(form, model, engineOf(model, null), () => NOW, undefined, undefined, heard);
   return { form, sent, invalid, errors };
+}
+
+/**
+ * The contact form woken after `visitor` ran, with what the frame heard meanwhile handed over: each answer and leaving at
+ * the form, in order. The frame keeps only the visitor's own events, which its own tests show; here every one is theirs.
+ */
+function wokenAfter(model: FormModel, fields: string, visitor: () => void) {
+  const heard: Event[] = [];
+  const hear = (event: Event): void => {
+    heard.push(event);
+  };
+  return contact(
+    model,
+    fields,
+    '',
+    () => {
+      const form = document.querySelector('form');
+      for (const kind of ['input', 'change', 'focusout']) form?.addEventListener(kind, hear);
+      visitor();
+      for (const kind of ['input', 'change', 'focusout']) form?.removeEventListener(kind, hear);
+    },
+    heard,
+  );
 }
 
 const ONE_PAGE = modelOf([{ key: 'p1', groups: [{ key: 'g1', fields: [NAME, EMAIL, WAY, DETAIL] }] }]);
@@ -235,6 +264,52 @@ describe('leaving a field', () => {
     const email = control('jfb-1-email');
     expect(shownOf(form).inline).toEqual([]);
     expect([email.hasAttribute('aria-invalid'), email.hasAttribute('aria-describedby')]).toEqual([false, false]);
+  });
+});
+
+describe('what the visitor did before the logic woke', () => {
+  const EMAIL_ERROR = 'jfb-1-email-error: Enter a complete email address, for example name@example.com';
+
+  it('checks a field they changed and left as it wakes, as if they had left it then, and says it once', async () => {
+    const { form } = wokenAfter(ONE_PAGE, FIELDS, () => {
+      type('jfb-1-email', 'not an address');
+      leave('jfb-1-email', control('jfb-1-name'));
+    });
+    await settle();
+    expect(shownOf(form).inline).toEqual([EMAIL_ERROR]);
+    await vi.waitFor(() =>
+      expect(form.querySelector('[data-jfb-live]')?.textContent).toBe(
+        'Email address: Enter a complete email address, for example name@example.com',
+      ),
+    );
+  });
+
+  it('counts an answer they changed as changed, so leaving its field once it woke checks it', async () => {
+    const { form } = wokenAfter(ONE_PAGE, FIELDS, () => type('jfb-1-email', 'not an address'));
+    await settle();
+    expect(shownOf(form).inline, 'nothing while the focus is still in the field').toEqual([]);
+    leave('jfb-1-email');
+    await settle();
+    expect(shownOf(form).inline).toEqual([EMAIL_ERROR]);
+  });
+
+  it('raises nothing for an answer the browser restored or a default filled in, a field passed through, or a focus that stays in its field', async () => {
+    const required = modelOf([
+      { key: 'p1', groups: [{ key: 'g1', fields: [NAME, EMAIL, { ...WAY, required: true }, DETAIL] }] },
+    ]);
+    const { form } = wokenAfter(required, FIELDS, () => {
+      // As a browser restores an answer on reload, or the defaults' filler writes one: a value, and no answer heard.
+      control('jfb-1-email').value = 'not an address';
+      leave('jfb-1-name', control('jfb-1-email'));
+      leave('jfb-1-email', control('jfb-1-way'));
+      control('jfb-1-way').dispatchEvent(new Event('change', { bubbles: true }));
+      leave('jfb-1-way', control('jfb-1-way-email'));
+    });
+    await settle();
+    expect(shownOf(form).inline).toEqual([]);
+    leave('jfb-1-email');
+    await settle();
+    expect(shownOf(form).inline, 'nor when they leave the restored answer once it woke').toEqual([]);
   });
 });
 

@@ -22,10 +22,11 @@ export interface StalledDatabase {
 export const HANG_MARKER = 'database-hung.txt';
 
 /**
- * The two pieces of start-up work Umbraco 17 does about a minute after it starts: it registers its distributed jobs
- * and it rebuilds its search indexes. Umbraco logs the first; for the second it logs nothing that appears whether the
- * Content Delivery API is on or off, so the Testing project's start-up marker logs the second line once the last index
- * populator has run (StartupMarkerPopulator).
+ * The two pieces of start-up work Umbraco 17 does about a minute after it starts, and the test hosts at once
+ * (`hostEnvironment`): it registers its distributed jobs and it rebuilds its search indexes. The wait is the same
+ * either way: both lines, then the settle time. Umbraco logs the first; for the second it logs nothing that appears
+ * whether the Content Delivery API is on or off, so the Testing project's start-up marker logs the second line once the
+ * last index populator has run (StartupMarkerPopulator).
  */
 export const STARTUP_LINES = [
   'Completed registering distributed background jobs',

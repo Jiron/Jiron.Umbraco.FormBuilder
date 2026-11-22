@@ -66,11 +66,17 @@ npm run size
 another version (`JFB001`).
 
 **The tests** ([tests/README.md](tests/README.md)): the unit and integration tests run on SQLite and need nothing
-installed.
+installed. The integration tests each start an Umbraco, so a script runs them in several processes at once and then
+the tests that measure time alone; it never builds, and it fails unless every test of the assembly ran once.
 
 ```
-dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
+dotnet build Jiron.Umbraco.FormBuilder.slnx -c Release
+dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --no-build --blame-hang-timeout 10m
+node scripts/test-integration.mjs
 ```
+
+A test that holds the product to a time budget gets `[Category("Timed")]`; no other test may depend on how long
+something takes.
 
 The browser tests (Playwright, [tests/e2e/README.md](tests/e2e/README.md)) start a fresh demo host on port 5520 and
 run in Edge:
@@ -79,6 +85,14 @@ run in Edge:
 cd tests/e2e
 npm ci
 npx playwright test --project=smoke
+```
+
+The gate runs every browser project on two sites side by side, each with its own host, ports, database and
+people, every spec file on one of them, and the `budgets` project alone after them; it fails unless every test ran
+once ([Several sites](tests/e2e/README.md#several-sites)):
+
+```
+node scripts/e2e-gate.mjs
 ```
 
 The shared vectors in `tests/vectors/` run in the unit tests and in the client's `npm test`. After changing a suite in
@@ -105,7 +119,9 @@ node scripts/render-markdown.mjs
 
 **Before you push**, format everything, then run the gate. `scripts/ci-local.ps1` runs what CI runs, except the SQL
 Server and load-balancing jobs (`.github/workflows/ci.yml`), stops at the first failure and prints the time of every
-stage. `-SkipE2E` leaves out the browser tests for a quicker run while working; that run is not the gate.
+stage. Its cheap checks and builds run as lanes side by side (`scripts/lanes.mjs`), each line of output marked with its
+lane; its script header lists what each stage holds. `-SkipE2E` leaves out the browser tests for a quicker run while
+working; that run is not the gate.
 
 ```
 node scripts/fix.mjs

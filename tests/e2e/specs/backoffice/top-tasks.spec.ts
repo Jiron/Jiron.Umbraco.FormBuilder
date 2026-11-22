@@ -20,9 +20,14 @@ import { goToPlace, goToTab, type Clicker } from '../../support/places.ts';
 const SECTION = '/umbraco/section/jfb-forms';
 
 /** The section's start page, the Overview, where every task starts. */
-async function start(page: Page): Promise<void> {
+/**
+ * Opens the section; `committed` runs once its document has come, so it hears only what this document asks for (the
+ * backoffice starts, signs in and loads its section long after the commit, before it asks the server anything).
+ */
+async function start(page: Page, committed?: () => void): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(SECTION);
+  await page.goto(SECTION, committed === undefined ? {} : { waitUntil: 'commit' });
+  committed?.();
   await expect(page.locator('umb-section-sidebar')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('jfb-overview uui-box').first()).toBeVisible({ timeout: 60_000 });
 }
@@ -401,15 +406,22 @@ test('a user without grants finds why no forms appear, how far setup is and whet
   loginAs,
 }) => {
   await loginAs('noAccess');
-  const checklistRead = page.waitForResponse((response) => response.url().endsWith('/setup/checklist'));
-  await start(page);
+  // The sign-in lands on the section too, whose Overview reads the checklist: only the read of the page this test opens
+  // counts, waited for from the moment it commits, and its body is read as it comes.
+  let checklistRead: Promise<{ complete: boolean }> | undefined;
+  await start(page, () => {
+    checklistRead = page
+      .waitForResponse((response) => response.url().endsWith('/setup/checklist'))
+      .then((response) => response.json() as Promise<{ complete: boolean }>);
+  });
   const clicks = new ClickCounter();
   await expect(page.locator('jfb-no-forms')).toBeVisible({ timeout: 60_000 });
   expectTaskClicks(clicks, 'No access', 1);
 
   // How far the site's setup is: the checklist on the Overview while setup is open. Once it is complete, as other specs
   // may leave the shared host, the Overview's "..." shows it again, in the two clicks of the document's note.
-  const complete = ((await (await checklistRead).json()) as { complete: boolean }).complete;
+  if (checklistRead === undefined) throw new Error('The section opened without its commit.');
+  const { complete } = await checklistRead;
   const steps = page.locator('jfb-overview ol li');
   if (complete) {
     const again = new ClickCounter();

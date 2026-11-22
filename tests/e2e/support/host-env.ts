@@ -1,6 +1,6 @@
 import { E2E_WEBHOOK_SECRET, STATIC_ORIGIN, STUB_PORT, STUB_URL } from './paths.ts';
 
-/** What one address may ask about one form in a minute on the test host. */
+/** What one address may send to one form in a minute on the test host; its other requests have no limit there. */
 export const E2E_FORM_LIMIT = 200;
 import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
 
@@ -12,6 +12,13 @@ export const INSTRUCTION_PRUNING = 'Umbraco__CMS__Global__DatabaseServerMessenge
 
 /** What a host of one server waits between two reads, and between two prunings: a day, longer than any run. */
 export const ONE_SERVER_WAIT = '1.00:00:00';
+
+/**
+ * Umbraco's setting for how long it waits after the start before it registers its distributed jobs (a minute unless
+ * set). Its options bind to `Umbraco:CMS:DistributedJobs` (`Constants.Configuration.ConfigDistributedJobs`); the
+ * settings schema in Umbraco's packages calls the section `DistributedJobSettings`, which a host does not read.
+ */
+export const DISTRIBUTED_JOBS_DELAY = 'Umbraco__CMS__DistributedJobs__Delay';
 
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
 export function deliveryApiOn(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -49,6 +56,12 @@ export function hostEnvironment(
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // Umbraco's two pieces of start-up work, the distributed jobs' registration and the index rebuild, each start a
+    // minute after the start; the start-up wait (support/host-health.ts) waits for both lines all the same, so the
+    // host does them at once and no test idles through that minute (ROADMAP 24.1). The Testing project puts its own
+    // rebuild without the delay in place of Umbraco's (IndexRebuildAtOnceHandler).
+    [DISTRIBUTED_JOBS_DELAY]: '00:00:00',
+    JironFormBuilderTesting__IndexRebuildAtOnce: 'true',
     // The AI add-on's fake provider, its connection and chat profile chosen in Settings > AI (ROADMAP 15.3, ADR-0018).
     JironFormBuilderTesting__FakeAI: 'Chosen',
     // The extension samples the backoffice specs show (ROADMAP 15.1, ADR-0234): a site's own setting editor, field
@@ -66,13 +79,18 @@ export function hostEnvironment(
     JironFormBuilder__PublicApi__AllowedOrigins__0: STATIC_ORIGIN,
   };
 
-  // The suite asks far more of one address than any visitor does; the limits project uses up one form's.
+  // The suite asks far more of one address than any visitor does; the limits project uses up one form's sends. Only
+  // that limit stays: each visit of a form page sends the insights beacon, and when a site's share holds many of the
+  // visitor's specs on the form specimen at once (keyboard-pass, focus-and-landing and others), the one address went
+  // over 200 beacons a minute for that form, the browser logged the 429 and runtime-frame's console check failed (the
+  // same with eight workers on one site).
   for (const policy of ['Read', 'Challenge', 'Submit', 'Upload', 'Events', 'Verify']) {
     env[`JironFormBuilder__Limits__${policy}__PerAddressPerMinute`] = '0';
     env[`JironFormBuilder__Limits__${policy}__PerAddressPerHour`] = '0';
     env[`JironFormBuilder__Limits__${policy}__PerFormPerMinute`] = '0';
     env[`JironFormBuilder__Limits__${policy}__SitePerSecond`] = '0';
-    env[`JironFormBuilder__Limits__${policy}__PerAddressAndFormPerMinute`] = String(E2E_FORM_LIMIT);
+    env[`JironFormBuilder__Limits__${policy}__PerAddressAndFormPerMinute`] =
+      policy === 'Submit' ? String(E2E_FORM_LIMIT) : '0';
   }
 
   USER_GROUPS.forEach((group, g) => {

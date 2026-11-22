@@ -129,8 +129,9 @@ for (const [role, seen] of Object.entries(SEEN) as [Role, Record<string, string[
       await page.goto(SECTION);
       await goToPlace(page, place);
       await onTab(page, place, tabs[0]!);
-      // A place with one tab left shows no row of tabs.
-      expect(await tabsShown(page), place).toEqual(tabs.length > 1 ? tabs : []);
+      // A place with one tab left shows no row of tabs. The AI add-on's tab comes with its own bundle, which may arrive
+      // after the row has drawn, so the row is read until it holds every tab.
+      await expect.poll(() => tabsShown(page), place).toEqual(tabs.length > 1 ? tabs : []);
       if (tabs.length > 1) expect(await openTab(page)).toBe(tabs[0]);
     }
 

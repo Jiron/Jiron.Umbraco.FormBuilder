@@ -165,3 +165,15 @@ itself, and anywhere else the error comes as the click lands. A field left by th
 form, shows its error at once as before. The runtime keeps no state of its own for it, so a press that ends without a
 click leaves nothing behind but a check on the next click in the form. The room came from the beacons' code (ADR-0211),
 whose record of what it sent is now a plain object.
+
+## What the visitor did before the logic woke (24.1, 2026-11-21)
+
+The frame loads the logic on a form's first touch, and until it had attached nobody heard what the visitor did: an
+answer typed meanwhile did not count as changed, and a field answered and left meanwhile showed no error until Send.
+On a fast connection the gap is a few milliseconds; on a slow one it is as long as the chunk takes, and the browser
+tests met it once two sites shared the machine. Now the frame keeps the visitor's own `input`, `change` and `focusout`
+events of the form until the logic is there and hands them over in order, and the errors take them up as if they had
+heard them: an answer counts as changed, and a field changed and left, or left while it showed the server's error, is
+checked as the logic wakes. Only events the browser marks as the visitor's are kept, so a default the page fills in and
+answers a browser restores on reload raise nothing by themselves, as before. Guessing "left" from the values was the
+other way and was ruled out for that reason. It costs the start bundle 50 bytes compressed.
