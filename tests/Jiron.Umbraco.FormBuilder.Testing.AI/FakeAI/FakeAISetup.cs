@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.AI.Profiles;
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -77,6 +78,7 @@ public sealed class FormBuilderTestingAIComposer : IComposer
         if (mode == FakeAIMode.Chosen)
         {
             builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, FakeAIStartup>();
+            builder.Services.AddStartupSeeder(FakeAIStartup.SeederName);
         }
     }
 }
@@ -86,12 +88,28 @@ public sealed class FormBuilderTestingAIComposer : IComposer
 /// is chosen yet (<see cref="FakeAIMode.Chosen"/>). It logs <c>Jiron Form Builder fake AI ready</c> when done, which the
 /// browser tests' harness waits for, or <c>Jiron Form Builder fake AI failed</c> with the reason. Hosts that share a
 /// database start together, so a set-up that loses the race to create the profile tries once more and finds it.
+/// Either way it reports its end to <see cref="StartupSeeding"/>.
 /// </summary>
-internal sealed partial class FakeAIStartup(IRuntimeState runtimeState, FakeAISetup setup, TimeProvider time, ILogger<FakeAIStartup> logger)
+internal sealed partial class FakeAIStartup(IRuntimeState runtimeState, FakeAISetup setup, TimeProvider time, StartupSeeding seeding, ILogger<FakeAIStartup> logger)
     : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
+    /// <summary>The name this seeder is announced and reports with (<see cref="StartupSeeding"/>).</summary>
+    public const string SeederName = "fake AI";
+
     /// <inheritdoc />
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SetUpAsync(cancellationToken);
+        }
+        finally
+        {
+            seeding.Report(SeederName);
+        }
+    }
+
+    private async Task SetUpAsync(CancellationToken cancellationToken)
     {
         if (runtimeState.Level != RuntimeLevel.Run)
         {

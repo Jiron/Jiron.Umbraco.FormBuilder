@@ -13,12 +13,16 @@ using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Composing;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Infrastructure.Examine;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -110,17 +114,21 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     }
 
     [Test]
-    public void Boot_WithoutTheRebuildAtOnce_KeepsUmbracosStartupRebuild()
+    public void Boot_WithoutTheStartupWorkAtOnce_KeepsUmbracosStartupRebuildAndJobs()
     {
         var handlers = _services!
             .Where(descriptor => descriptor.ServiceType == typeof(INotificationAsyncHandler<UmbracoApplicationStartedNotification>))
             .Select(descriptor => descriptor.ImplementationType)
             .ToList();
+        var hosted = _services!.Where(descriptor => !descriptor.IsKeyedService && descriptor.ServiceType == typeof(IHostedService)).ToList();
 
         Assert.Multiple(() =>
         {
             Assert.That(handlers, Has.Member(typeof(RebuildOnStartedHandler)), "a site rebuilds as Umbraco does");
             Assert.That(handlers, Has.No.Member(typeof(IndexRebuildAtOnceHandler)));
+            Assert.That(hosted.Count(descriptor => descriptor.ImplementationType == typeof(DistributedBackgroundJobHostedService)), Is.EqualTo(1), "a site runs Umbraco's jobs as Umbraco does");
+            Assert.That(_services!.Any(descriptor => descriptor.ServiceType == typeof(UmbracoJobsAfterSeeding)), Is.False);
+            Assert.That(GetRequiredService<IOptionsMonitor<DistributedJobSettings>>().CurrentValue.Delay, Is.EqualTo(TimeSpan.FromMinutes(1)), "and with Umbraco's delay");
         });
     }
 
@@ -146,6 +154,10 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         _services = builder.Services;
+
+        // The harness leaves out Umbraco's background jobs; this is how Umbraco's own registration adds their service
+        // (IndexRebuildAtOnceHandlerTests reads it from Umbraco), so the composers can be seen to leave it.
+        builder.Services.AddHostedService<DistributedBackgroundJobHostedService>();
         builder.AddComposers();
         builder.Services.AddLogCapture();
     }

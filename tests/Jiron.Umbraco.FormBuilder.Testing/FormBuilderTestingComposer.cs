@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Testing.Actions;
 using Jiron.Umbraco.FormBuilder.Testing.Csp;
 using Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 using Jiron.Umbraco.FormBuilder.Testing.People;
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Testing.Tls;
@@ -37,6 +38,7 @@ public sealed class FormBuilderTestingComposer : IComposer
         builder.Services.AddTransient<TestPeople>();
         builder.Services.AddTransient<TestAccess>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, TestPeopleSeeder>();
+        builder.Services.AddStartupSeeder(TestPeopleSeeder.SeederName);
         builder.Services.AddTransient<IStartupFilter, TestEndpointsStartupFilter>();
 
         var section = builder.Config.GetSection(FormBuilderTestingOptions.SectionName);

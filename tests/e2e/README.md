@@ -27,9 +27,11 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
 - **The start-up wait:** Umbraco 17 registers its jobs and rebuilds its indexes about a minute after it starts, and
   the tests start only after that (`support/host-health.ts`). The wait ends on a log line that appears whether the
   Content Delivery API is on or off. If the work does not finish, the set-up fails with the reason and the end of
-  the host's log. Every host the harness starts does both at once, so the wait is seconds and not that minute:
-  `hostEnvironment` sets Umbraco's `Umbraco:CMS:DistributedJobs:Delay` to zero, and the Testing project puts a rebuild
-  of its own without the delay in place of Umbraco's (`IndexRebuildAtOnceHandler`), so the indexes are rebuilt once.
+  the host's log. Every host the harness starts does both as soon as its own seeding has finished, so the wait is
+  seconds and not that minute: `hostEnvironment` sets `JironFormBuilderTesting__StartupWorkAtOnce`, and the Testing
+  project starts Umbraco's jobs with no delay and its own rebuild in place of Umbraco's once every seeder has
+  reported (`StartupSeeding`). That goes by order, not by time: Umbraco's jobs writing beside the seeding hung hosts
+  on Umbraco 18.
 - **The hang marker:** when the host's database hung, the run leaves `.local/e2e/host-5520/database-hung.txt`, and
   the gate runs that site's projects once more, on a fresh host. That is the only rerun ("Flaky means broken").
 - **The static page** on `http://127.0.0.1:5521` (`support/static-site.ts`, ADR-0031): a site of its own whose page
