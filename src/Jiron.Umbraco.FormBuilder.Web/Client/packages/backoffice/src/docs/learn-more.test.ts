@@ -1,7 +1,7 @@
 // "Learn more" (ROADMAP 17.2a): every topic of the map has a page under docs/ with the heading it names (the link check,
 // scripts/link-check.mjs, and its test hold the map to the pages), a link says its topic in words that stand alone, opens
 // in a new tab and says so to a screen reader, and the dictionaries hold exactly one phrase per topic in both languages.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -11,6 +11,7 @@ import { FIELD_TOPICS, LEAD_TOPICS } from '../settings/settings-screen.element';
 import { must, registerEnglish, shadow, text } from '../testing';
 import { LEARN_MORE_TOPICS, LearnMoreElement, learnMoreUrl, type LearnMoreTopic } from './learn-more.element';
 import map from './learn-more.json';
+import { sourceFiles } from '../source-files';
 
 async function linkOf(topic: string | undefined) {
   const element = new LearnMoreElement();
@@ -53,7 +54,7 @@ describe('a Learn more link', () => {
 describe('the Learn more topics', () => {
   it('are each linked from a screen of the section', () => {
     const src = join(dirname(fileURLToPath(import.meta.url)), '..');
-    const code = readdirSync(src, { recursive: true, encoding: 'utf8' })
+    const code = sourceFiles(src)
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts') && !/^(docs|lang|api)[\\/]/.test(file))
       .map((file) => readFileSync(join(src, file), 'utf8'))
       .join(String.fromCharCode(10));

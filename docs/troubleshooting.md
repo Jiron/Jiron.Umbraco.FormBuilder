@@ -60,10 +60,15 @@ half done meanwhile: visitors see nothing rather than a half-upgraded form, and 
 
 - **Administrators** get the Form Builder section when the package is installed. If Umbraco's administrators group was
   renamed or missing then, nobody got it: add the section to a group in Umbraco's **Users › User groups**.
-- **Other groups** need the section added in Umbraco's Users section **and** permissions in **Settings › Access**,
-  which lists the groups that lack the section ([permissions.md](permissions.md)).
-- **A user sees the section but no forms:** their groups have no permission on any form, or the forms are in a
-  restricted folder. A form a user may not see is missing for them everywhere, as if it didn't exist.
+- **Other groups** need the section added in Umbraco's Users section **and** permissions in **Form Builder ›
+  Settings › Access**, which lists the groups that lack the section ([permissions.md](permissions.md)). A group's
+  screen in **Users › User groups** shows in its **Form Builder** view what the group may do, and links to Settings ›
+  Access; the view is there for users who may manage permissions.
+- **A user sees the section but no forms,** and reads "You can't see any forms yet" under Forms: their groups have no
+  permission on any form, or the forms are in a restricted folder. A form a user may not see is missing for them
+  everywhere, as if it didn't exist. Give the group permissions in Form Builder › Settings › Access.
+- **Every place says "This needs the … permission":** the user's group has the section but not that permission. The
+  sentence names the permission and Form Builder › Settings › Access, where an administrator gives it.
 - **Host configuration** in `JironFormBuilder:Access:Grants` replaces the grants of Settings › Access; a group alias the
   site doesn't have grants nothing, and the log says so.
 

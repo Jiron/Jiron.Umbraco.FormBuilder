@@ -123,6 +123,7 @@ entry); they are never printed.
 | `privacyOfficer` | `jfbPrivacyOfficers`                   | Forms          | `privacyTools`, `viewEntries`, `viewSensitive`, `deleteEntries` |
 | `noAccess`       | `jfbNoAccess`                          | Forms          | none                                                            |
 | `hr`             | `jfbHrTeam`                            | Forms          | `viewEntries`, `editEntries` in the restricted folder `HR`      |
+| `userManager`    | `jfbUserManagers`                      | Users, Forms   | `viewEntries`, without `managePermissions` (ROADMAP 25.1)       |
 | `outsider`       | Umbraco's `writer`                     | Content        | none, without the Forms section                                 |
 | `editor`         | Umbraco's `editor`                     | Content, Media | none, without the Forms section; places forms on pages (6.7h)   |
 

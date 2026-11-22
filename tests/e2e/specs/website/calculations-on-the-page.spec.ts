@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 import { demoProject } from '../../support/paths.ts';
@@ -43,6 +44,7 @@ async function storedOf(request: APIRequestContext, alias: string, field: string
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

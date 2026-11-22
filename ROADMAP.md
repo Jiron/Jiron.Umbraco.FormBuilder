@@ -3478,6 +3478,25 @@ The owner, before the first release (2026-11-21): the tests take hours and may b
     - `v18/main` has the step merged in, and its gate passes there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
+### Phase 25: A group's access is found where it is looked for
+
+The owner, before the first release (2026-11-22): on the first site they made a user group of their own for the person who will manage it, gave it the section, signed in as that user and found every place refused, naming a permission; on Umbraco's user group screen they found no switch for it. Checked on the demo that day (WORKLOG): the permissions are given in the section's own Settings › Access and work once given, but nothing leads an administrator there. The refusals say "Settings › Access" to a user whose section shows no Settings place, Umbraco's user group screen says nothing about Form Builder once the section is added, and Privacy › People, opened by its address without its permission, shows its search and answers Find with "The entries couldn't be found". The owner: "Yes, fix now".
+
+- [ ] **25.1 A refusal names where access is given, a user group's own screen shows what the group may do, and phase review** (the owner, 2026-11-22)
+  - **The refusals:** every sentence that sends a user to an administrator for a permission names the place whole, Form Builder › Settings › Access, in English and German: the line of a user who sees no forms, a place or a screen that needs a permission, and what a library item or retention says.
+  - **Umbraco's user group screen:** a Form Builder view beside Details, for a user who may manage permissions, on a group that exists. It says, without changing anything, what the group may do with every form, by the permissions' names, which folders and forms give it more or are its own, and that its users see an empty section while it has no permission; a group without the section is told to add it under Details first, and the administrators' group that it holds everything. One link opens Settings › Access. An ADR says why the view shows and links and does not edit.
+  - **Privacy › People:** without the privacy tools permission the screen says which permission it needs, as the other screens do, and shows no search; a search the server refuses for the permission says the same.
+  - **Told:** `docs/permissions.md`, the installation and getting-started guides, troubleshooting, the copy deck and the information architecture; CHANGELOG and `docs/STATUS.md` follow, and `v18/main` gets it by merge.
+  - Done when:
+    - in a browser, the persona with the section and no permission reads "Form Builder › Settings › Access" in the line under Forms and on a place opened by its address, in English and, as a German user, in German; no sentence of the backoffice's words in either language still sends a user to "Settings › Access" without the section's name, which a test of the words holds;
+    - in a browser, an administrator opens Umbraco's user group screen of the group without grants, of the entry handlers and of the HR team, and its Form Builder view says no permission, the group's permissions by name, and the folder that is the HR team's own; its link lands on Settings › Access; a group without the section is told to add it; the view passes axe in light and dark and at a phone's width; a user with Umbraco's Users section and without the permission to manage permissions sees no such view;
+    - the view's unit tests cover each of those states, a failed read with its retry, and a group that is new;
+    - in a browser, the persona without the privacy tools permission opens Privacy › People by its address and reads which permission it needs, with no search field; the screen's unit tests cover that and a refused search;
+    - the sizes stay inside section 4.12's budgets, and the backoffice's start bundle does not hold the view;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the step merged in, and its unit and client tests and the user group view's browser test pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+
 ---
 
 ## 6. Definition of done for the first release

@@ -9,7 +9,9 @@ export default {
     memberEntries: 'Form entries',
     forms: 'Forms',
     overview: 'Overview',
-    noForms: "You can't see any forms yet. An administrator can give your user group access in Settings › Access.",
+    // Names the place whole: a user without permissions sees no Settings place in the section (ROADMAP 25.1).
+    noForms:
+      "You can't see any forms yet. An administrator can give your user group access in Form Builder › Settings › Access.",
     inbox: 'Inbox',
     // The Inbox's place for screen readers, while its badge shows the unseen count ("12", "99+").
     inboxUnseen: (label: string, count: string) => `${label}, ${count} unseen`,

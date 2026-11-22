@@ -100,7 +100,7 @@ export default {
     trashed: (name: string) => `${name} moved to the Recycle Bin.`,
     undo: 'Undo',
     mayNotChange: (name: string) =>
-      `You may not change ${name}. An administrator can give your user group access in Settings › Access.`,
+      `You may not change ${name}. An administrator can give your user group access in Form Builder › Settings › Access.`,
 
     widenHeadline: (name: string) => `Give more user groups access to ${name}?`,
     widenText: (groups: number) =>
@@ -170,7 +170,7 @@ export default {
     versionGone: "This version doesn't exist any more. Choose another one.",
     changedMeanwhile: 'Someone changed this after you opened it. Reload the page, then try again.',
     missingPermission: (permission: string) =>
-      `This needs the "${permission}" permission. An administrator can grant it in Settings › Access.`,
+      `This needs the "${permission}" permission. An administrator can grant it in Form Builder › Settings › Access.`,
     failed: "That didn't work. Try again, or reload the page.",
     testsLimited: "You've run as many tests as an hour allows. Try again later.",
     contentRights_contentSection:

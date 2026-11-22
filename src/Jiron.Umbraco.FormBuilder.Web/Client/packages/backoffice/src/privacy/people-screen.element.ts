@@ -3,7 +3,9 @@
 // everything (prepared in the background, its progress said in the box and its file linked from a toast), Set legal
 // hold... (a sidebar) and Erase... (its preview first, then delete or anonymise). Each row opens its entry. Once erased, one
 // line in the list's place says what went and where it is recorded. Every request names the person again; the server
-// finds the entries again, and the audit log never names whom they were about. Its place's tabs name it.
+// finds the entries again, and the audit log never names whom they were about. Its place's tabs name it. Without the
+// privacy tools permission, opened by its address, it says the permission it needs, as the other screens do, and shows
+// no search; a request the server refuses for the permission says the same (ROADMAP 25.1).
 import { css, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -67,6 +69,7 @@ export class PeopleScreenElement extends UmbLitElement {
     _exportFailed: { state: true },
     _erased: { state: true },
     _canAudit: { state: true },
+    _forbidden: { state: true },
   };
 
   static override styles = [
@@ -282,6 +285,8 @@ export class PeopleScreenElement extends UmbLitElement {
   declare private _exportFailed: boolean;
   declare private _erased: { readonly erased: PersonErasedResponseModel; readonly who: string } | undefined;
   declare private _canAudit: boolean;
+  /** Whether the user lacks the privacy tools permission, as what they hold or a refused request says. */
+  declare private _forbidden: boolean;
   /** Whether the user may open Umbraco's Members section, whose member picker the member search needs (16.6). */
   declare private _membersAllowed: boolean;
 
@@ -301,6 +306,7 @@ export class PeopleScreenElement extends UmbLitElement {
     this._exportFailed = false;
     this._erased = undefined;
     this._canAudit = false;
+    this._forbidden = false;
     this._membersAllowed = false;
     this.consumeContext(UMB_NOTIFICATION_CONTEXT, (notices) => (this.#notices = notices));
     // Umbraco lists members only to users who may open its Members section; the others find a member's entries by the
@@ -344,7 +350,16 @@ export class PeopleScreenElement extends UmbLitElement {
       loadEntryWords(lang).catch(() => undefined),
     ]);
     this._canAudit = permissions?.global.includes('manageSettings') ?? false;
+    // Without an answer the search shows, and the server still refuses what the user may not do.
+    this._forbidden = permissions !== undefined && !permissions.global.includes('privacyTools');
     this._ready = true;
+  }
+
+  /** Whether the server refused a request for the missing permission; the screen then says so in the search's place. */
+  #refused(error: unknown): boolean {
+    if (codeOf(error) !== 'forbidden') return false;
+    this._forbidden = true;
+    return true;
   }
 
   // ---- Finding ------------------------------------------------------------------------------------------------------
@@ -387,6 +402,7 @@ export class PeopleScreenElement extends UmbLitElement {
       disableNotifications: true,
     });
     this._finding = false;
+    if (this.#refused(error)) return;
     if (codeOf(error) === 'email_invalid') {
       this._emailProblem = true;
       return;
@@ -402,9 +418,11 @@ export class PeopleScreenElement extends UmbLitElement {
     const person = this._person;
     if (!person || this._export) return;
     this._exportFailed = false;
-    const { data } = await tryExecute(this, peopleExport({ body: bodyOf(person) }), { disableNotifications: true });
+    const { data, error } = await tryExecute(this, peopleExport({ body: bodyOf(person) }), {
+      disableNotifications: true,
+    });
     if (!data) {
-      this._exportFailed = true;
+      this._exportFailed = !this.#refused(error);
       return;
     }
     this._export = data;
@@ -456,10 +474,15 @@ export class PeopleScreenElement extends UmbLitElement {
     const person = this._person;
     const found = this._found;
     if (!person || !found || found === 'failed') return;
-    const { data } = await tryExecute(this, peopleRelease({ body: { ...bodyOf(person), entries: [entry.key] } }), {
-      disableNotifications: true,
-    });
-    if (!data) return;
+    const { data, error } = await tryExecute(
+      this,
+      peopleRelease({ body: { ...bodyOf(person), entries: [entry.key] } }),
+      { disableNotifications: true },
+    );
+    if (!data) {
+      this.#refused(error);
+      return;
+    }
     this._found = {
       ...found,
       entries: found.entries.map((each) => (each.key === entry.key ? { ...each, heldUntil: null } : each)),
@@ -472,10 +495,11 @@ export class PeopleScreenElement extends UmbLitElement {
   async #erase() {
     const person = this._person;
     if (!person) return;
-    const { data: preview } = await tryExecute(this, peoplePreview({ body: bodyOf(person) }), {
+    const { data: preview, error } = await tryExecute(this, peoplePreview({ body: bodyOf(person) }), {
       disableNotifications: true,
     });
     if (!preview) {
+      if (this.#refused(error)) return;
       this.#notices?.peek('danger', { data: { message: this.#term('people_eraseFailed') } });
       return;
     }
@@ -717,6 +741,17 @@ export class PeopleScreenElement extends UmbLitElement {
           <uui-box>${skeletonLines(this.localize.term('general_loading'), [64, 48])}</uui-box>
         </div></umb-body-layout
       >`;
+    if (this._forbidden)
+      return html`<umb-body-layout>
+        <jfb-place-tabs tab="people"></jfb-place-tabs>
+        <div class="page">
+          <uui-box>
+            <p class="note" role="alert">
+              ${this.localize.term('jfbLibrary_missingPermission', this.localize.term('jfbLibrary_permission_privacyTools'))}
+            </p>
+          </uui-box>
+        </div>
+      </umb-body-layout>`;
     const found = this._found;
     return html`<umb-body-layout>
       <jfb-place-tabs tab="people"></jfb-place-tabs>

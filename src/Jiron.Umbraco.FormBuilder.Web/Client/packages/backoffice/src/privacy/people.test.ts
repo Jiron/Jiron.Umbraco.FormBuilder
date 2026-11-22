@@ -212,6 +212,45 @@ describe('the People screen', () => {
     expect(said(rows[2]?.querySelector('td'))).toContain('Saved draft');
   });
 
+  it('says which permission it needs to a user without the privacy tools, with its tabs and no search (ROADMAP 25.1)', async () => {
+    api.global = ['viewEntries'];
+    const host = testHost();
+    host.provideContext(UMB_CURRENT_USER_CONTEXT, {
+      allowedSections: new BehaviorSubject<string[] | undefined>(['Umb.Section.Members']).asObservable(),
+      getHostElement: () => host,
+    } as never);
+    const screen = new PeopleScreenElement();
+    host.append(screen);
+    const root = shadow(screen);
+    await vi.waitFor(() => expect(root.querySelector('[role="alert"]')).not.toBeNull());
+    expect(said(root.querySelector('[role="alert"]'))).toBe(
+      'This needs the "Use the privacy tools" permission. An administrator can grant it in Form Builder \u203a Settings \u203a Access.',
+    );
+    expect(root.querySelector('jfb-place-tabs')).not.toBeNull();
+    expect(root.querySelector('form, input, #email')).toBeNull();
+    expect(api.asked).toEqual([]);
+  });
+
+  it("says the same, in the search's place, when the server refuses a search for the permission (ROADMAP 25.1)", async () => {
+    api.findError = new UmbApiError('refused', 403, null, { code: 'forbidden', permission: 'privacyTools' } as never);
+    const { root, find } = await screenOf();
+    await find('ada@example.com');
+    expect(api.asked).toEqual([{ email: 'ada@example.com' }]);
+    expect(said(root.querySelector('[role="alert"]'))).toBe(
+      'This needs the "Use the privacy tools" permission. An administrator can grant it in Form Builder \u203a Settings \u203a Access.',
+    );
+    expect(said(root)).not.toContain("couldn't be found");
+    expect(root.querySelector('#email')).toBeNull();
+  });
+
+  it('says the entries could not be found when the search gets no answer', async () => {
+    api.findError = new UmbApiError('down', 500, null, { code: 'unexpected' } as never);
+    const { root, find } = await screenOf();
+    await find('ada@example.com');
+    expect(said(root.querySelector('[role="alert"]'))).toBe("The entries couldn't be found.");
+    expect(root.querySelector('#email')).not.toBeNull();
+  });
+
   it('says once when the text is not an address, and sends nothing', async () => {
     const { root, find } = await screenOf();
 

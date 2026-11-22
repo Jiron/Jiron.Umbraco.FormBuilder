@@ -15,7 +15,7 @@ export default {
   jfbActions: {
     empty: 'Noch keine Aktionen. „Aktion hinzufügen“ zeigt, was nach dem Absenden laufen kann.',
     readOnly:
-      'Zum Ändern dieser Aktionen ist die Berechtigung „Aktionen verwalten“ für dieses Formular nötig. Wer Administratorrechte hat, kann sie erteilen.',
+      'Zum Ändern dieser Aktionen ist die Berechtigung „Aktionen verwalten“ für dieses Formular nötig. Wer Administratorrechte hat, kann sie unter Form Builder › Einstellungen › Zugriff erteilen.',
     addAction: 'Aktion hinzufügen',
     limit: (most: number) => `Ein Formular hat höchstens ${most} Aktionen.`,
     problems: (number: number) => count(number, 'Problem', 'Probleme'),

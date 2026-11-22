@@ -253,7 +253,7 @@ test('without Manage actions the view and each sidebar show the actions as they 
 
   // One line says what changing them needs; no card has a handle, a switch or "...", and an action that is off says so.
   await expect(view.locator('.read-only')).toHaveText(
-    'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
+    'Changing these actions needs the Manage actions permission for this form. An administrator can grant it in Form Builder \u203a Settings \u203a Access.',
   );
   await expect(view.getByRole('button', { name: 'Add action' })).toHaveCount(0);
   await expect(view.getByRole('switch')).toHaveCount(0);

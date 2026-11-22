@@ -75,5 +75,20 @@ export default {
     restrictFolder: 'Ordner beschränken',
     restrictForm: 'Formular beschränken',
     savedTarget: (name: string) => `Die Berechtigungen von ${name} sind gespeichert.`,
+
+    groupNoSection:
+      'Diese Gruppe kann Form Builder noch nicht öffnen. Fügen Sie ihr den Bereich zuerst unter „Details“ hinzu.',
+    groupEveryForm: 'Berechtigungen für jedes Formular',
+    groupNoPermission:
+      'Diese Gruppe hat noch keine Berechtigung für Formulare, daher sehen ihre Benutzer einen leeren Bereich.',
+    groupNoPermissionYet: 'Noch keine Berechtigung für Formulare.',
+    groupNoneEveryForm: 'Keine für jedes Formular, nur in den Ordnern und Formularen unten.',
+    groupLockedGrants: (key: string) =>
+      `Die Konfiguration der Website legt fest, was jede Gruppe mit jedem Formular darf (${key}).`,
+    groupLockedAll: (key: string) => `Die Konfiguration der Website legt den Zugriff fest (${key}).`,
+    groupItemNothing: 'Hier keine Berechtigung',
+    groupItemOwn: 'Nur diese Gruppe sieht es',
+    groupItemShared: (names: readonly string[]) => `Nur diese Gruppe und ${list(names)} sehen es`,
+    groupOpen: 'Form Builder › Einstellungen › Zugriff öffnen',
   },
 } satisfies UmbLocalizationDictionary;

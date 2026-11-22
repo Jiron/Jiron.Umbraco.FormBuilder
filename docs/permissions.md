@@ -20,12 +20,22 @@ A user group needs two things before its users can work in Form Builder:
 
 1. **The section,** added to the group in Umbraco's **Users › User groups**. When the package is installed, only the
    **Administrators** group gets it.
-2. **Permissions** in Form Builder's **Settings › Access**.
+2. **Permissions** in **Form Builder › Settings › Access**.
 
-Settings › Access lists every group that lacks the section, with a link to each. A user who has the section but no
-permission sees an empty section that says an administrator can give their group access. Everyone else sees, at the
+Settings › Access lists every group that lacks the section, with a link to each. The other way round, a group's own
+screen in **Users › User groups** has a **Form Builder** view after Details, for a user who may manage permissions: it
+shows what the group may do with every form, by the permissions' names, which folders and forms give it more or are
+its own, and that its users see an empty section while it has no permission; a group without the section is told to
+add it under Details first. The view changes nothing: its link, **Open Form Builder › Settings › Access**, opens the
+screen where permissions are given, beside every other group's
+([ADR-0262](decisions/0262-a-groups-access-on-its-user-group-screen.md)).
+
+A user who has the section but no permission sees an empty section with one line under Forms: "You can't see any forms
+yet. An administrator can give your user group access in Form Builder › Settings › Access." Everyone else sees, at the
 top of the section's sidebar, only the places they may open (Inbox, Library, Settings, Privacy, Activity), and in each
-only the tabs they may open; an address of a screen they may not open is refused as before.
+only the tabs they may open. A screen opened by its address without its permission says which permission it needs and
+where an administrator gives it, as "This needs the "Manage the library" permission. An administrator can grant it in
+Form Builder › Settings › Access."; Privacy › People then shows no search.
 
 **Administrators hold every permission everywhere,** restricted folders included, because they could grant themselves
 any.

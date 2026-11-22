@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { pressOnThePage } from '../../support/form.ts';
 import { LANGUAGES, formPages, pathOf, type Language } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
@@ -29,6 +30,9 @@ async function choose(form: Locator, name: string, value: string): Promise<void>
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  // A choice just picked changes its colours over the theme's transition; axe measures what the visitor reads after
+  // it, not a frame of it (a busy run caught the "no" of the guests' question halfway, as too little contrast).
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

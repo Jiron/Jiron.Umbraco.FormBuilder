@@ -118,8 +118,9 @@ The checklist has up to three more steps:
     no `https` domain set in Umbraco, so enter the address the site runs on, as your browser shows it, in Settings ›
     General › **Base URL** ([email.md](email.md#links-in-emails)).
 - **Choose who sees entries:** only administrators can open Form Builder at first. Another user group needs the
-  section, added in Umbraco's Users section, and its permissions, set in Settings › Access, which also lists the groups
-  that lack the section ([permissions.md](permissions.md)).
+  section, added in Umbraco's Users section, and its permissions, set in Form Builder › Settings › Access, which also
+  lists the groups that lack the section. The group's screen in Users › User groups shows its permissions in a
+  **Form Builder** view and links there ([permissions.md](permissions.md)).
 
 Then:
 

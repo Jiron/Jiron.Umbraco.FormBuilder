@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
+import { settled } from '../../support/axe.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 import { fillForm, logicCome, pressOnThePage } from '../../support/form.ts';
 
@@ -23,6 +24,7 @@ const formOn = (page: Page): Locator => page.locator('main form.jfb-form');
 const shownTitle = (form: Locator): Locator => form.locator('[data-jfb-page]:not([hidden]) .jfb-title');
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .include('main')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

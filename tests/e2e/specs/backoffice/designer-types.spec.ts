@@ -376,8 +376,15 @@ test('a text field with a placeholder and a condition using contains becomes a d
 
   // The element's "..." offers no Change type: it is the inspector's alone (ADR-0256).
   await design.locator('.bo-tools').getByRole('button', { name: 'More actions' }).click();
-  await expect(design.locator('.bo-tools .bo-menu button').filter({ hasText: 'Change type' })).toHaveCount(0);
+  // The menu is open with the focus on an item of it before it is read and closed: an Escape pressed before the menu
+  // has the focus is the Design view's, which clears the selection, and the inspector then has no Change type (a busy
+  // run pressed it that early, and a count of none passes on a menu not yet there).
+  const menu = design.locator('.bo-tools .bo-menu').filter({ visible: true });
+  await expect(menu).toHaveCount(1);
+  await expect(menu.locator('button:focus')).toHaveCount(1);
+  await expect(menu.locator('button').filter({ hasText: 'Change type' })).toHaveCount(0);
   await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
   await inspector.getByRole('button', { name: 'Change type' }).click();
   await expect(dialog.getByText('Now: Short text')).toBeVisible();
   const change = dialog.getByRole('button', { name: 'Change type', exact: true });

@@ -9,7 +9,7 @@ export default {
     forms: 'Formulare',
     overview: 'Übersicht',
     noForms:
-      'Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.',
+      'Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Form Builder › Einstellungen › Zugriff Zugang geben.',
     inbox: 'Posteingang',
     inboxUnseen: (label: string, count: string) => `${label}, ${count} ungelesen`,
     spam: 'Spam',

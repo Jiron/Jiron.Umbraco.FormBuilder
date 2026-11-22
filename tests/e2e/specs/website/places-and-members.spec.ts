@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
+import { settled } from '../../support/axe.ts';
 import { pathOf, type Language } from '../../support/demo-content.ts';
 import { signInMember } from '../../support/demo-members.ts';
 import { logicCome, press, pressOnThePage } from '../../support/form.ts';
@@ -55,6 +56,7 @@ const labelOf = (form: Locator, value: string): Locator =>
   form.locator(`[data-jfb-alias="evening"] .jfb-choice:has([value="${value}"]) label`);
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

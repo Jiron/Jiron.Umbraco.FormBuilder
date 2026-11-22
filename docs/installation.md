@@ -81,8 +81,9 @@ Another user group needs two things:
 
 1. **The Form Builder section,** added to the group in Umbraco's **Users** section. Form Builder's **Settings ›
    Access** lists every group that is missing it, with a link to each.
-2. **Permissions,** set in **Settings › Access**: what the group may do with forms, entries, the library, settings and
-   privacy. Folders and forms can be limited further.
+2. **Permissions,** set in **Form Builder › Settings › Access**: what the group may do with forms, entries, the
+   library, settings and privacy. Folders and forms can be limited further. The group's own screen in Umbraco's
+   **Users › User groups** shows them in its **Form Builder** view, with a link to Settings › Access.
 
 [permissions.md](permissions.md) explains the eleven permissions. Editors who only place forms on pages need neither:
 the form picker works for anyone with Umbraco's Content, Media, Members or Settings section.

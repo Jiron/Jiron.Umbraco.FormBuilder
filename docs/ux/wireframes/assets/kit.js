@@ -94,7 +94,7 @@
   function sidebar() {
     const head = `<div class="wf-side__head"><span>Forms</span>${r.noAccess ? '' : `<span class="wf-side__head-actions"><button class="wf-btn wf-btn--icon wf-btn--small wf-btn--text" aria-label="More actions for Forms">${icon('more')}</button>${r.create ? `<button class="wf-btn wf-btn--icon wf-btn--small wf-btn--text" aria-label="Create in Forms">${icon('plus')}</button>` : ''}</span>`}</div>`;
     if (r.noAccess) {
-      return `${places()}${head}<p class="wf-muted" style="padding: 0 var(--wf-space-6)">You can't see any forms yet. An administrator can give your user group access in Settings › Access.</p>`;
+      return `${places()}${head}<p class="wf-muted" style="padding: 0 var(--wf-space-6)">You can't see any forms yet. An administrator can give your user group access in Form Builder › Settings › Access.</p>`;
     }
     const tree = TREE.map((n) => treeItem(n, 0)).join('')
       + `<a class="wf-item wf-item--tree" style="--depth:0" href="#"${active === 'bin' ? ' aria-current="page"' : ''}>${icon('chevron-right', 'wf-item__chevron')}${icon('trash')}<span>Recycle Bin</span></a>`;

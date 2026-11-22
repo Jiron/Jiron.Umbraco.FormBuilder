@@ -3,7 +3,7 @@
 // who it comes from and goes to, its subject, the mail in a frame that runs nothing with its Light/Dark switch, a
 // plain-text mail's text, a view that is missing, settings that don't fit, and a preview that fails with Try again. The
 // preview's frame is one of the backoffice's two, which axe leaves alone, each with a check of its own (ADR-0189).
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -13,6 +13,7 @@ import { loadActionWords } from './action-words';
 import { mailDocument, previewAnswer, schemed, type EmailPreview } from './email-preview';
 import type { EmailPreviewElement } from './email-preview.element';
 import './email-preview.element';
+import { sourceFiles } from '../../source-files';
 
 const MAIL = `<!DOCTYPE html><html lang="en"><head><meta name="color-scheme" content="light dark"><base href="https://x.example.com/">
 <style>body{margin:0}@media (prefers-color-scheme:dark){.jfb-page{background:#121417!important}}@media screen and (prefers-color-scheme: light){.x{color:red}}</style></head>
@@ -117,7 +118,7 @@ describe("an email action's preview", () => {
 
   it("is one of the backoffice's four frames: axe leaves frames alone, so each has a check of its own (ADR-0189)", () => {
     const src = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-    const framed = readdirSync(src, { recursive: true, encoding: 'utf8' })
+    const framed = sourceFiles(src)
       .filter((file) => !file.split(sep).some((part) => part.startsWith('.')))
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .filter((file) => readFileSync(join(src, file), 'utf8').includes('<iframe'))

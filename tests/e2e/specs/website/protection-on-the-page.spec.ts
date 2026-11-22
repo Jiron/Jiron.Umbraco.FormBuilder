@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page, type Route } from '@playwright/test';
 import { loginThroughApi } from '../../support/api-login.ts';
+import { settled } from '../../support/axe.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
 import { fillForm, logicCome, pressOnThePage } from '../../support/form.ts';
 import { waitForStartupWork } from '../../support/host-health.ts';
@@ -117,6 +118,7 @@ async function stateOf(page: Page, name: string): Promise<string | undefined> {
 }
 
 async function axe(page: Page, what: string): Promise<void> {
+  await settled(page);
   // The fake is no provider's real widget; what the page writes around it is what counts here.
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

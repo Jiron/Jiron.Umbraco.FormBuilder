@@ -3,14 +3,15 @@
 // it scrolls with its content. In an area that is not positioned, the helper belongs to the next positioned box
 // outside, escapes the clip and stretches the workspace's own scroll area: the hidden reasons of the list of types once
 // beside the canvas made the Design view scroll by a thousand pixels at 1440 px.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { sourceFiles } from '../source-files';
 
 const src = join(dirname(fileURLToPath(import.meta.url)), '..');
 // A folder whose name starts with a dot is another test's scratch (the API check's), which may go while this one reads.
-const sources = readdirSync(src, { recursive: true, encoding: 'utf8' })
+const sources = sourceFiles(src)
   .filter((file) => !file.split(/[\\/]/).some((part) => part.startsWith('.')))
   .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts') && !file.startsWith('api'))
   .map((file) => ({

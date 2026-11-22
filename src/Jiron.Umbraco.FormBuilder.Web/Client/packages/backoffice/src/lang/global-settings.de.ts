@@ -246,7 +246,7 @@ export default {
     retentionForGoodShown: 'Dauerhaft aufbewahrt',
     retentionDaysShown: (days: string) => `${days} Tage`,
     retentionReadOnly:
-      'Um die Aufbewahrung zu ändern, brauchen Sie die Berechtigung „Einstellungen verwalten“. Wer Administratorrechte hat, kann sie unter Einstellungen › Zugriff vergeben.',
+      'Um die Aufbewahrung zu ändern, brauchen Sie die Berechtigung „Einstellungen verwalten“. Wer Administratorrechte hat, kann sie unter Form Builder › Einstellungen › Zugriff vergeben.',
     retentionForGoodLocked: 'Dauerhaftes Aufbewahren ist durch die Konfiguration gesperrt:',
     retentionOwnBox: 'Formulare mit eigener Aufbewahrung',
     retentionOwnNone:

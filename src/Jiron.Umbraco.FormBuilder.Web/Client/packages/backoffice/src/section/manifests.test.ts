@@ -328,3 +328,37 @@ describe('the sidebar', () => {
     expect(meets(person(['manageLibrary']), FORMS_NEEDS)).toBe(false);
   });
 });
+
+describe("the user group screen's Form Builder view (ROADMAP 25.1, ADR-0262)", () => {
+  const view = all.find((manifest) => manifest.alias === 'Jiron.FormBuilder.WorkspaceView.UserGroupAccess');
+  const person = (global: string[]): MyPermissions => ({ global, anywhere: global });
+
+  it("sits on Umbraco's user group screen after Details, named as the section, on a group that exists", () => {
+    expect(view?.type).toBe('workspaceView');
+    // Umbraco's Details weighs 90; a lower weight comes after it.
+    expect(view?.weight).toBeLessThan(90);
+    expect(view?.meta).toEqual({ label: '#jfbSection_section', pathname: 'form-builder', icon: 'icon-jfb' });
+    expect(view?.conditions?.slice(0, 2)).toEqual([
+      { alias: 'Umb.Condition.WorkspaceAlias', match: 'Umb.Workspace.UserGroup' },
+      { alias: 'Umb.Condition.WorkspaceEntityIsNew', match: false },
+    ]);
+  });
+
+  it('shows only to a user with the section who may manage permissions', () => {
+    expect(view?.conditions?.slice(2)).toEqual([
+      { alias: 'Umb.Condition.SectionUserPermission', match: SECTION_ALIAS },
+      { alias: PERMISSION_CONDITION, needs: [{ anyOf: ['managePermissions'] }] },
+    ]);
+    const conditions = view?.conditions ?? [];
+    const permission = conditions.find((condition) => condition.alias === PERMISSION_CONDITION);
+    expect(meets(person(['managePermissions']), permission?.needs ?? [])).toBe(true);
+    expect(meets(person(['manageSettings', 'design']), permission?.needs ?? [])).toBe(false);
+  });
+
+  it('loads its element lazily, a defined custom element', async () => {
+    expect(typeof view?.element).toBe('function');
+    const loaded = await view?.element?.();
+    const Element = loaded?.['default'] as CustomElementConstructor | undefined;
+    expect(Element && customElements.getName(Element)).toBe('jfb-user-group-access-view');
+  });
+});

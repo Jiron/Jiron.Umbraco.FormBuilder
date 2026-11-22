@@ -16,9 +16,20 @@ follows the Umbraco major).
 - The form check has a new error: a field that takes its options from an option list this site lacks. Such a form
   could be published before and offered its visitors no choices.
 - The Access, Settings and Retention screens ask before unsaved changes are left.
+- **A user group's own screen shows its Form Builder access.** In Umbraco's Users › User groups, a group has a
+  **Form Builder** view after Details, for users who may manage permissions: what the group may do with every form,
+  by the permissions' names, which folders and forms give it more or are its own, and that its users see an empty
+  section while it has no permission. A group without the section is told to add it under Details first. The view
+  changes nothing; its link opens Form Builder › Settings › Access, where permissions are given.
 
 ### Changed
 
+- **A refusal names where access is given in full:** "An administrator can grant it in Form Builder › Settings ›
+  Access", in English and German, under Forms for a user who may see no form, on a screen opened without its
+  permission, on a library item and on Retention. A user without permissions sees no Settings place, so "Settings ›
+  Access" alone sent administrators to Umbraco's own settings.
+- **Privacy › People without the privacy tools permission** says which permission it needs and shows no search, as
+  the other screens do; a search the server refuses says the same, where it said that the entries couldn't be found.
 - **The section's sidebar starts with five places:** Inbox, with its count of unseen entries, Library, Settings, Privacy
   and Activity, then the tree of forms. Each place opens on the first of its tabs you may use, and its screens show the
   place's tabs along their top: Inbox · Spam; Option lists · Themes · Email layouts · Templates; General · Email · Spam

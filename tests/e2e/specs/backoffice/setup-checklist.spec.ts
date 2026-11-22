@@ -161,6 +161,11 @@ async function addTheSection(page: Page): Promise<void> {
   const picker = page.locator('umb-section-picker-modal');
   await picker.getByText('Form Builder', { exact: true }).click();
   await picker.getByRole('button', { name: /^(Choose|Submit)$/ }).click();
+  // The save is done when Umbraco has answered it: a toast that says "saved" may still be Access's own from a moment
+  // ago, and leaving on that one cuts the group's save off (a busy run did, and the last step stayed open).
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes('/management/api/v1/user-group/'),
+  );
   await page.locator('umb-workspace-action').getByRole('button', { name: 'Save' }).click();
-  await expect(page.locator('uui-toast-notification').filter({ hasText: /saved/i }).last()).toBeVisible();
+  expect((await saved).ok(), "the user group's save").toBe(true);
 }
