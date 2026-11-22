@@ -44,11 +44,14 @@ public sealed class FormBuilderTestingOptions
     public bool StartupMarker { get; set; }
 
     /// <summary>
-    /// True to rebuild Umbraco's search indexes as soon as the host has started, where Umbraco waits a minute first
-    /// (<see cref="Startup.IndexRebuildAtOnceHandler"/>): the browser tests' hosts then do their start-up work at once
-    /// instead of idling. Umbraco's own start-up rebuild is taken out, so the indexes are rebuilt once.
+    /// True to do Umbraco's two pieces of start-up work, the index rebuild and the distributed jobs, as soon as the
+    /// host's own start-up seeding has finished (<see cref="Startup.StartupSeeding"/>), where Umbraco waits a minute
+    /// before each: the browser tests' hosts then do not idle through that minute. Umbraco's own start-up rebuild and
+    /// its jobs' hosted service are taken out and replaced by <see cref="Startup.IndexRebuildAtOnceHandler"/> and
+    /// <see cref="Startup.UmbracoJobsAfterSeeding"/>, so each runs once. The order matters: the jobs or the rebuild
+    /// writing beside the seeding left the seeding's write waiting on SQLite for ever and hung the host at start-up.
     /// </summary>
-    public bool IndexRebuildAtOnce { get; set; }
+    public bool StartupWorkAtOnce { get; set; }
 
     /// <summary>
     /// True to give every response the strict Content Security Policy of <see cref="Csp.TestCspMiddleware"/>, with a nonce

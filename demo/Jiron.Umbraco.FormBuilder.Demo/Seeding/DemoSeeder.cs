@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
@@ -22,6 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// and then the pages whose blocks pick a form, which need the forms' keys.
 /// Idempotent: every item is created only when it is missing, so a restart changes nothing, and a later step adds a
 /// page by adding it to <c>DemoContent.json</c>. The feature steps add their demo forms as the features arrive.
+/// Whether it seeded, failed or had nothing to do, it reports its end to the test host's <see cref="StartupSeeding"/>.
 /// </summary>
 internal sealed partial class DemoSeeder(
     ILanguageService languages,
@@ -41,8 +43,12 @@ internal sealed partial class DemoSeeder(
     DemoFormSeeder demoForms,
     FormBlockTypes formBlocks,
     IOptions<DemoOptions> options,
+    StartupSeeding seeding,
     ILogger<DemoSeeder> logger) : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
+    /// <summary>The name this seeder is announced and reports with (<see cref="StartupSeeding"/>).</summary>
+    public const string SeederName = "demo";
+
     public const string English = "en-US";
     public const string German = "de-DE";
     private static readonly Guid User = Constants.Security.SuperUserKey;
@@ -55,6 +61,18 @@ internal sealed partial class DemoSeeder(
 
     /// <inheritdoc />
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SeedAllAsync(cancellationToken);
+        }
+        finally
+        {
+            seeding.Report(SeederName);
+        }
+    }
+
+    private async Task SeedAllAsync(CancellationToken cancellationToken)
     {
         if (!options.Value.Seed)
         {

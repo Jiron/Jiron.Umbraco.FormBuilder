@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
@@ -12,34 +13,45 @@ namespace Jiron.Umbraco.FormBuilder.Testing.People;
 /// and members of <see cref="FormBuilderTestingOptions"/>, through <see cref="TestPeople"/> and <see cref="TestAccess"/>. It logs
 /// <c>Jiron Form Builder test people ready</c> when done, or <c>Jiron Form Builder test people failed</c> with the
 /// reason, so a global set-up can wait for either line. With nothing configured (the demo, every other host) it does
-/// nothing.
+/// nothing. Either way it reports its end to <see cref="StartupSeeding"/>.
 /// </summary>
 internal sealed partial class TestPeopleSeeder(
     IOptions<FormBuilderTestingOptions> options,
     IRuntimeState runtimeState,
     TestPeople people,
     TestAccess access,
+    StartupSeeding seeding,
     ILogger<TestPeopleSeeder> logger)
     : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
+    /// <summary>The name this seeder is announced and reports with (<see cref="StartupSeeding"/>).</summary>
+    public const string SeederName = "people";
+
     /// <inheritdoc />
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
-        var settings = options.Value;
-        if (runtimeState.Level != RuntimeLevel.Run || (settings.UserGroups.Count == 0 && settings.RestrictedFolders.Count == 0 && settings.Users.Count == 0 && settings.Members.Count == 0))
-        {
-            return;
-        }
-
         try
         {
-            await SeedAsync(settings);
-            LogReady(logger, settings.UserGroups.Count, settings.RestrictedFolders.Count, settings.Users.Count, settings.Members.Count);
+            var settings = options.Value;
+            if (runtimeState.Level != RuntimeLevel.Run || (settings.UserGroups.Count == 0 && settings.RestrictedFolders.Count == 0 && settings.Users.Count == 0 && settings.Members.Count == 0))
+            {
+                return;
+            }
+
+            try
+            {
+                await SeedAsync(settings);
+                LogReady(logger, settings.UserGroups.Count, settings.RestrictedFolders.Count, settings.Users.Count, settings.Members.Count);
+            }
+            catch (InvalidOperationException exception)
+            {
+                LogFailed(logger, exception.Message);
+                throw;
+            }
         }
-        catch (InvalidOperationException exception)
+        finally
         {
-            LogFailed(logger, exception.Message);
-            throw;
+            seeding.Report(SeederName);
         }
     }
 

@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Samples;
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Notifications;
 
@@ -15,6 +16,9 @@ public sealed class DemoComposer : IComposer
         builder.Services.AddTransient<DemoMediaSeeder>();
         builder.Services.AddTransient<DemoFormSeeder>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, DemoSeeder>();
+
+        // A test host waits for the seeding before Umbraco's start-up work (Testing's StartupSeeding).
+        builder.Services.AddStartupSeeder(DemoSeeder.SeederName);
         foreach (var sample in builder.Config.GetSection($"{DemoOptions.Section}:{nameof(DemoOptions.Samples)}").Get<string[]>() ?? [])
         {
             builder.AddFormBuilderSample(sample);
