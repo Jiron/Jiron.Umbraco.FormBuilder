@@ -859,7 +859,7 @@ describe('the Actions view', () => {
     const { root, list, view, actions, workspace } = await viewOf(definitionWith([action('a')]), ['design']);
     expect(root.querySelector('#add')).toBeNull();
     expect(text(root.querySelector('.read-only'))).toBe(
-      'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
+      'Changing these actions needs the Manage actions permission for this form. An administrator can grant it in Form Builder \u203a Settings \u203a Access.',
     );
     expect(list('submitted').readOnly).toBe(true);
     list('submitted').open('a');

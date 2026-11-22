@@ -17,6 +17,7 @@ export type Role =
   | 'privacyOfficer'
   | 'noAccess'
   | 'hr'
+  | 'userManager'
   | 'outsider'
   | 'editor';
 
@@ -30,6 +31,7 @@ export const ROLES: readonly Role[] = [
   'privacyOfficer',
   'noAccess',
   'hr',
+  'userManager',
   'outsider',
   'editor',
 ];
@@ -87,6 +89,14 @@ export const USER_GROUPS = [
   },
   { alias: 'jfbNoAccess', name: 'Forms without grants', sections: [FORMS_SECTION], permissions: [] },
   { alias: 'jfbHrTeam', name: 'HR team', sections: [FORMS_SECTION], permissions: [] },
+  // Umbraco's Users section beside the Form Builder section, and one permission there but not `managePermissions`: the user
+  // group screen's Form Builder view is not for it (ROADMAP 25.1, ADR-0262).
+  {
+    alias: 'jfbUserManagers',
+    name: 'User managers',
+    sections: ['users', FORMS_SECTION],
+    permissions: ['viewEntries'],
+  },
 ] as const;
 
 /** The restricted folder at the root that the test host seeds, granted to the HR team only (ADR-0013). */
@@ -114,6 +124,8 @@ export const PEOPLE: Record<Role, { name: string; email: string; groups: readonl
   noAccess: { name: 'Nina Nogrant', email: 'e2e-no-access@jfb.test', groups: ['jfbNoAccess'] },
   // The only one besides the admin who may open the restricted folder.
   hr: { name: 'Hana Hiring', email: 'e2e-hr@jfb.test', groups: ['jfbHrTeam'] },
+  // Manages Umbraco's users and views entries, but may not manage Form Builder's permissions.
+  userManager: { name: 'Uma Usermanager', email: 'e2e-user-manager@jfb.test', groups: ['jfbUserManagers'] },
   // A backoffice user without the Forms section: Umbraco's writers have Content only.
   outsider: { name: 'Otto Outsider', email: 'e2e-outsider@jfb.test', groups: ['writer'] },
   // Umbraco's editors: Content and Media, publishing, no Forms section; they place forms on pages (6.7h, ADR-0136).

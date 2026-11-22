@@ -54,8 +54,8 @@ Form Builder                the section in Umbraco's top bar (ADR-0171)
 ```
 
 Outside the section: a **Forms** tab in Umbraco's header search, the form picker and the form block in the content
-editor, a **Form entries** view on the member workspace, and the health checks on Umbraco's Health Check dashboard
-(section 10). The section's name in the top bar is the owner's choice and stays "Form Builder" in German, a name as
+editor, a **Form entries** view on the member workspace, a **Form Builder** view on the user group workspace, and the
+health checks on Umbraco's Health Check dashboard (section 10). The section's name in the top bar is the owner's choice and stays "Form Builder" in German, a name as
 the product's is; inside it, the tree and the search tab, which hold forms, keep "Forms" (ADR-0171). Where other
 documents of this repository say "the Forms section", they mean this section.
 
@@ -850,7 +850,7 @@ Retention's Save is **Save retention settings**, Data collection's **Save data c
 
 | Tab | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
-| People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). | **Find** | after a search: Export everything (a ZIP of JSON and files) · Set legal hold… · Erase… |
+| People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). Opened by its address without `privacyTools`, or refused it by the server, it says which permission it needs, as the other screens do, in the search's place. | **Find** | after a search: Export everything (a ZIP of JSON and files) · Set legal hold… · Erase… |
 | Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam), a help line only under a state whose name does not say which entries it holds (Submitted, Approved); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press. While the days are being changed, it counts with the values not yet saved. | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
 | Data collection | IP handling, sensitive-field defaults, captcha consent mode, the insights switch | **Save** | – |
 | Deliveries | every email and webhook run of the last 30 days at first, problems first (failed, uncertain, limited), then the newest; state, recipient, form and time. A row opens its details. Empty, it says the span: "No deliveries in the last 30 days." | in the details: **Retry** for a failed or uncertain run | search · Filter |
@@ -880,6 +880,7 @@ Retention's Save is **Save retention settings**, Data collection's **Save data c
 | Content editor | the "Jiron Form Builder form picker" property editor (one or more forms; optional theme and redirect override), and a block labelled with the form's name ("Form: Contact us") |
 | Overview (checklist item 4), later Settings › General | Create a form block type…, for users with `manageSettings` and Umbraco's Settings section. Its dialog says what it creates, a "Form" element type and data type, and that it never changes existing ones (6.7); its primary is **Create**. Then the same dialog says the one step left, allowing the block on a document type, with **Open document types**. |
 | Member workspace | a **Form entries** view after Details and Info (not on the create screen, where no member exists yet), listing the entries the member sent while signed in, newest first, with permissions applied: forms the user may not view are left out without a trace. A row names the entry by its number, since its title would mostly repeat the member's name, and opens the entry panel (14.3). The view adds nothing to the footer. |
+| User group workspace | a **Form Builder** view after Details (not on the create screen), for users with the section and `managePermissions`, in one box without a headline, as the tab names it: under **Permissions for every form**, each part's permissions by name as a list; under **Folders and forms with their own access**, the folders and forms that give it more or are restricted to groups including it, each with what it may do there and, when restricted, who sees it ("Only this group sees it"); that its users see an empty section while it holds nothing and has the section (without the section, only that it has no permission yet); for a group without the section, first, that it adds the section under Details (read from the screen's Sections, so it follows them before Save); for the administrators, one sentence that they hold everything; the host's lock with its key. One link, **Open Form Builder › Settings › Access**. The view saves nothing and adds nothing to the footer, whose Save is Umbraco's (ADR-0262). |
 | Umbraco's Health Check dashboard | the same health checks as the Overview (9.1) |
 
 ## 11. Who sees what
@@ -913,6 +914,7 @@ tab; no access none.
 | Privacy › Retention (change) | – | – | – | yes | – | – |
 | Header search, Forms tab | all forms | all forms | all forms | all forms | all forms | the tab, finding nothing |
 | Member workspace: Form entries | – | yes | yes | yes | yes | – |
+| User group workspace: Form Builder | – | – | – | yes | – | – |
 | Content editor: the form picker | yes | yes | yes | yes | yes | yes |
 
 ¹ A retry needs `manageActions` for the run's form and a screen that shows the run: the entry's timeline, which needs

@@ -110,7 +110,7 @@ export default {
     trashed: (name: string) => `${name} in den Papierkorb verschoben.`,
     undo: 'Zurücknehmen',
     mayNotChange: (name: string) =>
-      `Sie dürfen ${name} nicht ändern. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Einstellungen › Zugriff Zugang geben.`,
+      `Sie dürfen ${name} nicht ändern. Wer Administratorrechte hat, kann Ihrer Benutzergruppe unter Form Builder › Einstellungen › Zugriff Zugang geben.`,
 
     widenHeadline: (name: string) => `Mehr Benutzergruppen Zugriff auf ${name} geben?`,
     widenText: (groups: number) =>
@@ -189,7 +189,7 @@ export default {
     changedMeanwhile:
       'Jemand hat das geändert, nachdem Sie es geöffnet haben. Laden Sie die Seite neu und versuchen Sie es erneut.',
     missingPermission: (permission: string) =>
-      `Dafür brauchen Sie die Berechtigung „${permission}“. Wer Administratorrechte hat, kann sie unter Einstellungen › Zugriff vergeben.`,
+      `Dafür brauchen Sie die Berechtigung „${permission}“. Wer Administratorrechte hat, kann sie unter Form Builder › Einstellungen › Zugriff vergeben.`,
     failed: 'Das hat nicht geklappt. Versuchen Sie es erneut, oder laden Sie die Seite neu.',
     testsLimited: 'Sie haben so viele Tests ausgeführt, wie eine Stunde erlaubt. Versuchen Sie es später noch einmal.',
     contentRights_contentSection:

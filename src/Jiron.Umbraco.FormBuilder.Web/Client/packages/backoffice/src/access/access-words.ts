@@ -1,5 +1,6 @@
-// Access's words (ROADMAP 12.4a, ADR-0218): loaded with Settings > Access and the Permissions sidebar, not with the
-// backoffice's start, whose budget counts every word it loads (ADR-0183).
+// Access's words (ROADMAP 12.4a, ADR-0218): loaded with Settings > Access, the Permissions sidebar and the user group
+// screen's Form Builder view (ADR-0262), not with the backoffice's start, whose budget counts every word it loads
+// (ADR-0183).
 import { wordsLoader } from '../designer/actions/action-words';
 
 /** Loads the Access area's words for a user's language, once each; a screen waits for them before it draws. */

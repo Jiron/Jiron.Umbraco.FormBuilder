@@ -261,7 +261,7 @@ describe('the retention screen', () => {
       '30 days',
     ]);
     expect([...root.querySelectorAll('[role="note"]')].map((one) => said(one))).toEqual([
-      'Changing retention needs the "Manage settings" permission. An administrator can grant it in Settings \u203a Access.',
+      'Changing retention needs the "Manage settings" permission. An administrator can grant it in Form Builder \u203a Settings \u203a Access.',
     ]);
     expect(root.querySelector('.own a')).toBeNull();
     expect(root.querySelector('tbody a')?.getAttribute('href')).toContain('/view/entries');

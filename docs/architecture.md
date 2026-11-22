@@ -494,7 +494,11 @@ flowchart LR
   "…" (`access/permissions.action.ts`) and the screen's list open one sidebar
   (`access/permissions.modal.element.ts`) over `GET`/`PUT access/folder/{key}` and `access/form/{key}`, which saves
   the grants and the restriction together, a form's at the version read. Its words are the area `jfbAccess`, loaded
-  with it; the permissions keep the library's names.
+  with it; the permissions keep the library's names. Umbraco's user group screen has a Form Builder view
+  (`access/user-group-access.view.ts`, ADR-0262), on a group that exists, for a user with the section and
+  `managePermissions`: it reads the same `GET access`, picks the group by the workspace's unique
+  (`groupAccessOf` in `access-model.ts`), takes whether the group has the section from the workspace's own Sections,
+  saves nothing and links to Settings › Access.
   Activity › Deliveries (`activity/deliveries.screen.ts`) reads `GET delivery` (`manageSettings`, `DeliveryController`):
   every mail and every run that queued none (`IDeliveryRepository`, one `UNION ALL` of both tables' ids under the read
   budget, then the page's rows), problems first, with each run's action name and a webhook's host from its version

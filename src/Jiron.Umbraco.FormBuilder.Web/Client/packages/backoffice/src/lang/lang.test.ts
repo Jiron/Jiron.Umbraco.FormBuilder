@@ -9,7 +9,7 @@
 // them (ADR-0201). The start's words and the workspace's are checked together.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CANVAS_WIDTHS } from '../designer/canvas/widths';
 import { OWN_WORDS, SERVER_WORDS } from '../designer/check/check-words';
@@ -404,6 +404,55 @@ describe('the dictionaries', () => {
       expect(preview.runActionsFor(12)).toMatch(new RegExp(`^${shownWords(preview.runActions)}`));
       expect(actions.runDetailsOf('Email the team')).toMatch(new RegExp(`^${actions.runDetails}`));
     }
+  });
+
+  it('name Settings › Access whole, after the section, wherever a text sends a user there, in both languages (ROADMAP 25.1)', async () => {
+    // Every dictionary the backoffice loads, the start's and every area loaded later; a function's text is read with
+    // each set of sample values it takes.
+    const folder = dirname(fileURLToPath(import.meta.url));
+    const files = readdirSync(folder).filter((file) => /^(?:[a-z-]+\.)?(?:en|de)\.ts$/.test(file));
+    expect(files).toEqual(expect.arrayContaining(['en.ts', 'de.ts', 'section.en.ts', 'library.de.ts']));
+    const samples: unknown[][] = [['Contact us', 2], [2, 'Contact us'], [['Contact us', 'Feedback'], 2], []];
+    const texts: { term: string; text: string }[] = [];
+    for (const file of files) {
+      const dictionary = ((await import(pathToFileURL(join(folder, file)).href)) as { default: Dictionary }).default;
+      for (const [area, words] of Object.entries(dictionary)) {
+        for (const [key, value] of Object.entries(words)) {
+          const term = `${file}: ${area}_${key}`;
+          if (typeof value === 'string') texts.push({ term, text: value });
+          if (typeof value !== 'function') continue;
+          for (const args of samples) {
+            try {
+              const text: unknown = (value as (...values: unknown[]) => unknown)(...args);
+              if (typeof text === 'string') texts.push({ term, text });
+            } catch {
+              // A sample of the wrong shape for this text; another one reads it.
+            }
+          }
+        }
+      }
+    }
+    const place = /(Settings|Einstellungen)\s*[›>]\s*(Access|Zugriff)/g;
+    const named = texts.filter(({ text }) => new RegExp(place.source).test(text));
+    // The sentences of finding 11 are among those read, the functions' too.
+    for (const term of [
+      'section.en.ts: jfbSection_noForms',
+      'section.de.ts: jfbSection_noForms',
+      'library.en.ts: jfbLibrary_missingPermission',
+      'library.de.ts: jfbLibrary_mayNotChange',
+      'global-settings.de.ts: jfbGlobalSettings_retentionReadOnly',
+      'actions.en.ts: jfbActions_readOnly',
+    ])
+      expect(
+        named.map((each) => each.term),
+        term,
+      ).toContain(term);
+    const unnamed = named.flatMap(({ term, text }) =>
+      [...text.matchAll(place)]
+        .filter((found) => !text.slice(0, found.index).endsWith('Form Builder › '))
+        .map(() => term),
+    );
+    expect([...new Set(unnamed)]).toEqual([]);
   });
 
   it('give each culture a different text where the words differ', () => {

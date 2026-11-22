@@ -1,6 +1,7 @@
 // Settings › Access and a folder's or form's Permissions sidebar in English (ROADMAP 12.4a, IA 8, ADR-0013,
 // ADR-0218, docs/ux/copy.md). The permissions keep their names from the library's words (`jfbLibrary_permission_*`).
-// They load with the screen and the sidebar, not with the backoffice's start (ADR-0183).
+// They load with the screen, the sidebar and the user group screen's Form Builder view (ADR-0262), not with the
+// backoffice's start (ADR-0183).
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
 const list = (names: readonly string[]) =>
@@ -73,5 +74,21 @@ export default {
     restrictFolder: 'Restrict folder',
     restrictForm: 'Restrict form',
     savedTarget: (name: string) => `The permissions of ${name} are saved.`,
+
+    // The Form Builder view on Umbraco's user group screen, which shows and links and never saves (ADR-0262). Its tab
+    // names Form Builder, so no headline says it again.
+    groupNoSection: "This group can't open Form Builder yet. Add the section to it under Details first.",
+    groupEveryForm: 'Permissions for every form',
+    groupNoPermission: 'This group has no permission for forms yet, so its users see an empty section.',
+    // A group without the section: its users see no section at all, so only that it has none.
+    groupNoPermissionYet: 'No permission for forms yet.',
+    groupNoneEveryForm: 'None for every form, only in the folders and forms below.',
+    groupLockedGrants: (key: string) =>
+      `The site's configuration sets what each group may do with every form (${key}).`,
+    groupLockedAll: (key: string) => `The site's configuration sets access (${key}).`,
+    groupItemNothing: 'No permission here',
+    groupItemOwn: 'Only this group sees it',
+    groupItemShared: (names: readonly string[]) => `Only this group and ${list(names)} see it`,
+    groupOpen: 'Open Form Builder › Settings › Access',
   },
 } satisfies UmbLocalizationDictionary;

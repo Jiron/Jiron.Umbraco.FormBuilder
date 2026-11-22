@@ -44,6 +44,7 @@ const SEEN: Partial<Record<Role, Record<string, string[]>>> = {
   viewer: { Inbox: ['Inbox', 'Spam'] },
   privacyOfficer: { Inbox: ['Inbox', 'Spam'], Privacy: ['People', 'Retention'] },
   hr: { Inbox: ['Inbox', 'Spam'] },
+  userManager: { Inbox: ['Inbox', 'Spam'] },
   noAccess: {},
 };
 
@@ -112,7 +113,7 @@ for (const [role, seen] of Object.entries(SEEN) as [Role, Record<string, string[
     if (role === 'noAccess') {
       // No place and no tree, and in the tree's place who can give access (ADR-0021).
       await expect(page.locator('jfb-no-forms')).toContainText(
-        "You can't see any forms yet. An administrator can give your user group access in Settings \u203a Access.",
+        "You can't see any forms yet. An administrator can give your user group access in Form Builder \u203a Settings \u203a Access.",
       );
       await expect(page.locator('jfb-places')).toHaveCount(0);
       await expect(tree).toHaveCount(0);
@@ -138,7 +139,8 @@ for (const [role, seen] of Object.entries(SEEN) as [Role, Record<string, string[
     // Every tab the persona may not use is refused at its address, as before (ADR-0013): the screen's reads are refused
     // by the server, except where the server answers each user with only what they may see: the Inbox and Spam list
     // the entries of the forms the user may view, none here, and any user of the section may list the template gallery,
-    // whose saved templates' actions need `manageLibrary`. People asks the server only when a person is searched for.
+    // whose saved templates' actions need `manageLibrary`. People asks the server nothing until a person is searched for,
+    // and without its permission names it in the search's place.
     const allowed = new Set(Object.entries(seen).flatMap(([place, tabs]) => tabs.map((tab) => `${place}/${tab}`)));
     for (const { place, tab } of ALL_TABS) {
       const where = `${placeName(place)} \u203a ${tabName(tab)}`;
@@ -155,15 +157,13 @@ for (const [role, seen] of Object.entries(SEEN) as [Role, Record<string, string[
           0,
         );
       } else if (tab.id === 'people') {
-        // People reads nothing until a person is asked for: the search is refused.
+        // People reads nothing until a person is asked for: without the permission it says which one it needs, as
+        // the other screens do, and offers no search to be refused (ROADMAP 25.1).
         const screen = page.locator('jfb-people-screen');
-        const found = await refusalsWhile(page, async () => {
-          await screen.getByLabel('Email address', { exact: true }).fill('ada@example.test');
-          const answered = page.waitForResponse((response) => response.url().includes('/people/find'));
-          await screen.getByRole('button', { name: 'Find', exact: true }).click();
-          await answered;
-        });
-        expect(found, `${role} at ${where}`).not.toEqual([]);
+        await expect(screen.getByRole('alert'), `${role} at ${where}`).toContainText(
+          'This needs the "Use the privacy tools" permission.',
+        );
+        await expect(screen.getByLabel('Email address', { exact: true })).toHaveCount(0);
       } else {
         expect(refused, `${role} at ${where}`).not.toEqual([]);
       }

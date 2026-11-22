@@ -238,7 +238,7 @@ export default {
     retentionForGoodShown: 'Kept for good',
     retentionDaysShown: (days: string) => `${days} days`,
     retentionReadOnly:
-      'Changing retention needs the "Manage settings" permission. An administrator can grant it in Settings › Access.',
+      'Changing retention needs the "Manage settings" permission. An administrator can grant it in Form Builder › Settings › Access.',
     retentionForGoodLocked: 'Keeping entries for good is locked by configuration:',
     retentionOwnBox: 'Forms with their own retention',
     retentionOwnNone: 'No form sets days of its own. A form can, in its Settings view under Privacy.',

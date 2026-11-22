@@ -9,7 +9,7 @@ export default {
   jfbActions: {
     empty: 'No actions yet. Add action lists what can run after a submission.',
     readOnly:
-      'Changing these actions needs the Manage actions permission for this form. An administrator can grant it.',
+      'Changing these actions needs the Manage actions permission for this form. An administrator can grant it in Form Builder › Settings › Access.',
     addAction: 'Add action',
     limit: (most: number) => `A form has at most ${most} actions.`,
     problems: (number: number) => count(number, 'problem', 'problems'),
