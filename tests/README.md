@@ -52,7 +52,9 @@ Core and Web only (`tests/coverage.runsettings`), which instruments in memory an
 lets the assemblies load (ADR-0079): the integration tests in shares through `scripts/test-integration.mjs`, the unit
 and AI tests beside them, each process writing its report into a folder of its own under `.local/coverage`. It merges
 every process's report (a line counts once, as covered when any report hit it) and prints each assembly's coverage.
-Without `--run` it reads the reports already there.
+A share runs the built assembly, which is not told where the collector is, so the run reads its folder from the
+restore and gives it to every process; a process that ran tests and left no report fails the run. Without `--run` it
+reads the reports already there.
 
 The browser tests start a fresh demo host of their own and run in Edge (Playwright's Chromium in CI):
 

@@ -1,8 +1,9 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-19, after the pass that made its backoffice
-simpler to find a way through and the fix that lets a field be called anything: what was built, how it is tested, what
-the budgets measured, what it does not do yet, and what only you, the owner, can do next.
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-22, after the pass that made its backoffice
+simpler to find a way through, the fix that lets a field be called anything and the work that brought the tests from
+hours to half an hour: what was built, how it is tested, what the budgets measured, what it does not do yet, and what
+only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
 `17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
@@ -42,6 +43,22 @@ sent the form by the post without JavaScript or threw errors on the page. No nam
 script now reads a form past its controls, and a lint rule, the unit tests' forms and browser tests with a control
 for every such name keep it so ([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)). Insights had missed
 the check errors of a field called `constructor` or `toString`; that is fixed with it.
+
+**The tests take half an hour, not hours (Phase 24, 2026-11-22).** Before the first release you said the tests take
+hours and may be more than is needed. Measured, the count was not the cost: the 15,500 unit and client tests took two
+and a half minutes together. The time went into 2,313 integration tests that each start an Umbraco, one after the
+other, and into 590 browser tests against one site. So no test was removed, and the same checks now run side by side
+([ADR-0261](decisions/0261-where-the-test-time-goes.md)):
+
+- **The gate** (`scripts/ci-local.ps1`) took 67 minutes, and 90 when its browser tests ran a second time. It takes
+  about 29 now.
+- **A phase review's clean-clone verification** took 78 minutes and takes 43.
+- **One fault of the product was found on the way:** with JavaScript, an answer given and left before a form's script
+  had loaded got no error at its field. That is fixed.
+- **The first release's workflow would have stopped at its 45-minute limit:** its test jobs ran the integration tests
+  in one process. They are a matrix of jobs now. How long each takes on GitHub is yours to read on the first run
+  ([OWNER-TODO.md](OWNER-TODO.md)).
+- **The Umbraco 18 line on SQLite showed a fault of its own,** below under "What it does not do yet".
 
 ## Contents
 
@@ -85,33 +102,64 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 23 (23.1), on 2026-11-19 on origin's
-`main` at `7ac169c7`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 4,681 s, the browser tests on their first run:
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 24 (24.1), on 2026-11-22 on origin's
+`main` at `f2c19a25`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 2,563 s where the run at the end of Phase 23 took 4,681 s, the browser tests on their first run:
 
-| What ran | Count |
-| --- | --- |
-| Unit tests (.NET), with the shared vectors in the server's engine | 9,123; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,313 |
-| The AI add-on's tests (.NET) | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,333 in 237 files |
-| The repository's scripts (Node) | 401 |
-| The browser tests' own support (Node) | 59 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 590 |
-| Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean |
-| A pack of `17.0.0-dev.202611190207` | 4 packages |
-| The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache |
-| The upgrade from `17.0.0-alpha.1`, with data | 53 checks |
-| The secret scan of the whole history | 1,267 commits, clean |
-| The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) |
+| What ran | Count | At the end of Phase 23 |
+| --- | --- | --- |
+| Unit tests (.NET), with the shared vectors in the server's engine | 9,157; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,123; 17 skipped |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,316 | 2,313 |
+| The AI add-on's tests (.NET) | 56 | 56 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,338 in 237 files | 6,333 in 237 files |
+| The repository's scripts (Node) | 491 | 401 |
+| The browser tests' own support (Node) | 85 | 59 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 590 | 590 |
+| Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
+| A pack of `17.0.0-dev.202611220545` | 4 packages | 4 packages |
+| The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
+| The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
+| The secret scan of the whole history | 1,289 commits, clean | 1,267 commits, clean |
+| The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) | skipped |
 
-Before that run, the first build of Phase 23's fix failed two of the website's browser tests, and they were right.
-The website's first file had come to wait for a second one before it ran, so an answer a visitor gave while the
-form's script was still on its way no longer took its error away. That file loads nothing before it runs again, and
-the build fails if it ever does ([ADR-0260](decisions/0260-a-field-may-be-called-anything.md)).
+No test went: every count is the one before or higher, the added ones being the tests of the new runners and of what
+Phase 24 fixed.
 
-- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,274 of 11,538), from the .NET tests on
-  `7ac169c7` (ROADMAP §6 asks 85% of Core).
+**How the gate runs now.** Its checks and builds run in lanes side by side; the integration tests run in eight
+processes at once, with the unit and AI tests beside them and the tests that measure time alone after them; the
+browser tests run against two sites of their own, three browsers each, with the `budgets` project alone at the end.
+Each of the two long stages counts what ran and fails unless it is exactly the tests it holds, each once.
+
+| Stage | Before (2026-11-19) | Now (the last run) |
+| --- | --- | --- |
+| Checks, builds, lint, the client's tests, packing | 320 s, one after the other | 237 s, in lanes |
+| Unit and integration tests | 2,256 s | 599 s |
+| Browser tests | 1,380 s, and once more when the site's database stalled | 917 s |
+| The whole gate | 67 minutes; 90 with the second browser run | 1,753 s: 29 min 13 s |
+
+- **Twice in a row.** The whole gate passed twice running on the final work commit, `f2c19a25`, in the repository's
+  folder, no test failing and no site run a second time: in 1,746 s and 1,753 s (29 min 6 s and 29 min 13 s). Before
+  the last fixes it had passed twice running on `8809766a`, in 1,729 s and 1,671 s.
+- **How much it varies.** Eight passing runs of the gate on `main` took between 1,671 s and 1,815 s. Seven were under
+  30 minutes; the slowest, 30 min 15 s, ran inside the last clean-clone verification, which also fetches every package
+  anew. The same tests took up to 15% longer from one run to the next with nothing changed, so the half hour holds
+  with about a minute to spare and no more.
+- **What more runs found.** Four runs in fresh clones each failed on one test, each a fault of the test that a rare
+  moment shows: a check that a random token does not hold a three-letter name (once in about two thousand runs), a
+  test that looked for a dialog still closed a moment after a request, an accessibility check of a toast that had
+  not faded in yet, and a test that pauses for the designer's own waits and met the test runner's five-second limit
+  beside the build. Each is fixed at its cause, and the client's tests now have a minute each, a hang's limit. More
+  whole runs in a day show such tests sooner than before; none is rerun to make it pass.
+- **A broken product is still flagged.** One fault was put into each of four layers at once, and each was caught
+  where it was caught before: a comparison in the rules' shared logic by 18 vector tests in the unit tests, the order
+  of a repository's query by two integration tests, a size in the default theme by a website browser test, and a
+  hidden part of a backoffice dialog by a backoffice browser test. Each fault was taken out again. They ran through
+  the gate's two runners (`scripts/test-integration.mjs`, `scripts/e2e-gate.mjs`), not through one whole gate run.
+- **Not seen yet:** the workflow on GitHub. Its jobs are fitted to its limits by estimate from this machine.
+
+- **Coverage:** Core 97.6% of its lines (35,800 of 36,681) and Web 97.7% (11,278 of 11,538), from the .NET tests run
+  in shares on 2026-11-21 (ROADMAP §6 asks 85% of Core); the figure for Core is the one of the run in one process
+  before. The product's code has not changed since; the tests of the test hosts' start-up have.
 - **The walk:** every screen of the backoffice in twelve looks (two themes, two languages, three widths) and five
   journeys, at the end of the simpler backoffice on `4be8f0ac`: 1,844 shots, none with an error, a fold inside a fold
   or a key in place of its words, and nothing of the section's own from axe ([review-22.md](ux/review-22.md)). No
@@ -120,13 +168,13 @@ the build fails if it ever does ([ADR-0260](decisions/0260-a-field-may-be-called
   catch each, until all were caught ([WORKLOG.md](WORKLOG.md) names them per step).
 - **Accessibility:** axe on every backoffice screen and every theme, keyboard paths, and the narrowest widths in the
   browser tests ([accessibility.md](accessibility.md)).
-- **The Umbraco 18 line:** with every commit of `main` merged in, its whole gate passed on 2026-11-19 on `f9eda3e5`,
-  in a clone of its own: the unit tests (9,152; the same 17 skipped), the integration tests (2,313), the AI add-on's
-  (56), the client's (6,342 in 238 files) and the whole browser suite (590). The browser suite passed on its second
-  run. In the first, a write found the test site's SQLite database locked: two tests ran out of time, one of them
-  while a demo member signed in, and ten did not run. The gate runs the suite once more on fresh sites for that one
-  cause, never twice ([ADR-0250](decisions/0250-the-umbraco-18-line.md)). The 17 to 18 upgrade with data last ran
-  at the Phase 19 review, where it passed 53 checks.
+- **The Umbraco 18 line:** with every commit of `main` merged in, its whole gate passed on 2026-11-22 on `81261a7e`,
+  in a clone of its own, in 1,828 s: the unit tests (9,186; the same 17 skipped), the integration tests (2,316), the
+  AI add-on's (56), the client's (6,347 in 238 files) and the whole browser suite (590), on its first run. Three runs
+  before it failed: its test sites hung as they started (fixed, see "What it does not do yet"), a publish on a test
+  site never came back, and a test read a setting before its save had landed (fixed) while the other site stalled and
+  passed on its one rerun. The 17 to 18 upgrade with data last ran at the Phase 19 review, where it passed 53 checks
+  ([ADR-0250](decisions/0250-the-umbraco-18-line.md)).
 
 ## The budgets, measured
 
@@ -167,6 +215,17 @@ how to repeat it. Sizes are gzip.
   hosts of one server leave both jobs out
   ([ADR-0253](decisions/0253-one-servers-test-host-reads-cache-instructions-once-a-day.md)); reporting it to Umbraco
   is on your list ([OWNER-TODO.md](OWNER-TODO.md)).
+- **Umbraco 18 on SQLite can leave a write waiting for good when another write lands at the same moment.** In the
+  18 line's gates of 2026-11-22 it showed three ways. Test sites hung as they started, four of twelve in one run:
+  Umbraco's background jobs ran for the first time while the site's own test users were still being stored. A memory
+  dump of one shows Umbraco's own user creation trying its insert again and again inside one transaction, with
+  nothing else running. The test sites now start those jobs after their own seeding, by order, and none has hung
+  since (six starts under full load, three whole runs). Then, once each: a page's publish on a test site never came
+  back, and a write was refused as "database is locked", for which the browser tests run that site's tests once
+  more. The last two were there before Phase 24 (the 18 line's gate of 2026-11-19 needed its second browser run for
+  the same). What is not known: whether the publish that never came back is the same fault, and how often a real
+  site on SQLite would meet it. SQL Server has no such lock. Umbraco 17 has not shown it. Reporting it is on your
+  list ([OWNER-TODO.md](OWNER-TODO.md)).
 - **Save and continue later needs JavaScript,** a page of the site for its link to come back to, and a form that stores
   entries; files, consents and sensitive answers are never saved, so the visitor gives them again.
 - **Without JavaScript, on a form for members with "one entry per member":** a post with a file that the browser

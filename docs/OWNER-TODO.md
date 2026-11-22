@@ -193,6 +193,17 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   of the stalled site showed, and on the development machine `.local/pass-21.1/stall-1-sqlite-state.txt` and
   `stall-2-sqlite-state.txt` hold SQLite's state as read from both dumps. Umbraco 18 no longer uses the shared cache,
   so this is for the 17 line.
+- [ ] **Report to Umbraco HQ: a write that waits for good on Umbraco 18 with SQLite** (added 2026-11-22, ROADMAP 24.1,
+  [ADR-0261](decisions/0261-where-the-test-time-goes.md)): on the 18 line (Umbraco 18.3, SQLite in write-ahead mode
+  without the shared cache), a test site hung at start-up when Umbraco's distributed jobs ran for the first time, five
+  seconds after they registered, while the site was still creating its test users through `IUserService.CreateAsync`.
+  A memory dump of a hung site shows one thread only at work: `UserRepository.PersistNewItem` under
+  `FaultHandlingDbCommand`'s retry policy, in Microsoft.Data.Sqlite's wait for a busy database, and the jobs' service
+  idle. My reading, not proven: the user creation read first and wrote later in one deferred transaction, the jobs'
+  service committed in between, and SQLite then refuses that transaction's write however often it is tried, so only
+  starting the transaction again would help. The test sites now start the jobs after their seeding, so this is for
+  Umbraco's own sake. Before reporting, repeat it on a plain Umbraco 18 site without the package: the dump is not
+  kept, and `.local/gate/` holds the hosts' logs of the failed runs only until the next gate.
 - [ ] **Report to Umbraco HQ** (added 2026-10-31, ROADMAP 6.7f): in Umbraco 17.7.1's dark theme UUI's positive
   primary button (`#347d39` under `#eeeeef`) is 4.37:1, below WCAG AA's 4.5:1, on every dialog's main button. Jiron
   Form Builder keeps Umbraco's buttons as Umbraco draws them; its own parts use tokens that pass (docs/ux/tokens.md).
