@@ -1394,3 +1394,14 @@ its reason, and a handover block at the end of every phase.
 - **Open for the owner** (`docs/OWNER-TODO.md`, unchanged): the items of publishing. On the first site, the
   permissions of the owner's own group in Settings > Access, and a new pack if this step is wanted there. The ten
   findings from the first site and the SQLite driver note still wait until after the release.
+
+- 2026-11-22 · owner message · after 25.1 the owner said yes to that version on the first site and to their own
+  group's permissions there. A local pack `17.0.0-dev.202611222036` of d76d950a (nothing was published) replaced the
+  one of the morning; it differs in the backoffice only and has no migration. **Rehearsed** on a throwaway copy of
+  the site, published from the staged tree and started through the site's own start script on an empty database:
+  the Form Builder view is on a user group's screen and its link opens Settings > Access, the form refused an
+  incomplete send and took a whole one with and without JavaScript, and the site's log had no error. **Deployed:**
+  the site was down for 32 s and came back on the new pack (its page and the package manifest say the version); on
+  the live site the form refused an incomplete send with and without JavaScript and fits a phone. **Not done:** the
+  group's permissions were not ticked. After the deploy the owner's browser was signed out of the site's backoffice,
+  and the password is theirs to type. No file of this repository changed but this log.
