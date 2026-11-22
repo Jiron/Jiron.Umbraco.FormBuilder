@@ -1,9 +1,9 @@
 # Status
 
 Where Jiron Form Builder stands at the end of its first build, on 2026-11-22, after the pass that made its backoffice
-simpler to find a way through, the fix that lets a field be called anything and the work that brought the tests from
-hours to half an hour: what was built, how it is tested, what the budgets measured, what it does not do yet, and what
-only you, the owner, can do next.
+simpler to find a way through, the fix that lets a field be called anything, the work that brought the tests from
+hours to half an hour and the change that leads an administrator to a user group's permissions: what was built, how
+it is tested, what the budgets measured, what it does not do yet, and what only you, the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
 `17.0.0-alpha.1.dev`; its first prerelease, `17.0.0-alpha.1`, is tagged. `v18/main` is the Umbraco 18 line at
@@ -60,6 +60,19 @@ other, and into 590 browser tests against one site. So no test was removed, and 
   ([OWNER-TODO.md](OWNER-TODO.md)).
 - **The Umbraco 18 line on SQLite showed a fault of its own,** below under "What it does not do yet".
 
+**A group's access is found where it is looked for (Phase 25, 2026-11-22).** On the first site you made a user group
+for the person who will run it, gave it the section, and its user found every place refused; Umbraco's user group
+screen had no switch for it. The permissions were where they belong, in Form Builder › Settings › Access, and worked
+once given, but nothing led there ([ADR-0262](decisions/0262-a-groups-access-on-its-user-group-screen.md)):
+
+- **Every refusal names the place whole,** "Form Builder › Settings › Access", in English and German. "Settings ›
+  Access" alone was said to a user whose section shows no Settings place.
+- **Umbraco's user group screen has a Form Builder view** beside Details, for a user who may manage permissions: what
+  the group may do, that it has no permission yet or lacks the section, and one link to Settings › Access. It shows
+  and links and saves nothing, as the screen's Save is Umbraco's.
+- **Privacy › People without its permission** says which permission it needs and shows no search.
+- **The backoffice bundle has 1.9 KB left** of its 512 KB: the next change to the backoffice has to make room first.
+
 ## Contents
 
 - [What was built](#what-was-built)
@@ -102,24 +115,26 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 24 (24.1), on 2026-11-22 on origin's
-`main` at `f2c19a25`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 2,563 s where the run at the end of Phase 23 took 4,681 s, the browser tests on their first run:
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 25 (25.1), on 2026-11-22 on origin's
+`main` at `cbcddb2f`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 2,620 s, the browser tests on their first run. It was that day's seventh run; what the six before it
+found is below, under "What more runs found". No C# changed in Phase 25, so the coverage measured at the end of
+Phase 24 stands.
 
-| What ran | Count | At the end of Phase 23 |
+| What ran | Count | At the end of Phase 24 |
 | --- | --- | --- |
-| Unit tests (.NET), with the shared vectors in the server's engine | 9,157; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,123; 17 skipped |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,316 | 2,313 |
+| Unit tests (.NET), with the shared vectors in the server's engine | 9,157; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,157; 17 skipped |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,316 | 2,316 |
 | The AI add-on's tests (.NET) | 56 | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,338 in 237 files | 6,333 in 237 files |
-| The repository's scripts (Node) | 491 | 401 |
-| The browser tests' own support (Node) | 85 | 59 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 590 | 590 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,360 in 239 files | 6,338 in 237 files |
+| The repository's scripts (Node) | 491 | 491 |
+| The browser tests' own support (Node) | 85 | 85 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 597 | 590 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
-| A pack of `17.0.0-dev.202611220545` | 4 packages | 4 packages |
+| A pack of `17.0.0-dev.202611221949` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,289 commits, clean | 1,267 commits, clean |
+| The secret scan of the whole history | 1,305 commits, clean | 1,289 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) | skipped |
 
 No test went: every count is the one before or higher, the added ones being the tests of the new runners and of what
@@ -150,6 +165,14 @@ Each of the two long stages counts what ran and fails unless it is exactly the t
   not faded in yet, and a test that pauses for the designer's own waits and met the test runner's five-second limit
   beside the build. Each is fixed at its cause, and the client's tests now have a minute each, a hang's limit. More
   whole runs in a day show such tests sooner than before; none is rerun to make it pass.
+- **What Phase 25's runs found.** Its clean-clone verification failed six times before it passed, each time on one
+  test that was there before and never on the phase's own: two accessibility checks of a website page that measured
+  a colour halfway through its fade, a test that pressed Escape before a menu had the focus, one that typed before a
+  text had the focus back, one that took an earlier toast for its own save and left the page, and a unit test that
+  read the sources while another removed its scratch folder among them. Each is fixed at its cause, the two that are
+  a kind for every test of that kind: every website page settles before axe measures it, and the tests that read
+  the sources enter no scratch folder. Between them the whole browser suite passed twice in the repository's
+  folder. A fresh clone shows such tests more often than the repository's folder does; why is not known.
 - **A broken product is still flagged.** One fault was put into each of four layers at once, and each was caught
   where it was caught before: a comparison in the rules' shared logic by 18 vector tests in the unit tests, the order
   of a repository's query by two integration tests, a size in the default theme by a website browser test, and a
@@ -194,9 +217,9 @@ how to repeat it. Sizes are gzip.
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
 | The slowest designer interaction on a form of 300 fields | 48 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 44.90 KB | 64 KB |
+| What every backoffice session loads at its start | 45.02 KB | 64 KB |
 | The backoffice's largest file (the designer) | 39.42 KB | 64 KB |
-| The backoffice bundle | 508.23 KB | 512 KB |
+| The backoffice bundle | 510.12 KB | 512 KB |
 
 ## What it does not do yet
 
