@@ -22,6 +22,7 @@ import startDe from './de';
 import startEn from './en';
 import workspaceDe from './workspace.de';
 import workspaceEn from './workspace.en';
+import { sourceFiles } from '../source-files';
 
 type Dictionary = Record<string, Record<string, unknown>>;
 
@@ -387,7 +388,7 @@ describe('the dictionaries', () => {
     expect([...Object.keys(startEn), ...Object.keys(startDe)].filter((area) => areas.includes(area))).toEqual([]);
     const source = join(dirname(fileURLToPath(import.meta.url)), '..');
     const asking = new RegExp(`(${areas.join('|')})_`);
-    const outside = readdirSync(source, { recursive: true, encoding: 'utf8' })
+    const outside = sourceFiles(source)
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
       .filter((file) => !/^(designer|lang)[\\/]/.test(file))
       .filter((file) => asking.test(readFileSync(join(source, file), 'utf8')));

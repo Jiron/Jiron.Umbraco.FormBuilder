@@ -2,14 +2,15 @@
 // only through the headless element's views, which the server's markup holds them to. The views are imported by the
 // preview and the canvas alone (a site's own type's writer names only their types, ADR-0233); a field's classes are named only where the preview builds its view models and where
 // the canvas finds a label it edits in place; and the template gallery shows a template with the preview.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { sourceFiles } from '../source-files';
 
 const src = join(dirname(fileURLToPath(import.meta.url)), '..');
 // A folder whose name starts with a dot is another test's scratch (the API check's), which may go while this one reads.
-const sources = readdirSync(src, { recursive: true, encoding: 'utf8' })
+const sources = sourceFiles(src)
   .filter((file) => !file.split(/[\\/]/).some((part) => part.startsWith('.')))
   .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts') && !file.startsWith('api'))
   .map((file) => ({

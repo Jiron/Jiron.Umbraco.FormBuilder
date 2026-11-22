@@ -14,9 +14,13 @@ import { changesOf, plainOf, rowsOf, withRow } from './translate/translate.model
 
 const folder = dirname(fileURLToPath(import.meta.url));
 
-/** The add-on's sources, its tests and generated client left out. */
+/**
+ * The add-on's sources, its tests and generated client left out. A folder whose name starts with a dot is another test's
+ * scratch (the API check's), which may go while this one reads.
+ */
 function sources(dir = folder): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name.startsWith('.')) return [];
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return entry.name === 'api' || entry.name === 'lang' ? [] : sources(path);
     return entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') ? [path] : [];
