@@ -39,7 +39,9 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
   page on an origin the API does not allow. The headless spec starts it in its own process.
 - **The AI add-on** (ADR-0018): the host offers Testing.AI's fake provider and chooses its chat profile in Settings ›
   AI at start-up (`JironFormBuilderTesting__FakeAI=Chosen`), and waits for its ready line, so the designer's Draft,
-  Translate and Suggest answer without a real key (`specs/backoffice/ai.spec.ts`).
+  Translate and Suggest answer without a real key (`specs/backoffice/ai.spec.ts`). The set-up waits for Umbraco.AI's
+  tables, at most 90 seconds, and says so in the log; a host that logs a failure line stops the start, and the error
+  quotes that line, reason and all.
 - **The samples** (ADR-0234): the host turns on the colour field type and the embed view, which the backoffice
   and website specs show; the protection host (`specs/website/protection-on-the-page.spec.ts`) also the arithmetic
   captcha, which would otherwise offer the captcha placement on every host.

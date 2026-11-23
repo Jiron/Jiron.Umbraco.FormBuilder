@@ -24,6 +24,15 @@ export const FAILED_LINES = [
   'Jiron Form Builder fake AI failed',
 ] as const;
 
+/**
+ * The first failure line of a log, whole: the line that holds one of {@link FAILED_LINES}, with the reason the C# code
+ * writes after it, so the harness's error says why; null when the log holds none.
+ */
+export function failureLine(log: string): string | null {
+  const line = log.split(/\r?\n/).find((each) => FAILED_LINES.some((failed) => each.includes(failed)));
+  return line === undefined ? null : line.trim();
+}
+
 const START_TIMEOUT_MS = 4 * 60_000;
 const REFUSAL_TIMEOUT_MS = 3 * 60_000;
 const STOP_TIMEOUT_MS = 15_000;
@@ -276,8 +285,8 @@ export async function startHost(options: HostOptions): Promise<Host> {
       await delay(500);
       if (launched.exited()) throw new Error(`The host ${name} exited during start-up.`);
       const log = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
-      const failed = FAILED_LINES.find((line) => log.includes(line));
-      if (failed) throw new Error(`The host ${name} logged "${failed}".`);
+      const failed = failureLine(log);
+      if (failed !== null) throw new Error(`The host ${name} logged: ${failed}`);
       if (
         (options.readyLines ?? READY_LINES).every((line) => log.includes(line)) &&
         (await pageAnswers(`${baseUrl}${options.readyPage ?? '/en/'}`))

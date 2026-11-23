@@ -37,7 +37,10 @@ public sealed class TestHostReleaseTests : FormBuilderTestServerTestBase
     {
         var handed = TestHostEnvironments.Handed(this);
         Assert.That(handed, Is.Not.Empty, "the host read its content root");
-        // As a host that watches its content root does (on Umbraco 18 every host does; on 17 none).
+        // As a host that watches its content root does (on Umbraco 18 every host does; on 17 none). With a file system
+        // watcher, whatever the environment says: the .NET SDK's container images set DOTNET_USE_POLLING_FILE_WATCHER,
+        // under which a provider polls instead and runs no watcher this test could see (ROADMAP 26.1).
+        handed[^1].UsePollingFileWatcher = false;
         _ = handed[^1].Watch("*.jfb");
         Assert.That(handed.Where(Watches), Is.Not.Empty, "a provider watches");
 

@@ -87,6 +87,17 @@ describe('workflowRuleErrors', () => {
     assert.equal(hasTopLevelOr('a && b || c'), true);
   });
 
+  test('requires a job that runs the integration tests to install the scripts\' packages first', async () => {
+    const job = (steps) =>
+      `${GOOD}  integration:\n    ${GATED}\n    runs-on: ubuntu-latest\n    timeout-minutes: 45\n    steps:\n${steps.map((step) => `      - run: ${step}\n`).join('')}`;
+    const without = workflowRuleErrors(await parse(job(['dotnet build', 'node scripts/test-integration.mjs --share 1/6'])));
+    assert.ok(without.some((e) => e.includes('integration') && e.includes('npm ci --prefix scripts')), without.join('\n'));
+    const after = workflowRuleErrors(await parse(job(['node scripts/test-integration.mjs --share 1/6', 'npm ci --prefix scripts --no-audit'])));
+    assert.ok(after.some((e) => e.includes('npm ci --prefix scripts')), 'installed too late');
+    assert.deepEqual(workflowRuleErrors(await parse(job(['npm ci --prefix scripts --no-audit --no-fund', 'node scripts/test-integration.mjs --share timed']))), []);
+    assert.deepEqual(workflowRuleErrors(await parse(job(['node scripts/test-integration.mjs --sum shares/sqlite']))), [], 'adding up the shares starts no test');
+  });
+
   test('requires both release lines in a push trigger on branches', async () => {
     const errors = workflowRuleErrors(await parse(GOOD.replace('branches: [main, v18/main]', 'branches: [main]')));
     assert.ok(errors.some((e) => e.includes('v18/main')), errors.join('\n'));

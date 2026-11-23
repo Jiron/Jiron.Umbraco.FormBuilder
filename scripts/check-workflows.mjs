@@ -13,6 +13,8 @@
  *     by hand;
  *   - actions are pinned to a major version or a commit, and services do not use the env context (GitHub does not
  *     offer it there);
+ *   - a job that runs the integration tests (scripts/test-integration.mjs) installs the scripts' packages before
+ *     (npm ci --prefix scripts): they hold the emulator the blob store's tests start (ROADMAP 26.1);
  *   - Dependabot covers nuget, npm (every lock file of check-npm-licences.mjs) and github-actions, and opens no
  *     pull request (limit 0) until the owner raises it.
  *
@@ -134,6 +136,12 @@ export function workflowRuleErrors(doc) {
       if (/\$\{\{[^}]*\benv\./.test(JSON.stringify(service))) {
         errors.push(`job ${id}: service ${name} uses the env context, which services cannot read`);
       }
+    }
+    // The blob store's integration tests start the emulator that the scripts' packages install (ROADMAP 26.1).
+    const runs = (job.steps ?? []).map((step) => (typeof step.run === 'string' ? step.run : ''));
+    const integration = runs.findIndex((run) => run.includes('scripts/test-integration.mjs') && !run.includes('--sum'));
+    if (integration >= 0 && !runs.slice(0, integration).some((run) => /npm ci --prefix scripts\b/.test(run))) {
+      errors.push(`job ${id}: run \`npm ci --prefix scripts\` before the integration tests, whose blob store tests start the emulator it installs`);
     }
     for (const step of job.steps ?? []) {
       // A tag's name, a manual run's input or an event's text reach a script through `env`, never inline: GitHub

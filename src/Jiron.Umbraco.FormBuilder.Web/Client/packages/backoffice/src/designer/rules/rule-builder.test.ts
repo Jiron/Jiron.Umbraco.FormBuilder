@@ -129,6 +129,10 @@ async function builderOf(extra: Partial<RuleBuilderModalData> = {}) {
   element.data = dataOf(extra);
   document.body.append(element);
   await settle(element);
+  // The opening focus comes a frame after the first render; a test acts after it, as an editor does. On a busy machine
+  // the frame came after a test's first click and took the focus back (ROADMAP 26.1, the Linux container).
+  await new Promise((done) => requestAnimationFrame(() => done(undefined)));
+  await settle(element);
   return { element, modal, root: shadow(element) };
 }
 

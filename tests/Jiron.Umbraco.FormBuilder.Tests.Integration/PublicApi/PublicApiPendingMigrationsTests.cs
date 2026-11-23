@@ -1,8 +1,10 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -18,11 +20,25 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class PublicApiPendingMigrationsTests : ConfiguredTestServerTestBase
 {
+    // A file store folder of the test's own: the default one is shared by every test host of every share that runs
+    // beside this one, whose files would count here as stored while pending (ROADMAP 26.1).
+    private string _root = null!;
+
+    [TearDown]
+    public void DeleteTheFolder()
+    {
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
+    }
+
     [Test]
     public async Task EveryEndpoint_AnswersMigrationsPending_WhileThePlanIsBehind_AndNormallyOnceItRan()
     {
         var endpoints = PublicApiEndpoints.All(Services);
         var root = ((PhysicalFileStore)GetRequiredService<IFormBuilderFileStore>()).Root;
+        Assert.That(root, Is.EqualTo(_root));
         List<string> Stored() => Directory.Exists(root) ? [.. Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories)] : [];
         var before = Stored();
         var pending = await CallEachAsync(endpoints, "while pending");
@@ -42,6 +58,15 @@ public sealed class PublicApiPendingMigrationsTests : ConfiguredTestServerTestBa
             Assert.That(after.Values, Is.All.Not.StartWith("5"), string.Join("\n", after));
             Assert.That(after["GET (no endpoint)"], Is.EqualTo("404 not_found"));
         });
+    }
+
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        base.CustomTestSetup(builder);
+        _root = Path.Combine(Path.GetTempPath(), "jfb-pending-" + Guid.NewGuid().ToString("N"));
+        builder.Services.Configure<FormBuilderOptions>(options => options.Files.Root = _root);
     }
 
     // Calls every endpoint with a key that names nothing and a body it takes, and an address that names no endpoint, and

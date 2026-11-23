@@ -70,6 +70,34 @@ shared out by the seconds in `e2e/spec-times.json`, the last site taking every s
 the `budgets` project alone. The run fails when a site fails and unless the tests that ran are exactly the tests the
 projects hold, each once; only a site whose database hung runs once more ([e2e/README.md](e2e/README.md#several-sites)).
 
+### On Linux, in a container
+
+Every run above happens on Windows; GitHub runs the workflow on Linux, where the culture data, the time zones, the file
+system and the order of things differ (ROADMAP 26.1). With Docker Desktop running, the workflow's Linux steps run in
+a container on the development machine first:
+
+```
+node scripts/linux-ci.mjs                                 the build job, the integration tests, the smoke tests
+node scripts/linux-ci.mjs integration -- --share 2/6      one stage, its own arguments after --
+node scripts/linux-ci.mjs run . dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --filter "FullyQualifiedName~X"
+node scripts/linux-ci.mjs stop
+```
+
+It builds the image `jfb-linux:local` from `scripts/linux/Dockerfile` when it is missing (`--rebuild` builds it again):
+Ubuntu 24.04 with the SDK of `global.json`, Node 24, PHP and a user who is not root, without the legacy time zone names,
+as GitHub's runner. The container `jfb-linux` sees the repository read-only at `/src` and keeps a copy, its builds and
+its NuGet and npm caches on the volume `jfb-linux-work`; an existing container is used as it is. Each run syncs the
+working tree into the copy, uncommitted changes too, then runs each stage through `scripts/linux/linux-ci.sh`, as the
+runner's user: `build` (the build job's checks, script tests, client, Release build, formatting, licences, packages,
+unit and AI tests), `integration` (`scripts/test-integration.mjs`, every share by default) and `smoke` (the browser
+smoke and website tests). Each step says its verdict and keeps its log in `/work/logs/<step>.log`; a run stops the
+container if it started it (`--keep` leaves it running).
+
+What it does not cover: SQL Server, which it never starts and refuses to be asked for (the SQL Server shares and the
+load-balancing suite run only on GitHub); the secret and term scans and the other checks that read the repository's
+history (the copy has none of it; the gate runs them); the release workflow's packing and drafting; and GitHub's own
+runner image, which it imitates.
+
 ## The projects
 
 | Project | What it holds |

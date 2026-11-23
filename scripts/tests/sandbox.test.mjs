@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for scripts/sandbox.mjs. Nothing here starts dotnet or a site.
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -14,6 +14,7 @@ import {
   SITES,
   childEnv,
   isOurProcess,
+  linuxStartText,
   loadSecrets,
   loginLines,
   newPassword,
@@ -186,6 +187,64 @@ describe('the PID record', () => {
     const started = processStartTime(process.pid);
     assert.match(started, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z$/);
     assert.equal(processStartTime(process.pid), started);
+  });
+
+  test('the start time of this test process is read from Linux', { skip: process.platform !== 'linux' }, () => {
+    const started = processStartTime(process.pid);
+    assert.match(started, /^linux:\d+:\d+$/);
+    assert.equal(processStartTime(process.pid), started);
+  });
+
+  test('a child has a start time of its own while it runs and none once it has ended', async () => {
+    const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'ignore' });
+    try {
+      await new Promise((resolve) => child.once('spawn', resolve));
+      const started = processStartTime(child.pid);
+      assert.equal(typeof started, 'string');
+      assert.notEqual(started, processStartTime(process.pid));
+      assert.equal(processStartTime(child.pid), started);
+    } finally {
+      child.kill();
+      await new Promise((resolve) => child.once('exit', resolve));
+    }
+    assert.equal(processStartTime(child.pid), null);
+  });
+
+  test('no PID, or not a number, has no start time', () => {
+    assert.equal(processStartTime(0), null);
+    assert.equal(processStartTime(-3), null);
+    assert.equal(processStartTime('x'), null);
+  });
+
+  describe('on Linux, from /proc', () => {
+    const boot = 'cpu  1 2 3\nbtime 1763856000\nprocesses 99\n';
+    // Fields 3 to 22 after the name; field 22 (the start in ticks after boot) is 123456.
+    const after = (state, ticks) => `${state} 1 1 1 0 -1 4194560 100 0 0 0 1 1 0 0 20 0 1 0 ${ticks} 1000 10`;
+    const files = (stat) => (file) => {
+      if (file === '/proc/stat') return boot;
+      if (file === '/proc/77/stat' && stat !== null) return stat;
+      throw Object.assign(new Error(`ENOENT ${file}`), { code: 'ENOENT' });
+    };
+
+    test('reads the start in ticks and the boot time, whatever the command name holds', () => {
+      assert.equal(linuxStartText(`77 (node) ${after('S', 123456)}`, boot), 'linux:1763856000:123456');
+      assert.equal(linuxStartText(`77 (a ) b (c)) ${after('R', 123456)}`, boot), 'linux:1763856000:123456');
+      assert.equal(processStartTime(77, { platform: 'linux', readText: files(`77 (dotnet) ${after('S', 5)}`) }), 'linux:1763856000:5');
+    });
+
+    test('a recycled PID starts at another tick, so its text differs', () => {
+      const first = processStartTime(77, { platform: 'linux', readText: files(`77 (dotnet) ${after('S', 5)}`) });
+      const second = processStartTime(77, { platform: 'linux', readText: files(`77 (bash) ${after('S', 9000)}`) });
+      assert.notEqual(first, second);
+    });
+
+    test('a process that is gone, a zombie or a file it cannot read has none', () => {
+      assert.equal(processStartTime(77, { platform: 'linux', readText: files(null) }), null);
+      assert.equal(linuxStartText(`77 (node) ${after('Z', 5)}`, boot), null);
+      assert.equal(linuxStartText('77 node S 1', boot), null);
+      assert.equal(linuxStartText(`77 (node) ${after('S', 'x')}`, boot), null);
+      assert.equal(linuxStartText(`77 (node) ${after('S', 5)}`, 'cpu 1 2 3\n'), null);
+    });
   });
 });
 

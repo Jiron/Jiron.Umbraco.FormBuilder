@@ -146,7 +146,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+          cache-dependency-path: |
+            scripts/package-lock.json
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
@@ -158,6 +160,9 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # The scripts' packages hold the emulator the blob store's tests start (Azurite, ROADMAP 26.1).
+      - name: Install the scripts' packages
+        run: npm ci --prefix scripts --no-audit --no-fund
       - name: Build the integration tests
         run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
       - name: Integration tests (SQLite)
@@ -211,7 +216,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+          cache-dependency-path: |
+            scripts/package-lock.json
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
@@ -222,6 +229,9 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # The scripts' packages hold the emulator the blob store's tests start (Azurite, ROADMAP 26.1).
+      - name: Install the scripts' packages
+        run: npm ci --prefix scripts --no-audit --no-fund
       - name: Build the integration tests
         run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
       - name: Integration tests (SQL Server)

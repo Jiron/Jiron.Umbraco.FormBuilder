@@ -31,13 +31,27 @@ public sealed class FileStoreRootLinkTests
     public void DeleteTheFolders()
     {
         // Links first and one by one: a recursive delete takes a junction for a mount point, which only an administrator
-        // may remove.
-        foreach (var link in Enumerable.Reverse(_links))
+        // may remove. A symbolic link elsewhere is removed as a link, whatever it leads to: once the link it leads to is
+        // gone, or in a loop, a directory's delete would look for its target and not find it (ROADMAP 26.1).
+        try
         {
-            Directory.Delete(link);
+            foreach (var link in Enumerable.Reverse(_links))
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Directory.Delete(link);
+                }
+                else
+                {
+                    File.Delete(link);
+                }
+            }
+        }
+        finally
+        {
+            _links.Clear();
         }
 
-        _links.Clear();
         Directory.Delete(_base, recursive: true);
     }
 
