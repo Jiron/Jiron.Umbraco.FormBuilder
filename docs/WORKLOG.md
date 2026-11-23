@@ -1510,3 +1510,11 @@ its reason, and a handover block at the end of every phase.
 - 2026-11-23 · 26.1, the Umbraco 18 line · `main` at `96875014` merged into `v18/main` (`49344446`, its own
   version kept), in a clone of its own: the client's tests, the script tests and the unit tests (9,228; 17 skipped)
   passed there, and the branch is pushed. Its browser and integration tests were not run again for this step.
+- 2026-11-23 · owner message · "I guess make sure its gonna work this time then i can make the repo public and itll be
+  free and infinite anyways right?" Answered from GitHub's documentation: standard hosted runners are free and
+  unlimited in a public repository, and every job here runs on one. **Made sure, as far as this machine can:** the
+  workflow's Linux steps ran once more in the container on `ac471bbf` (build 494 s, integration 734 s, smoke 689 s,
+  every step passed); the release workflow's job that drafts the release, which no run has reached yet, was read
+  line by line, and its version and notes steps give the right answers for `v17.0.0-beta.2` here. That job itself
+  runs only for a real tag. The tag waits for the owner: the repository public, or 1 December, or a budget; the
+  items of `docs/OWNER-TODO.md` to weigh before it is public were named to them.
