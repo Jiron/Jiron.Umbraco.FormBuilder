@@ -20,10 +20,12 @@ and on SQL Server found; until then they had run on Windows with SQLite only. It
   Windows, say, before a move) ran its forms in UTC, with the warning about a zone the server cannot resolve once an
   hour. Such a name now saves, comes back as it was saved, and runs in its zone on Windows and on Linux; another
   letter case, a Windows name and an offset are still refused.
-- **Two servers no longer lock each other's rows over the actions of one entry on SQL Server.** When two servers each
-  took an action of the same entry, each read the other's row under a lock and SQL Server stopped one of them; the
-  work was done again, so nothing was lost, but it happened often and slowed the queue. A server now locks only the
-  earlier actions it has to check, and the list of what is due skips what another server is taking.
+- **On SQL Server, taking an action no longer locks the rows of unrelated actions.** To take an action, a server
+  checks the earlier actions of its entry. On a small table SQL Server read every action for that check, under a
+  lock, so actions taken side by side waited for each other and SQL Server stopped one of them as a deadlock
+  victim; the work ran again, so nothing was lost, but it happened very often (1,844 times in one job of the tests)
+  and slowed the queue. The check now reads the entry's own actions only, and the list of what is due skips what
+  another server is taking. The same tests then met 12 deadlocks, each tried again.
 - **A piece of work SQL Server stopped as a deadlock victim always runs again.** In some cases the error that
   reached Jiron Form Builder was the transaction's own ("has completed; it is no longer usable"), which was not
   taken for the passing fault it is, so that read or write failed where it should have been tried again.

@@ -192,9 +192,13 @@ one batch each held its own run and read the other's: a deadlock. The due list, 
   locks waits for every row another claim holds. The claim's check (`SqlNames.QueueCheck`) and the check before a
   batch is queued (`SqlNames.LockingSeek`) now name the index and ask for a seek:
   `INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK`. They then lock the entry's own runs and no other's.
-- **Not measured here:** this machine runs no SQL Server, so the statements were written from SQL Server's
-  documentation and from that record, and the deadlocks counted in the workflow's log before and after
-  (`docs/STATUS.md`).
+- **Measured on the workflow's SQL Server** (this machine runs none): the same job met 1,844 deadlocks before the
+  seeks and 12 after, and ran in 772 s where it had taken 1,048 s. The 12 are of three kinds, each tried again:
+  two claims of two runs of one batch, one holding its own row in the primary key and wanting the index's key, the
+  other the reverse (5); a list of an entry's runs, which reads with shared locks, against the update that skips
+  the rest of a batch (3 and 1); the others were not read. The first kind would go with an index that holds every
+  column the check reads, which is a migration; the second with a list that reads row versions. Neither is done:
+  both are rare, lose nothing, and need a SQL Server to measure on (`docs/OWNER-TODO.md`).
 - SQLite takes neither hint, and the statements mean what they meant.
 
 ## Consequences
