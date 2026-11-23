@@ -24,8 +24,8 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
     private const int Count = 100_000;
     private static readonly TimeSpan SqliteBudget = TimeSpan.FromSeconds(1);
 
-    // SQL Server in a container on a hosted runner, beside the tests, measured at 3.95 s (ADR-0264).
-    private static readonly TimeSpan SqlServerBudget = TimeSpan.FromSeconds(8);
+    // SQL Server in a container on a hosted runner, beside the tests: 3.95 s, 4.02 s and 5.28 s measured (ADR-0264).
+    private static readonly TimeSpan SqlServerBudget = TimeSpan.FromSeconds(12);
 
     private static readonly FormField Topic = new()
     {

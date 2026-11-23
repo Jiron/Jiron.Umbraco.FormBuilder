@@ -31,8 +31,8 @@ a time budget (the NUnit category `Timed`) in one process with nothing beside it
   puts its files; the results, the trx file and the console log of each are in `.local/test-integration/<share>/`.
 - **A test that measures time** gets `[Category("Timed")]`; no other test may depend on how long something takes,
   since the shares share the cores. It writes what it measured to its output with the unit (`1885 ms`), and the run
-  prints those lines, so a hosted runner's times are in its job's log. The answer summaries' budget is per database
-  (ADR-0264).
+  prints those lines, so a hosted runner's times are in its job's log. Each timed budget is per database:
+  SQLite's is the product's, SQL Server's what the hosted runner measured, doubled (ADR-0264).
 - `--share 2/6` runs only that share and `--share timed` only the timed tests, each writing a `result.json`; CI gives
   each a job of its own, and `--sum <folder>` adds the result files up with the same checks. `--beside <assembly>`
   runs another test assembly beside the shares (the gate runs the unit and AI tests so), `--settings <file>` gives a

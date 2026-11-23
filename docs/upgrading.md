@@ -65,7 +65,7 @@ Fixes for sites on Linux and on SQL Server, found when the tests first ran there
     of an entry; before, the servers locked each other's rows and met deadlocks, after which the work ran again.
     Nothing changes in what runs or in which order.
   - On SQL Server, the Answers view of a form with about 100,000 entries takes seconds, not a second, on a small
-    server (4 s measured on a hosted test runner). It is a known limit of this beta.
+    server (4 to 5 s measured on a hosted test runner). It is a known limit of this beta.
 
 ### 17.0.0-beta.1 (2026-11-22)
 
