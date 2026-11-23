@@ -1507,3 +1507,6 @@ its reason, and a handover block at the end of every phase.
   is pushed, its release run passes and drafts a release" is the one still open, and the step is not ticked.
   **Left on this machine:** the image `jfb-linux:local` and the volume `jfb-linux-work` (the container is
   stopped), for the next Linux run; Docker Desktop runs, with the owner's own containers untouched.
+- 2026-11-23 · 26.1, the Umbraco 18 line · `main` at `96875014` merged into `v18/main` (`49344446`, its own
+  version kept), in a clone of its own: the client's tests, the script tests and the unit tests (9,228; 17 skipped)
+  passed there, and the branch is pushed. Its browser and integration tests were not run again for this step.
