@@ -47,7 +47,7 @@ public sealed class LogicModelFixtureTests
             new EditorHtml(),
             TestFieldTypes.Registry,
             site.Service,
-            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options()),
+            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options(), new MergeTagCultures()),
             new MergeTagCultures(),
             new ConsentWordings(site.Service, dictionary, new EditorHtml(), TestFieldTypes.Registry),
             settings);

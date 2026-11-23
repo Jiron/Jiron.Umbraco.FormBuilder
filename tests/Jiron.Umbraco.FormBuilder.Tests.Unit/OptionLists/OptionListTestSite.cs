@@ -51,7 +51,7 @@ internal sealed class OptionListTestSite
         // Without a transport of the test's own, no name resolves, so nothing leaves the machine.
         Outbound = new OutboundHttp(hosts.Transport ?? new FormBuilderHttpTransport((_, _) => Task.FromResult(Array.Empty<IPAddress>()), null), MsOptions.Create(host), time);
         Fetcher = hosts.Limits is { } limits ? new UrlOptionFetcher(Outbound, Caches, time, UrlLogs) { Limits = limits } : new UrlOptionFetcher(Outbound, Caches, time, UrlLogs);
-        Kinds = new OptionKindRegistry(Sources, UmbracoReads, Fetcher);
+        Kinds = new OptionKindRegistry(Sources, UmbracoReads, Fetcher, new MergeTagCultures());
         Refresher = new FormBuilderOptionListCacheRefresher(Caches, Substitute.For<IJsonSerializer>(), Substitute.For<IEventAggregator>(), Substitute.For<ICacheRefresherNotificationFactory>());
         Lists = new OptionListService(Repository, Kinds, Caches, new DistributedCache(Messenger, new CacheRefresherCollection(() => [Refresher])), ListLogs);
     }

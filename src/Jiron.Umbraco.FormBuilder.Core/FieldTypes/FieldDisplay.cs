@@ -16,6 +16,7 @@ public sealed class FieldDisplay
     private readonly CultureFormats _formats;
     private readonly DictionaryTexts _dictionary;
     private readonly IReadOnlyDictionary<string, string>? _optionLabels;
+    private readonly MergeTagCultures? _cultures;
     private readonly List<DisplayText> _texts = [];
 
     internal FieldDisplay(
@@ -26,7 +27,8 @@ public sealed class FieldDisplay
         CultureFormats formats,
         bool isListing,
         DictionaryTexts? dictionary = null,
-        IReadOnlyDictionary<string, string>? optionLabels = null)
+        IReadOnlyDictionary<string, string>? optionLabels = null,
+        MergeTagCultures? cultures = null)
     {
         if (!files.IsEmpty && files.Length != values.Length)
         {
@@ -41,6 +43,7 @@ public sealed class FieldDisplay
         _formats = formats;
         _dictionary = dictionary ?? DictionaryTexts.None;
         _optionLabels = optionLabels;
+        _cultures = cultures;
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -162,7 +165,7 @@ public sealed class FieldDisplay
     public string CountryName(string code)
     {
         ArgumentNullException.ThrowIfNull(code);
-        return CountryNames.Name(code, Culture);
+        return _cultures?.CountryName(code, Culture) ?? CountryNames.Name(code, Culture);
     }
 
     /// <summary>A text shown, with the wire number or date behind it.</summary>

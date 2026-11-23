@@ -14,7 +14,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// recalled fields, a repeatable group whole with any of them, their aliases and what their answers show as, held to the
 /// rules the vectors' runner holds both runtimes to. Every text is the visitor's form's, in the page's culture.
 /// </summary>
-internal sealed class MergeTagRecallForms(FieldTypeRegistry types, IFormBuilderOptionService options)
+internal sealed class MergeTagRecallForms(FieldTypeRegistry types, IFormBuilderOptionService options, MergeTagCultures cultures)
 {
     // Every country code, in one order, so the browser names an answer as the server does whatever code it holds.
     private static readonly IReadOnlyList<string> Countries = [.. BuiltInChecks.CountryCodes.Order(StringComparer.Ordinal)];
@@ -148,7 +148,7 @@ internal sealed class MergeTagRecallForms(FieldTypeRegistry types, IFormBuilderO
         IEnumerable<(string Value, string Label)> labels;
         if (traits.Type is CountryFieldType or AddressFieldType)
         {
-            labels = Countries.Select(code => (code, CountryNames.Name(code, walk.Scope.Culture)));
+            labels = Countries.Select(code => (code, cultures.CountryName(code, walk.Scope.Culture)));
         }
         else if (field.Options is not { } given)
         {

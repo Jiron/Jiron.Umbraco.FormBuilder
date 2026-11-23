@@ -1,4 +1,6 @@
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -130,26 +132,58 @@ public sealed class DotNetCultureFormatsTests
         Assert.That(mismatches, Is.Empty);
     }
 
-    [TestCase("de-CH", "d. MMM yyyy")]
-    [TestCase("de-DE", "d. MMM yyyy")]
-    [TestCase("en-US", "MMM d, yyyy")]
-    [TestCase("en-GB", "d MMM yyyy")]
-    [TestCase("fr-FR", "d MMM yyyy")]
-    public void TheMediumDate_IsTheLongDate_WithoutTheDaysNameAndItsSeparators(string culture, string medium)
+    // Long patterns as cultures have them (German, American, British as Windows and as Linux write it), set on a made culture.
+    [TestCase("dddd, d. MMMM yyyy", "d. MMM yyyy")]
+    [TestCase("dddd, MMMM d, yyyy", "MMM d, yyyy")]
+    [TestCase("dddd, d MMMM yyyy", "d MMM yyyy")]
+    [TestCase("dddd d MMMM yyyy", "d MMM yyyy")]
+    public void TheMediumDate_IsTheLongDate_WithoutTheDaysNameAndItsSeparators(string longDate, string medium)
     {
-        Assert.That(DotNetCultureFormats.From(CultureInfo.GetCultureInfo(culture)).Dates.Medium, Is.EqualTo(medium));
+        Assert.That(DotNetCultureFormats.From(Made(dates => dates.LongDatePattern = longDate)).Dates.Medium, Is.EqualTo(medium));
     }
 
     [Test]
     public void TheSeparators_AreWrittenIn_AndEscapedForDotNet()
     {
-        var formats = DotNetCultureFormats.From(CultureInfo.GetCultureInfo("en-US"));
+        // A culture made here: the separators and patterns are the test's, not the system's (ADR-0263).
+        var formats = DotNetCultureFormats.From(Made(dates =>
+        {
+            dates.DateSeparator = "-";
+            dates.TimeSeparator = ".";
+            dates.ShortDatePattern = "M/d/yyyy";
+            dates.ShortTimePattern = "h:mm tt";
+        }));
 
         Assert.Multiple(() =>
         {
-            Assert.That(formats.Dates.Short, Is.EqualTo(@"M\/d\/yyyy"));
-            Assert.That(formats.Dates.Time, Is.EqualTo(@"h\:mm tt"));
-            Assert.That(CultureFormatting.FormatCalendar("2026-03-07T09:05:03", "short", formats), Is.EqualTo("3/7/2026"));
+            Assert.That(formats.Dates.Short, Is.EqualTo(@"M-d-yyyy"));
+            Assert.That(formats.Dates.Time, Is.EqualTo(@"h.mm tt"));
+            Assert.That(CultureFormatting.FormatCalendar("2026-03-07T09:05:03", "short", formats), Is.EqualTo("3-7-2026"));
+        });
+    }
+
+    // Windows' and Linux's ICU write the American time with an ordinary space or a narrow no-break space (U+202F)
+    // before the designator: each is written as it is, unescaped, and prints the same in .NET and in both runtimes.
+    [TestCase("h:mm tt", @"h\:mm tt", "9:05 AM", "5:45 PM")]
+    [TestCase("h:mm\u202Ftt", "h\\:mm\u202Ftt", "9:05\u202FAM", "5:45\u202FPM")]
+    public void ATimeWithEitherSpaceBeforeItsDesignator_IsWrittenAsItIs_AndPrintsWithIt(string dotNet, string written, string morning, string evening)
+    {
+        var culture = Made(dates =>
+        {
+            dates.TimeSeparator = ":";
+            dates.ShortTimePattern = dotNet;
+            dates.AMDesignator = "AM";
+            dates.PMDesignator = "PM";
+        });
+        var formats = DotNetCultureFormats.From(culture);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(formats.Dates.Time, Is.EqualTo(written));
+            Assert.That(formats.Dates.DateTime, Does.EndWith(" " + written), "the date and the time are apart by a space either way");
+            Assert.That(CultureFormatting.FormatCalendar("09:05", "time", formats), Is.EqualTo(morning));
+            Assert.That(CultureFormatting.FormatCalendar("17:45:59", "time", formats), Is.EqualTo(evening));
+            Assert.That(new DateTime(2026, 3, 7, 17, 45, 59, DateTimeKind.Unspecified).ToString(formats.Dates.Time, culture), Is.EqualTo(evening));
         });
     }
 
@@ -192,6 +226,52 @@ public sealed class DotNetCultureFormatsTests
             Assert.That(cultures.For("de-CH"), Is.SameAs(cultures.For("DE-ch")));
             Assert.That(cultures.For(string.Empty).Dates, Is.EqualTo(Invariant.Dates));
         });
+    }
+
+    [Test]
+    public void GivenCountries_NameAndOrderTheirLanguage_AndTheSystemsDataTheOthers()
+    {
+        var cultures = new MergeTagCultures(
+            [],
+            [KeyValuePair.Create<string, IReadOnlyList<KeyValuePair<string, string>>>("de", [KeyValuePair.Create("CH", "Schweiz"), KeyValuePair.Create("AT", "\u00D6sterreich"), KeyValuePair.Create("DE", "Deutschland")])]);
+        var order = cultures.CountryOrder("de-CH");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(cultures.CountryName("CH", "de-DE"), Is.EqualTo("Schweiz"), "any culture of the language");
+            Assert.That(cultures.CountryName("at", "de"), Is.EqualTo("\u00D6sterreich"), "the code in any case");
+            Assert.That(cultures.CountryName("FR", "de-CH"), Is.EqualTo("FR"), "a country the data does not name shows as its code");
+            Assert.That(cultures.CountryName("FR", "fr-FR"), Is.EqualTo(CountryNames.Name("FR", "fr-FR")), "another language is the system's");
+            Assert.That(new[] { "Deutschland", "Zypern", "Schweiz", "Belgien", "\u00D6sterreich" }.Order(order), Is.EqualTo(new[] { "Schweiz", "\u00D6sterreich", "Deutschland", "Belgien", "Zypern" }), "the given order, then the others in ordinal order");
+            Assert.That(order.Compare(null, "Schweiz"), Is.Positive);
+        });
+    }
+
+    // The countries option list sorted case sensitively before the order became one, letter case aside (ADR-0263): over
+    // every country, in each language of the visitor texts, the list comes out as it did, on the system the test runs on.
+    [TestCase("en")]
+    [TestCase("de")]
+    [TestCase("fr")]
+    [TestCase("it")]
+    [TestCase("nl")]
+    [TestCase("es")]
+    [TestCase("da")]
+    public void TheCountriesList_KeepsItsOrder_InEachVisitorLanguage(string culture)
+    {
+        var named = BuiltInChecks.CountryCodes.Select(code => (Code: code, Name: CountryNames.Name(code, culture))).ToList();
+        var before = named.OrderBy(country => country.Name, StringComparer.Create(MergeTagCultures.Culture(culture), ignoreCase: false)).ThenBy(country => country.Code, StringComparer.Ordinal);
+        var now = named.OrderBy(country => country.Name, new MergeTagCultures().CountryOrder(culture)).ThenBy(country => country.Code, StringComparer.Ordinal);
+
+        Assert.That(now.Select(country => country.Code), Is.EqualTo(before.Select(country => country.Code)));
+    }
+
+    [Test]
+    public void TheSystemsCountryOrder_IsTheCulturesOwn_LetterCaseAside()
+    {
+        var names = new[] { "\u00D6sterreich", "zypern", "Deutschland", "Oman", "\u00C4gypten", "Agypten" };
+        var german = CultureInfo.GetCultureInfo("de-DE");
+
+        Assert.That(names.Order(new MergeTagCultures().CountryOrder("de-DE")), Is.EqualTo(names.Order(StringComparer.Create(german, ignoreCase: true))));
     }
 
     private static bool SameCurrency(CurrencyFormat a, CurrencyFormat b) =>
@@ -248,6 +328,14 @@ public sealed class DotNetCultureFormatsTests
         }
 
         return runs;
+    }
+
+    // An English culture whose date data the test sets: a writable copy, on the Gregorian calendar.
+    private static CultureInfo Made(Action<DateTimeFormatInfo> set)
+    {
+        var culture = (CultureInfo)CultureInfo.GetCultureInfo("en-US").Clone();
+        set(culture.DateTimeFormat);
+        return culture;
     }
 
     private static string Wire(DateTime instant) => instant.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss", CultureInfo.InvariantCulture);

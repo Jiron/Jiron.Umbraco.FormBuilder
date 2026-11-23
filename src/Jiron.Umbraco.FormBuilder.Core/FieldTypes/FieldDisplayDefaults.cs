@@ -135,7 +135,7 @@ internal static class CountryNames
     }
 
     /// <summary>The language of a culture without its region (<c>sr-Latn</c> for <c>sr-Latn-RS</c>), English when there is none.</summary>
-    private static string Language(string culture)
+    internal static string Language(string culture)
     {
         var known = MergeTags.MergeTagCultures.Culture(culture);
         while (!known.IsNeutralCulture && known.Name.Length > 0)

@@ -406,7 +406,7 @@ internal sealed partial class MergeTagAnswerTexts(
 
         var formats = cultures.For(culture);
         var labels = texts.LabelsOf(field.Key, answer.Row);
-        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels);
+        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures);
         try
         {
             if (shared && !BuiltInFieldTypes.All.Contains(type.GetType()))
@@ -423,7 +423,7 @@ internal sealed partial class MergeTagAnswerTexts(
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             LogDisplayFailed(logger, type.Declaration.Alias, exception.GetType().FullName, exception.StackTrace);
-            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels);
+            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures);
             FieldDisplayDefaults.Display(type.Declaration, fallback);
             return fallback.Texts;
         }

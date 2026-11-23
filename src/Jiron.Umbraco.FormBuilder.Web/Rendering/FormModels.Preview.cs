@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -50,7 +49,7 @@ internal sealed partial class FormModels
             {
                 // Nothing hidden, as the rules are not applied: every field the copy lists has its row, "Not answered" where the
                 // sample has no answer, as a real entry's copy has.
-                Answers = await CopiedAsync(shown, PreviewId, classes, new EntryCopy(source.Entry, Hidden: new HashSet<Guid>(), entry.Submitted), words, CultureInfo.GetCultureInfo(source.Culture), cancellationToken),
+                Answers = await CopiedAsync(shown, PreviewId, classes, new EntryCopy(source.Entry, Hidden: new HashSet<Guid>(), entry.Submitted), words, cultures.Info(source.Culture), cancellationToken),
                 PrintText = words.PrintAnswers,
                 ShownText = words.CopyShown,
                 Again = new OutcomeLinkModel("#" + PreviewId, words.FillInAgain),

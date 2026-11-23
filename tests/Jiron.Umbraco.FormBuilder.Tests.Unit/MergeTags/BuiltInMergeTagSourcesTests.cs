@@ -1,5 +1,7 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using static Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags.MergeTagTestSite;
 
@@ -140,11 +142,32 @@ public sealed class BuiltInMergeTagSourcesTests
         time.Advance(TimeSpan.FromMinutes(90));
         var later = await site.RenderAsync("{{ date.now | date: \"time\" }}");
 
+        // In the scope's culture (British English) as its culture data writes it, which differs between systems (ADR-0263).
+        var british = CultureInfo.GetCultureInfo("en-GB");
+        var evening = new DateTime(2025, 12, 31, 19, 0, 0, DateTimeKind.Unspecified);
         Assert.Multiple(() =>
         {
-            Assert.That(rendered.Text, Is.EqualTo("31/12/2025 19:00 2025-12-31T19:00:00 Wednesday, 31 December 2025"));
-            Assert.That(later.Text, Is.EqualTo("20:30"));
+            Assert.That(rendered.Text, Is.EqualTo($"{evening.ToString("g", british)} 2025-12-31T19:00:00 {evening.ToString("D", british)}"));
+            Assert.That(later.Text, Is.EqualTo(evening.AddMinutes(90).ToString("t", british)));
         });
+    }
+
+    // The British long date as Windows' ICU writes it, with a comma after the day's name, and as Linux's does, without:
+    // the product prints each as its culture data says, with formats made here (ROADMAP 26.1, ADR-0263).
+    [TestCase("dddd, d MMMM yyyy", "Wednesday, 31 December 2025")]
+    [TestCase("dddd d MMMM yyyy", "Wednesday 31 December 2025")]
+    public async Task Now_InTheLongFormat_IsWrittenAsTheCulturesDataSays(string longDate, string expected)
+    {
+        var british = DotNetCultureFormats.From(CultureInfo.InvariantCulture) with
+        {
+            Dates = new DatePatterns(@"dd\/MM\/yyyy", "d MMM yyyy", longDate, @"HH\:mm", @"dd\/MM\/yyyy HH\:mm"),
+        };
+        var time = new TestTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var site = Create(zone: "America/New_York", time: time, cultures: new MergeTagCultures([KeyValuePair.Create("en-GB", british)]));
+
+        var rendered = await site.RenderAsync("{{ date.now | date: \"long\" }}|{{ date.now }}");
+
+        Assert.That(rendered.Text, Is.EqualTo(expected + "|31/12/2025 19:00"));
     }
 
     [Test]

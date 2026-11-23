@@ -51,7 +51,7 @@ public sealed class VisitorFormsTests
             new EditorHtml(),
             TestFieldTypes.Registry,
             site.Service,
-            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options()),
+            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options(), new MergeTagCultures()),
             new MergeTagCultures(),
             new ConsentWordings(site.Service, dictionary, new EditorHtml(), TestFieldTypes.Registry),
             _settings);
@@ -259,7 +259,7 @@ public sealed class VisitorFormsTests
             new EditorHtml(),
             site,
             MergeTagTestSite.Create(umbraco: _umbraco).Service,
-            new MergeTagRecallForms(site, new OptionListTestSite().Options()),
+            new MergeTagRecallForms(site, new OptionListTestSite().Options(), new MergeTagCultures()),
             new MergeTagCultures(),
             new ConsentWordings(MergeTagTestSite.Create(umbraco: _umbraco).Service, new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages), new EditorHtml(), site),
             _settings);
@@ -320,7 +320,7 @@ public sealed class VisitorFormsTests
             new EditorHtml(),
             TestFieldTypes.Registry,
             site.Service,
-            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options()),
+            new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options(), new MergeTagCultures()),
             new MergeTagCultures(),
             new ConsentWordings(site.Service, new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages), new EditorHtml(), TestFieldTypes.Registry),
             _settings);
