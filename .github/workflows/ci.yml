@@ -285,6 +285,15 @@ jobs:
         run: |
           if [ "$SHARE" = timed ]; then share=timed; else share="$SHARE/$JFB_SHARES"; fi
           node scripts/test-integration.mjs --share "$share" --results TestResults/integration
+      # A passing run hides the deadlocks the server met, as their units ran again: the server's own record says which
+      # statements and indexes they were on (scripts/sqlserver-deadlocks.mjs). It reads only, and never fails the job.
+      - name: The deadlocks SQL Server recorded
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          MSSQL_CONTAINER: ${{ job.services.mssql.id }}
+          SQLCMDPASSWORD: ${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }}
+        run: node scripts/sqlserver-deadlocks.mjs
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
