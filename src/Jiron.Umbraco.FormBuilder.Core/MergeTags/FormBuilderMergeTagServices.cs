@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -36,6 +37,7 @@ internal static class FormBuilderMergeTagServices
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<MergeTagCultures>();
+        services.TryAddSingleton<SystemTimeZoneLinks>();
         services.TryAddSingleton<MergeTagClock>();
         services.TryAddSingleton<MergeTagDictionary>();
         services.TryAddSingleton<MergeTagUmbraco>();

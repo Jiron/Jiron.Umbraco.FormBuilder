@@ -22,7 +22,8 @@ internal interface IFiniteMergeTagSource : IFormBuilderMergeTagSource
 /// <summary>The site's time and time zone, in which entry dates and <c>date.now</c> are written (ADR-0005, ADR-0065).</summary>
 /// <param name="settings">The general settings, which hold each site's time zone.</param>
 /// <param name="time">The clock.</param>
-internal sealed class MergeTagClock(IFormBuilderSettingsService settings, TimeProvider time)
+/// <param name="links">The server's links of older time zone names.</param>
+internal sealed class MergeTagClock(IFormBuilderSettingsService settings, TimeProvider time, SystemTimeZoneLinks links)
 {
     /// <summary>The current instant.</summary>
     public DateTimeOffset Now => time.GetUtcNow();
@@ -31,7 +32,7 @@ internal sealed class MergeTagClock(IFormBuilderSettingsService settings, TimePr
     public async Task<TimeZoneInfo> ZoneAsync(Guid? site, CancellationToken cancellationToken)
     {
         var general = await settings.GetAsync<GeneralSettings>(site, cancellationToken);
-        return CalendarValues.FindTimeZone(general.Value.TimeZone) ?? TimeZoneInfo.Utc;
+        return CalendarValues.FindTimeZone(general.Value.TimeZone, links) ?? TimeZoneInfo.Utc;
     }
 
     /// <summary>An instant as wall-clock time in a zone, in the wire form with seconds (ADR-0005).</summary>

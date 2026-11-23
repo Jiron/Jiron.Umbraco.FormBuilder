@@ -3,6 +3,7 @@
 - Status: accepted; amended in 4.8c, 4.8g and 4.8i (the shared load); a stored time zone this server cannot resolve
   amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)); `general`'s required-marker style
   and button labels added in 6.2c ([ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md))
+- Amended in 26.1: a time zone's older name that browsers list saves as given
 - Completed by: [ADR-0232](0232-the-site-of-a-request.md), which builds what this left to step 14.4 (a deleted root's rows)
 - Date: 2026-10-24
 - Roadmap step: 4.4b (decided and built); every step that adds a section or a field (4.5, 6.x, 7.x, 8.x, 13.x),
@@ -137,6 +138,15 @@ So a first caller inside a unit neither lends the load its connection nor stops 
 **Amended in 4.8i** (the review of 4.8g and 4.8h): a load that fails after every caller stopped waiting is cleared
 too. It stayed in the cache until the next miss, which then heard of the old failure; now the load clears itself as
 it fails or is cancelled, and a caller that hears of the failure clears it before passing it on.
+
+**Amended in 26.1** (the workflow on Linux): "the server's spelling" was the zone's own id, which refused names
+browsers list on a Linux server. Chrome lists some zones by their older names, such as `Asia/Calcutta` and
+`America/Buenos_Aires`; Windows finds them through ICU and gives them back as spelled, while a Linux server without its
+package of older names (Ubuntu's `tzdata-legacy`, absent on GitHub's runners) found no file for them at all. A zone is
+now found by an older name through the link its system's own time zone database holds (`tzdata.zi`), and a save takes
+every spelling the server knows exactly: the zone's id, an older name that system links to it, or a name ICU converts
+(`TimeZoneInfo.TryConvertIanaIdToWindowsId`, which ignores no letter case and keeps no cache). The value is stored as
+given. Another letter case, a Windows name and an offset are refused as before, for the reasons above.
 
 ## Consequences
 

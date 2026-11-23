@@ -7,6 +7,19 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A time zone the browser lists under its older name works on a Linux server.** Browsers list some zones by their
+  older names, such as `Asia/Calcutta` or `America/Buenos_Aires`. A Linux server without its package of older names
+  refused such a name when Settings › General was saved, and a site whose zone was already stored under one (saved on
+  Windows, say, before a move) ran its forms in UTC, with the warning about a zone the server cannot resolve once an
+  hour. Such a name now saves, comes back as it was saved, and runs in its zone on Windows and on Linux; another
+  letter case, a Windows name and an offset are still refused.
+- **A hand-made request for the free-text answers in Insights no longer fails on SQL Server.** A page cursor written
+  by hand that named a time before 1753 was answered with a server error there; the cursors the backoffice itself
+  uses never did. A time before 1753 or after 9999 in a request now goes to the database at that edge, on SQL Server
+  and SQLite alike.
+
 ## [17.0.0-beta.1] - 2026-11-22
 
 The first beta of Jiron Form Builder for Umbraco 17.6 or later (within 17), on .NET 10, with SQLite or SQL Server. A

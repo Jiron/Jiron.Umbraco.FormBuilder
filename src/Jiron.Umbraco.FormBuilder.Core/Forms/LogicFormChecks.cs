@@ -21,7 +21,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <param name="languages">The site's languages.</param>
 /// <param name="settings">The settings, whose general section holds the site's time zone.</param>
 /// <param name="time">The clock.</param>
-internal sealed class RuleSearchScopes(FieldTypeRegistry types, ILanguageService languages, IFormBuilderSettingsService settings, TimeProvider time)
+/// <param name="links">The server's links of older time zone names.</param>
+internal sealed class RuleSearchScopes(FieldTypeRegistry types, ILanguageService languages, IFormBuilderSettingsService settings, TimeProvider time, SystemTimeZoneLinks links)
 {
     /// <summary>The form as its rules see it, and what the search tries its answers with.</summary>
     public async Task<(LogicForm Logic, SearchScope Scope)> OfAsync(FormDefinition definition, CancellationToken cancellationToken)
@@ -61,7 +62,7 @@ internal sealed class RuleSearchScopes(FieldTypeRegistry types, ILanguageService
 
         var options = OwnOptions(definition);
         var general = await settings.GetAsync<GeneralSettings>(null, cancellationToken);
-        var zone = CalendarValues.FindTimeZone(general.Value.TimeZone) is null ? "UTC" : general.Value.TimeZone;
+        var zone = CalendarValues.FindTimeZone(general.Value.TimeZone, links)?.Id ?? "UTC";
         var now = time.GetUtcNow().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
         var cultures = (await languages.GetAllAsync()).Select(language => language.IsoCode).ToList();
         var scope = new SearchScope(

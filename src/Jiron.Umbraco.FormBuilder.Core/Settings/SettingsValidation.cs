@@ -95,14 +95,19 @@ internal sealed class SettingsErrors(string section)
     }
 
     /// <summary>
-    /// An IANA time zone this server resolves, as "today" looks it up (ADR-0005, ADR-0030), spelled as the server spells
-    /// it (ADR-0043). Windows names and offsets are refused, because the browser does not take the one and the server not
-    /// the other. Another letter case is refused too: Windows finds it only once the exact spelling has been looked up,
-    /// so the answer would depend on what the server did before.
+    /// An IANA time zone this server resolves, as "today" looks it up (ADR-0005, ADR-0030), spelled exactly as the server
+    /// knows it (ADR-0043): the zone's own name, or an older name that browsers list and the system links to the zone,
+    /// such as <c>Asia/Calcutta</c>, which is kept as it was given (ROADMAP 26.1). Windows names and offsets are refused,
+    /// because the browser does not take the one and the server not the other. Another letter case is refused too:
+    /// Windows finds it only once the exact spelling has been looked up, so the answer would depend on what the server did
+    /// before.
     /// </summary>
-    public void TimeZone(string field, string? value)
+    /// <param name="field">The field's path in the section.</param>
+    /// <param name="value">The zone as given.</param>
+    /// <param name="links">The server's links of older time zone names.</param>
+    public void TimeZone(string field, string? value, SystemTimeZoneLinks links)
     {
-        if (value is null || CalendarValues.FindTimeZone(value) is not { } zone || !string.Equals(zone.Id, value, StringComparison.Ordinal))
+        if (value is null || CalendarValues.FindExactTimeZone(value, links) is null)
         {
             Add(field, TimeZoneCode, "Must be an IANA time zone this server knows, in its exact spelling, such as Europe/Berlin.");
         }

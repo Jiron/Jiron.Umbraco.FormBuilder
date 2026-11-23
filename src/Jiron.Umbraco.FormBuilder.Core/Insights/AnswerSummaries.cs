@@ -509,7 +509,10 @@ internal sealed class AnswerSummaries(IFormRepository forms, IEntryQueryReposito
         {
             if (text.Length is > 0 and <= 512 && JsonSerializer.Deserialize<CursorText>(Base64Url.DecodeFromChars(text), CursorJson) is { E: > 0, T: >= 0 and <= 3155378975999999999, R: >= 0 } read)
             {
-                return new AnswerTextCursor(read.E, new DateTime(read.T, DateTimeKind.Utc), read.R);
+                // A time the tables cannot hold stands where the stored times end: a cursor this server gave holds a stored
+                // time, and one made by hand that names no such time finds what such a time would (ROADMAP 26.1).
+                var ticks = Math.Clamp(read.T, FormBuilderDbTime.MinStorable.UtcTicks, FormBuilderDbTime.MaxStorable.UtcTicks);
+                return new AnswerTextCursor(read.E, new DateTime(ticks, DateTimeKind.Utc), read.R);
             }
         }
         catch (Exception exception) when (exception is FormatException or JsonException or ArgumentException)

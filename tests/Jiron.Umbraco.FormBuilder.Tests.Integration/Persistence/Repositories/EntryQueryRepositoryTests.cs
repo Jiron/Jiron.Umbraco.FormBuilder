@@ -522,6 +522,39 @@ public sealed class EntryQueryRepositoryTests : RepositoryTestBase
         });
     }
 
+    // A request may name any time in a cursor or a range, and SQL Server's DATETIME parameters hold only 1753 to 9999
+    // (ROADMAP 26.1): such a time goes out at that edge, on both databases, and answers as the time itself would.
+    [Test]
+    public async Task TimesBeyondWhatSqlServerHolds_GoOutAtItsEdges_AndAnswerAsThemselves()
+    {
+        var form = await CreateTestFormAsync("name");
+        var anna = await StoreAsync(form, Text(form["name"], "Anna"));
+        var bert = await StoreAsync(form, Text(form["name"], "Bert"));
+        var (first, last) = (DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
+        var everything = new EntryQuery(form.Id) { SubmittedFrom = first, SubmittedBefore = last };
+        var recorder = new StatementRecorder();
+
+        var (texts, afterTheFirst, beforeTheLast, list, listAfterTheFirst) = await WatchedReadAsync(recorder, async () => (
+            await EntryQueries.TextsAsync(everything, form["name"], null, 10),
+            await EntryQueries.TextsAsync(everything, form["name"], new AnswerTextCursor(1, first, 0), 10),
+            await EntryQueries.TextsAsync(everything, form["name"], new AnswerTextCursor(long.MaxValue, last, 0), 10),
+            await EntryQueries.ListAsync(everything, null, 10, count: true),
+            await EntryQueries.ListAsync(everything, new EntryCursor(EntrySort.Newest, 1, first, null), 10, count: false)));
+        var times = recorder.Statements.SelectMany(statement => statement.Values).OfType<DateTime>().ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(times, Is.Not.Empty);
+            Assert.That(times, Is.All.InRange(new DateTime(1753, 1, 1), new DateTime(9999, 12, 31, 23, 59, 59, 997)), "every time a parameter of DATETIME holds");
+            Assert.That(texts.Texts.Select(text => text.Text), Is.EqualTo(new[] { "Bert", "Anna" }), "a range of all time holds every entry");
+            Assert.That(afterTheFirst.Texts, Is.Empty, "nothing comes after the first moment, newest first");
+            Assert.That(beforeTheLast.Texts.Select(text => text.Text), Is.EqualTo(new[] { "Bert", "Anna" }), "everything after the last moment");
+            Assert.That(list.Entries.Select(entry => entry.Id), Is.EqualTo(new[] { bert, anna }));
+            Assert.That(list.Count, Is.EqualTo(new EntryCount(2, More: false)));
+            Assert.That(listAfterTheFirst.Entries, Is.Empty);
+        });
+    }
+
     [Test]
     public async Task AListPastItsBudget_StopsWithQueryTimeout_AndASubmissionMeanwhileSucceeds()
     {

@@ -9,7 +9,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 /// service and its cache. A stored zone this server cannot resolve, as after a move to a server without it, counts as
 /// UTC, and the site logs a warning that names the setting, at most once an hour per site and zone on each server.
 /// </summary>
-internal sealed partial class SiteTimeZones(IFormBuilderSettingsService settings, TimeProvider time, ILogger<SiteTimeZones> logger)
+internal sealed partial class SiteTimeZones(IFormBuilderSettingsService settings, TimeProvider time, SystemTimeZoneLinks links, ILogger<SiteTimeZones> logger)
 {
     /// <summary>The setting a warning names.</summary>
     public const string Setting = FormBuilderSettingsSections.General + ".timeZone";
@@ -25,7 +25,7 @@ internal sealed partial class SiteTimeZones(IFormBuilderSettingsService settings
     public async Task<TimeZoneInfo> GetAsync(Guid? site, CancellationToken cancellationToken = default)
     {
         var stored = (await settings.GetAsync<GeneralSettings>(site, cancellationToken)).Value.TimeZone;
-        if (CalendarValues.FindTimeZone(stored) is { } zone)
+        if (CalendarValues.FindTimeZone(stored, links) is { } zone)
         {
             return zone;
         }

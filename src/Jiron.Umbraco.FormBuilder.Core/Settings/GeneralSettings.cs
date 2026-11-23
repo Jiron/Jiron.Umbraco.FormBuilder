@@ -157,6 +157,22 @@ internal sealed record NewFormConsent
 /// </summary>
 internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSettings>
 {
+    private readonly SystemTimeZoneLinks _links;
+
+    /// <summary>A validator over this system's links of older time zone names, read on its own.</summary>
+    public GeneralSettingsValidator()
+        : this(new SystemTimeZoneLinks())
+    {
+    }
+
+    /// <summary>A validator over the server's links of older time zone names.</summary>
+    /// <param name="links">The links, one per server.</param>
+    public GeneralSettingsValidator(SystemTimeZoneLinks links)
+    {
+        ArgumentNullException.ThrowIfNull(links);
+        _links = links;
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// A base URL of white space is the default; one that is an origin is written as its origin (<c>HTTPS://Example.com/</c>
@@ -192,7 +208,7 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
     {
         ArgumentNullException.ThrowIfNull(section);
         ArgumentNullException.ThrowIfNull(errors);
-        errors.TimeZone("timeZone", section.TimeZone);
+        errors.TimeZone("timeZone", section.TimeZone, _links);
         if (section.BaseUrl is { } baseUrl && BaseUrls.Normalize(baseUrl) != baseUrl)
         {
             errors.Add("baseUrl", SettingsErrors.BaseUrlCode, "Must be the address the site is reached at, such as https://www.example.com: https or http, the host and a port, and nothing after them.");
