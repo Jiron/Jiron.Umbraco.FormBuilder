@@ -51,8 +51,9 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 }
 
                 // A change queues one batch for an entry. The hold keeps every other batch of the entry out until the unit
-                // ends, so the key is checked once, here.
-                if (await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)}{n.LockingRead} WHERE {n.C("entryId")} = @0 AND {n.C("changeKey")} = @1", entryId, changeKey) > 0)
+                // ends, so the key is checked once, here; by a seek of the entry's runs, so that it holds their range and not,
+                // by a scan, every run of the table, which the claims lock row by row (ROADMAP 26.1).
+                if (await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {n.T(FormBuilderTables.ActionRun)}{n.LockingSeek(EntryRunsIndex)} WHERE {n.C("entryId")} = @0 AND {n.C("changeKey")} = @1", entryId, changeKey) > 0)
                 {
                     throw new FormBuilderConflictException(FormBuilderConflict.DuplicateKey, "The entry already has the runs of this change.");
                 }
@@ -444,6 +445,9 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     /// The due list (<c>@0</c> the time): the ids of the pending runs whose time came and that nothing holds back, the
     /// longest due first. It reads without locks: it only proposes, and the claim checks again under its own.
     /// </summary>
+    /// <summary>The index of an entry's runs in their order, which the checks of a batch seek (CreateSchemaV1).</summary>
+    internal const string EntryRunsIndex = "IX_jfbActionRun_entryId_sortOrder";
+
     internal static string DueSql(SqlNames n, int take)
     {
         var runs = n.T(FormBuilderTables.ActionRun);
@@ -468,10 +472,11 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     // The entry and a position no later than the run's own come first, so SQL Server seeks the entry's runs up to this
     // one on IX_jfbActionRun_entryId_sortOrder and never reads a later run of the batch, which a claim of that later run
     // holds (ROADMAP 26.1: two servers' claims of two runs of one batch each read the other's row and deadlocked). On SQL
-    // Server a claim's check takes update locks on the earlier runs it reads, held until it commits, row by row
-    // (SqlNames.QueueCheck); the due list skips rows another unit holds (SqlNames.QueueRead), as it only proposes.
+    // Server a claim's check takes update locks on the earlier runs it reads, held until it commits, row by row, and
+    // finds them by a seek of that index and never a scan (SqlNames.QueueCheck); the due list skips rows another unit
+    // holds (SqlNames.QueueRead), as it only proposes.
     private static string Unblocked(SqlNames n, string runs, string outer, bool locking) =>
-        $"NOT EXISTS (SELECT 1 FROM {runs} p{(locking ? n.QueueCheck : n.QueueRead)} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("sortOrder")} <= {outer}.{n.C("sortOrder")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
+        $"NOT EXISTS (SELECT 1 FROM {runs} p{(locking ? n.QueueCheck(EntryRunsIndex) : n.QueueRead)} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("sortOrder")} <= {outer}.{n.C("sortOrder")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
 
     // The run with the given id stops the rest, is in the given state, and comes before the run being changed in its batch.
     private static string Stopper(SqlNames n, string runs, string id, string state) =>

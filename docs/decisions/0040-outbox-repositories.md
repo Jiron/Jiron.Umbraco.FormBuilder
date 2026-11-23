@@ -183,8 +183,18 @@ one batch each held its own run and read the other's: a deadlock. The due list, 
   Server documents for queue tables; a run being claimed is no candidate, and the claim checks again under its
   locks. `READCOMMITTEDLOCK` is there for a database with `READ_COMMITTED_SNAPSHOT` on, Azure SQL's default, where a
   read sees row versions and SQL Server does not take `READPAST` alone.
+- **The checks seek, whatever the table's size.** With the three changes above the two-processor test passed, and
+  then a pass of 25 runs left one queued after three deadlocks in a row. The server's own record
+  (`scripts/sqlserver-deadlocks.mjs`, which a SQL Server job of the workflow now prints) showed 1,844 deadlocks in
+  that one job, every one read in full on `PK_jfbActionRun`: two or three claims each holding an update lock on one
+  key of the primary key and waiting for one on another. The table is small in a test, as it is on most sites, so SQL
+  Server scanned its primary key for the claim's check instead of seeking the entry's runs, and a scan with update
+  locks waits for every row another claim holds. The claim's check (`SqlNames.QueueCheck`) and the check before a
+  batch is queued (`SqlNames.LockingSeek`) now name the index and ask for a seek:
+  `INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK`. They then lock the entry's own runs and no other's.
 - **Not measured here:** this machine runs no SQL Server, so the statements were written from SQL Server's
-  documentation and the deadlocks counted in the workflow's log before and after (`docs/STATUS.md`).
+  documentation and from that record, and the deadlocks counted in the workflow's log before and after
+  (`docs/STATUS.md`).
 - SQLite takes neither hint, and the statements mean what they meant.
 
 ## Consequences

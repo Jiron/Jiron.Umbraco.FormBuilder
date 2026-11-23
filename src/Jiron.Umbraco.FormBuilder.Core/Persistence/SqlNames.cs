@@ -46,12 +46,24 @@ internal readonly struct SqlNames(ISqlSyntaxProvider syntax)
 
     /// <summary>
     /// The hint of a queue's claim for the rows it checks (ROADMAP 26.1, ADR-0040): on SQL Server
-    /// <c>WITH (UPDLOCK, ROWLOCK)</c>, update locks on the rows it reads, held until the claim commits, row by row and
-    /// without the key-range locks of <see cref="LockingRead"/>, which also lock the next key beyond the range read: a
-    /// queue's rows are inserted once, so there is no phantom to keep out, and the next key is another claimant's row.
-    /// Empty on SQLite, whose writers the gate serialises.
+    /// <c>WITH (UPDLOCK, ROWLOCK, INDEX(...), FORCESEEK)</c>, update locks on the rows it reads, held until the claim
+    /// commits, row by row and without the key-range locks of <see cref="LockingRead"/>, which also lock the next key
+    /// beyond the range read: a queue's rows are inserted once, so there is no phantom to keep out, and the next key is
+    /// another claimant's row. The rows are found by a seek of the named index, whatever the table's size: left to
+    /// choose, SQL Server scans a small table's primary key, and a scan with update locks waits for every row another
+    /// claim holds, which is how claims of unrelated rows deadlocked (1,844 times in one job of the workflow). Empty on
+    /// SQLite, whose writers the gate serialises.
     /// </summary>
-    public string QueueCheck => IsSqlite ? string.Empty : " WITH (UPDLOCK, ROWLOCK)";
+    /// <param name="index">The index whose leading columns the check names.</param>
+    public string QueueCheck(string index) => IsSqlite ? string.Empty : $" WITH (UPDLOCK, ROWLOCK, INDEX({index}), FORCESEEK)";
+
+    /// <summary>
+    /// <see cref="LockingRead"/> by a seek of the named index (ROADMAP 26.1): on SQL Server
+    /// <c>WITH (UPDLOCK, HOLDLOCK, INDEX(...), FORCESEEK)</c>, for a check on a table that claims lock row by row, so the
+    /// range it holds is the one it names and not, by a scan, the whole table. Empty on SQLite.
+    /// </summary>
+    /// <param name="index">The index whose leading columns the check names.</param>
+    public string LockingSeek(string index) => IsSqlite ? string.Empty : $" WITH (UPDLOCK, HOLDLOCK, INDEX({index}), FORCESEEK)";
 
     /// <summary>
     /// The hint of a queue's list of candidates (ROADMAP 26.1, ADR-0040): on SQL Server

@@ -15,8 +15,11 @@
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-/** The most deadlocks printed in full; the rest are counted. */
-export const SHOWN = 6;
+/** The most deadlocks printed in full; all are counted. */
+export const SHOWN = 3;
+
+/** The most kinds of deadlock named in the tally. */
+export const KINDS = 12;
 
 const unescape = (text) =>
   text
@@ -54,7 +57,8 @@ export function describe(report) {
     const statement = unescape(/<inputbuf>([\s\S]*?)<\/inputbuf>/.exec(match[2])?.[1] ?? '')
       .replace(/\s+/g, ' ')
       .trim();
-    const frame = unescape(/<frame\b[^>]*>([\s\S]*?)<\/frame>/.exec(match[2])?.[1] ?? '')
+    // The first frame of the execution stack that holds its statement; the server's own frames hold no text.
+    const frame = unescape([...match[2].matchAll(/<frame\s[^>]*>([^<]*)<\/frame>/g)].map((each) => each[1]).find((text) => text.trim().length > 20) ?? '')
       .replace(/\s+/g, ' ')
       .trim();
     lines.push(
@@ -70,12 +74,33 @@ export function describe(report) {
   return lines;
 }
 
+/**
+ * One report as its kind: the statements of its sides, shortened and in order, and the locks they met on, without
+ * what differs from one deadlock of the kind to the next (the processes, the keys, the database's name).
+ */
+export function kindOf(report) {
+  const statements = [];
+  const locks = [];
+  for (const line of describe(report).slice(1)) {
+    const statement = /^ {4}statement: (.*)$/.exec(line)?.[1];
+    if (statement !== undefined) statements.push(statement.replace(/^\([^)]*\)/, '').slice(0, 180));
+    const lock = /^ {2}(\w+lock) on \S*?\.?(dbo\.\S+) (\S*): (.*)$/.exec(line);
+    if (lock) locks.push(`${lock[1]} ${lock[2]} ${lock[3]} (${lock[4].replace(/process\w+ /g, '')})`);
+  }
+  return `${[...new Set(locks)].sort().join('; ')} <- ${[...new Set(statements)].sort().join(' | ')}`;
+}
+
 /** What the script prints for the queries' output. */
 export function summary(output) {
   const reports = deadlockReports(output);
   const lines = [`sqlserver-deadlocks: ${reports.length} deadlock(s) recorded by the server`];
+  const kinds = new Map();
+  for (const report of reports) kinds.set(kindOf(report), (kinds.get(kindOf(report)) ?? 0) + 1);
+  const ordered = [...kinds].sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
+  for (const [kind, count] of ordered.slice(0, KINDS)) lines.push(`sqlserver-deadlocks: ${count} x ${kind}`);
+  if (ordered.length > KINDS) lines.push(`sqlserver-deadlocks: and ${ordered.length - KINDS} more kind(s)`);
   for (const report of reports.slice(-SHOWN)) lines.push(...describe(report).map((line) => `sqlserver-deadlocks: ${line}`));
-  if (reports.length > SHOWN) lines.push(`sqlserver-deadlocks: the last ${SHOWN} are shown`);
+  if (reports.length > SHOWN) lines.push(`sqlserver-deadlocks: the last ${SHOWN} are shown in full`);
   return lines;
 }
 

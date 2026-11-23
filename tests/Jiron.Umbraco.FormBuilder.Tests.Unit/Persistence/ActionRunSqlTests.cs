@@ -11,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 public sealed class ActionRunSqlTests
 {
     private const string Check = "NOT EXISTS (SELECT 1 FROM [jfbActionRun] p";
-    private const string Claims = " WITH (UPDLOCK, ROWLOCK)";
+    private const string Claims = " WITH (UPDLOCK, ROWLOCK, INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK)";
     private const string Skips = " WITH (READPAST, READCOMMITTEDLOCK)";
 
     [Test]
@@ -24,7 +24,8 @@ public sealed class ActionRunSqlTests
 
         Assert.Multiple(() =>
         {
-            Assert.That((n.QueueCheck, n.QueueRead), Is.EqualTo((Claims, Skips)), "SQL Server's queue hints");
+            Assert.That((n.QueueCheck(ActionRunRepository.EntryRunsIndex), n.QueueRead), Is.EqualTo((Claims, Skips)), "SQL Server's queue hints");
+            Assert.That(n.LockingSeek(ActionRunRepository.EntryRunsIndex), Is.EqualTo(" WITH (UPDLOCK, HOLDLOCK, INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK)"));
             Assert.That(due, Does.StartWith("SELECT r.[id] FROM [jfbActionRun] r" + Skips + " WHERE"), "the due list skips the runs being claimed");
             Assert.That(due, Does.Contain(Check + Skips + " WHERE p.[entryId] = r.[entryId] AND p.[sortOrder] <= r.[sortOrder] AND p.[changeKey] = r.[changeKey]"), "it checks the earlier runs, seeking the entry's");
             Assert.That(due, Does.Not.Contain("UPDLOCK").And.Not.Contain("HOLDLOCK"), "without a lock: it only proposes");
@@ -46,7 +47,7 @@ public sealed class ActionRunSqlTests
 
         Assert.Multiple(() =>
         {
-            Assert.That((n.QueueCheck, n.QueueRead), Is.EqualTo((string.Empty, string.Empty)));
+            Assert.That((n.QueueCheck(ActionRunRepository.EntryRunsIndex), n.QueueRead, n.LockingSeek(ActionRunRepository.EntryRunsIndex)), Is.EqualTo((string.Empty, string.Empty, string.Empty)));
             Assert.That(ActionRunRepository.ClaimSql(n) + ActionRunRepository.DueSql(n, 25), Does.Not.Contain("WITH ("));
         });
     }
