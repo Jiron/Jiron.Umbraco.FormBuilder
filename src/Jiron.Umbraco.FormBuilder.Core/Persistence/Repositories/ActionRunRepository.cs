@@ -447,13 +447,13 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     internal static string DueSql(SqlNames n, int take)
     {
         var runs = n.T(FormBuilderTables.ActionRun);
-        return $"SELECT r.{n.C("id")} FROM {runs} r WHERE r.{n.C("state")} = '{Pending}' AND r.{n.C("nextAttemptUtc")} <= @0 AND {Unblocked(n, runs, "r", locking: false)} ORDER BY r.{n.C("nextAttemptUtc")}, r.{n.C("id")} {n.Page(0, take)}";
+        return $"SELECT r.{n.C("id")} FROM {runs} r{n.QueueRead} WHERE r.{n.C("state")} = '{Pending}' AND r.{n.C("nextAttemptUtc")} <= @0 AND {Unblocked(n, runs, "r", locking: false)} ORDER BY r.{n.C("nextAttemptUtc")}, r.{n.C("id")} {n.Page(0, take)}";
     }
 
     /// <summary>
     /// The claim (<c>@0</c> the run, <c>@1</c> the token, <c>@2</c> the lease's end, <c>@3</c> the time, which is when the
     /// attempt starts): one update of a run that is pending, due and not held back, whose check of the earlier runs holds
-    /// their rows on SQL Server until the claim commits.
+    /// their rows on SQL Server until the claim commits, and only theirs.
     /// </summary>
     internal static string ClaimSql(SqlNames n)
     {
@@ -464,10 +464,14 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     private static string? Message(DeliveryError error) => Outbox.Cut(error.Message, MaxErrorMessageLength);
 
     // No earlier run of the same batch (entry and change) holds the run back: none is running, none waits for its first
-    // attempt, and none that stops the rest is still to be decided. The outer reference names the run being checked;
-    // a locking check holds the earlier runs' rows on SQL Server.
+    // attempt, and none that stops the rest is still to be decided. The outer reference names the run being checked.
+    // The entry and a position no later than the run's own come first, so SQL Server seeks the entry's runs up to this
+    // one on IX_jfbActionRun_entryId_sortOrder and never reads a later run of the batch, which a claim of that later run
+    // holds (ROADMAP 26.1: two servers' claims of two runs of one batch each read the other's row and deadlocked). On SQL
+    // Server a claim's check takes update locks on the earlier runs it reads, held until it commits, row by row
+    // (SqlNames.QueueCheck); the due list skips rows another unit holds (SqlNames.QueueRead), as it only proposes.
     private static string Unblocked(SqlNames n, string runs, string outer, bool locking) =>
-        $"NOT EXISTS (SELECT 1 FROM {runs} p{(locking ? n.LockingRead : string.Empty)} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
+        $"NOT EXISTS (SELECT 1 FROM {runs} p{(locking ? n.QueueCheck : n.QueueRead)} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("sortOrder")} <= {outer}.{n.C("sortOrder")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
 
     // The run with the given id stops the rest, is in the given state, and comes before the run being changed in its batch.
     private static string Stopper(SqlNames n, string runs, string id, string state) =>

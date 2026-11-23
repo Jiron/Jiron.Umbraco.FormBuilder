@@ -3,17 +3,19 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
 /// <summary>
-/// The due list and the claim of the action runs on SQL Server (ADR-0040, amended in 4.8b): both check the earlier runs
-/// of the batch the same way, and only the claim holds their rows while it does.
+/// The due list and the claim of the action runs on SQL Server (ADR-0040, amended in 4.8b and 26.1): both check the
+/// earlier runs of the batch the same way, reading the entry's runs no later than the run's own position; the claim
+/// holds the rows it read with update locks, row by row, and the due list skips the rows other units hold.
 /// </summary>
 [TestFixture]
 public sealed class ActionRunSqlTests
 {
     private const string Check = "NOT EXISTS (SELECT 1 FROM [jfbActionRun] p";
-    private const string Locks = " WITH (UPDLOCK, HOLDLOCK)";
+    private const string Claims = " WITH (UPDLOCK, ROWLOCK)";
+    private const string Skips = " WITH (READPAST, READCOMMITTEDLOCK)";
 
     [Test]
-    public void TheDueList_ChecksTheEarlierRunsWithoutLocks_AndTheClaimWithThem()
+    public void TheDueList_SkipsWhatOthersHold_AndTheClaimHoldsWhatItChecked()
     {
         var n = TestSqlNames.Of(TestSqlNames.SqlServer);
 
@@ -22,13 +24,30 @@ public sealed class ActionRunSqlTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(n.LockingRead, Is.EqualTo(Locks), "SQL Server's locking read");
-            Assert.That(due, Does.Contain(Check + " WHERE p.[entryId] = r.[entryId]"), "the due list checks the earlier runs");
+            Assert.That((n.QueueCheck, n.QueueRead), Is.EqualTo((Claims, Skips)), "SQL Server's queue hints");
+            Assert.That(due, Does.StartWith("SELECT r.[id] FROM [jfbActionRun] r" + Skips + " WHERE"), "the due list skips the runs being claimed");
+            Assert.That(due, Does.Contain(Check + Skips + " WHERE p.[entryId] = r.[entryId] AND p.[sortOrder] <= r.[sortOrder] AND p.[changeKey] = r.[changeKey]"), "it checks the earlier runs, seeking the entry's");
             Assert.That(due, Does.Not.Contain("UPDLOCK").And.Not.Contain("HOLDLOCK"), "without a lock: it only proposes");
             Assert.That(due, Does.EndWith("ORDER BY r.[nextAttemptUtc], r.[id] OFFSET 0 ROWS FETCH NEXT 25 ROWS ONLY"));
             Assert.That(claim, Does.StartWith("UPDATE [jfbActionRun] SET [state] = 'running'"));
-            Assert.That(claim, Does.Contain(Check + Locks + " WHERE p.[entryId] = [jfbActionRun].[entryId]"), "the claim holds the rows it checked");
-            Assert.That(claim[claim.IndexOf(Check, StringComparison.Ordinal)..], Is.EqualTo(due[due.IndexOf(Check, StringComparison.Ordinal)..due.IndexOf(" ORDER BY", StringComparison.Ordinal)].Replace(Check, Check + Locks, StringComparison.Ordinal).Replace("r.[", "[jfbActionRun].[", StringComparison.Ordinal)), "the same check");
+            Assert.That(claim, Does.Contain(Check + Claims + " WHERE p.[entryId] = [jfbActionRun].[entryId] AND p.[sortOrder] <= [jfbActionRun].[sortOrder]"), "the claim holds the earlier rows it checked");
+            Assert.That(claim, Does.Not.Contain("HOLDLOCK"), "no key-range lock, which reaches the next run's key");
+            Assert.That(
+                claim[claim.IndexOf(Check, StringComparison.Ordinal)..],
+                Is.EqualTo(due[due.IndexOf(Check, StringComparison.Ordinal)..due.IndexOf(" ORDER BY", StringComparison.Ordinal)].Replace(Check + Skips, Check + Claims, StringComparison.Ordinal).Replace("r.[", "[jfbActionRun].[", StringComparison.Ordinal)),
+                "the same check");
+        });
+    }
+
+    [Test]
+    public void OnSQLite_NeitherTakesAHint()
+    {
+        var n = TestSqlNames.Of(TestSqlNames.Sqlite);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((n.QueueCheck, n.QueueRead), Is.EqualTo((string.Empty, string.Empty)));
+            Assert.That(ActionRunRepository.ClaimSql(n) + ActionRunRepository.DueSql(n, 25), Does.Not.Contain("WITH ("));
         });
     }
 }

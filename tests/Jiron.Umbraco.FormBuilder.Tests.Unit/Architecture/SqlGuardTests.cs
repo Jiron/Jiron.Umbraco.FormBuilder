@@ -18,7 +18,7 @@ public sealed partial class SqlGuardTests
     [
         ("ThemeRepository.cs", "themeAlias", "a name without a foreign key: ADR-0037 accepts a publish while a delete runs"),
         ("FormRepository.Versions.cs", "Entry)} e WHERE e.{n.C(\"formVersionId\")", "the cleanup's nominating read: each delete checks again with a locking read (ADR-0045)"),
-        ("ActionRunRepository.cs", "{runs} p{(locking ? n.LockingRead : string.Empty)", "the due list only proposes; the claim makes the same check with a locking read (ADR-0040, ActionRunSqlTests)"),
+        ("ActionRunRepository.cs", "{runs} p{(locking ? n.QueueCheck : n.QueueRead)", "the due list only proposes and skips what others hold; the claim makes the same check with update locks on the rows it reads, n.QueueCheck (ADR-0040, amended in 26.1, ActionRunSqlTests)"),
         ("ActionRunRepository.cs", "FROM {entries} e WHERE e.{n.C(\"id\")", "an action's last run, which the Actions view shows: nothing is written after the read, and a lock would hold the queue's writers back (ADR-0195)"),
         ("EntryRepository.Unique.cs", "EXISTS (SELECT 1 FROM {held})", "the held answers read each table with a lock in the submission's unit; the read before it only proposes (ADR-0091, UniqueAnswerSqlTests)"),
         ("ReferenceRepository.cs", "SELECT 1 FROM {nodes} WHERE", "the rebuild's last part reads Umbraco's nodes: a page's rows are written after its node is committed, so a plain read sees every node a row names, and a lock would hold Umbraco's own saves (ADR-0131)"),

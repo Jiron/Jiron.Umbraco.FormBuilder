@@ -165,6 +165,28 @@ Option 2 for the due list, the token, the back-off, error texts and the retry fr
   of the two servers' turns below; a claim can still meet a failure's skip in a deadlock, and is then rerun.
 - The position column `seq` is `sortOrder` since 4.8a (ADR-0033).
 
+**Amended in 26.1** (the workflow on SQL Server): the two-processor test met SQL Server's deadlock victim hundreds of
+times in one run. The claim's check of the earlier runs took `UPDLOCK, HOLDLOCK` and named the batch by its entry and
+change key, so SQL Server read the entry's runs on `IX_jfbActionRun_entryId_sortOrder` up to the last one, the later runs
+of the batch included, with key-range locks that also take the key after the range. Two servers claiming two runs of
+one batch each held its own run and read the other's: a deadlock. The due list, a plain read, took shared locks on
+`IX_jfbActionRun_state_nextAttemptUtc` and the rows behind it, which the claims update in the other order.
+
+- **The check reads the earlier runs only.** It names the entry and a position no later than the run's own first
+  (`p.sortOrder <= sortOrder`), so the seek stops at the run itself; the order within a position is still decided by
+  the id, as before.
+- **The claim locks row by row:** `WITH (UPDLOCK, ROWLOCK)` (`SqlNames.QueueCheck`), update locks on the rows read,
+  held until the claim commits, without key ranges: a batch is inserted whole, once, so no earlier run can appear, and
+  the next key is another claimant's run. A row that does not hold the run back may change meanwhile; none of those
+  changes makes it hold the run back for a run that may start already.
+- **The due list skips what other units hold:** `WITH (READPAST, READCOMMITTEDLOCK)` (`SqlNames.QueueRead`), as SQL
+  Server documents for queue tables; a run being claimed is no candidate, and the claim checks again under its
+  locks. `READCOMMITTEDLOCK` is there for a database with `READ_COMMITTED_SNAPSHOT` on, Azure SQL's default, where a
+  read sees row versions and SQL Server does not take `READPAST` alone.
+- **Not measured here:** this machine runs no SQL Server, so the statements were written from SQL Server's
+  documentation and the deadlocks counted in the workflow's log before and after (`docs/STATUS.md`).
+- SQLite takes neither hint, and the statements mean what they meant.
+
 ## Consequences
 
 - 8.1 and 8.2 build their processors on these calls and own the policies: the attempts, the back-off, the lease of 5

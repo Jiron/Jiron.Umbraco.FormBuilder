@@ -15,6 +15,13 @@ follows the Umbraco major).
   Windows, say, before a move) ran its forms in UTC, with the warning about a zone the server cannot resolve once an
   hour. Such a name now saves, comes back as it was saved, and runs in its zone on Windows and on Linux; another
   letter case, a Windows name and an offset are still refused.
+- **Two servers no longer deadlock over the actions of one entry on SQL Server.** When two servers each took an
+  action of the same entry, each read the other's row under a lock and SQL Server stopped one of them; the work was
+  done again, so nothing was lost, but it happened often and slowed the queue. A server now locks only the earlier
+  actions it has to check, and the list of what is due skips what another server is taking.
+- **A piece of work SQL Server stopped as a deadlock victim always runs again.** In some cases the error that
+  reached Jiron Form Builder was the transaction's own ("has completed; it is no longer usable"), which was not
+  taken for the passing fault it is, so that read or write failed where it should have been tried again.
 - **A hand-made request for the free-text answers in Insights no longer fails on SQL Server.** A page cursor written
   by hand that named a time before 1753 was answered with a server error there; the cursors the backoffice itself
   uses never did. A time before 1753 or after 9999 in a request now goes to the database at that edge, on SQL Server

@@ -45,6 +45,25 @@ internal readonly struct SqlNames(ISqlSyntaxProvider syntax)
     public string LockingRead => InsertOnceHint;
 
     /// <summary>
+    /// The hint of a queue's claim for the rows it checks (ROADMAP 26.1, ADR-0040): on SQL Server
+    /// <c>WITH (UPDLOCK, ROWLOCK)</c>, update locks on the rows it reads, held until the claim commits, row by row and
+    /// without the key-range locks of <see cref="LockingRead"/>, which also lock the next key beyond the range read: a
+    /// queue's rows are inserted once, so there is no phantom to keep out, and the next key is another claimant's row.
+    /// Empty on SQLite, whose writers the gate serialises.
+    /// </summary>
+    public string QueueCheck => IsSqlite ? string.Empty : " WITH (UPDLOCK, ROWLOCK)";
+
+    /// <summary>
+    /// The hint of a queue's list of candidates (ROADMAP 26.1, ADR-0040): on SQL Server
+    /// <c>WITH (READPAST, READCOMMITTEDLOCK)</c>, which skips the rows another unit holds a lock on, as SQL Server
+    /// documents for queue tables, instead of waiting for them or deadlocking with their claims; a row being claimed is
+    /// no candidate. <c>READCOMMITTEDLOCK</c> makes the read one that takes locks whatever the database's setting: with
+    /// <c>READ_COMMITTED_SNAPSHOT</c> on, which is Azure SQL's default, a read sees row versions, and SQL Server does not
+    /// take <c>READPAST</c> alone there. Empty on SQLite.
+    /// </summary>
+    public string QueueRead => IsSqlite ? string.Empty : " WITH (READPAST, READCOMMITTEDLOCK)";
+
+    /// <summary>
     /// The collation that compares text by its code units, to append to a column (ADR-0039): <c>COLLATE BINARY</c> on
     /// SQLite, <c>COLLATE Latin1_General_BIN2</c> on SQL Server, whose case-insensitive collation can equate texts that
     /// rules keep apart (a sharp s and <c>ss</c>). A seek uses the column's own collation first, so it stays on the index.

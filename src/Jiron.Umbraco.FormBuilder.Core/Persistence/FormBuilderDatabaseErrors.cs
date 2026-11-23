@@ -49,6 +49,12 @@ internal static class FormBuilderDatabaseErrors
             return false;
         }
 
+        // The server rolled the transaction back before the scope could end it: nothing was committed (ROADMAP 26.1).
+        if (exception is FormBuilderTransactionEndedException)
+        {
+            return true;
+        }
+
         foreach (var database in DatabaseErrors(exception))
         {
             switch (database.GetType().Name)
@@ -62,6 +68,17 @@ internal static class FormBuilderDatabaseErrors
 
         return false;
     }
+
+    /// <summary>
+    /// True when <paramref name="exception"/> is a provider's word, as a scope ends, that the transaction is over
+    /// already: SqlClient's "This SqlTransaction has completed; it is no longer usable", thrown by the transaction's own
+    /// check before it sends anything, after the server rolled the transaction back (a deadlock victim, 1205). Recognised by
+    /// the type that threw it, as Core references no database client, and by its words where a wrapper threw it again.
+    /// </summary>
+    public static bool IsTransactionEndedByServer(Exception exception) =>
+        exception is InvalidOperationException
+        && (exception.TargetSite?.DeclaringType?.Name is "SqlTransaction" or "SqlInternalTransaction"
+            || exception.Message.StartsWith("This SqlTransaction has completed", StringComparison.Ordinal));
 
     /// <summary>True when <paramref name="exception"/> (or an exception inside it) refused a row that a unique key already holds.</summary>
     public static bool IsUniqueViolation(Exception exception)
