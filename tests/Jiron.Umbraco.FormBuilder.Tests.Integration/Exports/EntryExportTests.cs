@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
@@ -793,7 +794,9 @@ public sealed class EntryExportTests : ActionTestBase
         });
     }
 
-    // A time budget: scripts/test-integration.mjs runs the "Timed" tests alone, after the shares (ADR-0261).
+    // A time budget: scripts/test-integration.mjs runs the "Timed" tests alone, after the shares (ADR-0261). Five
+    // seconds, and 150 ms for a submission meanwhile, are SQLite's; on SQL Server, which runs only on the workflow's
+    // hosted runner, the budgets are that runner's: 12 s (5.5 s measured) and 300 ms (89 ms measured) (ADR-0264).
     [Test]
     [Category("Timed")]
     public async Task TenThousandEntriesOfTwelveValues_ExportAsCsvWithinFiveSeconds_WhileSubmissionsArrive_AndOneMoreGoesToTheBackground()
@@ -845,7 +848,9 @@ public sealed class EntryExportTests : ActionTestBase
         var elapsed = watch.Elapsed;
         await arriving;
         var p95 = times.Order().ElementAt((int)Math.Ceiling(times.Count * 0.95) - 1);
-        await TestContext.Out.WriteLineAsync($"10,000 entries of 12 values as CSV: {elapsed.TotalMilliseconds:0} ms, {output.Length:N0} bytes; {times.Count} submissions meanwhile, p95 {p95.TotalMilliseconds:0} ms");
+        var sqlite = await GetRequiredService<FormBuilderDatabase>().ReadAsync(db => Task.FromResult(new SqlNames(db).IsSqlite));
+        var (budget, meanwhile) = sqlite ? (TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(150)) : (TimeSpan.FromSeconds(12), TimeSpan.FromMilliseconds(300));
+        await TestContext.Out.WriteLineAsync(string.Create(CultureInfo.InvariantCulture, $"10,000 entries of 12 values as CSV, {(sqlite ? "SQLite" : "SQL Server")}: {elapsed.TotalMilliseconds:0} ms (budget {budget.TotalMilliseconds:0} ms), {output.Length} bytes; {times.Count} submissions meanwhile, p95 {p95.TotalMilliseconds:0} ms (budget {meanwhile.TotalMilliseconds:0} ms)"));
         var larger = await Exports.PlanAsync(form, request, Owner);
 
         Assert.Multiple(() =>
@@ -853,9 +858,9 @@ public sealed class EntryExportTests : ActionTestBase
             Assert.That(plan, Is.EqualTo(new EntryExportPlan(Count, More: false, Background: false)));
             Assert.That(file!.Entries, Is.InRange(Count, Count + (Bursts * PerBurst)), "what had arrived before its first page, and nothing twice");
             Assert.That(output.Lines, Is.EqualTo(file.Entries + 1), "a header and a line per entry");
-            Assert.That(elapsed, Is.LessThanOrEqualTo(TimeSpan.FromSeconds(5)));
+            Assert.That(elapsed, Is.LessThanOrEqualTo(budget));
             Assert.That(times, Has.Count.EqualTo(Bursts * PerBurst));
-            Assert.That(p95, Is.LessThanOrEqualTo(TimeSpan.FromMilliseconds(150)), "a submission waits behind one page at most");
+            Assert.That(p95, Is.LessThanOrEqualTo(meanwhile), "a submission waits behind one page at most");
             Assert.That(larger!.Background, Is.True);
         });
     }

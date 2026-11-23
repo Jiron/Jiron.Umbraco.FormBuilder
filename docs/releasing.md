@@ -30,6 +30,18 @@ release's pack steps, with the version of `Directory.Build.props`. `node scripts
 shows that two packs hold the same packages with the same entries, whatever their versions; in 18.2 a release-style pack
 and the gate's gave the same 7 files with the same 136 entries.
 
+## A targeted run of CI
+
+A full run of CI, as a release or a dry run of one starts it, costs about 4 h 20 min of the repository's runner time,
+most of it the 18 integration shares and the browser jobs. To check one failure that only GitHub's runners show, start
+**Targeted run** (`.github/workflows/targeted.yml`) by hand instead: it calls `ci.yml` with the part to run (`only`:
+`build`, `sqlite`, `sqlserver`, `smoke`, `loadbalancing` or `all`) and, for one database, the shares to run (`shares`, a
+JSON list such as `["3","timed"]`; empty for every share). A first job reads the two inputs
+(`scripts/ci-selection.mjs`) and fails in seconds on a wrong value; the jobs not chosen do not start, and "Integration
+tests add up" runs only when everything ran. One integration share takes about 20 minutes of runner time, the build job
+or the smoke job about 30, the load-balancing job about 25. A targeted run packs, drafts and publishes nothing; a push, a
+tag and the release give `ci.yml` no inputs and run all of it, which `scripts/check-workflows.mjs` holds.
+
 ## Versions
 
 - The package major follows the Umbraco major (D16): `main` releases `17.x` for Umbraco 17, and `v18/main` releases

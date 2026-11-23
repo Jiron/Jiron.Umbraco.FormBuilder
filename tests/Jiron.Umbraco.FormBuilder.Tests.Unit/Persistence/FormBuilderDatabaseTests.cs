@@ -598,6 +598,96 @@ public sealed class FormBuilderDatabaseTests
         });
     }
 
+    // SQL Server chose the unit's transaction as a deadlock victim and rolled it back (ROADMAP 26.1): a statement of the
+    // work heard 1205, and the scope then cannot end the transaction either way. The first scope ends as such a scope
+    // does; the next ones end as usual.
+    [TestCase("read")]
+    [TestCase("write")]
+    [TestCase("query")]
+    public async Task AUnitThatMetADeadlock_RunsAgain_ThoughItsScopeCouldNotEnd(string unit)
+    {
+        EndedFirst();
+        var attempts = 0;
+        Task<int> Work() => ++attempts == 1 ? throw new SqlException(1205) : Task.FromResult(attempts);
+
+        var running = Run(unit, Work);
+        // A budgeted query asks the clock for its deadline first.
+        await FireWaitAsync(unit == "query" ? 1 : 0, FormBuilderDatabase.Waits[0]);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await running.WaitAsync(Patience), Is.EqualTo(2), "the deadlock was heard, not the scope's error");
+            Assert.That(_log.Entries.Single().Message, Does.Contain("SqlException 1205"));
+        });
+    }
+
+    // The work caught the victim's error, or the victim was another statement of its connection: the work returns, and
+    // only ending the scope finds the transaction over. Nothing was committed, so a write runs again too.
+    [TestCase("read")]
+    [TestCase("write")]
+    [TestCase("query")]
+    public async Task AUnitWhoseTransactionTheServerEnded_FailsAsTheTransientErrorItWas_AndRunsAgain(string unit)
+    {
+        EndedFirst();
+        var attempts = 0;
+
+        var running = Run(unit, () => Task.FromResult(++attempts));
+        // A budgeted query asks the clock for its deadline first.
+        await FireWaitAsync(unit == "query" ? 1 : 0, FormBuilderDatabase.Waits[0]);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await running.WaitAsync(Patience), Is.EqualTo(2));
+            Assert.That(_log.Entries.Single().Message, Does.Contain(nameof(FormBuilderTransactionEndedException)));
+        });
+    }
+
+    [Test]
+    public void AScopeThatCannotEndForAnotherReason_IsNoTransientError()
+    {
+        ScopesAre(() =>
+        {
+            var scope = Substitute.For<IScope>();
+            scope.When(s => s.Dispose()).Do(_ => throw new InvalidOperationException("JFB_TEST something else"));
+            return scope;
+        });
+        var attempts = 0;
+
+        Assert.That(
+            () => _database.WriteAsync(_ => Task.FromResult(++attempts)).WaitAsync(Patience),
+            Throws.InvalidOperationException.With.Message.EqualTo("JFB_TEST something else"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(attempts, Is.EqualTo(1), "a commit whose outcome is unknown never runs again");
+            Assert.That(FormBuilderDatabaseErrors.IsTransactionEndedByServer(new InvalidOperationException("JFB_TEST something else")), Is.False);
+            Assert.That(FormBuilderDatabaseErrors.IsTransactionEndedByServer(new InvalidOperationException("This SqlTransaction has completed; it is no longer usable.")), Is.True);
+        });
+    }
+
+    // The first scope ends as one whose transaction the server rolled back: SqlClient's transaction refuses to commit or
+    // roll back, from its own check.
+    private void EndedFirst()
+    {
+        var made = 0;
+        ScopesAre(() =>
+        {
+            var scope = Substitute.For<IScope>();
+            if (++made == 1)
+            {
+                scope.When(s => s.Dispose()).Do(_ => SqlTransaction.Commit());
+            }
+
+            return scope;
+        });
+    }
+
+    private Task<int> Run(string unit, Func<Task<int>> work) => unit switch
+    {
+        "read" => _database.ReadAsync(_ => work()),
+        "write" => _database.WriteAsync(_ => work()),
+        _ => _database.QueryAsync(_ => work(), TimeSpan.FromMinutes(1)),
+    };
+
     private void ScopesAre(Func<IScope> create) =>
         _scopeProvider.CreateScope(Arg.Any<IsolationLevel>(), Arg.Any<RepositoryCacheMode>(), Arg.Any<IEventDispatcher?>(), Arg.Any<IScopedNotificationPublisher?>(), Arg.Any<bool?>(), Arg.Any<bool>(), Arg.Any<bool>())
             .Returns(_ =>
@@ -644,6 +734,12 @@ public sealed class FormBuilderDatabaseTests
     private sealed class SqliteException(int code) : DbException("JFB_TEST secret value")
     {
         public int SqliteErrorCode { get; } = code;
+    }
+
+    /// <summary>Shaped like Microsoft.Data.SqlClient's transaction after the server rolled it back: its own check refuses.</summary>
+    private static class SqlTransaction
+    {
+        public static void Commit() => throw new InvalidOperationException("This transaction has completed (JFB_TEST, worded otherwise than SqlClient).");
     }
 
     /// <summary>Shaped like Microsoft.Data.SqlClient's exception.</summary>

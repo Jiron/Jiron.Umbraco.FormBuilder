@@ -102,6 +102,32 @@ public sealed class AuditRepositoryTests : RepositoryTestBase
         });
     }
 
+    // The tool of the tests of budgets: a statement with the slow condition does not end before a budget of a second on
+    // this database, so a test that sees one end has found a budget that does not stop it, not a condition that is fast.
+    [Test]
+    public async Task TheSlowCondition_KeepsAStatementRunningPastItsBudget_OnThisDatabase()
+    {
+        await Audit.AddAsync(new NewAuditEntry("settings.saved", "settings", Guid.NewGuid(), Editor));
+        var statement = $"SELECT COUNT(*) FROM {T(FormBuilderTables.AuditEntry)} WHERE {SlowCondition}1 = 1";
+        var watch = Stopwatch.StartNew();
+        Exception? stopped = null;
+
+        try
+        {
+            _ = await Database.QueryAsync(db => db.ScalarAsync<long>(statement), TimeSpan.FromSeconds(1));
+        }
+        catch (Exception exception)
+        {
+            stopped = exception;
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stopped, Is.InstanceOf<FormBuilderQueryTimeoutException>(), $"it ended after {watch.ElapsedMilliseconds} ms without a timeout: under a second the slow condition is not slow here, past it the budget did not stop it");
+            Assert.That(watch.Elapsed, Is.GreaterThanOrEqualTo(TimeSpan.FromSeconds(0.9)).And.LessThan(TimeSpan.FromSeconds(30)));
+        });
+    }
+
     [Test]
     public async Task AQueryPastItsBudget_StopsWithQueryTimeout_AndRunsOnce()
     {

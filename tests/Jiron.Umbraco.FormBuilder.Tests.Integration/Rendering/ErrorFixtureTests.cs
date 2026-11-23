@@ -82,6 +82,8 @@ public sealed class ErrorFixtureTests : RenderingTestBase
         var clock = new TestClock();
         builder.Services.AddSingleton(clock);
         builder.Services.AddUnique<TimeProvider>(clock);
+        // The system's culture data differs between systems; the fixture is the same file on each (ADR-0263).
+        builder.RendersWithFixedCultureData();
     }
 
     // The posts: every required field left empty with one answer given, so the post is not empty; answers each check

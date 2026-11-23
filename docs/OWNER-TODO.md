@@ -238,3 +238,30 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   and on the floor, 17.6.0. If the variables of publishing are set before a tag is pushed, that tag's run publishes;
   a tag pushed before them stays unpublished, so `17.0.0-beta.1` reaches nuget.org only by a run started again
   after they are set, or by hand.
+  **Seen on 2026-11-23, in the owner's browser on their word:** both release runs failed in CI, #1 of
+  `v17.0.0-alpha.1` after 22 minutes and #2 of `v17.0.0-beta.1` after 21, so neither tag has a draft release and
+  nothing was packed there. Run #2 used 4 h 22 min of runner time over its 26 jobs; the account's plan covered it.
+  What failed in #2 is in `docs/WORKLOG.md` under that date: it is the first run of the workflow's tests on Linux
+  and on SQL Server, and none of it is something the gate on the development machine can show.
+  **Fixed on 2026-11-23 (ROADMAP 26.1; you: "Yes, fix CI"):** a dry run of the release workflow passed every job
+  and packed, on `de208db2` (Actions › Release, run #6). The tags `v17.0.0-alpha.1` and `v17.0.0-beta.1` stay
+  without a release: a tag is never moved, and their commits fail the same way if run again.
+- [ ] **Decide when `v17.0.0-beta.2` is tagged: the account's Actions minutes for November are used up.** `main`
+  holds 17.0.0-beta.2 ready (its changelog section, its upgrade notes, its version; the install tests passed on it).
+  Pushing the tag starts the release run, about 5 h 20 min of runner time over its 27 jobs. GitHub's mail of
+  2026-11-23 says the account has used its 3,000 included minutes; that day the billing page showed $18.10 of
+  usage, all covered, no budget and no payment method, so nothing was charged and nothing more can run until the
+  cycle starts again on 1 December. The minutes are the whole account's: this repository used about $9.55 of
+  them, another repository of yours about $8.41. Either wait for 1 December, or add a payment method and a budget
+  for Actions (Settings › Billing and licensing › Budgets and alerts; about $3 covers the run at the Linux rate,
+  and a budget also caps what any run can cost). Then say so, and the tag is pushed and its run and draft release
+  read. Until then step 26.1 of the roadmap stays open on that one check.
+- [ ] **A SQL Server to measure on,** if SQL Server sites matter to you before the first stable release. The
+  development machine may run none (CLAUDE.md rule 6), so what follows was found and fixed only through runs on
+  GitHub, which cost minutes, and two things are left as they are:
+  - the Answers view of a form with about 100,000 entries takes 3 to 5 s on SQL Server on a hosted runner, against
+    under a second on SQLite. The likely fix is two indexes that hold more columns, a migration
+    ([ADR-0264](decisions/0264-the-timed-tests-budgets-per-database.md));
+  - a few deadlocks remain on the action queue (8 in a whole run of the tests, from 1,844 in one job before the
+    fix), each tried again up to three times ([ADR-0040](decisions/0040-outbox-repositories.md)).
+  With a server to use (a container on a machine you name, or a cloud database), both can be measured and closed.

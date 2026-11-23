@@ -6,8 +6,12 @@ import { isShared, planSites, readSpecTimes, siteMatch, SPEC_TIMES_FILE, timesBe
 
 const ci = Boolean(process.env.CI);
 
-// Edge is installed on the development machine; CI installs Playwright's Chromium (D19, ADR-0011).
-const browser = ci ? { ...devices['Desktop Chrome'] } : { ...devices['Desktop Edge'], channel: 'msedge' };
+// Edge is installed on the development machine; CI installs Playwright's Chromium (D19, ADR-0011), the whole browser in
+// its new headless mode, as Edge runs here: the headless shell Playwright takes by default does not route the request a
+// fulfilled redirect leads to, which a smoke test's served form relies on (ROADMAP 26.1, the Linux container).
+const browser = ci
+  ? { ...devices['Desktop Chrome'], channel: 'chromium' }
+  : { ...devices['Desktop Edge'], channel: 'msedge' };
 
 type Project = NonNullable<PlaywrightTestConfig['projects']>[number];
 

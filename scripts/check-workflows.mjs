@@ -13,6 +13,11 @@
  *     by hand;
  *   - actions are pinned to a major version or a commit, and services do not use the env context (GitHub does not
  *     offer it there);
+ *   - a job that runs the integration tests (scripts/test-integration.mjs) installs the scripts' packages before
+ *     (npm ci --prefix scripts): they hold the emulator the blob store's tests start (ROADMAP 26.1);
+ *   - a call of ci.yml passes only its inputs only and shares, and none from a workflow a push starts (the release
+ *     runs everything); in ci.yml every job waits for the job selection and runs only when selected, the add-up only
+ *     when everything ran, the share matrices come from the selection and JFB_SHARES agrees with ci-selection.mjs;
  *   - Dependabot covers nuget, npm (every lock file of check-npm-licences.mjs) and github-actions, and opens no
  *     pull request (limit 0) until the owner raises it.
  *
@@ -25,6 +30,7 @@ import { registerHooks } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LOCK_FILES } from './check-npm-licences.mjs';
+import { SHARES } from './ci-selection.mjs';
 
 const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
@@ -47,6 +53,9 @@ export const UNTRUSTED_INLINE =
 
 /** The branches a push trigger must name: the Umbraco 17 line and the Umbraco 18 line (D16). */
 export const PUSH_BRANCHES = Object.freeze(['main', 'v18/main']);
+
+/** The inputs ci.yml takes when another workflow calls it (scripts/ci-selection.mjs). */
+export const CI_INPUTS = Object.freeze(['only', 'shares']);
 
 /** The ecosystems Dependabot must watch. */
 export const ECOSYSTEMS = Object.freeze(['nuget', 'npm', 'github-actions']);
@@ -134,6 +143,36 @@ export function workflowRuleErrors(doc) {
       if (/\$\{\{[^}]*\benv\./.test(JSON.stringify(service))) {
         errors.push(`job ${id}: service ${name} uses the env context, which services cannot read`);
       }
+    }
+    // A call of ci.yml passes only its two inputs, and a workflow a push starts (a tag: the release) passes none, so it
+    // runs everything (ROADMAP 26.1).
+    if (typeof job.uses === 'string' && /(^|\/)ci\.ya?ml$/.test(job.uses)) {
+      const given = Object.keys(job.with ?? {});
+      const unknown = given.filter((input) => !CI_INPUTS.includes(input));
+      if (unknown.length > 0) errors.push(`job ${id}: ci.yml takes only the inputs ${CI_INPUTS.join(' and ')}, not ${unknown.join(', ')}`);
+      if (given.length > 0 && triggers && typeof triggers === 'object' && 'push' in triggers) {
+        errors.push(`job ${id}: a workflow a push starts calls ci.yml without inputs, so it runs all of it`);
+      }
+    }
+    // In the workflow whose first job selects a part: every other job waits for the selection and runs only when it is
+    // selected, the add-up only when everything ran, and each share matrix is the selection's (scripts/ci-selection.mjs).
+    if (doc.jobs?.selection && id !== 'selection') {
+      const needs = [job.needs ?? []].flat();
+      if (!needs.includes('selection')) errors.push(`job ${id}: needs the job selection`);
+      const part = id === 'shares' ? "needs.selection.outputs.everything == 'true'" : `needs.selection.outputs.${id} == 'true'`;
+      if (!condition.includes(part)) errors.push(`job ${id}: its \`if\` must contain ${part}`);
+      if (SHARES[id]) {
+        const matrix = String(job.strategy?.matrix?.share ?? '');
+        if (matrix !== `\${{ fromJSON(needs.selection.outputs.${id}-shares) }}`) errors.push(`job ${id}: its shares come from needs.selection.outputs.${id}-shares`);
+        const counted = SHARES[id].filter((share) => share !== 'timed').length;
+        if (String(job.env?.JFB_SHARES) !== String(counted)) errors.push(`job ${id}: JFB_SHARES must be ${counted}, the shares scripts/ci-selection.mjs knows`);
+      }
+    }
+    // The blob store's integration tests start the emulator that the scripts' packages install (ROADMAP 26.1).
+    const runs = (job.steps ?? []).map((step) => (typeof step.run === 'string' ? step.run : ''));
+    const integration = runs.findIndex((run) => run.includes('scripts/test-integration.mjs') && !run.includes('--sum'));
+    if (integration >= 0 && !runs.slice(0, integration).some((run) => /npm ci --prefix scripts\b/.test(run))) {
+      errors.push(`job ${id}: run \`npm ci --prefix scripts\` before the integration tests, whose blob store tests start the emulator it installs`);
     }
     for (const step of job.steps ?? []) {
       // A tag's name, a manual run's input or an event's text reach a script through `env`, never inline: GitHub

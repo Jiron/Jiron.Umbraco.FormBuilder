@@ -19,8 +19,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// (<see cref="FormBuilderDatabaseErrors"/>). Only where that is safe: the failed attempt rolled back, so the outermost
 /// unit starts over from its first statement. A unit inside another one, or inside a scope that Umbraco opened, shares
 /// a transaction only its owner can start over; and an error while the commit is on its way leaves its outcome unknown.
-/// Neither runs again. The work runs again whole, so it must keep its effects inside the transaction (notifications
-/// are published after the commit).
+/// Neither runs again. A transaction the server ended itself, as SQL Server ends a deadlock victim's, committed
+/// nothing: when the scope then cannot end it, the unit fails as the transient error it was
+/// (<see cref="FormBuilderTransactionEndedException"/>) and runs again, a write too; and when the work failed first,
+/// its own failure is what the caller hears. The work runs again whole, so it must keep its effects inside the
+/// transaction (notifications are published after the commit).
 /// <para>
 /// A unit inside another keeps the outer unit's cancellation and deadline, and adds its own caller's. A write inside a
 /// read is refused: the read's scope would commit it, and a read may run again after a lost connection.
@@ -87,8 +90,8 @@ internal sealed partial class FormBuilderDatabase(
                     using var linked = UnitToken(cancellationToken, out var token);
                     FormBuilderDbExtensions.CurrentToken = token;
                     _reading.Value = true;
-                    using var scope = scopeProvider.CreateScope(autoComplete: true);
-                    return await AsCancelledAsync(() => read(scope.Database), token);
+                    var scope = scopeProvider.CreateScope(autoComplete: true);
+                    return await InScopeAsync(scope, () => AsCancelledAsync(() => read(scope.Database), token), ending: null);
                 },
                 cancellationToken),
             cancellationToken);
@@ -111,43 +114,49 @@ internal sealed partial class FormBuilderDatabase(
                 async () =>
                 {
                     _reading.Value = true;
-                    using var scope = scopeProvider.CreateScope(autoComplete: true);
-                    var db = scope.Database;
+                    var scope = scopeProvider.CreateScope(autoComplete: true);
                     using var linked = UnitToken(cancellationToken, out var token);
                     FormBuilderDbExtensions.CurrentToken = token;
-                    if (_budgeted.Value)
-                    {
-                        // Inside another budgeted read: its budget holds, and this caller's token joins it.
-                        return await AsCancelledAsync(() => read(db), token);
-                    }
-
-                    var sqlite = new SqlNames(db).IsSqlite;
-                    if (sqlite && db.Connection is null)
-                    {
-                        // The scope opens its connection with the first statement; the budget needs it open.
-                        await db.ScalarAsync<int>("SELECT 1");
-                    }
-
-                    using var deadline = FormBuilderQueryBudget.Start(db.Connection, sqlite, budget, timeProvider, token);
-                    if (sqlite && !deadline.Armed)
-                    {
-                        LogUnbudgeted(logger);
-                    }
-
-                    _budgeted.Value = true;
-                    FormBuilderDbExtensions.CurrentToken = deadline.Token;
-                    try
-                    {
-                        return await AsCancelledAsync(() => read(db), token);
-                    }
-                    // A refusal stays a refusal; any other failure past the deadline is the stopped statement's.
-                    catch (Exception exception) when (deadline.Expired && !token.IsCancellationRequested && exception is not ArgumentException)
-                    {
-                        throw new FormBuilderQueryTimeoutException($"The query ran past its time budget of {budget.TotalSeconds:0.###} s and was stopped.", exception);
-                    }
+                    return await InScopeAsync(scope, () => BudgetedAsync(scope.Database, read, budget, token), ending: null);
                 },
                 cancellationToken),
             cancellationToken);
+    }
+
+    // A budgeted read's work inside its scope: the deadline ends before the scope does, so SQLite's progress handler is
+    // cleared before the connection goes back to Umbraco.
+    private async Task<T> BudgetedAsync<T>(IUmbracoDatabase db, Func<IUmbracoDatabase, Task<T>> read, TimeSpan budget, CancellationToken token)
+    {
+        if (_budgeted.Value)
+        {
+            // Inside another budgeted read: its budget holds, and this caller's token joins it.
+            return await AsCancelledAsync(() => read(db), token);
+        }
+
+        var sqlite = new SqlNames(db).IsSqlite;
+        if (sqlite && db.Connection is null)
+        {
+            // The scope opens its connection with the first statement; the budget needs it open.
+            await db.ScalarAsync<int>("SELECT 1");
+        }
+
+        using var deadline = FormBuilderQueryBudget.Start(db.Connection, sqlite, budget, timeProvider, token);
+        if (sqlite && !deadline.Armed)
+        {
+            LogUnbudgeted(logger);
+        }
+
+        _budgeted.Value = true;
+        FormBuilderDbExtensions.CurrentToken = deadline.Token;
+        try
+        {
+            return await AsCancelledAsync(() => read(db), token);
+        }
+        // A refusal stays a refusal; any other failure past the deadline is the stopped statement's.
+        catch (Exception exception) when (deadline.Expired && !token.IsCancellationRequested && exception is not ArgumentException)
+        {
+            throw new FormBuilderQueryTimeoutException($"The query ran past its time budget of {budget.TotalSeconds:0.###} s and was stopped.", exception);
+        }
     }
 
     /// <summary>
@@ -169,16 +178,76 @@ internal sealed partial class FormBuilderDatabase(
                 {
                     using var linked = UnitToken(cancellationToken, out var token);
                     FormBuilderDbExtensions.CurrentToken = token;
-                    using var scope = scopeProvider.CreateScope();
-                    var result = await write(scope.Database);
-                    scope.Complete();
+                    var scope = scopeProvider.CreateScope();
+                    return await InScopeAsync(
+                        scope,
+                        () => write(scope.Database),
+                        ending: () =>
+                        {
+                            scope.Complete();
 
-                    // From here the scope commits as it ends: a failure now may have committed, so it never runs again.
-                    committing.Value = true;
-                    return result;
+                            // From here the scope commits as it ends: a failure now may have committed, so it never runs
+                            // again, unless the server had ended the transaction already.
+                            committing.Value = true;
+                        });
                 },
                 cancellationToken),
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Runs a unit's work in its scope and ends the scope, so that the caller hears what went wrong first. When the work
+    /// fails, the scope ends without a word of its own: a transaction the server rolled back can be neither committed nor
+    /// rolled back again, and the work's error (a deadlock victim's 1205, say) is the one the retry and the caller read.
+    /// When the work succeeds, <paramref name="ending"/> runs (a write's completion), and a scope that cannot end because
+    /// the server ended its transaction first fails as <see cref="FormBuilderTransactionEndedException"/>.
+    /// </summary>
+    private static async Task<T> InScopeAsync<T>(IScope scope, Func<Task<T>> work, Action? ending)
+    {
+        T result;
+        try
+        {
+            result = await work();
+        }
+        catch
+        {
+            EndAfterFailure(scope);
+            throw;
+        }
+
+        try
+        {
+            ending?.Invoke();
+        }
+        catch
+        {
+            EndAfterFailure(scope);
+            throw;
+        }
+
+        try
+        {
+            scope.Dispose();
+        }
+        catch (Exception exception) when (FormBuilderDatabaseErrors.IsTransactionEndedByServer(exception))
+        {
+            throw new FormBuilderTransactionEndedException(exception);
+        }
+
+        return result;
+    }
+
+    // Ends the scope of work that failed; what ending it meets is the failure's consequence, not news.
+    private static void EndAfterFailure(IScope scope)
+    {
+        try
+        {
+            scope.Dispose();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // The work's own failure is rethrown.
+        }
     }
 
     /// <summary>
@@ -239,7 +308,7 @@ internal sealed partial class FormBuilderDatabase(
                 return await AttemptAsync(unit, committing);
             }
             catch (Exception exception) when (attempt < Attempts
-                && !committing.Value
+                && (!committing.Value || exception is FormBuilderTransactionEndedException)
                 && !cancellationToken.IsCancellationRequested
                 && FormBuilderDatabaseErrors.IsTransient(exception, write))
             {

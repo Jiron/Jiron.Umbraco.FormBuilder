@@ -165,6 +165,42 @@ Option 2 for the due list, the token, the back-off, error texts and the retry fr
   of the two servers' turns below; a claim can still meet a failure's skip in a deadlock, and is then rerun.
 - The position column `seq` is `sortOrder` since 4.8a (ADR-0033).
 
+**Amended in 26.1** (the workflow on SQL Server): the two-processor test met SQL Server's deadlock victim hundreds of
+times in one run. The claim's check of the earlier runs took `UPDLOCK, HOLDLOCK` and named the batch by its entry and
+change key, so SQL Server read the entry's runs on `IX_jfbActionRun_entryId_sortOrder` up to the last one, the later runs
+of the batch included, with key-range locks that also take the key after the range. Two servers claiming two runs of
+one batch each held its own run and read the other's: a deadlock. The due list, a plain read, took shared locks on
+`IX_jfbActionRun_state_nextAttemptUtc` and the rows behind it, which the claims update in the other order.
+
+- **The check reads the earlier runs only.** It names the entry and a position no later than the run's own first
+  (`p.sortOrder <= sortOrder`), so the seek stops at the run itself; the order within a position is still decided by
+  the id, as before.
+- **The claim locks row by row:** `WITH (UPDLOCK, ROWLOCK)` (`SqlNames.QueueCheck`), update locks on the rows read,
+  held until the claim commits, without key ranges: a batch is inserted whole, once, so no earlier run can appear, and
+  the next key is another claimant's run. A row that does not hold the run back may change meanwhile; none of those
+  changes makes it hold the run back for a run that may start already.
+- **The due list skips what other units hold:** `WITH (READPAST, READCOMMITTEDLOCK)` (`SqlNames.QueueRead`), as SQL
+  Server documents for queue tables; a run being claimed is no candidate, and the claim checks again under its
+  locks. `READCOMMITTEDLOCK` is there for a database with `READ_COMMITTED_SNAPSHOT` on, Azure SQL's default, where a
+  read sees row versions and SQL Server does not take `READPAST` alone.
+- **The checks seek, whatever the table's size.** With the three changes above the two-processor test passed, and
+  then a pass of 25 runs left one queued after three deadlocks in a row. The server's own record
+  (`scripts/sqlserver-deadlocks.mjs`, which a SQL Server job of the workflow now prints) showed 1,844 deadlocks in
+  that one job, every one read in full on `PK_jfbActionRun`: two or three claims each holding an update lock on one
+  key of the primary key and waiting for one on another. The table is small in a test, as it is on most sites, so SQL
+  Server scanned its primary key for the claim's check instead of seeking the entry's runs, and a scan with update
+  locks waits for every row another claim holds. The claim's check (`SqlNames.QueueCheck`) and the check before a
+  batch is queued (`SqlNames.LockingSeek`) now name the index and ask for a seek:
+  `INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK`. They then lock the entry's own runs and no other's.
+- **Measured on the workflow's SQL Server** (this machine runs none): the same job met 1,844 deadlocks before the
+  seeks and 12 after, and ran in 772 s where it had taken 1,048 s. The 12 are of three kinds, each tried again:
+  two claims of two runs of one batch, one holding its own row in the primary key and wanting the index's key, the
+  other the reverse (5); a list of an entry's runs, which reads with shared locks, against the update that skips
+  the rest of a batch (3 and 1); the others were not read. The first kind would go with an index that holds every
+  column the check reads, which is a migration; the second with a list that reads row versions. Neither is done:
+  both are rare, lose nothing, and need a SQL Server to measure on (`docs/OWNER-TODO.md`).
+- SQLite takes neither hint, and the statements mean what they meant.
+
 ## Consequences
 
 - 8.1 and 8.2 build their processors on these calls and own the policies: the attempts, the back-off, the lease of 5

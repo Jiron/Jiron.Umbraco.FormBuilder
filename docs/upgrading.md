@@ -87,6 +87,25 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
 
+### 17.0.0-beta.2 (2026-11-23)
+
+Fixes for sites on Linux and on SQL Server, found when the tests first ran there. A site on 17.0.0-beta.1 or
+17.0.0-alpha.1 keeps its forms, entries and settings.
+
+- **Migrations:** none. The plan still ends at `jfb-015-entry-site`, and the released schema stays
+  `baseline/schema-v2` ([how upgrades are tested](upgrade-testing.md)).
+- **Theme views:** every view still carries contract version 1.
+- **To check:**
+  - On a Linux server, a site whose time zone is stored under an older name, such as `Asia/Calcutta`, ran its forms
+    in UTC and logged a warning once an hour. It now runs in its zone; nothing has to be saved again.
+  - On SQL Server, a server that takes an action of an entry now locks that entry's actions only; before, it read
+    every action under a lock, and actions taken side by side met deadlocks, after which the work ran again. Nothing
+    changes in what runs or in which order. A few deadlocks remain possible, between two servers taking two actions
+    of one entry at the same moment and between a list of an entry's actions and a change to them; each is tried
+    again, up to three times.
+  - On SQL Server, the Answers view of a form with about 100,000 entries takes seconds, not a second, on a small
+    server (4 to 5 s measured on a hosted test runner). It is a known limit of this beta.
+
 ### 17.0.0-beta.1 (2026-11-22)
 
 The first beta, for Umbraco 17.6 or later (within 17). A site on 17.0.0-alpha.1 keeps its forms, entries and

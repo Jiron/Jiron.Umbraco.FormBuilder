@@ -145,3 +145,19 @@ public sealed class FormBuilderQueryTimeoutException : Exception
     {
     }
 }
+
+/// <summary>
+/// Thrown when a unit's scope cannot end because the server ended its transaction first (ROADMAP 26.1): SQL Server rolls
+/// a deadlock victim's transaction back, and a statement of the unit that heard of it may have been caught, or the
+/// victim was another statement of the same connection. Nothing of the unit was committed, so it may run again, a write
+/// too (<see cref="FormBuilderDatabase"/>). The provider's own error is inside.
+/// </summary>
+internal sealed class FormBuilderTransactionEndedException : Exception
+{
+    /// <summary>Creates the exception with the provider's error that ending the scope met.</summary>
+    /// <param name="innerException">The provider's error, such as SqlClient's word that the transaction has completed.</param>
+    public FormBuilderTransactionEndedException(Exception innerException)
+        : base("The database server ended the unit's transaction before it could end it; nothing was committed.", innerException)
+    {
+    }
+}

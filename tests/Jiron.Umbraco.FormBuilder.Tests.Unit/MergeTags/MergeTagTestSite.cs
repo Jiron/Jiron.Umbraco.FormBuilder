@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
@@ -87,7 +88,7 @@ internal static class MergeTagTestSite
     {
         umbraco ??= new TestUmbraco();
         var settings = Settings(zone, baseUrl);
-        var clock = new MergeTagClock(settings, time ?? new TestTimeProvider());
+        var clock = new MergeTagClock(settings, time ?? new TestTimeProvider(), new SystemTimeZoneLinks());
         cultures ??= new MergeTagCultures();
         var log = new RecordingLogger();
         var dictionary = umbraco.DictionaryTexts();

@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -233,7 +234,7 @@ public sealed class SampleEntriesTests
             options ?? Substitute.For<IFormBuilderOptionService>(),
             mergeTags ?? Substitute.For<IFormBuilderMergeTagService>(),
             locks ?? new FieldSettingLocks(Options.Create(new FormBuilderOptions()), TestFieldTypes.Registry),
-            new SiteTimeZones(settings, clock, NullLogger<SiteTimeZones>.Instance),
+            new SiteTimeZones(settings, clock, new SystemTimeZoneLinks(), NullLogger<SiteTimeZones>.Instance),
             clock);
     }
 

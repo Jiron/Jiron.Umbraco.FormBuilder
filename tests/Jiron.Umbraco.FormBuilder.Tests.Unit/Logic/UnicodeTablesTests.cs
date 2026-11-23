@@ -15,15 +15,20 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 public sealed class UnicodeTablesTests
 {
     /// <summary>
-    /// Compositions in scripts added in Unicode 16 (Todhri, Tulu-Tigalari, Gurung Khema, Kirat Rai): Node's ICU knows
-    /// them, the ICU .NET uses on Windows does not yet. The list is exact, so the check fails both when a gap appears and
-    /// when one closes.
+    /// The decompositions each Unicode version added, from 16.0 on, which a runtime with older Unicode data than the other
+    /// side may lack (ROADMAP 26.1, ADR-0005): Unicode 16 added scripts with compositions (Todhri, Tulu-Tigalari, Gurung
+    /// Khema, Kirat Rai). Node's ICU knows them; the ICU .NET uses knows them or not, by the system's ICU version
+    /// (Windows 11 and Ubuntu 24.04's do not, GitHub's runner does). Such a code point may be decomposed by one side and
+    /// not by the other, and by no other difference; any other code point must agree, whatever either side's version.
     /// </summary>
-    private static readonly int[] KnownRecompositionGaps =
-    [
-        0x105C9, 0x105E4, 0x11383, 0x11385, 0x1138E, 0x11391, 0x113C5, 0x113C7, 0x113C8,
-        0x16121, 0x16122, 0x16123, 0x16124, 0x16125, 0x16126, 0x16127, 0x16128, 0x16D68, 0x16D69, 0x16D6A,
-    ];
+    private static readonly IReadOnlyDictionary<string, int[]> AddedDecompositions = new Dictionary<string, int[]>(StringComparer.Ordinal)
+    {
+        ["16.0"] =
+        [
+            0x105C9, 0x105E4, 0x11383, 0x11385, 0x1138E, 0x11391, 0x113C5, 0x113C7, 0x113C8,
+            0x16121, 0x16122, 0x16123, 0x16124, 0x16125, 0x16126, 0x16127, 0x16128, 0x16D68, 0x16D69, 0x16D6A,
+        ],
+    };
 
     private static readonly Lazy<JsonDocument> Tables = new(() => JsonDocument.Parse(File.ReadAllText(
         RepositoryRoot.Path(typeof(UnicodeTablesTests).Assembly, "tests", "vectors", "tables", "typescript.json"))));
@@ -105,15 +110,21 @@ public sealed class UnicodeTablesTests
             }
         }
 
-        var known = KnownRecompositionGaps.Select(Gap).ToList();
-        var unexpected = differences.Except(known).Concat(known.Except(differences).Select(gap => "no longer differs: " + gap)).ToList();
-        TestContext.Out.WriteLine($"recompose: {known.Count} known gaps in Unicode 16 scripts");
+        // A code point a later Unicode version decomposes may be decomposed by one side only, the one with the newer data.
+        var added = AddedDecompositions.Values.SelectMany(codes => codes).ToHashSet();
+        var allowed = added.SelectMany(code => new[] { Gap(code), Missing(code, expected) }).ToHashSet(StringComparer.Ordinal);
+        var unexpected = differences.Where(difference => !allowed.Contains(difference)).ToList();
+        TestContext.Out.WriteLine($"recompose: TypeScript's Unicode {Root.GetProperty("unicode").GetString()}; {differences.Count(allowed.Contains)} of {added.Count} decompositions from Unicode 16 on known to one side only");
         Report("recompose", decomposed, expected.Count, unexpected);
 
         Assert.That(unexpected, Is.Empty, Summary(unexpected));
     }
 
     private static string Gap(int code) => $"U+{code:X4}: C# does not decompose it, TypeScript does";
+
+    // The other side lacking it: C# decomposes and recomposes the code point, the TypeScript file has no entry for it.
+    private static string Missing(int code, Dictionary<int, string> expected) =>
+        expected.ContainsKey(code) ? string.Empty : $"U+{code:X4}: C# {Describe(char.ConvertFromUtf32(code).Normalize(NormalizationForm.FormD).Normalize(NormalizationForm.FormC))}, TypeScript (no decomposition)";
 
     private static IEnumerable<(int Code, string Text)> Scalars() =>
         Enumerable.Range(0, 0x110000).Where(cp => cp is < 0xD800 or > 0xDFFF).Select(cp => (cp, char.ConvertFromUtf32(cp)));

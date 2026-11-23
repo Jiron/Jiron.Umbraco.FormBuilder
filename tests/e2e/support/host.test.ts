@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { deliveryApiOn, hostEnvironment, INSTRUCTION_PRUNING, INSTRUCTION_SYNC } from './host-env.ts';
 import { MARKER_NOT_LAST, STARTUP_LINES } from './host-health.ts';
-import { checkPort, demoDll, FAILED_LINES, hostProcessEnvironment, READY_LINES } from './host.ts';
+import { checkPort, demoDll, FAILED_LINES, failureLine, hostProcessEnvironment, READY_LINES } from './host.ts';
 import {
   DEMO_URL,
   demoProject,
@@ -189,6 +189,20 @@ test('every log line the harness waits for is one the C# code writes', () => {
     source(testingAIProject, 'FakeAI', 'FakeAISetup.cs'),
   ].join('\n');
   for (const line of [...READY_LINES, ...FAILED_LINES]) assert.ok(seeders.includes(`Message = "${line}`), line);
+});
+
+test('a failure names its whole line, with the reason after it', () => {
+  const log = [
+    'info: Demo seeding finished',
+    'fail: Jiron.Umbraco.FormBuilder.Testing.AI.FakeAI.FakeAIStartup[0]',
+    "      Jiron Form Builder fake AI failed: SQLite Error 1: 'no such table: umbracoAIConnection'.",
+    'info: later',
+  ].join('\r\n');
+  assert.equal(
+    failureLine(log),
+    "Jiron Form Builder fake AI failed: SQLite Error 1: 'no such table: umbracoAIConnection'.",
+  );
+  assert.equal(failureLine('info: Demo seeding finished\n'), null);
 });
 
 test("the stub's port is the Testing project's default", () => {

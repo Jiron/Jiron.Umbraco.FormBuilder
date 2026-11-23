@@ -1423,3 +1423,87 @@ its reason, and a handover block at the end of every phase.
   tag `v17.0.0-beta.1` is on d15f2fe4 and pushed; `main` names `17.0.0-beta.1.dev` since. **Not seen:** the release
   workflow's run on GitHub, which nobody can watch from this machine. **Nothing is published:** the publish job
   runs only with the owner's variable, and the repository is private (`docs/OWNER-TODO.md`).
+
+- 2026-11-23 · owner message · the owner said to look at the release run on GitHub in their browser ("take ur time u
+  can go thru everything u need"), and asked whether the runs are free. **Seen, read only:** Release #2 of
+  `v17.0.0-beta.1` (d15f2fe4) failed after 21 min; 13 of its CI jobs failed, so Pack, Draft GitHub Release and
+  Publish did not run. Release #1 of `v17.0.0-alpha.1` had failed too, after 22 min, unseen since 2026-11-13. The
+  CI runs of pushes are skipped, as `JFB_CI` is not set. It is the first time the workflow's tests ran anywhere but
+  on this Windows machine, and what failed is of eight kinds:
+  1. **Build, checks and tests:** `scripts/tests/lanes.test.mjs:170`, "records its processes in the PID file while
+     they run", fails on Linux (its lane never finds its own process in the file and leaves with code 3). The job
+     stops there, so the client's lint, tests and build, the .NET build and the unit tests have still never run
+     on Linux.
+  2. **The rendering fixtures** differ on Linux, in English and German: `ElementFixtureTests`, `ErrorFixtureTests`,
+     `CalculationFixtureTests` and `RecallFixtureTests`. The first differences are a culture's time pattern and
+     the list of countries, which the two systems' culture data write differently.
+  3. **`SettingsApiTests.ATimeZoneFromTheList_Saves…`:** Linux does not resolve the zone the test saves under an
+     older name (`America/Buenos_Aires`).
+  4. **`BlobFileStoreTests`** (every test): "Azurite is missing"; the integration jobs do not install it.
+  5. **On SQL Server, a query past its budget** answers with the provider's error where `AuditRepositoryTests` and
+     `EntryQueryRepositoryTests` expect the query timeout or a cancellation (five tests).
+  6. **On SQL Server, `InsightApiTests.TheAnswers_NeedTheRightToViewTheFormsEntries…`:** "SqlDateTime overflow".
+  7. **On SQL Server, the timed share:** the answer summaries of 100,000 entries took 3.95 s against 1 s.
+  8. **Browser smoke tests and load balancing:** the test host logged "Jiron Form Builder fake AI failed" at its
+     start; the reason is further up in the host's log, which is in the run's artifacts and was not downloaded.
+  Kinds 5 and 6 may be faults of the product on SQL Server; the others are the tests' or the workflow's. **Cost:**
+  the run's usage page says 4 h 21 min 42 s over its jobs; the account's billing page shows
+  this month's metered usage wholly covered by what the plan includes. **Not done:** nothing was changed, on
+  GitHub or here but this log and the owner's list; no artifact was downloaded; the full logs of the failed tests
+  were not read, only the ends the pages show.
+
+- 2026-11-23 · owner messages · "Yes, fix CI", to the question whether to fix the failures of the release runs, with
+  a dry run on GitHub to confirm and then 17.0.0-beta.2. Asked by a dialog, the owner allowed Docker on this
+  machine for Linux runs ("Yes, use Docker", no SQL Server container) and the download of the run's artifact
+  `playwright-smoke` ("Yes, download it"); asked "how much does github cover for free monthly?"; later "Pls
+  proceed". Phase 26 and its step 26.1 were added for it (`de3caf17`).
+- 2026-11-23 · 26.1, the work · **Reproduced first:** a container like GitHub's runner (Ubuntu 24.04, the SDK, Node,
+  PHP, a user who is not root, no legacy time zone names, later DejaVu) showed the Linux failures on this machine,
+  and 24 unit tests more that GitHub's run had not reached. Coding by one Opus agent in three rounds, each read
+  whole and sent back (`09adfb33`, `1cb40420`, `d641a145`, `ddae8e0b`, `8e603fa2`); the rest by hand. What each
+  failure was:
+  1. **Product, Linux:** an older time zone name (`Asia/Calcutta`) has no file without `tzdata-legacy`; found
+     through the links of the system's `tzdata.zi`, read once per server and again when the file changes. Sent
+     back once: the first form read the file on every request.
+  2. **Product, SQL Server:** a hand-made cursor of year 1 reached a `DATETIME` parameter; times go out within
+     its range, and a cursor's time is held to what the tables store. No request of the backoffice did this.
+  3. **Product, SQL Server:** a deadlock victim's scope threw "This SqlTransaction has completed" at its end, which
+     hid the deadlock from the retry; a unit now ends its scope itself and fails as a transient error.
+  4. **Product, SQL Server:** deadlocks on the action queue. Two fixes written from documentation (the check
+     reads the earlier runs only; `UPDLOCK, ROWLOCK`; the due list `READPAST, READCOMMITTEDLOCK`, the second hint
+     added on review for databases with snapshot reads) made the two-processor test pass, and then a pass of 25
+     left one run queued. Only the server's own record showed the cause: 1,844 deadlocks in one job, all on
+     `PK_jfbActionRun`, as SQL Server scanned the small table for the claim's check. With
+     `INDEX(IX_jfbActionRun_entryId_sortOrder), FORCESEEK`: 12 in that job, 8 in a whole run, the job a quarter
+     faster (`b310c5fc`).
+  5. **Tests:** culture data (four fixtures and unit tests; ADR-0263: the fixtures render with data of their own,
+     which did not change them); the slow condition of the budget tests, twice not slow on SQL Server (a count
+     below the joins, then `COUNT > 0` as an existence test; a guard test showed the second in 9 ms); the fake AI's
+     set-up before Umbraco.AI's tables; the blob emulator not installed in the integration jobs; the lanes' PID
+     file on Linux; a link deleted as a directory; a watcher under the SDK image's polling; two test servers
+     without a shared key ring (the docs already ask it of a site); a seeding that raced the host's worker; a
+     Unicode table check that listed one ICU's gaps; four layout tests sized for one font (the runner's is DejaVu
+     Sans; what "reached past 320 px" was the clipped honeypot); an upload test that assumed the order of two
+     announcements; the headless shell not routing a fulfilled redirect; a test that read a folder shared by
+     every test host.
+  6. **Budgets:** the three timed tests held SQLite's budgets from this machine on SQL Server on a hosted runner,
+     and failed there by turns (summaries 3.95 s of 1 s; export 5.50 s of 5 s on a runner a third slower). Each
+     has a budget per database now, SQL Server's about twice the highest measured there, and the summaries 2 s on
+     SQLite on the runner (ADR-0264). The measurements are in every run's log.
+- 2026-11-23 · 26.1, the runs on GitHub · read in the owner's browser. Full runs of the release workflow as dry
+  runs: on `8cfafd54` 6 of 26 jobs failed; on `d3ec2420` one (the SQL Server timed job, the export's budget); on
+  `d4107662` one (SQL Server share 10, the pass of 25); on `de208db2` none: 25 passed, 2 skipped as a dry run
+  skips them, in 31 min and 5 h 21 min of runner time. Targeted runs, a workflow made for it (one part of CI, one
+  or more shares): seven, of 6 to 30 minutes each. **A mistake of mine:** I told the owner the runs would fit the
+  plan's included minutes, from this repository's runs alone; the 3,000 minutes are the account's, and another
+  repository had used almost half. GitHub's mail said 100% used; the owner asked "Am i being charged now?". Read
+  on the billing page: $18.10 gross, all covered, no budget, no payment method seen, so nothing charged, and
+  nothing more runs until 1 December. The billing page is read before any run from now on.
+- 2026-11-23 · 26.1, where it stands · **17.0.0-beta.2 is ready on `main` and not tagged**: its section of the
+  changelog, its upgrade notes and its version (`d3ec2420`), the install test and the floor test on exactly that
+  version (passed twice, the second time on `de208db2`), the dry run above, the clean-clone gate on 75b6c921
+  (2,837 s; Core coverage 97.6%, name scan 0 hits). The tag starts a release run the account has no minutes
+  for, so it waits for the owner's word (`docs/OWNER-TODO.md`): the step's check "the tag of the next prerelease
+  is pushed, its release run passes and drafts a release" is the one still open, and the step is not ticked.
+  **Left on this machine:** the image `jfb-linux:local` and the volume `jfb-linux-work` (the container is
+  stopped), for the next Linux run; Docker Desktop runs, with the owner's own containers untouched.

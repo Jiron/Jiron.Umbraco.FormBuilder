@@ -302,7 +302,7 @@ public sealed class LogicFormCheckTests
         var settings = Substitute.For<IFormBuilderSettingsService>();
         settings.GetAsync<GeneralSettings>(Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new SettingsSnapshot<GeneralSettings>(new GeneralSettings { TimeZone = zone }, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>())));
-        return new RuleSearchScopes(Types, languages, settings, new TestTimeProvider(now ?? new DateTimeOffset(2026, 11, 4, 9, 0, 0, TimeSpan.Zero)));
+        return new RuleSearchScopes(Types, languages, settings, new TestTimeProvider(now ?? new DateTimeOffset(2026, 11, 4, 9, 0, 0, TimeSpan.Zero)), new SystemTimeZoneLinks());
     }
 
     private static ILanguage Language(string culture)

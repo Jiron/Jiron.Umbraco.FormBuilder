@@ -144,6 +144,8 @@ public sealed class ElementFixtureTests : RenderingTestBase
         var clock = new TestClock();
         builder.Services.AddSingleton(clock);
         builder.Services.AddUnique<TimeProvider>(clock);
+        // The system's culture data differs between systems; the fixture is the same file on each (ADR-0263).
+        builder.RendersWithFixedCultureData();
         builder.PublishesRefusedTags();
     }
 

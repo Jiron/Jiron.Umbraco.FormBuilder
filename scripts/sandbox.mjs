@@ -163,12 +163,54 @@ export function readPidRecord(pidFile) {
   }
 }
 
-/** The start time of a process as an ISO string, or null when it does not run. Windows PowerShell 5.1. */
-export function processStartTime(pid) {
-  const script = `$p = Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue; if ($p) { $p.StartTime.ToUniversalTime().ToString('o') }`;
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8' });
+/**
+ * The start time of a process as a text that stays the same while the process runs and differs for another process
+ * that later gets the same PID, or null when it does not run. Each system writes it its own way, and a record is only
+ * ever compared on the system that wrote it:
+ *   - Windows: the start time in UTC as ISO text, from Windows PowerShell 5.1;
+ *   - Linux: the process's start in clock ticks after boot (`/proc/<pid>/stat`, field 22) with the boot's time
+ *     (`btime` in `/proc/stat`), as `linux:<btime>:<ticks>`: exact, and no program to start (ROADMAP 26.1);
+ *   - elsewhere: `ps -o lstart=`, to the second.
+ */
+export function processStartTime(pid, { platform = process.platform, readText = (file) => readFileSync(file, 'utf8') } = {}) {
+  const id = Number(pid);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  if (platform === 'win32') {
+    const script = `$p = Get-Process -Id ${id} -ErrorAction SilentlyContinue; if ($p) { $p.StartTime.ToUniversalTime().ToString('o') }`;
+    const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8' });
+    const text = (result.stdout ?? '').trim();
+    return text === '' ? null : text;
+  }
+  if (platform === 'linux') {
+    let stat;
+    let boot;
+    try {
+      stat = readText(`/proc/${id}/stat`);
+      boot = readText('/proc/stat');
+    } catch {
+      return null;
+    }
+    return linuxStartText(stat, boot);
+  }
+  const result = spawnSync('ps', ['-o', 'lstart=', '-p', String(id)], { encoding: 'utf8' });
   const text = (result.stdout ?? '').trim();
-  return text === '' ? null : text;
+  return result.status === 0 && text !== '' ? `ps:${text}` : null;
+}
+
+/**
+ * The Linux start text from `/proc/<pid>/stat` and `/proc/stat`, or null when either cannot be read as written. The
+ * command's name stands in brackets and may itself hold spaces and brackets, so the fields are counted after the last
+ * closing bracket: the state is field 3 and the start time field 22. A zombie (state Z) has ended and counts as gone.
+ */
+export function linuxStartText(stat, boot) {
+  const close = stat.lastIndexOf(')');
+  if (close < 0) return null;
+  const fields = stat.slice(close + 1).trim().split(/\s+/);
+  const [state] = fields;
+  const ticks = fields[19];
+  const btime = /^btime\s+(\d+)\s*$/m.exec(boot)?.[1];
+  if (!state || state === 'Z' || state === 'X' || !/^\d+$/.test(ticks ?? '') || !btime) return null;
+  return `linux:${btime}:${ticks}`;
 }
 
 /** True when the recorded process still runs and is the one this script started. */

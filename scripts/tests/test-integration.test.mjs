@@ -19,6 +19,7 @@ import {
   mergeSettings,
   parseArgs,
   parseShare,
+  outputLines,
   parseTrx,
   planShares,
   readTimes,
@@ -203,6 +204,17 @@ describe('reading results', () => {
       { name: 'B("x")', className: 'N.B', outcome: 'Failed', seconds: 62.25, message: 'Expected 1' },
       { name: 'C_Skips', className: 'N.C', outcome: 'NotExecuted', seconds: 1.5, message: 'Only on Windows.' },
     ]);
+  });
+
+  test('what tests measured is given per test, a line each, without what their host logged', () => {
+    const lines = outputLines(
+      trx([
+        { name: 'A_Works', className: 'N.A' },
+        { name: 'B_Measures', className: 'N.B', body: '<Output><StdOut>every entry: median 3950.0 ms (budget 8000 ms)&#xD;\nwarn: Umbraco.Cms[0]&#xD;\n&#xD;\nfiltered: median 1.5 ms &lt; 2 ms\nPassed</StdOut></Output>' },
+        { name: 'C_Fails', className: 'N.C', outcome: 'Failed', body: '<Output><ErrorInfo><Message>no</Message></ErrorInfo></Output>' },
+      ]),
+    );
+    assert.deepEqual(lines, ['B_Measures: every entry: median 3950.0 ms (budget 8000 ms)', 'B_Measures: filtered: median 1.5 ms < 2 ms']);
   });
 
   test("the assembly's tests are the indented lines after the list's heading", () => {
@@ -414,12 +426,16 @@ describe('the summary', () => {
 describe('the workflow', () => {
   test("each database's matrix holds shares 1 to JFB_SHARES and the timed run, and the last job adds them up", async () => {
     const { parse } = await import('yaml');
+    const { select } = await import('../ci-selection.mjs');
+    const everything = select();
     const ci = parse(readFileSync(join(repo, '.github', 'workflows', 'ci.yml'), 'utf8'));
     for (const id of ['sqlite', 'sqlserver']) {
       const job = ci.jobs[id];
       const count = Number(job.env.JFB_SHARES);
       assert.ok(count >= 2, `${id} has shares`);
-      assert.deepEqual(job.strategy.matrix.share, [...Array.from({ length: count }, (_, i) => String(i + 1)), 'timed'], id);
+      // The matrix is the selection's (scripts/ci-selection.mjs), which without inputs is every share.
+      assert.equal(job.strategy.matrix.share, `\${{ fromJSON(needs.selection.outputs.${id}-shares) }}`, id);
+      assert.deepEqual(everything[`${id}Shares`], [...Array.from({ length: count }, (_, i) => String(i + 1)), 'timed'], id);
       assert.equal(job.strategy['fail-fast'], false, `${id} lets every share report`);
       const run = job.steps.map((step) => step.run ?? '').join('\n');
       assert.match(run, /node scripts\/test-integration\.mjs --share "\$share" --results TestResults\/integration/);
@@ -429,7 +445,7 @@ describe('the workflow', () => {
       assert.equal(job['timeout-minutes'], 45);
     }
     const shares = ci.jobs.shares;
-    assert.deepEqual(shares.needs, ['sqlite', 'sqlserver']);
+    assert.deepEqual(shares.needs, ['selection', 'sqlite', 'sqlserver']);
     const sums = shares.steps.map((step) => step.run ?? '').join('\n');
     assert.match(sums, /--sum shares\/sqlite/);
     assert.match(sums, /--sum shares\/sqlserver/);

@@ -1,13 +1,15 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-22, after the pass that made its backoffice
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-23, after the pass that made its backoffice
 simpler to find a way through, the fix that lets a field be called anything, the work that brought the tests from
-hours to half an hour and the change that leads an administrator to a user group's permissions: what was built, how
-it is tested, what the budgets measured, what it does not do yet, and what only you, the owner, can do next.
+hours to half an hour, the change that leads an administrator to a user group's permissions and the day its tests
+first passed on Linux and on SQL Server: what was built, how it is tested, what the budgets measured, what it does
+not do yet, and what only you, the owner, can do next.
 
-This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line, between releases at
-`17.0.0-beta.1.dev`; its prereleases `17.0.0-alpha.1` and, since 2026-11-22, `17.0.0-beta.1` are tagged. `v18/main`
-is the Umbraco 18 line at `18.0.0-alpha.0`. Nothing is published, and the repository is private.
+This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line and holds
+`17.0.0-beta.2`, ready and not yet tagged: its tag waits for the account's Actions minutes (below). Its prereleases
+`17.0.0-alpha.1` and `17.0.0-beta.1` are tagged, and neither has a release, as their runs failed. `v18/main` is the
+Umbraco 18 line at `18.0.0-alpha.0`. Nothing is published, and the repository is private.
 
 **The simpler backoffice you asked for on 2026-11-16 is built:** Phase 22 of the roadmap, four steps
 ([ADR-0254](decisions/0254-a-simpler-backoffice.md)). [The concept](ux/simpler-backoffice.md) says what became of each
@@ -73,6 +75,34 @@ once given, but nothing led there ([ADR-0262](decisions/0262-a-groups-access-on-
 - **Privacy › People without its permission** says which permission it needs and shows no search.
 - **The backoffice bundle has 1.9 KB left** of its 512 KB: the next change to the backoffice has to make room first.
 
+**The tests pass where the workflow runs them (Phase 26, 2026-11-23).** Until the release run of 17.0.0-beta.1 every
+test had run on one Windows machine with SQLite. That run and the one of 17.0.0-alpha.1 had failed, unseen; you
+said to fix it. A dry run of the release workflow now passes every job and packs, on Linux, on SQL Server and with
+two servers. What the first runs there found, each fixed at its cause:
+
+- **Three faults of the product.**
+  - A Linux server without its package of older time zone names refused names browsers list, such as
+    `Asia/Calcutta`, and ran a site stored under one in UTC. It now finds them through its own time zone database.
+  - On SQL Server, a server that took an action of an entry read every action under a lock, so actions taken side
+    by side met deadlocks: 1,844 in one job of the tests, each tried again, one of them three times in a row. The
+    check now reads the entry's own actions only (8 deadlocks in a whole run since, each tried again), and a unit
+    whose transaction SQL Server ended is always run again
+    ([ADR-0040](decisions/0040-outbox-repositories.md)).
+  - On SQL Server, a page cursor made by hand for the free-text answers of Insights caused a server error.
+- **The rest were the tests' or the workflow's:** fixtures and expectations that held one system's culture
+  data ([ADR-0263](decisions/0263-the-systems-culture-data-in-tests.md)), a "slow" statement that SQL Server
+  answered at once, test servers that shared no key ring, time budgets set for another database on another
+  machine ([ADR-0264](decisions/0264-the-timed-tests-budgets-per-database.md)), layout tests that depended on one
+  font, and six smaller ones ([WORKLOG.md](WORKLOG.md)).
+- **Three tools stay:** `node scripts/linux-ci.mjs` runs the workflow's Linux steps in a container on this
+  machine, for nothing; the workflow **Targeted run** runs one part of CI on GitHub (one SQL Server share is about
+  20 minutes of runner time against 5 h 20 min for everything); and each SQL Server job prints the deadlocks its
+  server recorded, which a passing run otherwise hides.
+- **What it cost:** the account's 3,000 included Actions minutes for November, about half of them here. Four
+  full runs and seven targeted ones; nothing was charged ([OWNER-TODO.md](OWNER-TODO.md)).
+- **Known and left:** on SQL Server the Answers view of 100,000 entries takes 3 to 5 s on a hosted runner, and a
+  few deadlocks remain possible; both need a SQL Server to measure on.
+
 ## Contents
 
 - [What was built](#what-was-built)
@@ -115,30 +145,47 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 25 (25.1), on 2026-11-22 on origin's
-`main` at `cbcddb2f`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 2,620 s, the browser tests on their first run. It was that day's seventh run; what the six before it
-found is below, under "What more runs found". No C# changed in Phase 25, so the coverage measured at the end of
-Phase 24 stands.
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 26 (26.1), on 2026-11-23 on origin's
+`main` at `75b6c921`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 2,837 s, the browser tests on their first run. It was that day's sixth run of it, each on a later
+commit, and every one passed. The coverage was measured again, on `de208db2`: Core 97.6% of its lines.
 
-| What ran | Count | At the end of Phase 24 |
+| What ran | Count | At the end of Phase 25 |
 | --- | --- | --- |
-| Unit tests (.NET), with the shared vectors in the server's engine | 9,157; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,157; 17 skipped |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,316 | 2,316 |
-| The AI add-on's tests (.NET) | 56 | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,360 in 239 files | 6,338 in 237 files |
-| The repository's scripts (Node) | 491 | 491 |
-| The browser tests' own support (Node) | 85 | 85 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 597 | 590 |
+| Unit tests (.NET), with the shared vectors in the server's engine | 9,199; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,157; 17 skipped |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,318 | 2,316 |
+| The AI add-on's tests (.NET) | 60 | 56 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,363 in 240 files | 6,360 in 239 files |
+| The repository's scripts (Node) | 526 | 491 |
+| The browser tests' own support (Node) | 86 | 85 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 597 | 597 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
-| A pack of `17.0.0-dev.202611221949` | 4 packages | 4 packages |
+| A pack of `17.0.0-dev.202611231800` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,305 commits, clean | 1,289 commits, clean |
+| The secret scan of the whole history | 1,329 commits, clean | 1,305 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) | skipped |
 
-No test went: every count is the one before or higher, the added ones being the tests of the new runners and of what
-Phase 24 fixed.
+No test went: every count is the one before or higher, the added ones being the tests of what Phase 26 fixed and of
+its tools.
+
+**On GitHub, for the first time whole** (the dry run of the release workflow on `de208db2`, 2026-11-23, read in your
+browser): 25 jobs passed and two were skipped, as a dry run drafts and publishes nothing. It took 31 minutes and
+5 h 21 min of runner time.
+
+| Job on GitHub (Ubuntu 24.04) | Time |
+| --- | --- |
+| Build, checks and tests (the scripts, the client, the Release build, the unit and AI tests) | 19 min 50 s |
+| Integration tests on SQLite, six shares and the timed tests | 9 min 14 s to 13 min 32 s; timed 6 min 58 s |
+| Integration tests on SQL Server 2022, ten shares and the timed tests | 14 min 2 s to 19 min 36 s; timed 11 min 20 s |
+| Browser tests (smoke and website, in Chromium) | 26 min 51 s |
+| Load balancing (two servers on one SQL Server) | 5 min 37 s |
+| The shares add up (2,318 tests on each database, each once) | 17 s |
+| Pack the packages | 3 min 44 s |
+
+The longest integration job is under the 22 minutes the plan allows, so the number of shares stays. Its SQL Server
+recorded 8 deadlocks over all eleven jobs. The timed tests measured, on SQLite and on SQL Server there: the answer
+summaries 835 ms and 3.22 s, the first page of entries 43 ms and 93 ms, the CSV export 2.44 s and 3.33 s.
 
 **How the gate runs now.** Its checks and builds run in lanes side by side; the integration tests run in eight
 processes at once, with the unit and AI tests beside them and the tests that measure time alone after them; the
@@ -206,9 +253,9 @@ how to repeat it. Sizes are gzip.
 
 | Budget | Measured | Limit |
 | --- | --- | --- |
-| The website runtime's core, what every page with a form loads first | 2.94 KB | 16 KB |
-| The runtime with every feature and the largest language's words | 64.00 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
-| The default theme's stylesheet | 8.06 KB | 10 KB |
+| The website runtime's core, what every page with a form loads first | 2.99 KB | 16 KB |
+| The runtime with every feature and the largest language's words | 64.11 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
+| The default theme's stylesheet | 8.05 KB | 10 KB |
 | Rendering a 50-field form from its cached definition | 4.8 ms median | 20 ms |
 | A submission, 10 at the same moment, on SQLite | 56.1 ms at p95 | 150 ms |
 | The first page of 100,000 entries | 10.7 ms median, 22.6 ms highest | 300 ms |
@@ -217,9 +264,9 @@ how to repeat it. Sizes are gzip.
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
 | The slowest designer interaction on a form of 300 fields | 48 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 45.02 KB | 64 KB |
+| What every backoffice session loads at its start | 45.00 KB | 64 KB |
 | The backoffice's largest file (the designer) | 39.42 KB | 64 KB |
-| The backoffice bundle | 510.12 KB | 512 KB |
+| The backoffice bundle | 509.84 KB | 512 KB |
 
 ## What it does not do yet
 
@@ -277,8 +324,10 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    protect `main`.
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true`, raise the Dependabot limits, and check the first run:
    the first on Linux, and the first of the parts above that never ran.
-4. **Check the draft releases** of `v17.0.0-alpha.1` and `v17.0.0-beta.1` under Actions › Release and Releases: seven
-   files each and the changelog's notes.
+4. **Say when `v17.0.0-beta.2` is tagged:** its release run needs about 5 h 20 min of runner time, and the
+   account's minutes for November are used up. On 1 December they are there again; a payment method and a budget
+   for Actions would allow it sooner. Then check its draft release: seven files and the changelog's notes. The tags
+   `v17.0.0-alpha.1` and `v17.0.0-beta.1` have no release and get none.
 5. **Publishing:** reserve the NuGet prefix `Jiron.`, create the trusted-publishing policy and set `JFB_NUGET_USER` and
    `JFB_NUGET_PUBLISH`, then publish and validate both Marketplace listings ([releasing.md](releasing.md)).
 6. **Real-world checks** of the stubbed services and screen readers above, and of how GitHub and nuget.org render the

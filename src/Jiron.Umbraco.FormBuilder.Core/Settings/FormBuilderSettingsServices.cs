@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Email;
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -19,6 +20,8 @@ internal static class FormBuilderSettingsServices
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddSingleton<IFormBuilderSettingsService, FormBuilderSettingsService>();
+        // The server's own links of older time zone names, read from its system once and kept (ROADMAP 26.1).
+        builder.Services.TryAddSingleton<SystemTimeZoneLinks>();
         builder.Services.TryAddSingleton<SiteTimeZones>();
         builder.CacheRefreshers().Add<FormBuilderSettingsCacheRefresher>();
         builder.AddNotificationAsyncHandler<ContentDeletedNotification, SiteSettingsRemoval>();

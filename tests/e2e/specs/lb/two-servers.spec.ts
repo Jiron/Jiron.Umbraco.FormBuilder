@@ -23,6 +23,9 @@ const SA_PASSWORD = process.env['SA_PASSWORD'];
 const ports = SA_PASSWORD ? LB_PORTS : LB_PORTS.slice(0, 1);
 const urls = ports.map((port) => `http://127.0.0.1:${String(port)}`);
 const deliveriesFile = join(e2eState, 'lb-deliveries.log');
+// One Data Protection key ring with one application name for both servers, as docs/deployment.md asks of a load-balanced
+// site: without it each refused the other's challenge (ROADMAP 26.1, 401 challenge_required).
+const sharedKeys = join(e2eState, 'lb-keys');
 const hosts: Host[] = [];
 
 interface Delivery {
@@ -76,10 +79,12 @@ async function publishWithTheAction(page: Page, api: APIRequestContext, url: str
 test.beforeAll(async () => {
   test.setTimeout(900_000);
   rmSync(deliveriesFile, { force: true });
+  rmSync(sharedKeys, { recursive: true, force: true });
   const env: Record<string, string> = {
     ...hostEnvironment(readSecrets(), { deliveryApi: false, severalServers: true }),
     JironFormBuilderTesting__StubPort: '0',
     JironFormBuilderTesting__DeliveriesFile: deliveriesFile,
+    JironFormBuilderTesting__SharedKeys: sharedKeys,
     JironFormBuilder__Limits__Submit__PerAddressAndFormPerMinute: '0',
     JironFormBuilder__Limits__Challenge__PerAddressAndFormPerMinute: '0',
   };

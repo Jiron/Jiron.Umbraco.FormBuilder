@@ -12,14 +12,18 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Entries;
 
 /// <summary>
 /// The list's budget (section 4.12, ADR-0207): the first page of a form with 100,000 entries, with its count, its titles
-/// and two columns, loads through the list service in 300 ms at most on SQLite.
+/// and two columns, loads through the list service in 300 ms at most on SQLite. On SQL Server, which runs only on the
+/// workflow's hosted runner, the budget is that runner's (ADR-0264).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class EntryListBudgetTests : ActionTestBase
 {
     private const int Count = 100_000;
-    private static readonly TimeSpan Budget = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan SqliteBudget = TimeSpan.FromMilliseconds(300);
+
+    // SQL Server in a container on a hosted runner: the highest median measured there was 164 ms (ADR-0264).
+    private static readonly TimeSpan SqlServerBudget = TimeSpan.FromMilliseconds(600);
 
     private static readonly FormField Amount = new()
     {
@@ -44,6 +48,8 @@ public sealed class EntryListBudgetTests : ActionTestBase
         var approved = newest with { Filter = new EntryListFilter { States = [EntryState.Approved], Sort = new EntryListSort { Field = Amount.Key } } };
         var searched = newest with { Filter = new EntryListFilter { Search = "person 4" } };
 
+        var sqlite = await GetRequiredService<FormBuilderDatabase>().ReadAsync(db => Task.FromResult(new SqlNames(db).IsSqlite));
+        var budget = sqlite ? SqliteBudget : SqlServerBudget;
         var first = await lists.ListAsync(form, newest);
         var times = new Dictionary<string, List<double>> { ["newest"] = [], ["approved by amount"] = [], ["search"] = [] };
         for (var round = 0; round < 5; round++)
@@ -59,7 +65,7 @@ public sealed class EntryListBudgetTests : ActionTestBase
 
         foreach (var (name, measured) in times)
         {
-            await TestContext.Out.WriteLineAsync($"{name}: median {Median(measured):0.0} ms of {string.Join(", ", measured.Select(time => time.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)))}");
+            await TestContext.Out.WriteLineAsync($"first page of entries, {(sqlite ? "SQLite" : "SQL Server")}, {name}: median {Median(measured).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} ms of {string.Join(", ", measured.Select(time => time.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)))} (budget {budget.TotalMilliseconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture)} ms)");
         }
 
         Assert.Multiple(() =>
@@ -69,7 +75,7 @@ public sealed class EntryListBudgetTests : ActionTestBase
             Assert.That(first.Rows[0].Cells.Select(cell => cell.Texts.Single()), Is.EqualTo(new[] { $"Person {Count}", (Count % 1000).ToString(System.Globalization.CultureInfo.InvariantCulture) }));
             foreach (var (name, measured) in times)
             {
-                Assert.That(TimeSpan.FromMilliseconds(Median(measured)), Is.LessThanOrEqualTo(Budget), name);
+                Assert.That(TimeSpan.FromMilliseconds(Median(measured)), Is.LessThanOrEqualTo(budget), name);
             }
         });
     }

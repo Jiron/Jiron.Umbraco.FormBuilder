@@ -274,7 +274,24 @@ public sealed class DeliveryApiTests : ManagementApiTestBase
 
     // A form whose entry has an email action's run, which queued a mail that failed and one that is uncertain, a mail to a
     // visitor that waits and one the limit held back, and an uncertain webhook run; and a test mail of no entry that failed.
+    // The seeding claims the runs and the mails itself, as a worker would, so sending is paused while it runs: each run
+    // and mail it queues wakes the host's worker, which on SQL Server claimed the email run before the seeding could
+    // (ROADMAP 26.1, NullReferenceException at the claim). It is unpaused again at the end, as the set-up leaves it.
     private async Task<Seeded> SeedAsync()
+    {
+        var options = GetRequiredService<IOptionsMonitor<FormBuilderOptions>>().CurrentValue;
+        options.Actions.Paused = true;
+        try
+        {
+            return await SeedPausedAsync();
+        }
+        finally
+        {
+            options.Actions.Paused = false;
+        }
+    }
+
+    private async Task<Seeded> SeedPausedAsync()
     {
         var forms = GetRequiredService<IFormBuilderFormService>();
         var created = await forms.CreateAsync(new NewFormRequest("Job application", UserKey: null));

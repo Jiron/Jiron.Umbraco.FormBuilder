@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.AI.Profiles;
 using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Umbraco.AI.Core.Connections;
 using Umbraco.AI.Core.Models;
@@ -86,22 +87,106 @@ public sealed class FormBuilderTestingAIComposer : IComposer
 /// <summary>
 /// Sets up the fake connection and chat profile once Umbraco runs, and chooses the profile in Settings > AI when nothing
 /// is chosen yet (<see cref="FakeAIMode.Chosen"/>). It logs <c>Jiron Form Builder fake AI ready</c> when done, which the
-/// browser tests' harness waits for, or <c>Jiron Form Builder fake AI failed</c> with the reason. Hosts that share a
-/// database start together, so a set-up that loses the race to create the profile tries once more and finds it.
-/// Either way it reports its end to <see cref="StartupSeeding"/>.
+/// browser tests' harness waits for, or <c>Jiron Form Builder fake AI failed</c> with the reason. Either way it reports
+/// its end to <see cref="StartupSeeding"/>.
 /// </summary>
-internal sealed partial class FakeAIStartup(IRuntimeState runtimeState, FakeAISetup setup, TimeProvider time, StartupSeeding seeding, ILogger<FakeAIStartup> logger)
+/// <remarks>
+/// Umbraco.AI makes its tables in a handler of the same notification, and the handlers run one after the other in an
+/// order that differs between systems (ROADMAP 26.1: on Linux this one came first and found no table). So the set-up
+/// runs beside the handlers rather than inside this one, which would hold up Umbraco.AI's, and tries again each second
+/// until the tables are there, for at most <see cref="Limit"/>; it logs that it waits, and why, after a first failure.
+/// Hosts that share a database start together too, so a set-up that loses the race to create the profile finds it on
+/// its next try.
+/// </remarks>
+internal sealed partial class FakeAIStartup(IRuntimeState runtimeState, FakeAISetup setup, TimeProvider time, StartupSeeding seeding, IHostApplicationLifetime lifetime, ILogger<FakeAIStartup> logger)
     : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     /// <summary>The name this seeder is announced and reports with (<see cref="StartupSeeding"/>).</summary>
     public const string SeederName = "fake AI";
 
+    /// <summary>How long the set-up keeps trying: Umbraco.AI's migrations take a few seconds on a fresh database.</summary>
+    internal static readonly TimeSpan Limit = TimeSpan.FromSeconds(90);
+
+    /// <summary>The pause between two tries.</summary>
+    internal static readonly TimeSpan Pause = TimeSpan.FromSeconds(1);
+
     /// <inheritdoc />
-    public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
+    public Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
+    {
+        if (runtimeState.Level != RuntimeLevel.Run)
+        {
+            seeding.Report(SeederName);
+            return Task.CompletedTask;
+        }
+
+        _ = Task.Run(SetUpAsync, CancellationToken.None);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="attempt"/> until it succeeds, a pause apart, for at most <paramref name="limit"/>: its result,
+    /// or the last failure once the limit is reached. <paramref name="waiting"/> hears of the first failure.
+    /// </summary>
+    internal static async Task<(T? Result, Exception? Failure, int Attempts)> TryUntilAsync<T>(
+        Func<CancellationToken, Task<T>> attempt,
+        TimeSpan limit,
+        TimeSpan pause,
+        TimeProvider time,
+        Action<Exception> waiting,
+        CancellationToken cancellationToken)
+    {
+        var started = time.GetTimestamp();
+        for (var attempts = 1; ; attempts++)
+        {
+            try
+            {
+                return (await attempt(cancellationToken), null, attempts);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                if (time.GetElapsedTime(started) + pause > limit)
+                {
+                    return (default, exception, attempts);
+                }
+
+                if (attempts == 1)
+                {
+                    waiting(exception);
+                }
+            }
+
+            await Task.Delay(pause, time, cancellationToken);
+        }
+    }
+
+    private async Task SetUpAsync()
     {
         try
         {
-            await SetUpAsync(cancellationToken);
+            var (profile, failure, attempts) = await TryUntilAsync(
+                token => setup.EnsureAsync(choose: true, token),
+                Limit,
+                Pause,
+                time,
+                exception => LogWaiting(logger, exception.Message, Limit.TotalSeconds),
+                lifetime.ApplicationStopping);
+            if (profile is not null)
+            {
+                LogReady(logger, profile.Alias);
+            }
+            else
+            {
+                // The host still serves everything else; the harness reports this line, reason and all.
+                LogFailed(logger, $"{failure!.Message} (still after {attempts} tries in {Limit.TotalSeconds:0} s)");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The host stops.
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            LogFailed(logger, exception.Message);
         }
         finally
         {
@@ -109,36 +194,11 @@ internal sealed partial class FakeAIStartup(IRuntimeState runtimeState, FakeAISe
         }
     }
 
-    private async Task SetUpAsync(CancellationToken cancellationToken)
-    {
-        if (runtimeState.Level != RuntimeLevel.Run)
-        {
-            return;
-        }
-
-        for (var attempt = 1; ; attempt++)
-        {
-            try
-            {
-                var profile = await setup.EnsureAsync(choose: true, cancellationToken);
-                LogReady(logger, profile.Alias);
-                return;
-            }
-            catch (Exception exception) when (exception is not OperationCanceledException && attempt < 2)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), time, cancellationToken);
-            }
-            catch (Exception exception) when (exception is not OperationCanceledException)
-            {
-                // The host still serves everything else; the harness reports the failure line.
-                LogFailed(logger, exception.Message);
-                return;
-            }
-        }
-    }
-
     [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder fake AI ready: the chat profile {Alias}")]
     private static partial void LogReady(ILogger logger, string alias);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder fake AI waits for Umbraco.AI's tables, at most {Seconds} s: {Reason}")]
+    private static partial void LogWaiting(ILogger logger, string reason, double seconds);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder fake AI failed: {Reason}")]
     private static partial void LogFailed(ILogger logger, string reason);

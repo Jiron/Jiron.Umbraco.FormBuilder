@@ -359,8 +359,9 @@ test('a send from a plain-HTTP origin, where crypto.randomUUID() does not exist,
 }) => {
   const address = new URL(baseURL ?? '');
   // The host's address under a name that is no potentially trustworthy origin: localhost and 127.0.0.1 are.
+  // The project's own browser: Edge on the development machine, Playwright's Chromium in CI (playwright.config.ts).
   const browser = await chromium.launch({
-    channel: 'msedge',
+    ...(process.env.CI ? {} : { channel: 'msedge' }),
     args: [`--host-resolver-rules=MAP plain-http.jfb.test ${address.hostname}`],
   });
   try {

@@ -126,11 +126,22 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     /// <summary>
     /// A condition that holds and takes far longer than any budget to find so, put in front of a statement's own
-    /// conditions to make it slow.
+    /// conditions to make it slow. <see cref="AuditRepositoryTests"/> checks it is slow on each database.
     /// </summary>
+    /// <remarks>
+    /// On SQL Server a sum over a three-way cross join of the system's objects (some 2,500 rows each, so about 15
+    /// billion rows), of an expression of all three sides, compared with a number: what matters is that finding out
+    /// reads every row. Each form the optimizer cuts short is avoided (ROADMAP 26.1, where two did). A count compared
+    /// with 0 is turned into an existence test, which stops at the first row (the count's `&gt; 0`, which ended after 9
+    /// ms on GitHub), so there is no count and no comparison with 0. A count, or a sum of one side's columns, can be
+    /// worked out on each side below the joins and multiplied (the plain count of the first form), so the summed
+    /// expression takes a column of every side, and no side alone gives a part of it. And the number is no bound: no
+    /// range of the sum's values tells the optimizer it is never met, so only computing it does. Every row has to be
+    /// read and added.
+    /// </remarks>
     private protected string SlowCondition => IsSqlite
         ? "(WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 100000000) SELECT MAX(x) FROM c) > 0 AND "
-        : "(SELECT COUNT_BIG(*) FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c CROSS JOIN sys.all_objects d) > 0 AND ";
+        : "(SELECT SUM(CAST(ABS(CHECKSUM(a.object_id, b.object_id, c.object_id) % 7) AS BIGINT)) FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c) <> 1234567 AND ";
 
     /// <summary>Runs <paramref name="work"/> inside one read with <paramref name="interceptor"/> watching its statements.</summary>
     private protected Task<T> WatchedReadAsync<T>(NPoco.IInterceptor interceptor, Func<Task<T>> work) =>

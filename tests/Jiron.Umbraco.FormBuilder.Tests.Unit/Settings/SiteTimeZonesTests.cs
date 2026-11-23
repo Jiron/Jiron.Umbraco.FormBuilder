@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ public sealed class SiteTimeZonesTests
             var zone = call.ArgAt<Guid?>(0) is { } site && _zones.TryGetValue(site, out var stored) ? stored : GeneralSettings.DefaultTimeZone;
             return Task.FromResult(new SettingsSnapshot<GeneralSettings>(new GeneralSettings { TimeZone = zone }, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>()));
         });
-        _timeZones = new SiteTimeZones(settings, _clock, _logger);
+        _timeZones = new SiteTimeZones(settings, _clock, new SystemTimeZoneLinks(), _logger);
     }
 
     [Test]

@@ -125,7 +125,18 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
 - **Cross-checks:** a TypeScript tool writes fold, clean and recomposition for every code point; the C# suite
   compares them. Known gaps (the 20 Unicode 16 compositions) are listed exactly, so the check fails both when a gap
   appears and when one closes. **Amended in 5.3b (ADR-0064):** the tool also writes what the merge tags' `upper` and
-  `lower` do to every code point, compared the same way.
+  `lower` do to every code point, compared the same way. **Amended in 26.1:** GitHub's runner has a newer ICU than
+  Windows 11 and Ubuntu 24.04, which knows the Unicode 16 compositions, so the exact list failed there as "closed".
+  The check now holds what the platforms decide: the clean step's NFC is each runtime's own (`string.Normalize` with the
+  server's ICU, `String.prototype.normalize` with the browser's), so a server and a browser with different Unicode data
+  disagree on exactly the decompositions the newer data added. The test keeps those by the Unicode version that added
+  them (16.0: the 20 above); such a code point may be decomposed by one side and not the other, and nothing else may
+  differ, on any ICU. What a site sees: a value in one of those scripts (Todhri, Tulu-Tigalari, Gurung Khema, Kirat
+  Rai) may be cleaned to another form in the browser than on the server, so a rule on it can differ between the
+  browser's preview and the server's check, and its text key between a value cleaned on each. The server decides what
+  is stored and checked, so no entry is stored unchecked; the browser at worst shows or hides a field otherwise than the
+  server then judges. Nothing else is affected, and no vendored normalisation tables are added for scripts this young
+  (they would be a dependency, and the platforms close the gap as they update).
 - **Mutation:** the vector suites are proven by mutants in both runtimes; a mutant that survives is either an
   equivalent change, written down, or a missing vector, added. **Amended in 5.2a (ADR-0061):** the mutants are a script
   in the repository, `tests/vectors/mutants.mjs`, with the equivalent changes and their reasons in it.

@@ -117,15 +117,62 @@ internal static class CalendarValues
 
     /// <summary>
     /// Whether the name is an IANA time zone this runtime knows, as <see cref="Today"/> takes it: Windows names and
-    /// offsets are refused, because the browser does not take the one and the server not the other.
+    /// offsets are refused, because the browser does not take the one and the server not the other. It takes the zone's
+    /// own names, which every reader passes on (a resolved zone's id); a name a site stored goes through the overload
+    /// with the server's links.
     /// </summary>
-    public static TimeZoneInfo? FindTimeZone(string timeZone)
+    public static TimeZoneInfo? FindTimeZone(string timeZone) => IsZoneName(timeZone) ? FindIana(timeZone) : null;
+
+    /// <summary>
+    /// The same for a name a site stored, which may be an older name that browsers list: one the server's own time zone
+    /// database links to its zone, such as <c>Asia/Calcutta</c>, finds that zone, whose id is then the zone's own name
+    /// (ROADMAP 26.1). The links are looked up first: a lookup in memory, which spares a name .NET does not find the
+    /// exception of each call, and costs a zone's own name nothing it did not cost before.
+    /// </summary>
+    /// <param name="timeZone">The name as stored.</param>
+    /// <param name="links">The server's links (<see cref="SystemTimeZoneLinks"/>).</param>
+    public static TimeZoneInfo? FindTimeZone(string timeZone, SystemTimeZoneLinks links)
     {
-        if (timeZone.Length == 0 || !char.IsAsciiLetter(timeZone[0]))
+        ArgumentNullException.ThrowIfNull(links);
+        if (!IsZoneName(timeZone))
         {
             return null;
         }
 
+        return links.Target(timeZone) is { } zone ? FindIana(zone) : FindIana(timeZone);
+    }
+
+    /// <summary>
+    /// The zone of a name a site may store, when the server knows the name in exactly this spelling: the zone's own name,
+    /// or an older name its system's database links to it or ICU converts; null otherwise. Another letter case is not:
+    /// Windows finds it only once the exact spelling has been looked up, so the answer would depend on what the server
+    /// did before (ADR-0043).
+    /// </summary>
+    /// <param name="timeZone">The name as given.</param>
+    /// <param name="links">The server's links.</param>
+    public static TimeZoneInfo? FindExactTimeZone(string timeZone, SystemTimeZoneLinks links)
+    {
+        ArgumentNullException.ThrowIfNull(links);
+        if (!IsZoneName(timeZone))
+        {
+            return null;
+        }
+
+        if (links.Target(timeZone) is { } linked)
+        {
+            return FindIana(linked);
+        }
+
+        return FindIana(timeZone) is { } zone
+            && (string.Equals(zone.Id, timeZone, StringComparison.Ordinal) || TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZone, out _))
+            ? zone
+            : null;
+    }
+
+    private static bool IsZoneName(string timeZone) => timeZone.Length > 0 && char.IsAsciiLetter(timeZone[0]);
+
+    private static TimeZoneInfo? FindIana(string timeZone)
+    {
         try
         {
             var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);

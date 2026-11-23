@@ -1,0 +1,36 @@
+# A targeted run of CI (ROADMAP 26.1; docs/releasing.md, tests/README.md): one part of ci.yml, started by hand, to check
+# a failure that only GitHub's runners show without a full run, which costs about 4 h 20 min of runner time. It calls
+# ci.yml with the part (`only`) and, for one database, its shares; it packs, drafts and publishes nothing.
+name: Targeted run
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: The part of CI to run
+        required: true
+        type: choice
+        default: build
+        options: [build, sqlite, sqlserver, smoke, loadbalancing, all]
+      shares:
+        description: 'With sqlite or sqlserver: a JSON list of its shares, such as ["3","timed"] (empty: every share)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# One run per part and share list at a time: runs of different parts go side by side.
+concurrency:
+  group: targeted-${{ inputs.only }}-${{ inputs.shares }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI (a part)
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/ci.yml
+    with:
+      only: ${{ inputs.only }}
+      shares: ${{ inputs.shares }}

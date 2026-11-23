@@ -68,6 +68,26 @@ async function ready(page: Page): Promise<Locator> {
   return form;
 }
 
+/**
+ * Listens to the form's live region from now on, and gives what it has said so far, in order. Two things that are told
+ * a moment apart come in the order the machine has them, and the later one replaces the earlier one in the region
+ * (ROADMAP 26.1: on GitHub's runner the hire's total was told before a failed upload, on the development machine after).
+ */
+async function told(form: Locator): Promise<() => Promise<string[]>> {
+  const live = form.locator('[data-jfb-live]');
+  await live.evaluate((region) => {
+    const said: string[] = [];
+    (region as HTMLElement & { jfbSaid?: string[] }).jfbSaid = said;
+    const hear = (): void => {
+      const now = region.textContent.trim();
+      if (now !== '' && said.at(-1) !== now) said.push(now);
+    };
+    hear();
+    new MutationObserver(hear).observe(region, { childList: true, characterData: true, subtree: true });
+  });
+  return () => live.evaluate((region) => [...((region as HTMLElement & { jfbSaid?: string[] }).jfbSaid ?? [])]);
+}
+
 async function axe(page: Page, what: string): Promise<void> {
   await settled(page);
   const result = await new AxeBuilder({ page })
@@ -166,6 +186,7 @@ test('a file that failed stays in its row as the visitor moves on, and stops the
   page,
 }) => {
   const form = await ready(page);
+  const said = await told(form);
   let cut = true;
   await page.route('**/jfb/api/v1/forms/*/uploads**', async (route) => {
     // The signature's image goes at the send too, and goes on.
@@ -187,8 +208,11 @@ test('a file that failed stays in its row as the visitor moves on, and stops the
   page.on('request', (request) => {
     if (request.url().endsWith('/entries')) entries.push(request.url());
   });
-  // The hire's total is told a moment after its answers; it is not to speak over what this test listens for.
-  await expect(form.locator('[data-jfb-live]')).toContainText('Room hire');
+  // The hire's total is told a moment after its answers, before or after the failed upload as the machine has it; it
+  // is not to speak over what this test listens for, so it has been told by now.
+  await expect
+    .poll(async () => (await said()).some((each) => each.includes('Room hire')), 'the total has been told')
+    .toBe(true);
   await pressOnThePage(form.locator('button[data-jfb-nav="submit"]'));
   await expect(row.locator('[data-jfb-retry]')).toBeFocused();
   await expect(form.locator('[data-jfb-live]')).toContainText('The upload stopped');

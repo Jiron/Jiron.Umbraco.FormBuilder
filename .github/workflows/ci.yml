@@ -1,6 +1,9 @@
 # Jiron Form Builder's CI (ROADMAP 3.5, ADR-0011). scripts/ci-local.ps1 runs the same checks locally, without
 # SQL Server, which the development machine never connects to (CLAUDE.md rule 6).
 #
+# A targeted run (targeted.yml, by hand) calls it with the inputs `only` and `shares` to run one part, such as one
+# integration share of one database (scripts/ci-selection.mjs); a push, a tag and the release give none and run all.
+#
 # Gated to save the private repository's Actions minutes (D17): a run started by hand always runs, and so does the
 # release (release.yml), which calls this workflow for a version tag, so a tag runs CI once (ADR-0247). Pushes to main
 # and to v18/main (the Umbraco 18 line, Phase 19) run only when the owner sets the repository variable JFB_CI to
@@ -10,15 +13,26 @@ name: CI
 on:
   push:
     branches: [main, v18/main]
-  # The release calls it for a version tag; the jobs' conditions let a tag through.
+  # The release calls it for a version tag, without inputs; the jobs' conditions let a tag through.
   workflow_call:
+    inputs:
+      only:
+        description: 'The part to run: all, build, sqlite, sqlserver, smoke or loadbalancing'
+        type: string
+        default: all
+      shares:
+        description: 'With only sqlite or sqlserver: a JSON list of its share names, such as ["3","timed"]; empty for every share'
+        type: string
+        default: ''
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Called by another workflow, the group is this run's own beside its caller's: targeted runs of different parts go side
+# by side, and a newer run of the same part replaces the older one. A push and a tag give no inputs.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ inputs.only }}-${{ inputs.shares }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -28,9 +42,40 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
+  # In seconds: which jobs and shares this run runs; a wrong input fails here (scripts/ci-selection.mjs).
+  selection:
+    name: What this run runs
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.select.outputs.build }}
+      sqlite: ${{ steps.select.outputs.sqlite }}
+      sqlserver: ${{ steps.select.outputs.sqlserver }}
+      smoke: ${{ steps.select.outputs.smoke }}
+      loadbalancing: ${{ steps.select.outputs.loadbalancing }}
+      everything: ${{ steps.select.outputs.everything }}
+      sqlite-shares: ${{ steps.select.outputs.sqlite-shares }}
+      sqlserver-shares: ${{ steps.select.outputs.sqlserver-shares }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # The inputs reach the script through the environment, never inline (ADR-0247).
+      - name: The part and the shares
+        id: select
+        env:
+          ONLY: ${{ inputs.only }}
+          SHARES: ${{ inputs.shares }}
+        run: node scripts/ci-selection.mjs
+
   build:
     name: Build, checks and tests (SQLite)
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: selection
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -127,13 +172,14 @@ jobs:
   # count (the matrix's numbers and JFB_SHARES together) so the longest job stays under 22 minutes.
   sqlite:
     name: Integration tests (SQLite, share ${{ matrix.share }})
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: selection
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.sqlite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        share: ['1', '2', '3', '4', '5', '6', 'timed']
+        share: ${{ fromJSON(needs.selection.outputs.sqlite-shares) }}
     env:
       JFB_SHARES: '6'
       SHARE: ${{ matrix.share }}
@@ -146,7 +192,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+          cache-dependency-path: |
+            scripts/package-lock.json
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
@@ -158,6 +206,9 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # The scripts' packages hold the emulator the blob store's tests start (Azurite, ROADMAP 26.1).
+      - name: Install the scripts' packages
+        run: npm ci --prefix scripts --no-audit --no-fund
       - name: Build the integration tests
         run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
       - name: Integration tests (SQLite)
@@ -174,14 +225,15 @@ jobs:
 
   sqlserver:
     name: Integration tests (SQL Server, share ${{ matrix.share }})
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: selection
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.sqlserver == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # One process per job: two on one server would collide on the test databases' names.
     strategy:
       fail-fast: false
       matrix:
-        share: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'timed']
+        share: ${{ fromJSON(needs.selection.outputs.sqlserver-shares) }}
     services:
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -211,7 +263,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+          cache-dependency-path: |
+            scripts/package-lock.json
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
       - uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
@@ -222,12 +276,24 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # The scripts' packages hold the emulator the blob store's tests start (Azurite, ROADMAP 26.1).
+      - name: Install the scripts' packages
+        run: npm ci --prefix scripts --no-audit --no-fund
       - name: Build the integration tests
         run: dotnet build tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release
       - name: Integration tests (SQL Server)
         run: |
           if [ "$SHARE" = timed ]; then share=timed; else share="$SHARE/$JFB_SHARES"; fi
           node scripts/test-integration.mjs --share "$share" --results TestResults/integration
+      # A passing run hides the deadlocks the server met, as their units ran again: the server's own record says which
+      # statements and indexes they were on (scripts/sqlserver-deadlocks.mjs). It reads only, and never fails the job.
+      - name: The deadlocks SQL Server recorded
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          MSSQL_CONTAINER: ${{ job.services.mssql.id }}
+          SQLCMDPASSWORD: ${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }}
+        run: node scripts/sqlserver-deadlocks.mjs
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -236,11 +302,12 @@ jobs:
           path: TestResults/integration
           if-no-files-found: ignore
 
-  # Every share of both databases reported, none failed, and together they ran exactly the assembly's tests, each once.
+  # Every share of both databases reported, none failed, and together they ran exactly the assembly's tests, each once:
+  # only a run of everything can add up.
   shares:
     name: Integration tests add up
-    needs: [sqlite, sqlserver]
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: [selection, sqlite, sqlserver]
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.everything == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -263,7 +330,8 @@ jobs:
 
   smoke:
     name: Browser tests (smoke)
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: selection
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.smoke == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -289,6 +357,13 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check
           npx playwright install --with-deps chromium
+      # The fonts decide where text wraps, and the layout specs measure it: the log says which faces the runner has.
+      - name: The fonts the runner resolves
+        run: |
+          fc-match sans-serif
+          fc-match system-ui
+          fc-match monospace
+          echo "font families: $(fc-list : family | sort -u | wc -l)"
       # The global set-up builds the client and the demo, and starts a fresh host on port 5520 (ADR-0031).
       - name: Smoke and website tests (Chromium)
         working-directory: tests/e2e
@@ -306,7 +381,8 @@ jobs:
 
   loadbalancing:
     name: Load balancing (two demo instances, SQL Server)
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    needs: selection
+    if: (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true') && needs.selection.outputs.loadbalancing == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:

@@ -74,6 +74,8 @@ public sealed class CalculationFixtureTests : RenderingTestBase
         var clock = new TestClock();
         builder.Services.AddSingleton(clock);
         builder.Services.AddUnique<TimeProvider>(clock);
+        // The system's culture data differs between systems; the fixture is the same file on each (ADR-0263).
+        builder.RendersWithFixedCultureData();
     }
 
     // The posts, each without the required name: every calculation answered, with the insurance a rule shows; an

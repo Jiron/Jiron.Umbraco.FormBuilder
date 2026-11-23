@@ -72,14 +72,42 @@ public sealed class GeneralSettingsTests
         Assert.That(Errors(new GeneralSettings { TimeZone = null! }).Select(e => e.Code), Is.EqualTo(new[] { "timeZone" }));
     }
 
-    [TestCase("europe/berlin")]
-    [TestCase("EUROPE/BERLIN")]
-    public void ATimeZoneInAnotherLetterCase_CannotBeSaved_EvenOnceTheServerHasMetItsSpelling(string timeZone)
+    [TestCase("europe/berlin", "Europe/Berlin")]
+    [TestCase("EUROPE/BERLIN", "Europe/Berlin")]
+    [TestCase("asia/calcutta", "Asia/Calcutta")]
+    [TestCase("america/buenos_aires", "America/Buenos_Aires")]
+    [TestCase("asia/kolkata", "Asia/Kolkata")]
+    public void ATimeZoneInAnotherLetterCase_CannotBeSaved_EvenOnceTheServerHasMetItsSpelling(string timeZone, string spelled)
     {
         // Once the exact spelling has been looked up, the runtime's cache, which ignores case, finds any spelling.
-        Assume.That(CalendarValues.FindTimeZone("Europe/Berlin"), Is.Not.Null);
+        Assert.That(Errors(new GeneralSettings { TimeZone = spelled }), Is.Empty);
 
         Assert.That(Errors(new GeneralSettings { TimeZone = timeZone }).Select(e => e.Code), Is.EqualTo(new[] { "timeZone" }));
+    }
+
+    // Browsers list these under their older names (Chrome's Intl.supportedValuesOf('timeZone') does), which Windows finds
+    // through ICU and Linux through the links of its time zone database, also without the package of the older names.
+    [TestCase("America/Buenos_Aires", "America/Argentina/Buenos_Aires")]
+    [TestCase("Asia/Calcutta", "Asia/Kolkata")]
+    [TestCase("Asia/Katmandu", "Asia/Kathmandu")]
+    [TestCase("Asia/Saigon", "Asia/Ho_Chi_Minh")]
+    [TestCase("Europe/Kiev", "Europe/Kyiv")]
+    [TestCase("Atlantic/Faeroe", "Atlantic/Faroe")]
+    [TestCase("America/Indianapolis", "America/Indiana/Indianapolis")]
+    public void AZoneTheBrowserListsUnderItsOlderName_IsSavedAsGiven_AndRunsAsItsZone(string older, string zone)
+    {
+        var section = new GeneralSettings { TimeZone = older };
+        var found = CalendarValues.FindTimeZone(older, new SystemTimeZoneLinks());
+        var instant = new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(section), Is.Empty);
+            Assert.That(((ISettingsValidator<GeneralSettings>)Validator).Normalize(section).TimeZone, Is.EqualTo(older), "kept as it was given");
+            Assert.That(found, Is.Not.Null);
+            Assert.That(found!.GetUtcOffset(instant), Is.EqualTo(TimeZoneInfo.FindSystemTimeZoneById(zone).GetUtcOffset(instant)), "the zone's own rules");
+            Assert.That(CalendarValues.Today("2026-07-01T23:30:00Z", found.Id), Is.EqualTo(CalendarValues.Today("2026-07-01T23:30:00Z", zone)), "today, as the readers pass the resolved zone on");
+        });
     }
 
     [Test]

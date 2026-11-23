@@ -132,7 +132,7 @@ public sealed class MergeTagRecallFormsTests
         var buffer = new ArrayBufferWriter<byte>();
         await using (var writer = new Utf8JsonWriter(buffer))
         {
-            await new MergeTagRecallForms(TestFieldTypes.Registry, options ?? Substitute.For<IFormBuilderOptionService>())
+            await new MergeTagRecallForms(TestFieldTypes.Registry, options ?? Substitute.For<IFormBuilderOptionService>(), new MergeTagCultures())
                 .WriteAsync(writer, shown, owners.ToHashSet(), recalled, MergeTagTestSite.Scope(form, culture: culture, page: page));
         }
 

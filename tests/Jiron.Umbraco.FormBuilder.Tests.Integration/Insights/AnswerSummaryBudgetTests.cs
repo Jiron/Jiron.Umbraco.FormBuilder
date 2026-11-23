@@ -14,14 +14,22 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Insights;
 /// <summary>
 /// The answer summaries' budget (ROADMAP 11.5b, ADR-0212): the summaries of a form with 100,000 entries, an option, two
 /// choices of several, a number, a scale from 0 to 10, a paragraph and a checkbox each, load in under a second on SQLite,
-/// for every entry and for those a filter holds.
+/// for every entry and for those a filter holds. On SQL Server, which runs only on the workflow's hosted runner, the
+/// budget is that runner's (ADR-0264); the medians are written to the test's output, which the run's log shows.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class AnswerSummaryBudgetTests : ActionTestBase
 {
     private const int Count = 100_000;
-    private static readonly TimeSpan Budget = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan SqliteBudget = TimeSpan.FromSeconds(1);
+
+    // SQLite on the workflow's hosted runner, a slower machine than the one the second was set on: 835 ms measured
+    // there, and one runner is a third slower than the next (ADR-0264).
+    private static readonly TimeSpan SqliteOnRunnerBudget = TimeSpan.FromSeconds(2);
+
+    // SQL Server in a container on a hosted runner, beside the tests: 3.95 s, 4.02 s and 5.28 s measured (ADR-0264).
+    private static readonly TimeSpan SqlServerBudget = TimeSpan.FromSeconds(12);
 
     private static readonly FormField Topic = new()
     {
@@ -61,6 +69,9 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
         var every = new AnswerRequest(span, new EntryListFilter());
         var filtered = new AnswerRequest(span, new EntryListFilter { States = [EntryState.Approved], Fields = [new EntryFieldCondition { Field = Topic.Key, Test = EntryFieldTest.OneOf, Values = ["sales"] }] });
         var summaries = GetRequiredService<AnswerSummaries>();
+        var sqlite = await GetRequiredService<FormBuilderDatabase>().ReadAsync(db => Task.FromResult(new SqlNames(db).IsSqlite));
+        var onRunner = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.Ordinal);
+        var budget = !sqlite ? SqlServerBudget : onRunner ? SqliteOnRunnerBudget : SqliteBudget;
 
         var first = (await summaries.SummarizeAsync(form, every))!;
         var times = new Dictionary<string, List<double>> { ["every entry"] = [], ["approved about sales"] = [] };
@@ -76,7 +87,9 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
 
         foreach (var (name, measured) in times)
         {
-            await TestContext.Out.WriteLineAsync($"{name}: median {Median(measured):0.0} ms of {string.Join(", ", measured.Select(time => time.ToString("0.0", CultureInfo.InvariantCulture)))}");
+            // scripts/test-integration.mjs prints the timed tests' output to the run's log, where a hosted runner's times are read (ADR-0264).
+            var line = $"answer summaries, {(sqlite ? "SQLite" : "SQL Server")}, {name}: median {Median(measured).ToString("0.0", CultureInfo.InvariantCulture)} ms of {string.Join(", ", measured.Select(time => time.ToString("0.0", CultureInfo.InvariantCulture)))} (budget {budget.TotalMilliseconds.ToString("0", CultureInfo.InvariantCulture)} ms)";
+            await TestContext.Out.WriteLineAsync(line);
         }
 
         AnswerSummary Of(FormField field) => first.Fields.Single(summary => summary.Key == field.Key);
@@ -91,7 +104,7 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
             Assert.That(Of(Agreed).Ticked, Is.EqualTo(Count / 2));
             foreach (var (name, measured) in times)
             {
-                Assert.That(TimeSpan.FromMilliseconds(Median(measured)), Is.LessThanOrEqualTo(Budget), name);
+                Assert.That(TimeSpan.FromMilliseconds(Median(measured)), Is.LessThanOrEqualTo(budget), name);
             }
         });
     }

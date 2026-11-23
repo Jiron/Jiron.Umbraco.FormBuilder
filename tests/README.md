@@ -30,7 +30,9 @@ a time budget (the NUnit category `Timed`) in one process with nothing beside it
 - **Each process works in a folder of its own**, `.local/test-integration/work/<share>/`, where Umbraco's test harness
   puts its files; the results, the trx file and the console log of each are in `.local/test-integration/<share>/`.
 - **A test that measures time** gets `[Category("Timed")]`; no other test may depend on how long something takes,
-  since the shares share the cores.
+  since the shares share the cores. It writes what it measured to its output with the unit (`1885 ms`), and the run
+  prints those lines, so a hosted runner's times are in its job's log. Each timed budget is per database:
+  SQLite's is the product's, SQL Server's what the hosted runner measured, doubled (ADR-0264).
 - `--share 2/6` runs only that share and `--share timed` only the timed tests, each writing a `result.json`; CI gives
   each a job of its own, and `--sum <folder>` adds the result files up with the same checks. `--beside <assembly>`
   runs another test assembly beside the shares (the gate runs the unit and AI tests so), `--settings <file>` gives a
@@ -69,6 +71,42 @@ host, ports, database, mail folder, sign-in lock and people, three workers each;
 shared out by the seconds in `e2e/spec-times.json`, the last site taking every spec file the others do not name; then
 the `budgets` project alone. The run fails when a site fails and unless the tests that ran are exactly the tests the
 projects hold, each once; only a site whose database hung runs once more ([e2e/README.md](e2e/README.md#several-sites)).
+
+### One part on GitHub
+
+What only GitHub's runners show (SQL Server, the runner's own fonts and ICU) is checked there with a targeted run rather
+than a full one: **Targeted run** in the repository's Actions, with `only` the part (for example `sqlserver`) and
+`shares` its shares (for example `["3"]`). One SQL Server share costs about 20 minutes of runner time against the 4 h
+20 min of a full run ([docs/releasing.md](../docs/releasing.md#a-targeted-run-of-ci)). Run on Linux in the container
+first, below: it is free.
+
+### On Linux, in a container
+
+Every run above happens on Windows; GitHub runs the workflow on Linux, where the culture data, the time zones, the file
+system and the order of things differ (ROADMAP 26.1). With Docker Desktop running, the workflow's Linux steps run in
+a container on the development machine first:
+
+```
+node scripts/linux-ci.mjs                                 the build job, the integration tests, the smoke tests
+node scripts/linux-ci.mjs integration -- --share 2/6      one stage, its own arguments after --
+node scripts/linux-ci.mjs run . dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Unit -c Release --filter "FullyQualifiedName~X"
+node scripts/linux-ci.mjs stop
+```
+
+It builds the image `jfb-linux:local` from `scripts/linux/Dockerfile` when it is missing (`--rebuild` builds it again):
+Ubuntu 24.04 with the SDK of `global.json`, Node 24, PHP and a user who is not root, without the legacy time zone names,
+as GitHub's runner. The container `jfb-linux` sees the repository read-only at `/src` and keeps a copy, its builds and
+its NuGet and npm caches on the volume `jfb-linux-work`; an existing container is used as it is. Each run syncs the
+working tree into the copy, uncommitted changes too, then runs each stage through `scripts/linux/linux-ci.sh`, as the
+runner's user: `build` (the build job's checks, script tests, client, Release build, formatting, licences, packages,
+unit and AI tests), `integration` (`scripts/test-integration.mjs`, every share by default) and `smoke` (the browser
+smoke and website tests). Each step says its verdict and keeps its log in `/work/logs/<step>.log`; a run stops the
+container if it started it (`--keep` leaves it running).
+
+What it does not cover: SQL Server, which it never starts and refuses to be asked for (the SQL Server shares and the
+load-balancing suite run only on GitHub); the secret and term scans and the other checks that read the repository's
+history (the copy has none of it; the gate runs them); the release workflow's packing and drafting; and GitHub's own
+runner image, which it imitates.
 
 ## The projects
 

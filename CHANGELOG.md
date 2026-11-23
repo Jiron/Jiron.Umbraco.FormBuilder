@@ -7,6 +7,33 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.0-beta.2] - 2026-11-23
+
+The second beta, for the same Umbraco 17.6 or later (within 17). It holds what the first runs of the tests on Linux
+and on SQL Server found; until then they had run on Windows with SQLite only. It adds no feature and no migration.
+
+### Fixed
+
+- **A time zone the browser lists under its older name works on a Linux server.** Browsers list some zones by their
+  older names, such as `Asia/Calcutta` or `America/Buenos_Aires`. A Linux server without its package of older names
+  refused such a name when Settings › General was saved, and a site whose zone was already stored under one (saved on
+  Windows, say, before a move) ran its forms in UTC, with the warning about a zone the server cannot resolve once an
+  hour. Such a name now saves, comes back as it was saved, and runs in its zone on Windows and on Linux; another
+  letter case, a Windows name and an offset are still refused.
+- **On SQL Server, taking an action no longer locks the rows of unrelated actions.** To take an action, a server
+  checks the earlier actions of its entry. On a small table SQL Server read every action for that check, under a
+  lock, so actions taken side by side waited for each other and SQL Server stopped one of them as a deadlock
+  victim; the work ran again, so nothing was lost, but it happened very often (1,844 times in one job of the tests)
+  and slowed the queue. The check now reads the entry's own actions only, and the list of what is due skips what
+  another server is taking. The same tests then met 12 deadlocks, each tried again.
+- **A piece of work SQL Server stopped as a deadlock victim always runs again.** In some cases the error that
+  reached Jiron Form Builder was the transaction's own ("has completed; it is no longer usable"), which was not
+  taken for the passing fault it is, so that read or write failed where it should have been tried again.
+- **A hand-made request for the free-text answers in Insights no longer fails on SQL Server.** A page cursor written
+  by hand that named a time before 1753 was answered with a server error there; the cursors the backoffice itself
+  uses never did. A time before 1753 or after 9999 in a request now goes to the database at that edge, on SQL Server
+  and SQLite alike.
+
 ## [17.0.0-beta.1] - 2026-11-22
 
 The first beta of Jiron Form Builder for Umbraco 17.6 or later (within 17), on .NET 10, with SQLite or SQL Server. A

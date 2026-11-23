@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Testing.Tls;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +53,15 @@ public sealed class FormBuilderTestingComposer : IComposer
         {
             builder.Services.Configure<KestrelServerOptions>(kestrel =>
                 kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = TestCertificate.Create(httpsKey, TimeProvider.System)));
+        }
+
+        // Servers of one site share one key ring under one application name, as docs/deployment.md asks; each host would
+        // otherwise refuse what another signed, as its own content root names its keys apart (ROADMAP 26.1).
+        if (section.GetValue<string>(nameof(FormBuilderTestingOptions.SharedKeys)) is { Length: > 0 } keys)
+        {
+            builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(keys))
+                .SetApplicationName(FormBuilderTestingOptions.SharedKeysApplication);
         }
 
         if (section.GetValue<bool>(nameof(FormBuilderTestingOptions.StandInActionTypes)))

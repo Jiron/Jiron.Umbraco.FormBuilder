@@ -166,7 +166,7 @@ internal sealed partial class FormModels(
             ?? (FormPostFileNotes.Get(render.HttpContext, form.Form.Key, render.Instance) is { IsRefused: true }
                 ? new FormPostState { Notice = new FormPostNotice(words.NotSentHeading, words.TooLargeText, FormPostHandler.TooLargeCode) }
                 : null);
-        var culture = CultureInfo.GetCultureInfo(render.Culture);
+        var culture = cultures.Info(render.Culture);
         var request = render.HttpContext.Request;
         var path = render.Page ?? (request.PathBase + request.Path).ToUriComponent();
         var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null || render.Gate is not null || render.AlreadySent ? FormDisplay.Notice : FormDisplay.Form;
@@ -351,7 +351,7 @@ internal sealed partial class FormModels(
         var current = CurrentOf(shown.Pages, shownPages, post, settings);
         var summaryPage = SummaryPageOf(settings, shownPages, current);
         var recalled = await RecalledAsync(render, read, hidden, state, cancellationToken);
-        var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture));
+        var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture), cultures);
         var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts, HasRules(shown));
         var pages = new List<PageViewModel>();
 
@@ -1138,8 +1138,8 @@ internal sealed partial class FormModels(
     }
 
     // What the controls of a page read besides its answers: the site's today, the calculations' values as the rules work
-    // them out, and the culture's formats.
-    private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, IReadOnlyDictionary<string, IReadOnlyList<RowState>> Rows, CultureFormats Formats);
+    // them out, the culture's formats, and the culture data the countries are named and ordered with.
+    private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, IReadOnlyDictionary<string, IReadOnlyList<RowState>> Rows, CultureFormats Formats, MergeTagCultures Cultures);
 
     // The page's answers: each field's outside repeatable groups, and each group's rows of its child fields' answers.
     private sealed record PageAnswers(Dictionary<Guid, FieldAnswers> Fields, Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> Rows)
@@ -1265,6 +1265,9 @@ internal sealed partial class FormModels(
         public IReadOnlyDictionary<string, string?> Calculations => facts.Calculations;
 
         public CultureFormats Formats => facts.Formats;
+
+        // The culture data the countries are named and ordered with.
+        public MergeTagCultures Cultures => facts.Cultures;
 
         // The error summary's links, which a row's fields add to the page's.
         public List<ErrorLinkModel> Errors => Outer?.Errors ?? _errors;

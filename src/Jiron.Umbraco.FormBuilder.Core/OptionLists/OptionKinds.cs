@@ -219,10 +219,11 @@ internal sealed class OptionKindRegistry
 {
     private readonly FrozenDictionary<OptionListKind, OptionKind> _kinds;
 
-    /// <summary>The kinds over the site's option sources, content, data types and calls to other hosts.</summary>
-    public OptionKindRegistry(OptionSourceRegistry sources, OptionListUmbraco umbraco, UrlOptionFetcher urls)
+    /// <summary>The kinds over the site's option sources, content, data types, calls to other hosts and culture data.</summary>
+    public OptionKindRegistry(OptionSourceRegistry sources, OptionListUmbraco umbraco, UrlOptionFetcher urls, MergeTagCultures cultures)
     {
         ArgumentNullException.ThrowIfNull(sources);
+        ArgumentNullException.ThrowIfNull(cultures);
         ArgumentNullException.ThrowIfNull(umbraco);
         ArgumentNullException.ThrowIfNull(urls);
         OptionKind[] kinds =
@@ -232,7 +233,7 @@ internal sealed class OptionKindRegistry
             new DataTypeOptionKind(umbraco),
             new UrlOptionKind(urls),
             new FileOptionKind(),
-            new CountriesOptionKind(),
+            new CountriesOptionKind(cultures),
             new CodeOptionKind(sources),
         ];
         _kinds = kinds.ToFrozenDictionary(kind => kind.Kind);
@@ -255,9 +256,11 @@ internal sealed class ManualOptionKind() : OptionKind<ManualOptionListSettings>(
 
 /// <summary>
 /// The countries (ADR-0073): every country of ISO 3166, or those the configuration names, each by its two-letter code
-/// with its name in the culture's language from .NET's culture data, in the order of the names in that culture.
+/// with its name in the culture's language from .NET's culture data, in the order of the names in that culture
+/// (<see cref="MergeTagCultures"/>).
 /// </summary>
-internal sealed class CountriesOptionKind() : OptionKind<CountriesOptionListSettings>(OptionListKind.Countries, onField: true)
+/// <param name="cultures">The culture data.</param>
+internal sealed class CountriesOptionKind(MergeTagCultures cultures) : OptionKind<CountriesOptionListSettings>(OptionListKind.Countries, onField: true)
 {
     /// <inheritdoc />
     /// <remarks>A country named twice is the settings checks' to refuse, as every list setting holds each value once.</remarks>
@@ -277,12 +280,12 @@ internal sealed class CountriesOptionKind() : OptionKind<CountriesOptionListSett
     protected override ValueTask<IReadOnlyList<FormBuilderOption>> ResolveAsync(CountriesOptionListSettings settings, OptionKindRequest request, CancellationToken cancellationToken)
     {
         var culture = request.Source.Culture;
-        var names = StringComparer.Create(MergeTagCultures.Culture(culture), ignoreCase: false);
+        var names = cultures.CountryOrder(culture);
         IEnumerable<string> codes = settings.Countries.Count > 0 ? settings.Countries : BuiltInChecks.CountryCodes;
         IReadOnlyList<FormBuilderOption> options =
         [
             .. codes
-                .Select(code => new FormBuilderOption(code, CountryNames.Name(code, culture)))
+                .Select(code => new FormBuilderOption(code, cultures.CountryName(code, culture)))
                 .OrderBy(option => option.Label, names)
                 .ThenBy(option => option.Value, StringComparer.Ordinal),
         ];

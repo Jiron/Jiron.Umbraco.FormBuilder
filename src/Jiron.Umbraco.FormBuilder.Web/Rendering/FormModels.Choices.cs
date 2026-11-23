@@ -287,12 +287,12 @@ internal sealed partial class FormModels
     private static SelectControlModel Countries(Build build, IEnumerable<string> offered, IReadOnlyList<string> top, IReadOnlyCollection<string> chosen)
     {
         var culture = build.Render.Culture;
-        var order = StringComparer.Create(build.Culture, ignoreCase: true);
-        var codes = top.Concat(offered.Except(top, StringComparer.Ordinal).OrderBy(code => CountryNames.Name(code, culture), order).ThenBy(code => code, StringComparer.Ordinal));
+        var order = build.Cultures.CountryOrder(culture);
+        var codes = top.Concat(offered.Except(top, StringComparer.Ordinal).OrderBy(code => build.Cultures.CountryName(code, culture), order).ThenBy(code => code, StringComparer.Ordinal));
         return new SelectControlModel
         {
             Prompt = build.Words.ChooseCountry,
-            Options = [.. codes.Select(code => new SelectOptionModel(code, CountryNames.Name(code, culture), chosen.Contains(code, StringComparer.Ordinal)))],
+            Options = [.. codes.Select(code => new SelectOptionModel(code, build.Cultures.CountryName(code, culture), chosen.Contains(code, StringComparer.Ordinal)))],
         };
     }
 

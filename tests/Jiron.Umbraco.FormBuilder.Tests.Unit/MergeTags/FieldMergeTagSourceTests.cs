@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using static Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags.MergeTagAnswerForms;
 
@@ -191,18 +192,38 @@ public sealed class FieldMergeTagSourceTests
             Answer(agreed, "true"),
             Answer(sure, "no"));
         const string Template = "{{ field.fruit }}|{{ field.amount }}|{{ field.day }}|{{ field.when }}|{{ field.country }}|{{ field.agreed }}|{{ field.sure }}";
-        var site = MergeTagTestSite.Create();
 
-        var german = await site.RenderAsync(Template, Scope(form, answers, "de-CH"));
-        var french = await site.RenderAsync(Template, Scope(form, answers, "fr-FR"));
+        // Culture data made here, as two cultures might have it, so the test is the same on every system (ADR-0263); the
+        // invariant culture's is .NET's own on each.
+        var invariantFormats = DotNetCultureFormats.From(System.Globalization.CultureInfo.InvariantCulture);
+        var swissGerman = invariantFormats with
+        {
+            Dates = new DatePatterns(@"dd\.MM\.yyyy", @"d\. MMM yyyy", @"dddd, d\. MMMM yyyy", @"HH\:mm", @"dd\.MM\.yyyy HH\:mm"),
+            Number = new NumberFormat(".", "\u2019", [3], "-n"),
+        };
+        var french = invariantFormats with
+        {
+            Dates = new DatePatterns(@"dd\/MM\/yyyy", "d MMM yyyy", "dddd d MMMM yyyy", @"HH\:mm", @"dd\/MM\/yyyy HH\:mm"),
+            Number = new NumberFormat(",", "\u202F", [3], "-n"),
+        };
+        var cultures = new MergeTagCultures(
+            [KeyValuePair.Create("de-CH", swissGerman), KeyValuePair.Create("fr-FR", french)],
+            [Countries("de", "Frankreich"), Countries("fr", "France"), Countries("en", "France")]);
+        var site = MergeTagTestSite.Create(cultures: cultures);
+
+        var inGerman = await site.RenderAsync(Template, Scope(form, answers, "de-CH"));
+        var inFrench = await site.RenderAsync(Template, Scope(form, answers, "fr-FR"));
         var invariant = await site.RenderAsync(Template, Scope(form, answers, string.Empty));
 
         Assert.Multiple(() =>
         {
-            Assert.That(german.Text, Is.EqualTo("Apfel|1" + (char)0x2019 + "234.5|07.03.2026|07.03.2026 14:30|Frankreich|Ja|Nein"));
-            Assert.That(french.Text, Is.EqualTo("Apple|1" + (char)0x202F + "234,5|07/03/2026|07/03/2026 14:30|France|Oui|Non"), "French has its own words for yes and no; the option keeps the form's only label");
+            Assert.That(inGerman.Text, Is.EqualTo("Apfel|1" + (char)0x2019 + "234.5|07.03.2026|07.03.2026 14:30|Frankreich|Ja|Nein"));
+            Assert.That(inFrench.Text, Is.EqualTo("Apple|1" + (char)0x202F + "234,5|07/03/2026|07/03/2026 14:30|France|Oui|Non"), "French has its own words for yes and no; the option keeps the form's only label");
             Assert.That(invariant.Text, Is.EqualTo("Apple|1,234.5|03/07/2026|03/07/2026 14:30|France|Yes|No"));
         });
+
+        static KeyValuePair<string, IReadOnlyList<KeyValuePair<string, string>>> Countries(string language, string france) =>
+            KeyValuePair.Create<string, IReadOnlyList<KeyValuePair<string, string>>>(language, [KeyValuePair.Create("FR", france)]);
     }
 
     [Test]
@@ -212,7 +233,16 @@ public sealed class FieldMergeTagSourceTests
         var day = Field("date", "day", "Day");
         var scope = Scope(Form(amount, day), Answers(Answer(amount, "1234.5"), Answer(day, "2026-03-07")));
 
-        var rendered = await MergeTagTestSite.Create().RenderAsync(
+        // British English as culture data made here, the same on every system (ADR-0263); the invariant culture's
+        // names and amounts are .NET's own on each.
+        var british = DotNetCultureFormats.From(System.Globalization.CultureInfo.InvariantCulture) with
+        {
+            Dates = new DatePatterns(@"dd\/MM\/yyyy", "d MMM yyyy", "dddd, d MMMM yyyy", @"HH\:mm", @"dd\/MM\/yyyy HH\:mm"),
+            Number = new NumberFormat(".", ",", [3], "-n"),
+        };
+        var site = MergeTagTestSite.Create(cultures: new MergeTagCultures([KeyValuePair.Create("en-GB", british)]));
+
+        var rendered = await site.RenderAsync(
             "{{ field.amount | number: 2 }} {{ field.amount | currency: \"EUR\" }} {{ field.day | date: \"long\" }} {{ field.amount | json }}",
             scope,
             context: MergeTagContext.Text);
