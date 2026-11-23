@@ -24,6 +24,10 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
     private const int Count = 100_000;
     private static readonly TimeSpan SqliteBudget = TimeSpan.FromSeconds(1);
 
+    // SQLite on the workflow's hosted runner, a slower machine than the one the second was set on: 835 ms measured
+    // there, and one runner is a third slower than the next (ADR-0264).
+    private static readonly TimeSpan SqliteOnRunnerBudget = TimeSpan.FromSeconds(2);
+
     // SQL Server in a container on a hosted runner, beside the tests: 3.95 s, 4.02 s and 5.28 s measured (ADR-0264).
     private static readonly TimeSpan SqlServerBudget = TimeSpan.FromSeconds(12);
 
@@ -66,7 +70,8 @@ public sealed class AnswerSummaryBudgetTests : ActionTestBase
         var filtered = new AnswerRequest(span, new EntryListFilter { States = [EntryState.Approved], Fields = [new EntryFieldCondition { Field = Topic.Key, Test = EntryFieldTest.OneOf, Values = ["sales"] }] });
         var summaries = GetRequiredService<AnswerSummaries>();
         var sqlite = await GetRequiredService<FormBuilderDatabase>().ReadAsync(db => Task.FromResult(new SqlNames(db).IsSqlite));
-        var budget = sqlite ? SqliteBudget : SqlServerBudget;
+        var onRunner = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.Ordinal);
+        var budget = !sqlite ? SqlServerBudget : onRunner ? SqliteOnRunnerBudget : SqliteBudget;
 
         var first = (await summaries.SummarizeAsync(form, every))!;
         var times = new Dictionary<string, List<double>> { ["every entry"] = [], ["approved about sales"] = [] };

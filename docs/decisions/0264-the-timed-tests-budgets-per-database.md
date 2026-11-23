@@ -24,6 +24,11 @@ container beside the tests. Three runs there, on 2026-11-22 and 2026-11-23:
 | CSV export of 10,000 entries | not read | 3.78 s | 5.50 s | 5 s |
 | A submission during the export, p95 | not read | 25 ms | 89 ms | 150 ms |
 
+A fourth run, the first in which every job passed (2026-11-23, `de208db2`), measured 3.22 s, 0.69 s, 93 ms, 3.33 s
+and 50 ms on SQL Server. It was also the first whose SQLite job was read: the summaries took 835 ms there against
+their second, the first page 43 ms, the export 2.44 s and a submission during it 10 ms. So on the hosted runner even
+SQLite leaves the summaries a sixth of their budget, less than the difference between two runners.
+
 The first run failed on the summaries, the third on the export. On SQLite the same jobs held every budget each time.
 So the statements are correct on SQL Server and slower there than budgets set for another database on another
 machine; and one hosted runner is a third slower than the next, so a budget close to one measurement fails on the next
@@ -50,8 +55,9 @@ same process as the tests, pays far less for that than a database server reached
 
 Option 3.
 
-- **SQLite: the budgets as they were**, on the development machine and on the hosted runner alike: 1 s, 300 ms, 5 s
-  and 150 ms.
+- **SQLite: the budgets as they were**, 1 s, 300 ms, 5 s and 150 ms, on the development machine, where they were set
+  and where the gate holds them. On the hosted runner (`GITHUB_ACTIONS`) the summaries have 2 s on SQLite, about
+  twice what was measured there; the other three have room enough there as they are.
 - **SQL Server on the workflow's hosted runner: about twice the highest value measured there**, rounded up: 12 s for
   the summaries, 600 ms for the first page, 12 s for the export and 300 ms for a submission during it. They are not
   promises to a site; they are what the tests can hold on that hardware from one runner to the next. They still fail
