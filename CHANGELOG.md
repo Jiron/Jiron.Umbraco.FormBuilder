@@ -7,6 +7,11 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.0-beta.2] - 2026-11-23
+
+The second beta, for the same Umbraco 17.6 or later (within 17). It holds what the first runs of the tests on Linux
+and on SQL Server found; until then they had run on Windows with SQLite only. It adds no feature and no migration.
+
 ### Fixed
 
 - **A time zone the browser lists under its older name works on a Linux server.** Browsers list some zones by their
@@ -15,10 +20,10 @@ follows the Umbraco major).
   Windows, say, before a move) ran its forms in UTC, with the warning about a zone the server cannot resolve once an
   hour. Such a name now saves, comes back as it was saved, and runs in its zone on Windows and on Linux; another
   letter case, a Windows name and an offset are still refused.
-- **Two servers no longer deadlock over the actions of one entry on SQL Server.** When two servers each took an
-  action of the same entry, each read the other's row under a lock and SQL Server stopped one of them; the work was
-  done again, so nothing was lost, but it happened often and slowed the queue. A server now locks only the earlier
-  actions it has to check, and the list of what is due skips what another server is taking.
+- **Two servers no longer lock each other's rows over the actions of one entry on SQL Server.** When two servers each
+  took an action of the same entry, each read the other's row under a lock and SQL Server stopped one of them; the
+  work was done again, so nothing was lost, but it happened often and slowed the queue. A server now locks only the
+  earlier actions it has to check, and the list of what is due skips what another server is taking.
 - **A piece of work SQL Server stopped as a deadlock victim always runs again.** In some cases the error that
   reached Jiron Form Builder was the transaction's own ("has completed; it is no longer usable"), which was not
   taken for the passing fault it is, so that read or write failed where it should have been tried again.
