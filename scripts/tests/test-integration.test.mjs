@@ -19,6 +19,7 @@ import {
   mergeSettings,
   parseArgs,
   parseShare,
+  outputLines,
   parseTrx,
   planShares,
   readTimes,
@@ -203,6 +204,17 @@ describe('reading results', () => {
       { name: 'B("x")', className: 'N.B', outcome: 'Failed', seconds: 62.25, message: 'Expected 1' },
       { name: 'C_Skips', className: 'N.C', outcome: 'NotExecuted', seconds: 1.5, message: 'Only on Windows.' },
     ]);
+  });
+
+  test('what tests measured is given per test, a line each, without what their host logged', () => {
+    const lines = outputLines(
+      trx([
+        { name: 'A_Works', className: 'N.A' },
+        { name: 'B_Measures', className: 'N.B', body: '<Output><StdOut>every entry: median 3950.0 ms (budget 8000 ms)&#xD;\nwarn: Umbraco.Cms[0]&#xD;\n&#xD;\nfiltered: median 1.5 ms &lt; 2 ms\nPassed</StdOut></Output>' },
+        { name: 'C_Fails', className: 'N.C', outcome: 'Failed', body: '<Output><ErrorInfo><Message>no</Message></ErrorInfo></Output>' },
+      ]),
+    );
+    assert.deepEqual(lines, ['B_Measures: every entry: median 3950.0 ms (budget 8000 ms)', 'B_Measures: filtered: median 1.5 ms < 2 ms']);
   });
 
   test("the assembly's tests are the indented lines after the list's heading", () => {

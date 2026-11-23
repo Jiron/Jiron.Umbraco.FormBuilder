@@ -301,6 +301,24 @@ export function parseTrx(xml) {
   return results;
 }
 
+/**
+ * What the tests of a trx file measured, as `<test>: <line>` each: the lines of their output that name a time in
+ * milliseconds (`1885 ms`). The timed tests write what they measured there, among the lines their host logs, and the
+ * console of `dotnet test` shows none of it; a hosted runner's times are read from the job's log (ADR-0264).
+ */
+export function outputLines(xml) {
+  const lines = [];
+  for (const match of xml.matchAll(/<UnitTestResult\b([^>]*?)(?:\/>|>([\s\S]*?)<\/UnitTestResult>)/g)) {
+    const name = attributesOf(match[1]).testName ?? '';
+    const out = /<StdOut>([\s\S]*?)<\/StdOut>/.exec(match[2] ?? '')?.[1];
+    if (out === undefined) continue;
+    for (const line of unescapeXml(out).split(/\r?\n/)) {
+      if (/\d ms\b/.test(line)) lines.push(`${name}: ${line.trim()}`);
+    }
+  }
+  return lines;
+}
+
 /** The test names `dotnet test <dll> --list-tests` prints, one per test, in its order. */
 export function listedTests(output) {
   const lines = output.split(/\r?\n/);
@@ -663,6 +681,13 @@ class Runner {
     const trx = join(folder, `${label}.trx`);
     return existsSync(trx) ? parseTrx(readFileSync(trx, 'utf8')) : [];
   }
+
+  /** Prints what the tests of a run measured, from their output. */
+  printOutput(folder, label) {
+    const trx = join(folder, `${label}.trx`);
+    if (!existsSync(trx)) return;
+    for (const line of outputLines(readFileSync(trx, 'utf8'))) console.log(`test-integration: ${label}: ${line}`);
+  }
 }
 
 function listTests(assembly) {
@@ -750,6 +775,7 @@ async function runAll(options) {
     const timedPending = runner.start({ label: 'timed', assembly, where: whereTimed() });
     runner.noteStartTimes();
     const timed = await timedPending;
+    runner.printOutput(timed.folder, 'timed');
 
     const shares = first.filter((run) => run.share);
     const besides = first.filter((run) => run.beside);
@@ -815,6 +841,7 @@ async function runOneShare(runner, options, assembly, holds, times, began) {
   }
   runner.noteStartTimes();
   const done = await run;
+  if (share.timed) runner.printOutput(done.folder, 'timed');
   if (share.index === share.count - 1) unknown = unknownClasses(done.results, times);
   const file = resultFile({ share: shareName, exit: done.exit, timedOut: done.timedOut, seconds: done.seconds, holds, results: done.results, unknown });
   writeFileSync(join(done.folder, 'result.json'), `${JSON.stringify(file, null, 2)}\n`);
