@@ -98,6 +98,41 @@ describe('workflowRuleErrors', () => {
     assert.deepEqual(workflowRuleErrors(await parse(job(['node scripts/test-integration.mjs --sum shares/sqlite']))), [], 'adding up the shares starts no test');
   });
 
+  test('lets a call of ci.yml pass only its inputs, and none from a workflow a push starts', async () => {
+    const caller = (on, inputs) =>
+      `name: Caller\non:\n${on}permissions:\n  contents: read\nconcurrency:\n  group: c-\${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  ci:\n    if: github.event_name == 'workflow_dispatch'\n    uses: ./.github/workflows/ci.yml\n${inputs}`;
+    const manual = '  workflow_dispatch:\n';
+    const tagged = "  push:\n    tags: ['v*.*.*']\n  workflow_dispatch:\n";
+    assert.deepEqual(workflowRuleErrors(await parse(caller(manual, "    with:\n      only: sqlserver\n      shares: '[\"3\"]'\n"))), []);
+    assert.deepEqual(workflowRuleErrors(await parse(caller(tagged, ''))), [], 'the release calls it without inputs');
+    const extra = workflowRuleErrors(await parse(caller(manual, '    with:\n      only: build\n      mode: fast\n')));
+    assert.ok(extra.some((e) => e.includes('not mode')), extra.join('\n'));
+    const fromTag = workflowRuleErrors(await parse(caller(tagged, '    with:\n      only: build\n')));
+    assert.ok(fromTag.some((e) => e.includes('without inputs')), fromTag.join('\n'));
+  });
+
+  test('holds every job of the selecting workflow to its selection', async () => {
+    const gate = "github.event_name != 'push' || vars.JFB_CI == 'true'";
+    const job = (id, extra) =>
+      `  ${id}:\n    needs: selection\n    if: (${gate}) && needs.selection.outputs.${id} == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n${extra}    steps:\n      - run: echo ok\n`;
+    const selecting = (jobs) =>
+      `${GOOD.split('jobs:')[0]}jobs:\n  selection:\n    if: ${gate}\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    steps:\n      - run: echo ok\n${jobs}`;
+    const sqlite = "    env:\n      JFB_SHARES: '6'\n    strategy:\n      matrix:\n        share: ${{ fromJSON(needs.selection.outputs.sqlite-shares) }}\n";
+    const addUp = `  shares:\n    needs: [selection, sqlite]\n    if: (${gate}) && needs.selection.outputs.everything == 'true'\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    steps:\n      - run: echo ok\n`;
+    assert.deepEqual(workflowRuleErrors(await parse(selecting(job('build', '') + job('sqlite', sqlite) + addUp))), []);
+
+    const unselected = workflowRuleErrors(await parse(selecting(job('build', '').replace(" && needs.selection.outputs.build == 'true'", ''))));
+    assert.ok(unselected.some((e) => e.includes("needs.selection.outputs.build == 'true'")), unselected.join('\n'));
+    const waitsForNothing = workflowRuleErrors(await parse(selecting(job('build', '').replace('    needs: selection\n', ''))));
+    assert.ok(waitsForNothing.some((e) => e.includes('needs the job selection')), waitsForNothing.join('\n'));
+    const fixedShares = workflowRuleErrors(await parse(selecting(job('sqlite', sqlite.replace("${{ fromJSON(needs.selection.outputs.sqlite-shares) }}", "['1', '2']")))));
+    assert.ok(fixedShares.some((e) => e.includes('sqlite-shares')), fixedShares.join('\n'));
+    const count = workflowRuleErrors(await parse(selecting(job('sqlite', sqlite.replace("'6'", "'5'")))));
+    assert.ok(count.some((e) => e.includes('JFB_SHARES must be 6')), count.join('\n'));
+    const partial = workflowRuleErrors(await parse(selecting(addUp.replace('everything', 'sqlite'))));
+    assert.ok(partial.some((e) => e.includes("everything == 'true'")), partial.join('\n'));
+  });
+
   test('requires both release lines in a push trigger on branches', async () => {
     const errors = workflowRuleErrors(await parse(GOOD.replace('branches: [main, v18/main]', 'branches: [main]')));
     assert.ok(errors.some((e) => e.includes('v18/main')), errors.join('\n'));

@@ -3,6 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../../fixtures.ts';
 import { settled } from '../../support/axe.ts';
 import { formPages, pathOf, type Language } from '../../support/demo-content.ts';
+import { fontsOf } from '../../support/fonts.ts';
 
 // Fitting a form to its page, and the developer surface (ROADMAP 6.4l, ADR-0022, section 4.9). The ground check: a form
 // with no scheme class on a dark ground gets `jfb-scheme-dark` and passes contrast, a form the site set stays as it is, and
@@ -106,9 +107,10 @@ test.describe('the ground check', () => {
 test('six steps fold where a word of a name would break inside it, and unfold when the window grows', async ({
   page,
 }) => {
-  // A compound as long as a step is wide in a window of 800 pixels, and shorter than one in a window of 1440.
-  const long = `Datenschutzerkl${AE}rung`;
-  const names = ['Kontakt', 'Anschrift', long, 'Termine', 'Hinweise', 'Absenden'];
+  // A compound longer than a step is wide in a window of 800 pixels, and shorter than one in a window of 1440: its length
+  // is measured in the font this machine draws the steps with, as a wide font (DejaVu Sans on GitHub's runner) fits
+  // fewer letters in a step than a narrow one (ROADMAP 26.1).
+  const names = ['Kontakt', 'Anschrift', 'Termine', 'Termine', 'Hinweise', 'Absenden'];
   await rewrite(page, (html) =>
     html.replace(
       /(<div class="[^"]*jfb-progress-steps[^"]*">[\s\S]*?<ol[^>]*>)[\s\S]*?(<\/ol>)/,
@@ -116,17 +118,49 @@ test('six steps fold where a word of a name would break inside it, and unfold wh
         open + names.map((name) => `<li><span>${name}</span></li>`).join('') + close,
     ),
   );
+  const steps = page.locator('main .jfb-progress-steps');
+  const name = steps.locator('ol > li:nth-child(3) > span');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(pathOfForm('application', 'de'));
+  await expect(steps, 'six short names fit at 1440 pixels').not.toHaveAttribute('data-jfb-compact');
+  const room = await name.evaluate((span, compound) => {
+    const form = span.closest('form') as HTMLElement;
+    const style = getComputedStyle(span);
+    const measure = document.createElement('canvas').getContext('2d')!;
+    measure.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    // A step's room now, and as the form's width at 800 pixels gives it (the steps share the form's width alike).
+    const step = span.parentElement as HTMLElement;
+    const box = getComputedStyle(step);
+    const wide = step.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);
+    const narrow = (wide * Math.min(800, form.getBoundingClientRect().width)) / form.getBoundingClientRect().width;
+    // The beginning of the compound whose width comes closest to the middle of the two rooms.
+    const middle = (wide + narrow) / 2;
+    let word = compound.slice(0, 1);
+    for (let length = 2; length <= compound.length; length++) {
+      const longer = compound.slice(0, length);
+      if (Math.abs(measure.measureText(longer).width - middle) < Math.abs(measure.measureText(word).width - middle))
+        word = longer;
+    }
+    return { word, width: measure.measureText(word).width, wide, narrow };
+  }, `Datenschutzerkl${AE}rungsbestimmungen`);
+  expect(room.width, `a word between the two rooms: ${JSON.stringify(room)}`).toBeGreaterThan(room.narrow + 8);
+  expect(room.width, `a word between the two rooms: ${JSON.stringify(room)}`).toBeLessThan(room.wide - 8);
+  names[2] = room.word;
+
   await page.setViewportSize({ width: 800, height: 900 });
   await page.goto(pathOfForm('application', 'de'));
-  const steps = page.locator('main .jfb-progress-steps');
   await expect(steps.locator('ol > li')).toHaveCount(6);
+  await expect(name).toHaveText(room.word);
 
   await expect(steps, 'folded').toHaveAttribute('data-jfb-compact', '');
   await expect(steps.locator('.jfb-progress-text'), 'with "Page 1 of 6" in their place').toBeVisible();
   await axe(page, 'folded steps');
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await expect(steps, 'unfolded').not.toHaveAttribute('data-jfb-compact');
+  await expect(
+    steps,
+    `unfolded; ${await fontsOf(page, 'main .jfb-progress-steps ol > li:nth-child(3) > span')}`,
+  ).not.toHaveAttribute('data-jfb-compact');
   const fits = await steps
     .locator('ol > li > span')
     .evaluateAll((each) => each.every((name) => name.scrollWidth <= name.clientWidth + 1));

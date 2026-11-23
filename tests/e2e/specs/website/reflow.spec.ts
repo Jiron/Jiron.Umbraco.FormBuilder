@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { LANGUAGES, formPages, pathOf } from '../../support/demo-content.ts';
+import { fontsOf } from '../../support/fonts.ts';
 
 // Reflow and text spacing on the website (ROADMAP 16.3; WCAG 2.2 1.4.4, 1.4.10 and 1.4.12): the demo's specimen, which
 // holds every kind of control as it reads without JavaScript's help, its contact form, and its room hire, whose upload
@@ -23,14 +24,18 @@ const pagesOf = (language: (typeof LANGUAGES)[number]): { path: string; upload: 
     .filter((shown) => shown.form === 'specimen' || shown.form === 'contact' || shown.form === 'roomHire')
     .map((shown) => ({ path: pathOf(shown.texts[language], language), upload: shown.form === 'roomHire' }));
 
-/** What reaches past the window's right edge, of the forms or of the whole page, by tag, id and class. */
+/**
+ * What reaches past the window's right edge, of the forms or of the whole page, by tag, id and class. What a box clips to
+ * one pixel out of view on purpose (the honeypot, a visually hidden text) shows nothing, wherever its contents lie: in a
+ * wide font the honeypot's label pushed its input past 320 pixels inside its clipped box (ROADMAP 26.1).
+ */
 async function reaching(page: Page, width: number, within = 'form.jfb-form'): Promise<string[]> {
   return page.evaluate(
     ([limit, root]) =>
       [...document.querySelectorAll(`${root}, ${root} *`)]
         .filter((element) => {
           const box = element.getBoundingClientRect();
-          return box.width > 1 && box.right > limit + 0.5;
+          return box.width > 1 && box.right > limit + 0.5 && element.closest('.jfb-hp, .jfb-visually-hidden') === null;
         })
         .map(
           (element) => `${element.localName}${element.id ? '#' + element.id : ''}.${[...element.classList].join('.')}`,
@@ -71,7 +76,10 @@ async function keepsToTheWindow(page: Page, width: number, what: string): Promis
     await page.evaluate(() => document.documentElement.scrollWidth),
     `${what}: the page scrolls sideways: ${(await reaching(page, width, 'body')).join(', ')}`,
   ).toBeLessThanOrEqual(width);
-  expect(await reaching(page, width), `${what}: a form reaches past the window`).toEqual([]);
+  const reached = await reaching(page, width);
+  // Where text wraps depends on the machine's fonts: a failure names them.
+  const fonts = reached.length > 0 ? await fontsOf(page, reached[0]!.replace(/\..*$/, '')) : '';
+  expect(reached, `${what}: a form reaches past the window; ${fonts}`).toEqual([]);
 }
 
 for (const width of WIDTHS) {

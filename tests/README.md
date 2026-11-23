@@ -72,6 +72,14 @@ shared out by the seconds in `e2e/spec-times.json`, the last site taking every s
 the `budgets` project alone. The run fails when a site fails and unless the tests that ran are exactly the tests the
 projects hold, each once; only a site whose database hung runs once more ([e2e/README.md](e2e/README.md#several-sites)).
 
+### One part on GitHub
+
+What only GitHub's runners show (SQL Server, the runner's own fonts and ICU) is checked there with a targeted run rather
+than a full one: **Targeted run** in the repository's Actions, with `only` the part (for example `sqlserver`) and
+`shares` its shares (for example `["3"]`). One SQL Server share costs about 20 minutes of runner time against the 4 h
+20 min of a full run ([docs/releasing.md](../docs/releasing.md#a-targeted-run-of-ci)). Run on Linux in the container
+first, below: it is free.
+
 ### On Linux, in a container
 
 Every run above happens on Windows; GitHub runs the workflow on Linux, where the culture data, the time zones, the file

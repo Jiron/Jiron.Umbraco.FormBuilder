@@ -67,6 +67,16 @@ public sealed class FormBuilderTestingOptions
     public string? HttpsKey { get; set; }
 
     /// <summary>
+    /// A folder that holds the host's Data Protection keys, under the application name <see cref="SharedKeysApplication"/>;
+    /// empty for ASP.NET Core's defaults. Hosts that stand for the servers of one site give the same folder, as
+    /// docs/deployment.md asks of a load-balanced site: one key ring with one application name (ROADMAP 26.1).
+    /// </summary>
+    public string? SharedKeys { get; set; }
+
+    /// <summary>The application name of hosts that share their keys (<see cref="SharedKeys"/>).</summary>
+    public const string SharedKeysApplication = "Jiron.FormBuilder.Tests";
+
+    /// <summary>
     /// Backoffice user groups to create before the users; existing aliases are left as they are, and each group's global
     /// grant is set to its <see cref="TestUserGroup.Permissions"/>.
     /// </summary>
