@@ -7,7 +7,7 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
-## [17.0.0-beta.2] - 2026-11-23
+## [17.0.0-beta.2] - 2026-11-25
 
 The second beta, for the same Umbraco 17.6 or later (within 17). It holds what the first runs of the tests on Linux
 and on SQL Server found; until then they had run on Windows with SQLite only. It adds no feature and no migration.
