@@ -5,12 +5,11 @@ support**, no response time and no service level, but questions and reports are 
 
 ## Where to ask
 
-- **Questions and ideas:** GitHub Discussions on this repository, once it is public.
+- **Questions and ideas:** [GitHub Discussions](https://github.com/Jiron/Jiron.Umbraco.FormBuilder/discussions) on
+  this repository.
 - **Bugs:** a GitHub issue, using the bug report form.
 - **Feature requests:** a GitHub issue, using the feature request form.
 - **Security problems:** never in public; see [SECURITY.md](SECURITY.md).
-
-Until the repository is public, write to **info@ligata.ch**.
 
 ## What to include
 

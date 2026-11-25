@@ -1530,3 +1530,17 @@ its reason, and a handover block at the end of every phase.
   the `--output` it needs; both now say how to build the packages from the repository. Details of the account's
   billing that I had written into the owner's list and this log are taken out of the files. What only the owner
   can weigh is in `docs/OWNER-TODO.md` under "Make the repository public".
+- 2026-11-25 · owner messages · the owner asked what a lawyer is needed for (answered: nothing before going
+  public; the licence's reach, a contributor agreement and the privacy defaults are for later), said they want
+  to invite people to collaborate and that paid add-ons, if any, would live in a private repository of their
+  own (the agreement is then no condition for those; the choice with or without one is still theirs and open),
+  and asked to be led through GitHub step by step. **The owner made the repository public** in their Chrome
+  (it answers signed-out requests) and enabled private vulnerability reporting and Discussions (both read back
+  as on). Read on the billing page before the tag: all usage covered, nothing due. The beta.2 sections now carry
+  the day of the tag, and **`v17.0.0-beta.2` is pushed on `26197134`**; its release run is 45706420234.
+- 2026-11-25 · owner message · "u set that up pls also can we set up sponsorships": an owner's word for one
+  repository setting, which the rules otherwise leave to them. Made in their Chrome as described to them
+  beforehand: the branch ruleset `protect main`, active, on the default branch and `v18/main`, with "Restrict
+  deletions" and "Block force pushes" and nothing else, so ordinary pushes go on as before. The owner's GitHub
+  Sponsors profile exists, so `.github/FUNDING.yml` names it for the repository's Sponsor button. `SUPPORT.md`
+  and `SECURITY.md` say what holds in a public repository.
