@@ -216,14 +216,14 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 cancellationToken);
             foreach (var row in rows)
             {
-                var tally = tallies.GetValueOrDefault(row.EntryId);
+                var current = tallies.GetValueOrDefault(row.EntryId);
                 tallies[row.EntryId] = StoredNames.Parse<ActionRunState>(row.State) switch
                 {
-                    ActionRunState.Succeeded => tally with { Delivered = tally.Delivered + row.Total },
-                    ActionRunState.Failed => tally with { Failed = tally.Failed + row.Total },
-                    ActionRunState.Uncertain => tally with { Uncertain = tally.Uncertain + row.Total },
-                    ActionRunState.Skipped => tally with { Skipped = tally.Skipped + row.Total },
-                    _ => tally with { Waiting = tally.Waiting + row.Total },
+                    ActionRunState.Succeeded => current with { Delivered = current.Delivered + row.Total },
+                    ActionRunState.Failed => current with { Failed = current.Failed + row.Total },
+                    ActionRunState.Uncertain => current with { Uncertain = current.Uncertain + row.Total },
+                    ActionRunState.Skipped => current with { Skipped = current.Skipped + row.Total },
+                    _ => current with { Waiting = current.Waiting + row.Total },
                 };
             }
         }

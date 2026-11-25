@@ -7,10 +7,9 @@ site's name, so security reports are taken seriously. Thank you for reporting re
 
 Please report privately, never in a public issue, discussion or pull request.
 
-- **Once the repository is public:** use GitHub's private vulnerability reporting
-  ("Report a vulnerability" on the repository's **Security** tab).
-- **Until then, or if you prefer email:** write to **info@ligata.ch** with "Security: Jiron Form Builder" in
-  the subject.
+- **On GitHub:** use private vulnerability reporting ("Report a vulnerability" on the repository's
+  **Security** tab).
+- **Or by email:** write to **info@ligata.ch** with "Security: Jiron Form Builder" in the subject.
 
 Please include:
 

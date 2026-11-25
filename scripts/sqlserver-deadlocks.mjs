@@ -18,7 +18,7 @@ import { pathToFileURL } from 'node:url';
 /** The most deadlocks printed in full; all are counted. */
 export const SHOWN = 3;
 
-/** The most kinds of deadlock named in the tally. */
+/** The most kinds of deadlock named in the summary. */
 export const KINDS = 12;
 
 const unescape = (text) =>

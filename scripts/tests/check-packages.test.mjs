@@ -214,7 +214,7 @@ describe("a package's nuspec (section 3.5)", () => {
     assert.deepEqual(problems({ acceptance: 'false' }), ['it does not ask to accept the licence']);
     assert.deepEqual(problems({ readme: 'readme.txt' }), ['its readme is not README.md']);
     assert.deepEqual(problems({ icon: 'logo.png' }), ['its icon is not icon.png']);
-    assert.deepEqual(problems({ tags: 'umbraco forms' }), [`its tags are not "${PACKAGES['Jiron.Umbraco.FormBuilder'].tags}"`]);
+    assert.deepEqual(problems({ tags: 'umbraco' }), [`its tags are not "${PACKAGES['Jiron.Umbraco.FormBuilder'].tags}"`]);
     assert.deepEqual(problems({ authors: 'Someone' }), ['its authors are not "Jiron"']);
     assert.deepEqual(problems({ copyright: 'Copyright (c) 2025 Someone' }), ['its copyright is not "Copyright (c) 2026 Someone"']);
     assert.deepEqual(problems({ projectUrl: 'https://example.test' }), [`its project URL is not ${PROJECT_URL}`]);

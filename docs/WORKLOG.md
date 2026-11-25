@@ -1497,8 +1497,8 @@ its reason, and a handover block at the end of every phase.
   or more shares): seven, of 6 to 30 minutes each. **A mistake of mine:** I told the owner the runs would fit the
   plan's included minutes, from this repository's runs alone; the 3,000 minutes are the account's, and another
   repository had used almost half. GitHub's mail said 100% used; the owner asked "Am i being charged now?". Read
-  on the billing page: $18.10 gross, all covered, no budget, no payment method seen, so nothing charged, and
-  nothing more runs until 1 December. The billing page is read before any run from now on.
+  on the billing page: all of it covered by the included minutes, so nothing charged, and nothing more runs
+  until 1 December. The billing page is read before any run from now on.
 - 2026-11-23 · 26.1, where it stands · **17.0.0-beta.2 is ready on `main` and not tagged**: its section of the
   changelog, its upgrade notes and its version (`d3ec2420`), the install test and the floor test on exactly that
   version (passed twice, the second time on `de208db2`), the dry run above, the clean-clone gate on 75b6c921
@@ -1507,3 +1507,52 @@ its reason, and a handover block at the end of every phase.
   is pushed, its release run passes and drafts a release" is the one still open, and the step is not ticked.
   **Left on this machine:** the image `jfb-linux:local` and the volume `jfb-linux-work` (the container is
   stopped), for the next Linux run; Docker Desktop runs, with the owner's own containers untouched.
+- 2026-11-23 · 26.1, the Umbraco 18 line · `main` at `96875014` merged into `v18/main` (`49344446`, its own
+  version kept), in a clone of its own: the client's tests, the script tests and the unit tests (9,228; 17 skipped)
+  passed there, and the branch is pushed. Its browser and integration tests were not run again for this step.
+- 2026-11-23 · owner message · "I guess make sure its gonna work this time then i can make the repo public and itll be
+  free and infinite anyways right?" Answered from GitHub's documentation: standard hosted runners are free and
+  unlimited in a public repository, and every job here runs on one. **Made sure, as far as this machine can:** the
+  workflow's Linux steps ran once more in the container on `ac471bbf` (build 494 s, integration 734 s, smoke 689 s,
+  every step passed); the release workflow's job that drafts the release, which no run has reached yet, was read
+  line by line, and its version and notes steps give the right answers for `v17.0.0-beta.2` here. That job itself
+  runs only for a real tag. The tag waits for the owner: the repository public, or 1 December, or a budget; the
+  items of `docs/OWNER-TODO.md` to weigh before it is public were named to them.
+- 2026-11-25 · owner message · "Is the repo ready to basically go public?": no credentials leaked, a fine version,
+  the licence not to be got around, and documented well enough to use. **Checked:** `secret-scan --tracked` and
+  `--history` clean (4,199 files, 1,333 commits on every ref); one identity on every commit, the noreply one; no
+  private address, host name or key in the files; `LICENSE.md` has the root commit's SHA-256 and every package
+  carries it as its licence file (`check-packages.mjs`). The term guard ran over the history with the names of
+  the private notes as its list (the owner's own list is not on this machine): none in a file once two ordinary
+  words were replaced, a local variable in `ActionRunRepository` and an example value in a script test; the four
+  commits that hold them stay as they are. **Fixed:** the README's status said a prerelease was being prepared
+  while its install command finds nothing on NuGet, and `CONTRIBUTING.md` named `node scripts/pack.mjs` without
+  the `--output` it needs; both now say how to build the packages from the repository. Details of the account's
+  billing that I had written into the owner's list and this log are taken out of the files. What only the owner
+  can weigh is in `docs/OWNER-TODO.md` under "Make the repository public".
+- 2026-11-25 · owner messages · the owner asked what a lawyer is needed for (answered: nothing before going
+  public; the licence's reach, a contributor agreement and the privacy defaults are for later), said they want
+  to invite people to collaborate and that paid add-ons, if any, would live in a private repository of their
+  own (the agreement is then no condition for those; the choice with or without one is still theirs and open),
+  and asked to be led through GitHub step by step. **The owner made the repository public** in their Chrome
+  (it answers signed-out requests) and enabled private vulnerability reporting and Discussions (both read back
+  as on). Read on the billing page before the tag: all usage covered, nothing due. The beta.2 sections now carry
+  the day of the tag, and **`v17.0.0-beta.2` is pushed on `26197134`**; its release run is 45706420234.
+- 2026-11-25 · owner message · "u set that up pls also can we set up sponsorships": an owner's word for one
+  repository setting, which the rules otherwise leave to them. Made in their Chrome as described to them
+  beforehand: the branch ruleset `protect main`, active, on the default branch and `v18/main`, with "Restrict
+  deletions" and "Block force pushes" and nothing else, so ordinary pushes go on as before. The owner's GitHub
+  Sponsors profile exists, so `.github/FUNDING.yml` names it for the repository's Sponsor button. `SUPPORT.md`
+  and `SECURITY.md` say what holds in a public repository.
+- 2026-11-25 · owner messages · "while it runs can we set up the nuget thing? i already got an account and my
+  prefix reserved", then "Signed in, publish it", then "if something should break ... feel free to do beta 3 or
+  4". Done in the owner's Chrome on their word, each part told to them: nuget.org's trusted-publishing policy
+  "Jiron.Umbraco.FormBuilder release" (package owner Ligata, the organization that holds the reserved prefix
+  `Jiron.*`; this repository, `release.yml`, the environment `nuget`; push of new packages and versions; ids
+  starting `Jiron.Umbraco.FormBuilder`), the repository's environment `nuget` limited to tags `v*`, and the
+  variables `JFB_NUGET_USER` and `JFB_NUGET_PUBLISH`. **The release run of `v17.0.0-beta.2` (45706420234)
+  passed:** 26 jobs, among them the one that drafts the release, which ran for the first time; the draft holds
+  the changelog's section and seven files (four `.nupkg`, three `.snupkg`), read in the owner's browser. Its
+  publish job was skipped: the variable was set while the run was going, and a run reads its variables when it
+  starts, which I had expected otherwise and told the owner so. **17.0.0-beta.3** is therefore the same code
+  with the version moved on, so that a run that starts with publishing on publishes it.

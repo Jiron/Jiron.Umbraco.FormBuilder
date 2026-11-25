@@ -73,6 +73,18 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   add-on, shown with the product) from the repository's root, and their screenshots from GitHub's raw addresses, so
   the listings need this (ROADMAP 18.1, ADR-0246). Before that, run `node scripts/term-guard.mjs --history` with your
   term list in `.private/terms.txt`, which the guard skips where it is missing.
+  - **Checked on 2026-11-25, on every branch and tag (1,333 commits):** the secret scan finds nothing in the files
+    or in any line ever added; every commit carries the repository's noreply identity; no private address, host
+    name or key is in the files. The names in the private notes are in no file; in the history two ordinary words
+    match two of them when upper and lower case are ignored, in four commits, and name no product. Your own list
+    was never on this machine, so that run is still yours.
+  - **What becomes visible with it:** the whole history, the plan and work log (`ROADMAP.md`, `CLAUDE.md`,
+    `GOAL.md`, `docs/WORKLOG.md`, this file), the logs of past workflow runs, and the two old branches
+    `wip/6.4i-sending` and `wip/8.6b-resume-control` (one commit each beyond `main`; delete them on GitHub if you
+    do not want them shown).
+  - **The same day:** apply for the `Jiron.` prefix above, or publish the first prerelease, so that nobody else
+    can take the package names on nuget.org; then say so, and `SUPPORT.md`, `SECURITY.md` and the README's status
+    line are changed to say what is true from then on.
 - [ ] **Repository settings:**
   - enable private vulnerability reporting (`SECURITY.md` points to it);
   - enable Discussions (the issue template links questions there);
@@ -248,14 +260,13 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   without a release: a tag is never moved, and their commits fail the same way if run again.
 - [ ] **Decide when `v17.0.0-beta.2` is tagged: the account's Actions minutes for November are used up.** `main`
   holds 17.0.0-beta.2 ready (its changelog section, its upgrade notes, its version; the install tests passed on it).
-  Pushing the tag starts the release run, about 5 h 20 min of runner time over its 27 jobs. GitHub's mail of
-  2026-11-23 says the account has used its 3,000 included minutes; that day the billing page showed $18.10 of
-  usage, all covered, no budget and no payment method, so nothing was charged and nothing more can run until the
-  cycle starts again on 1 December. The minutes are the whole account's: this repository used about $9.55 of
-  them, another repository of yours about $8.41. Either wait for 1 December, or add a payment method and a budget
-  for Actions (Settings › Billing and licensing › Budgets and alerts; about $3 covers the run at the Linux rate,
-  and a budget also caps what any run can cost). Then say so, and the tag is pushed and its run and draft release
-  read. Until then step 26.1 of the roadmap stays open on that one check.
+  Pushing the tag starts the release run, about 5 h 20 min of runner time over its 27 jobs. The account's
+  included minutes for November are used up (they are the whole account's, not this repository's), nothing was
+  charged, and nothing more runs in a private repository until the cycle starts again on 1 December. Three ways
+  on: make the repository public (standard runners cost nothing in a public repository), wait for 1 December, or
+  add a budget for Actions in the account's billing settings (a few dollars cover the run, and a budget also
+  caps what any run can cost). Then say so, and the tag is pushed and its run and draft release read. Until then
+  step 26.1 of the roadmap stays open on that one check.
 - [ ] **A SQL Server to measure on,** if SQL Server sites matter to you before the first stable release. The
   development machine may run none (CLAUDE.md rule 6), so what follows was found and fixed only through runs on
   GitHub, which cost minutes, and two things are left as they are:

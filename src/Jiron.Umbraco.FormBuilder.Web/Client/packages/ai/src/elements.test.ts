@@ -337,8 +337,8 @@ describe('the translate sidebar', () => {
     expect(text(root.querySelector('.setup'))).toContain('choose a profile in Settings');
     expect(must([...root.querySelectorAll('uui-button')].at(-1), 'Translate').hasAttribute('disabled')).toBe(true);
     expect(designer.save).not.toHaveBeenCalled();
-    // The sidebar's first import, with Umbraco's language module, takes its time in a full run.
-  }, 30_000);
+    // The sidebar's first import, with Umbraco's language module, takes its time in a full run: the run's own limit.
+  }, 60_000);
 
   it('saves the draft when the editor asks for the translation, and asks nothing when the save is refused', async () => {
     const { modal, designer, root } = await sidebar(false);
@@ -349,7 +349,7 @@ describe('the translate sidebar', () => {
     await settle(modal);
     expect(designer.save).toHaveBeenCalledOnce();
     expect(api.sent).toEqual([]);
-  }, 30_000);
+  }, 60_000);
 });
 
 describe('Settings > AI', () => {

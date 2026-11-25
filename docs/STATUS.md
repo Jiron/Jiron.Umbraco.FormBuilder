@@ -325,8 +325,9 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true`, raise the Dependabot limits, and check the first run:
    the first on Linux, and the first of the parts above that never ran.
 4. **Say when `v17.0.0-beta.2` is tagged:** its release run needs about 5 h 20 min of runner time, and the
-   account's minutes for November are used up. On 1 December they are there again; a payment method and a budget
-   for Actions would allow it sooner. Then check its draft release: seven files and the changelog's notes. The tags
+   account's minutes for November are used up. On 1 December they are there again; in a public repository the
+   run costs nothing, and a budget for Actions would allow it sooner too. Then check its draft release: seven
+   files and the changelog's notes. The tags
    `v17.0.0-alpha.1` and `v17.0.0-beta.1` have no release and get none.
 5. **Publishing:** reserve the NuGet prefix `Jiron.`, create the trusted-publishing policy and set `JFB_NUGET_USER` and
    `JFB_NUGET_PUBLISH`, then publish and validate both Marketplace listings ([releasing.md](releasing.md)).
