@@ -50,6 +50,16 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
 
+### 17.0.0-beta.3 (2026-11-25)
+
+The first version on NuGet, with the same code as 17.0.0-beta.2. A site on an earlier prerelease keeps its forms,
+entries and settings.
+
+- **Migrations:** none. The plan still ends at `jfb-015-entry-site`, and the released schema stays
+  `baseline/schema-v2` ([how upgrades are tested](upgrade-testing.md)).
+- **Theme views:** every view still carries contract version 1.
+- **To check:** nothing beyond what 17.0.0-beta.2 lists below.
+
 ### 17.0.0-beta.2 (2026-11-25)
 
 Fixes for sites on Linux and on SQL Server, found when the tests first ran there. A site on 17.0.0-beta.1 or

@@ -7,6 +7,16 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.0-beta.3] - 2026-11-25
+
+The first version on NuGet. Its packages hold the same code as 17.0.0-beta.2, which was tagged and whose release was
+drafted, but whose packages were not published. Nothing changes for a site.
+
+### Changed
+
+- **Where to ask and to report:** the repository is public, so questions go to its GitHub Discussions and security
+  problems to GitHub's private vulnerability reporting, or by email as before (`SUPPORT.md`, `SECURITY.md`).
+
 ## [17.0.0-beta.2] - 2026-11-25
 
 The second beta, for the same Umbraco 17.6 or later (within 17). It holds what the first runs of the tests on Linux

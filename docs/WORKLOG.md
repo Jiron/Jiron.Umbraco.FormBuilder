@@ -1544,3 +1544,15 @@ its reason, and a handover block at the end of every phase.
   deletions" and "Block force pushes" and nothing else, so ordinary pushes go on as before. The owner's GitHub
   Sponsors profile exists, so `.github/FUNDING.yml` names it for the repository's Sponsor button. `SUPPORT.md`
   and `SECURITY.md` say what holds in a public repository.
+- 2026-11-25 · owner messages · "while it runs can we set up the nuget thing? i already got an account and my
+  prefix reserved", then "Signed in, publish it", then "if something should break ... feel free to do beta 3 or
+  4". Done in the owner's Chrome on their word, each part told to them: nuget.org's trusted-publishing policy
+  "Jiron.Umbraco.FormBuilder release" (package owner Ligata, the organization that holds the reserved prefix
+  `Jiron.*`; this repository, `release.yml`, the environment `nuget`; push of new packages and versions; ids
+  starting `Jiron.Umbraco.FormBuilder`), the repository's environment `nuget` limited to tags `v*`, and the
+  variables `JFB_NUGET_USER` and `JFB_NUGET_PUBLISH`. **The release run of `v17.0.0-beta.2` (45706420234)
+  passed:** 26 jobs, among them the one that drafts the release, which ran for the first time; the draft holds
+  the changelog's section and seven files (four `.nupkg`, three `.snupkg`), read in the owner's browser. Its
+  publish job was skipped: the variable was set while the run was going, and a run reads its variables when it
+  starts, which I had expected otherwise and told the owner so. **17.0.0-beta.3** is therefore the same code
+  with the version moved on, so that a run that starts with publishing on publishes it.
