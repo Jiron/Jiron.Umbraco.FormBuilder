@@ -1556,3 +1556,22 @@ its reason, and a handover block at the end of every phase.
   publish job was skipped: the variable was set while the run was going, and a run reads its variables when it
   starts, which I had expected otherwise and told the owner so. **17.0.0-beta.3** is therefore the same code
   with the version moved on, so that a run that starts with publishing on publishes it.
+- 2026-11-26 · 26.1 The workflow's tests pass on Linux and on SQL Server, a release run drafts its release, and phase review · 58ffbe2c · the last check of the step ran on 2026-11-25, once the owner had made the repository public. **The release run of `v17.0.0-beta.3` (45709768067) passed all 27 jobs,** the publish job among them, its first time: the four packages are on nuget.org (read from its package index), and a new web project under `%TEMP%` took 17.0.0-beta.3 with the README's command and built. On the owner's word ("Ye publish 3 and delete 2 then") its release is published on GitHub as a prerelease with seven files and the draft of 17.0.0-beta.2 is deleted; its tag stays. **The clean-clone gate** failed once, on `355c7f31`: one client test of the AI add-on named a limit of 30 s, half of the run's, and ran out of it while another project's tests and an emulator loaded the machine (nothing of this repository was left running). With the run's minute (`1e185445`) the gate passed on `58ffbe2c` in 3,170 s: ci-local 2,202 s, pack 104 s, install 240 s, floor 289 s, upgrade 328 s, the secret scan of 1,340 commits clean; the name scan 0 hits. `main` names 17.0.0-beta.3.dev (ADR-0249). `v18/main` has it merged (`cd47d42c`, its own version kept): client tests, script tests and 9,228 unit tests passed there, 17 skipped as before.
+
+### Handover after Phase 26 (2026-11-26)
+
+- **State:** every step of ROADMAP.md is done and nothing is blocked. The repository is public, `17.0.0-beta.3` is
+  on nuget.org and released on GitHub, and `main` and `v18/main` are on origin. `docs/STATUS.md` names the runs.
+- **What changed outside the repository on 2026-11-25,** each on the owner's word: the repository's visibility and
+  two features (theirs), the ruleset `protect main`, the Sponsor button, nuget.org's trusted-publishing policy, the
+  environment `nuget` and the variables `JFB_NUGET_USER` and `JFB_NUGET_PUBLISH`. **Every `v*` tag now publishes to
+  nuget.org,** and a published version cannot be taken back: tag only on the owner's word.
+- **What to know:**
+  - A run reads its repository variables when it starts; set them before the tag.
+  - Runs, jobs and published releases are read signed out through GitHub's public API; logs, drafts and settings
+    still need the owner's browser and their word.
+  - `JFB_CI` is not set, so pushes to `main` run no tests on GitHub; the local gate is still the check.
+  - The owner wants to invite contributors and has not yet said whether with a contributor licence agreement;
+    until then `CONTRIBUTING.md` and the commit identity check stay closed to others (`docs/OWNER-TODO.md`).
+  - A bare project that takes the package resolves the oldest Umbraco it allows, 17.6, and with it three audit
+    warnings about packages Umbraco 17.6 brings; a site on a current 17 patch has newer ones.
