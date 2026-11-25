@@ -66,9 +66,9 @@ npm run size
 what holds the product to a time budget is the browser tests' `budgets` project and the integration tests marked
 `Timed`, which run alone.
 
-`node scripts/pack.mjs` builds the client for the version it packs and writes the packages to
-`.local/nuget-feed`. A plain `dotnet pack` refuses client assets that are missing, stale or built for
-another version (`JFB001`).
+`node scripts/pack.mjs --output .local/nuget-feed` builds the client for the version it packs and writes the
+packages to that folder, which a site can then use as a NuGet source. A plain `dotnet pack` refuses client
+assets that are missing, stale or built for another version (`JFB001`).
 
 **The tests** ([tests/README.md](tests/README.md)): the unit and integration tests run on SQLite and need nothing
 installed. The integration tests each start an Umbraco, so a script runs them in several processes at once and then

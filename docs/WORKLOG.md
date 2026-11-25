@@ -1497,8 +1497,8 @@ its reason, and a handover block at the end of every phase.
   or more shares): seven, of 6 to 30 minutes each. **A mistake of mine:** I told the owner the runs would fit the
   plan's included minutes, from this repository's runs alone; the 3,000 minutes are the account's, and another
   repository had used almost half. GitHub's mail said 100% used; the owner asked "Am i being charged now?". Read
-  on the billing page: $18.10 gross, all covered, no budget, no payment method seen, so nothing charged, and
-  nothing more runs until 1 December. The billing page is read before any run from now on.
+  on the billing page: all of it covered by the included minutes, so nothing charged, and nothing more runs
+  until 1 December. The billing page is read before any run from now on.
 - 2026-11-23 · 26.1, where it stands · **17.0.0-beta.2 is ready on `main` and not tagged**: its section of the
   changelog, its upgrade notes and its version (`d3ec2420`), the install test and the floor test on exactly that
   version (passed twice, the second time on `de208db2`), the dry run above, the clean-clone gate on 75b6c921
@@ -1518,3 +1518,15 @@ its reason, and a handover block at the end of every phase.
   line by line, and its version and notes steps give the right answers for `v17.0.0-beta.2` here. That job itself
   runs only for a real tag. The tag waits for the owner: the repository public, or 1 December, or a budget; the
   items of `docs/OWNER-TODO.md` to weigh before it is public were named to them.
+- 2026-11-25 · owner message · "Is the repo ready to basically go public?": no credentials leaked, a fine version,
+  the licence not to be got around, and documented well enough to use. **Checked:** `secret-scan --tracked` and
+  `--history` clean (4,199 files, 1,333 commits on every ref); one identity on every commit, the noreply one; no
+  private address, host name or key in the files; `LICENSE.md` has the root commit's SHA-256 and every package
+  carries it as its licence file (`check-packages.mjs`). The term guard ran over the history with the names of
+  the private notes as its list (the owner's own list is not on this machine): none in a file once two ordinary
+  words were replaced, a local variable in `ActionRunRepository` and an example value in a script test; the four
+  commits that hold them stay as they are. **Fixed:** the README's status said a prerelease was being prepared
+  while its install command finds nothing on NuGet, and `CONTRIBUTING.md` named `node scripts/pack.mjs` without
+  the `--output` it needs; both now say how to build the packages from the repository. Details of the account's
+  billing that I had written into the owner's list and this log are taken out of the files. What only the owner
+  can weigh is in `docs/OWNER-TODO.md` under "Make the repository public".
