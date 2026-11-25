@@ -12,9 +12,8 @@ Editors build forms in a **Form Builder** section of the backoffice, with pages,
 in on the website, in Razor or headless. The site's team reviews the entries, approves and exports them, and keeps
 personal data in check with the privacy tools.
 
-> **Status:** beta. The packages are not on NuGet yet, so until the first prerelease is published there the install
-> command below finds nothing. To try it now, `node scripts/pack.mjs --output .local/nuget-feed` builds the packages
-> from this repository into a folder to add as a NuGet source ([CONTRIBUTING.md](CONTRIBUTING.md)).
+> **Status:** beta. The packages are on [NuGet](https://www.nuget.org/packages/Jiron.Umbraco.FormBuilder) as
+> prereleases.
 
 New here? [Getting started](docs/getting-started.md) takes about ten minutes.
 
