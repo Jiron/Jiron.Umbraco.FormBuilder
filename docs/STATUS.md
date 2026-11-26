@@ -3,8 +3,9 @@
 Where Jiron Form Builder stands at the end of its first build, on 2026-11-26, after the pass that made its backoffice
 simpler to find a way through, the fix that lets a field be called anything, the work that brought the tests from
 hours to half an hour, the change that leads an administrator to a user group's permissions, the day its tests
-first passed on Linux and on SQL Server and the evening it went public and onto NuGet: what was built, how it is
-tested, what the budgets measured, what it does not do yet, and what only you, the owner, can do next.
+first passed on Linux and on SQL Server, the evening it went public and onto NuGet and the fixes of what its first
+site found: what was built, how it is tested, what the budgets measured, what it does not do yet, and what only you,
+the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). **The repository is public since 2026-11-25, and
 `17.0.0-beta.3` is on nuget.org** (`Jiron.Umbraco.FormBuilder`, `.Core`, `.Web` and `.AI`), with its release on
@@ -113,6 +114,34 @@ two servers. What the first runs there found, each fixed at its cause:
   README's command. Its release is published on GitHub as a prerelease with seven files; the draft of
   17.0.0-beta.2 was deleted on your word.
 
+**What the first site found is fixed (Phase 27, 2026-11-26).** The first site outside the demo took the package on
+2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in `main` and
+in no published version yet ([CHANGELOG.md](../CHANGELOG.md), "Unreleased").
+
+- **For visitors.**
+  - A send with no answer at all names the required fields, at each field and in the summary, where it only said
+    that the form was empty ([ADR-0266](decisions/0266-an-empty-send-names-what-is-required.md)).
+  - The first press of Send on an untouched form no longer posts the page: it is held while the form's script
+    loads, and the script then takes it. Where the script cannot load, the form posts as without JavaScript.
+  - A theme without a dark scheme keeps its light colours on a dark page, and a form that was fitted to its
+    background follows the site's own light and dark switch.
+- **For a site's developers.**
+  - While the package's migrations are pending, Umbraco's notifications write no warnings (86 in that install),
+    and deleting a user group no longer fails.
+  - The migration steps that fill a table write before they read, so a second process on the same SQLite file
+    cannot make one lose its turn.
+  - A theme's stylesheet may carry a query, for a site's fingerprint.
+  - `JironFormBuilder:General:DefaultTimeZone` sets the time zone of a site that saved none, and the package's and
+    the migration plan's names are public constants.
+  - `{{ entry.table }}` and `{{ entry.answers }}` write a date with its month's name.
+- **Told in the docs:** what `<jfb-assets />` writes on a page without a form, what an unattended install does with
+  the package's migrations (seen on throwaway sites with Umbraco 17.6.2 and 17.7.1), and that two instances must
+  not share one SQLite file during an upgrade.
+- **Known and left:** while the tables are missing, saving a page whose form picker already names a form still
+  fails in the picker's check. It needs content imported before the migrations ran, and ends when they have run.
+- **Also that day, on your word:** `GOAL.md` is gone from the repository, and the readmes, the licence FAQ and the
+  templates say plainly that the package comes without warranty and that no lawyer has checked its texts.
+
 ## Contents
 
 - [What was built](#what-was-built)
@@ -155,32 +184,34 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 26 (26.1), on 2026-11-25 on origin's
-`main` at `58ffbe2c`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 3,170 s. The run before it, on `355c7f31`, had failed: one client test of the AI add-on named a limit of
-30 s, half of what the run gives every test, and ran out of it while other work loaded the machine; it has the
-run's minute now. On 2026-11-23 the verification had passed six times, last on `75b6c921` in 2,837 s. The coverage
-was measured on `de208db2`: Core 97.6% of its lines; since then one local variable was renamed in Core and no
-statement added or removed.
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 27 (27.1), on 2026-11-26 on origin's
+`main` at `4d7fb549`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 3,448 s. Two runs before it had failed, on `810fa9e7`. The first stopped after two minutes: the machine
+had no memory left to give, most of it held by another project's emulator, and the client's lint stopped for lack
+of it. The second passed everything but one browser test, an older one that reached the server's page of errors by
+pressing Send while the form's script was loading, which Phase 27 changed on purpose; it now gets there with the
+script refused (`dc169a0d`). The coverage was measured on `4d7fb549`: Core 97.6% of its lines (35,993 of 36,881),
+Web 97.7%. At the end of Phase 26 the verification had passed on `58ffbe2c` in 3,170 s.
 
-| What ran | Count | At the end of Phase 25 |
+| What ran | Count | At the end of Phase 26 |
 | --- | --- | --- |
-| Unit tests (.NET), with the shared vectors in the server's engine | 9,199; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,157; 17 skipped |
-| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,318 | 2,316 |
-| The AI add-on's tests (.NET) | 60 | 56 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,363 in 240 files | 6,360 in 239 files |
-| The repository's scripts (Node) | 526 | 491 |
-| The browser tests' own support (Node) | 86 | 85 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 597 | 597 |
+| Unit tests (.NET), with the shared vectors in the server's engine | 9,261; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,199; 17 skipped |
+| Integration tests (.NET), on real Umbraco hosts with SQLite | 2,324 | 2,318 |
+| The AI add-on's tests (.NET) | 60 | 60 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,387 in 240 files | 6,363 in 240 files |
+| The repository's scripts (Node) | 534 | 526 |
+| The browser tests' own support (Node) | 86 | 86 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 602 | 597 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
-| A pack of `17.0.0-dev.202611231800` | 4 packages | 4 packages |
+| A pack of `17.0.0-dev.202611261404` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,340 commits, clean | 1,305 commits, clean |
+| The secret scan of the whole history | 1,349 commits, clean | 1,340 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 5 below) | skipped |
 
-No test went: every count is the one before or higher, the added ones being the tests of what Phase 26 fixed and of
-its tools.
+No test went: every count is the one before or higher, the added ones being the tests of what Phase 27 fixed. The
+Linux steps of the workflow's build job and the new and changed integration tests also passed in the container
+(`node scripts/linux-ci.mjs`); SQL Server ran none of Phase 27's tests yet, as only the workflow has one.
 
 **On GitHub, for the first time whole** (the dry run of the release workflow on `de208db2`, 2026-11-23, read in your
 browser): 25 jobs passed and two were skipped, as a dry run drafts and publishes nothing. It took 31 minutes and
@@ -266,9 +297,9 @@ how to repeat it. Sizes are gzip.
 
 | Budget | Measured | Limit |
 | --- | --- | --- |
-| The website runtime's core, what every page with a form loads first | 2.99 KB | 16 KB |
-| The runtime with every feature and the largest language's words | 64.11 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
-| The default theme's stylesheet | 8.05 KB | 10 KB |
+| The website runtime's core, what every page with a form loads first | 3.43 KB | 16 KB |
+| The runtime with every feature and the largest language's words | 64.63 KB | 100 KB ([ADR-0251](decisions/0251-the-runtimes-budget-grows-to-100-kb.md)) |
+| The default theme's stylesheet | 8.06 KB | 10 KB |
 | Rendering a 50-field form from its cached definition | 4.8 ms median | 20 ms |
 | A submission, 10 at the same moment, on SQLite | 56.1 ms at p95 | 150 ms |
 | The first page of 100,000 entries | 10.7 ms median, 22.6 ms highest | 300 ms |
@@ -277,9 +308,9 @@ how to repeat it. Sizes are gzip.
 | A page with a form in Lighthouse (mobile) | performance 100, accessibility 100 | the same page without a form |
 | The slowest designer interaction on a form of 300 fields | 48 ms (88 ms in a fresh browser) | 100 ms (200 ms in a fresh browser) |
 | The tree opening a folder of 1,000 forms | 476 ms median, 510 ms highest | 1 s |
-| What every backoffice session loads at its start | 45.00 KB | 64 KB |
+| What every backoffice session loads at its start | 45.01 KB | 64 KB |
 | The backoffice's largest file (the designer) | 39.42 KB | 64 KB |
-| The backoffice bundle | 509.84 KB | 512 KB |
+| The backoffice bundle | 510.07 KB | 512 KB |
 
 ## What it does not do yet
 
@@ -339,7 +370,8 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    `main` runs the tests; in a public repository the runs cost nothing.
 4. **Call the first stable version.** The Umbraco Marketplace lists no package that has prereleases only; both
    listings pass its validator otherwise (2026-11-26), so the product appears there with `17.0.0`
-   ([releasing.md](releasing.md)).
+   ([releasing.md](releasing.md)). What the first site found is fixed and waits in `main` for that version; its
+   tag publishes to nuget.org for good, so it is pushed on your word only.
 5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run
    of `node scripts/term-guard.mjs --history` with your own term list in `.private/terms.txt`; optionally the full
    code of conduct in the repository, and a question to Umbraco HQ about "Umbraco" in the package id. Throughout:

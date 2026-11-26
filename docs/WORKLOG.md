@@ -1610,4 +1610,21 @@ its reason, and a handover block at the end of every phase.
   layout in ROADMAP §4.1 no longer lists it; step 0.1 still names it, as that step describes the root commit.
   Nothing else in the repository tells the owner how to start or steer a run. Asked back, as only the owner can
   say: whether `docs/OWNER-TODO.md` and the "What is left for you" list of `docs/STATUS.md`, which speak to the
-  owner too, stay in the public repository.
+  owner too, stay in the public repository. The owner's answer the same day: "keep those for now".
+- 2026-11-26 · 27.1 The first site's ten findings are fixed or told, and phase review · dc169a0d · built by one coding agent and read whole in the main session, which changed two things in it: a held press on a form with no address to post to (the `<jfb-form>` element's) ended in nothing after ten seconds and now goes on waiting for the logic, and an empty `DefaultTimeZone` stopped the site at start-up and now counts as not set. **Seen:** an unattended install on throwaway sites with Umbraco 17.6.2 and 17.7.1 runs the package's plan in the same boot, about 3 s after the site listens; with `PackageMigrationsUnattended` off it stays pending, which `docs/installation.md` now says with the lines that run it. In Edge on the demo: the held press with its busy button and the three required fields named in place, the same three without JavaScript, bootstrap5 light on a dark page, and the default theme following the demo's switch there and back. In the Linux container the build job's steps (577 s) and the 57 new and changed integration tests passed. **The gate** took three runs. On `810fa9e7` the first stopped after 130 s: the machine's commit limit was reached (105 of 112 GB, 71 GB of it another session's emulator, which was left alone) and the client's lint aborted for memory; a loop waited 63 minutes for the headroom. The second failed in the browser stage on one old test, `focus-and-landing.spec.ts:100`, which reached the server's page of errors by pressing Send while the logic loaded, the very thing finding 2 changed; six site-wide tests behind it never ran. The test now refuses the first page's logic (`dc169a0d`), and it, the first-press tests and those six passed on a local site. On `4d7fb549` (that commit and the owner's two of the same day) the gate passed in 3,448 s: ci-local 2,361 s, pack 108 s, install 267 s, floor 336 s, upgrade 367 s, the secret scan of 1,349 commits clean; the name scan 0 hits; coverage Core 97.6%, Web 97.7%. `v18/main` has it merged (`32d34c6f`, its own version kept): 534 script tests, 6,396 client tests and 9,273 unit tests passed there, 17 skipped as before. **Left as it is:** the form picker's check still fails on a page whose picker names a form while the tables are missing (it needs content imported before the migrations ran); three new test classes are not in `tests/integration-times.json` and one spec file is not in `tests/e2e/spec-times.json`, which only costs balance, as an unknown one runs in the last share; SQL Server ran none of this, as only the workflow has one.
+
+### Handover after Phase 27 (2026-11-26)
+
+- **State:** every step of ROADMAP.md is done and nothing is blocked. `main` holds the first site's fixes after
+  `17.0.0-beta.3`, unpublished; `docs/STATUS.md` names the gate's run on `4d7fb549`. `v18/main` has them merged.
+- **Next is the owner's:** the first stable version, `17.0.0`, which the Umbraco Marketplace needs for its
+  listing. Its tag publishes to nuget.org for good: push it on the owner's word only, after the release
+  preparation of `docs/releasing.md` (ADR-0249) and with a gate on that commit.
+- **What to know:**
+  - Before a gate, read the machine's commit headroom; another session's emulator can hold most of it, and it is
+    never this session's to stop.
+  - A change in what the website runtime does on a press, a send or a wake needs the whole `website` project
+    before the gate: older specs use such behaviour as a way to reach a state.
+  - `GOAL.md` is removed on the owner's word; `docs/OWNER-TODO.md` and the owner's list in `docs/STATUS.md`
+    stay "for now" (the owner, the same day).
+  - The logo is unchanged; the owner has a sheet of ideas and has picked none.
