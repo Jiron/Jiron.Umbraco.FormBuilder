@@ -1594,3 +1594,20 @@ its reason, and a handover block at the end of every phase.
   before `17.0.0`, which the Marketplace needs. Phase 27 is added with one step, 27.1, that holds all ten
   (ADR-0197: never small steps); the logo stays as it is until the owner picks another (a sheet with the mark and
   four sketches was sent, `.local/icons/ideas.png`).
+- 2026-11-26 · owner message · asked, while 27.1's gate ran, for a disclaimer with the next commit: the privacy
+  texts and templates are not checked by a lawyer, and nobody is liable for anything, as it is a hobby project;
+  "if that aint in there yet and its needed". What was there: the licence's "No Liability" section, the licence
+  FAQ's answer on warranty, and "not legal advice" on each template and on the privacy page. What was missing and
+  is added, in docs only and with no step (ADR-0197): a "No warranty" section in `README.md`, two sentences in each
+  NuGet readme, and the sentence that no lawyer has checked the text in the licence FAQ, `docs/privacy.md`, both
+  privacy-policy templates and the accessibility statement template. Each template's first line stays as its test
+  reads it, and `LICENSE.md` is untouched. The readmes and the FAQ say "as far as the law allows", as the licence
+  does: a disclaimer cannot exclude what the law does not let it exclude, which is among the things the lawyer's
+  look in `docs/OWNER-TODO.md` is for.
+- 2026-11-26 · owner message · for the final version, the files that tell the owner how to run the build go:
+  "the GOAL.md for example ... Claude.md can stay", and general context is fine. `GOAL.md` is removed (the text
+  of the goal and the tips for the run; the owner's own copy is in `.private/`, and the history keeps it). The
+  layout in ROADMAP §4.1 no longer lists it; step 0.1 still names it, as that step describes the root commit.
+  Nothing else in the repository tells the owner how to start or steer a run. Asked back, as only the owner can
+  say: whether `docs/OWNER-TODO.md` and the "What is left for you" list of `docs/STATUS.md`, which speak to the
+  owner too, stay in the public repository.

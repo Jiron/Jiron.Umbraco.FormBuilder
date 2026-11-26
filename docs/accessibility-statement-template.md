@@ -6,7 +6,8 @@ A starting point for the part of your site's accessibility statement about its f
 brackets], delete what does not apply, and check the result against your own testing: this template describes what
 Jiron Form Builder's own tests found ([accessibility.md](accessibility.md)), not your pages, your theme or your content.
 Where your law prescribes the statement's form (in the EU, for example, the model of Implementing Decision (EU)
-2018/1523 for public bodies), follow it and take only the facts from here. A German version follows the English one.
+2018/1523 for public bodies), follow it and take only the facts from here. No lawyer has checked this template, and it
+comes without any warranty or liability: using it is at your own risk. A German version follows the English one.
 
 ---
 

@@ -5,7 +5,8 @@ TEMPLATE, not legal advice; adapt with your data protection adviser.
 This is a starting point for the part of your privacy policy about the forms on your site. Replace everything in
 [square brackets], delete the variants that do not apply, and have your data protection adviser check the result against
 your purposes, your legal bases and the law that applies to you. It describes Jiron Form Builder's behaviour as the
-[facts sheet](facts.md) states it; if you change a setting, change the text.
+[facts sheet](facts.md) states it; if you change a setting, change the text. No lawyer has checked this template, and
+it comes without any warranty or liability: using it is at your own risk.
 
 ---
 

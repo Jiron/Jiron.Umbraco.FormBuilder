@@ -31,6 +31,9 @@ no difference in its database.
 - **`{{ entry.table }}` and `{{ entry.answers }}` write a date with its month's name,** in the entry's culture and
   without the weekday, such as "Mar 4, 2026" or "4. März 2026", so it never reads as another day; a date and time as
   that date and the time. A tag that names the field keeps the short format.
+- **The readmes say plainly that there is no warranty.** Jiron Form Builder is a hobby project that comes as is, as its
+  licence has always said, and no lawyer has checked its privacy-policy and accessibility statement templates or its
+  default texts; the templates and the licence FAQ say so too.
 
 ### Fixed
 

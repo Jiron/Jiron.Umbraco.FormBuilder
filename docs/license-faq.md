@@ -101,6 +101,10 @@ continues if you stop and put things right within 32 days.
 No. As far as the law allows, the software comes as is, without any warranty, and the licensor is not liable for
 damages. Test it on your sites before you rely on it.
 
+Jiron Form Builder is a hobby project, built by one person in their spare time, and that holds for its texts too: no
+lawyer has checked the privacy-policy templates, the accessibility statement template, the privacy pages or the
+default texts a form shows and sends. Whether your forms meet the law that applies to you is yours to check.
+
 ### What about patents?
 
 The licence includes a patent licence for the software. It ends for you if you claim in writing that the software

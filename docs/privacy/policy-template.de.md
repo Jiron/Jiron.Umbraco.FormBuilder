@@ -7,7 +7,8 @@ Dies ist ein Ausgangspunkt für den Teil Ihrer Datenschutzerklärung, der die Fo
 alles in [eckigen Klammern], streichen Sie die Varianten, die nicht zutreffen, und lassen Sie das Ergebnis von Ihrer
 Datenschutzberatung gegen Ihre Zwecke, Ihre Rechtsgrundlagen und das für Sie geltende Recht prüfen. Der Text beschreibt
 das Verhalten von Jiron Form Builder so, wie es das [Faktenblatt](facts.md) festhält; ändern Sie eine Einstellung, ändern
-Sie auch den Text.
+Sie auch den Text. Diese Vorlage wurde nicht anwaltlich geprüft und kommt ohne Gewähr und ohne Haftung: Sie verwenden
+sie auf eigenes Risiko.
 
 ---
 

@@ -30,6 +30,9 @@ you to accept the
 [licence FAQ](https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/main/docs/license-faq.md) explains it in plain
 words.
 
+It is a hobby project: as far as the law allows, it comes as is, without any warranty or liability. What an AI
+provider drafts or translates is yours to read before it is published.
+
 Made by [Manassés Zähnler](https://jiron.dev) · [Ligata](https://ligata.ch). Issues and security reports go to the
 [repository](https://github.com/Jiron/Jiron.Umbraco.FormBuilder).
 
