@@ -20,8 +20,9 @@ owner's word only.
    [ADR-0246](decisions/0246-the-packages-and-their-listings.md)). The files are kept as the run's `release-packages`
    artifact.
 4. **Draft release.** It creates a **draft** GitHub Release for the tag with the `.nupkg` and `.snupkg` files attached
-   and the version's section of `CHANGELOG.md` as its notes (`node scripts/release.mjs notes`). A version with a suffix
-   (`-alpha.1`) is marked as a prerelease. Nobody sees a draft until it is published by hand.
+   and the version's section of `CHANGELOG.md` as its notes (`node scripts/release.mjs notes`), in which a link to a
+   file of the repository names that file at the tag. A version with a suffix (`-alpha.1`) is marked as a
+   prerelease. Nobody sees a draft until it is published by hand.
 5. **Publish**, only when the repository variable `JFB_NUGET_PUBLISH` is `true`: it signs in to nuget.org with trusted
    publishing (`NuGet/login`, a key valid for one hour, no stored secret) and pushes the packages with their symbols
    (`dotnet nuget push --skip-duplicate`). Until then the job is skipped.

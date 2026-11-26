@@ -17,7 +17,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseFileName, zipEntries } from './check-packages.mjs';
+import { parseFileName, PROJECT_URL, zipEntries } from './check-packages.mjs';
 import { builtVersion } from './pack.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -46,7 +46,10 @@ export function releaseVersion(input, propsText) {
   return version;
 }
 
-/** The notes of a version: its section of the changelog (`## [17.0.0-alpha.1] - 2026-11-13`), without the heading. */
+/**
+ * The notes of a version: its section of the changelog (`## [17.0.0-alpha.1] - 2026-11-13`), without the heading, its
+ * links into the repository made whole.
+ */
 export function releaseNotes(version, changelog) {
   const sections = new Map();
   let current = null;
@@ -65,7 +68,16 @@ export function releaseNotes(version, changelog) {
   if (!body) throw new Error(`CHANGELOG.md has no section "## [${version}]"; add one before tagging (docs/releasing.md)`);
   const text = body.join('\n').trim();
   if (!text) throw new Error(`the CHANGELOG.md section of ${version} is empty`);
-  return `${unwrap(text)}\n`;
+  return `${wholeLinks(unwrap(text), version)}\n`;
+}
+
+/**
+ * Markdown whose links into the repository (`[installation.md](docs/installation.md)`, as the changelog at the root
+ * writes them) name the file at the version's tag: a release's page is not in the repository's tree, so a relative link
+ * leads nowhere from it. Links with a scheme, to an anchor or from the site's root stay.
+ */
+export function wholeLinks(markdown, version) {
+  return markdown.replace(/\]\((?![a-z][a-z0-9+.-]*:|#|\/)([^)\s]+)\)/gi, (_, path) => `](${PROJECT_URL}/blob/v${version}/${path.replace(/^\.\//, '')})`);
 }
 
 /**
