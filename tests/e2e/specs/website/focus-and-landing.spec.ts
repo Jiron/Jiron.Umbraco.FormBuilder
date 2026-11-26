@@ -100,7 +100,11 @@ async function focusOn(page: Page, control: Locator): Promise<void> {
 test('an answer given before a slow runtime woke takes its error away once it wakes, on the page the server refused', async ({
   page,
 }) => {
+  // A press of Send before the logic is there is held for it and posts nothing (ROADMAP 27.1), so the first page's
+  // logic is refused: its Send then posts the form as without JavaScript. On the page the server answers with, the
+  // logic comes, slowly.
   await page.route('**/runtime/chunks/**', async (route) => {
+    if (!route.request().frame().url().includes('jfb-post=')) return route.abort();
     await new Promise((resolve) => setTimeout(resolve, 2_500));
     await route.continue();
   });
