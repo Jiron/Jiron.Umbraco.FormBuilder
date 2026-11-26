@@ -1,8 +1,9 @@
 # Releasing
 
 For contributors and the owner: how a Jiron Form Builder version is built, packed and released, and the steps only the
-owner takes to publish it ([ADR-0247](decisions/0247-the-release-workflow.md)). Nothing is published during the build:
-the publish job stays off until the owner turns it on ([OWNER-TODO](OWNER-TODO.md)).
+owner takes to publish it ([ADR-0247](decisions/0247-the-release-workflow.md)). Publishing is on since 2026-11-25:
+every version tag's run pushes its packages to nuget.org, where a version stays for good, so a tag is pushed on the
+owner's word only.
 
 ## What the release workflow does
 

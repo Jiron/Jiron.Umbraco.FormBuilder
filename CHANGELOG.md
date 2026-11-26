@@ -7,8 +7,11 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
-What the first site outside the demo found. It adds no migration; a site that ran the earlier versions' migrations sees
-no difference in its database.
+## [17.0.0] - 2026-11-26
+
+The first stable version, for Umbraco 17.6 or later (within 17). It holds everything the prereleases brought, and what
+the first site outside the demo found. It adds no migration; a site that ran the earlier versions' migrations sees no
+difference in its database.
 
 ### Added
 

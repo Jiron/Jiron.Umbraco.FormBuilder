@@ -1628,3 +1628,9 @@ its reason, and a handover block at the end of every phase.
   - `GOAL.md` is removed on the owner's word; `docs/OWNER-TODO.md` and the owner's list in `docs/STATUS.md`
     stay "for now" (the owner, the same day).
   - The logo is unchanged; the owner has a sheet of ideas and has picked none.
+- 2026-11-26 · owner message · "Yes, release 17.0.0", to the question whether to prepare and tag it, with the note
+  that the tag publishes to nuget.org and cannot be taken back. It is the first stable version, the one the
+  Umbraco Marketplace lists the product from; no step is added (ADR-0197). Prepared as `docs/releasing.md` says:
+  the changelog's section and the upgrade notes for 17.0.0, the version without a suffix, and the README, the
+  getting-started page and the installation page without `--prerelease`. `docs/releasing.md` no longer says
+  that publishing is off. The tag follows a gate and the install tests of exactly this version on this commit.

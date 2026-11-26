@@ -115,8 +115,8 @@ two servers. What the first runs there found, each fixed at its cause:
   17.0.0-beta.2 was deleted on your word.
 
 **What the first site found is fixed (Phase 27, 2026-11-26).** The first site outside the demo took the package on
-2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in `main` and
-in no published version yet ([CHANGELOG.md](../CHANGELOG.md), "Unreleased").
+2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in 17.0.0, the
+first stable version ([CHANGELOG.md](../CHANGELOG.md)).
 
 - **For visitors.**
   - A send with no answer at all names the required fields, at each field and in the summary, where it only said
