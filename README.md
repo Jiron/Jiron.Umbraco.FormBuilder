@@ -114,9 +114,9 @@ The [licence FAQ](docs/license-faq.md) answers the usual questions in plain word
 ## Contributing
 
 Bug reports and ideas are welcome as issues ([SUPPORT.md](SUPPORT.md)), and security problems are reported privately
-([SECURITY.md](SECURITY.md)). Pull requests from outside contributors open once the contributor licence agreement is
-ready; [CONTRIBUTING.md](CONTRIBUTING.md) says how work is done here, and the
-[code of conduct](CODE_OF_CONDUCT.md) applies to everyone.
+([SECURITY.md](SECURITY.md)). Pull requests are welcome too, with no agreement to sign:
+[CONTRIBUTING.md](CONTRIBUTING.md) says how work is done here, and the [code of conduct](CODE_OF_CONDUCT.md) applies
+to everyone.
 
 The components the package ships with are listed with their licences in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

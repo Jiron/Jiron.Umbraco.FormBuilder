@@ -7,11 +7,16 @@
 # Gated to save the private repository's Actions minutes (D17): a run started by hand always runs, and so does the
 # release (release.yml), which calls this workflow for a version tag, so a tag runs CI once (ADR-0247). Pushes to main
 # and to v18/main (the Umbraco 18 line, Phase 19) run only when the owner sets the repository variable JFB_CI to
-# 'true'; until then every job's `if` is false and the push run ends at once, without a runner.
+# 'true'; until then every job's `if` is false and the push run ends at once, without a runner. A pull request is no
+# push, so it always runs.
 name: CI
 
 on:
   push:
+    branches: [main, v18/main]
+  # A contributor's pull request runs everything, on a hosted runner with a read-only token and no secrets, never on
+  # the maintainer's machine; for a first contribution GitHub asks the maintainer to approve the run (ADR-0265).
+  pull_request:
     branches: [main, v18/main]
   # The release calls it for a version tag, without inputs; the jobs' conditions let a tag through.
   workflow_call:

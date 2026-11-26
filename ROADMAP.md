@@ -462,6 +462,7 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
 - **Contributions:** GitHub's terms make contributions inbound = outbound, which under Perimeter would leave the owner unable to relicense contributed code. Outside contributions therefore wait for a **contributor licence agreement**, an OWNER-TODO item with a lawyer:
   - under German law it must be a broad, sublicensable licence grant (§§ 29, 31(5), 31a UrhG), not an assignment;
   - it includes an original-work attestation.
+  - **Decided by the owner on 2026-11-26 (ADR-0265): no agreement.** Contributions are accepted as GitHub's terms bring them, under Perimeter; relicensing contributed code would need its authors' consent. `CONTRIBUTING.md`, the commit check and CI are open to contributors.
 - **The Cyber Resilience Act** (EU 2024/2847): reporting duties apply from 2026-09-11 and most obligations from 2027-12-11. Non-monetised software is generally outside its scope; any monetisation (paid add-ons, paid support, possibly donations) needs a check first (OWNER-TODO). Jiron Form Builder's `SECURITY.md` and vulnerability handling follow good practice either way.
 - **The Umbraco name:** Umbraco's brand rules forbid "Umbraco" in product names without permission and any suggestion of being part of Umbraco A/S.
   - The package id uses "Umbraco" only as a platform qualifier after the owner's prefix (`Jiron.Umbraco.FormBuilder`), a common pattern for community packages. The product name "Jiron Form Builder" never contains it.

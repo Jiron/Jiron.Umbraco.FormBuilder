@@ -59,10 +59,10 @@ so you know where you stand before you invest in it.
 
 ### Can I contribute?
 
-Yes, through this repository: report bugs and suggest features as issues, and once outside contributions open,
-propose changes as pull requests from a fork. A fork you keep for contributing back is not a published version of
-your own. Outside pull requests can be accepted only once a contributor licence agreement exists, which is being
-prepared; [CONTRIBUTING.md](../CONTRIBUTING.md) says how it works today.
+Yes, through this repository: report bugs and suggest features as issues, and propose changes as pull requests from
+a fork. A fork you keep for contributing back is not a published version of your own. There is no agreement to sign:
+what you contribute stays yours and comes under this same licence. [CONTRIBUTING.md](../CONTRIBUTING.md) says how it
+works.
 
 ### Why can't I publish my own version, even for free?
 

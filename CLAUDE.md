@@ -60,7 +60,7 @@ Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a *
    - A step counts as done only when its "Done when" checks have run in the current session and passed.
    - **Commit order:** commit the work (Conventional Commits; a few commits if the step is large). Then tick the step with the date and the short hash of its last work commit, append a line to `docs/WORKLOG.md`, commit that as `docs(roadmap): complete X.Y`, and push to `origin main`. That means a push after every step at the latest. Each phase end is a milestone with a handover note.
    - **The bootstrap exception:** step 0.1 makes no commit. Its tick and WORKLOG line go into 0.2's commits.
-   - **Every commit uses the repo-local identity** `Jiron <59139789+Jiron@users.noreply.github.com>` (set in 0.1; the pre-commit hook refuses any other). The machine's global identity is the owner's personal one and must never appear in this repository.
+   - **Every commit uses the repo-local identity** `Jiron <59139789+Jiron@users.noreply.github.com>` (set in 0.1; since ADR-0265 the pre-commit hook refuses a personal address from anyone, and accepts contributors' own noreply identities). The machine's global identity is the owner's personal one and must never appear in this repository.
    - Never batch several steps into one commit. Never weaken or delete a step or a "Done when" check. A replacement needs an ADR and an equal or stronger check.
 10. **Take your time.** There is no deadline. Quality beats speed every time.
     - Prefer the robust, tested design over the quick one.
