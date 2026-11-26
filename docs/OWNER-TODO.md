@@ -88,7 +88,7 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     match two of them when upper and lower case are ignored, in four commits, and name no product. Your own list
     was never on this machine, so that run is still yours.
   - **What becomes visible with it:** the whole history, the plan and work log (`ROADMAP.md`, `CLAUDE.md`,
-    `GOAL.md`, `docs/WORKLOG.md`, this file), the logs of past workflow runs, and the two old branches
+    `docs/WORKLOG.md`, this file; `GOAL.md` too until you had it removed on 2026-11-26, and it stays in the history), the logs of past workflow runs, and the two old branches
     `wip/6.4i-sending` and `wip/8.6b-resume-control` (one commit each beyond `main`; delete them on GitHub if you
     do not want them shown).
   - **The same day:** apply for the `Jiron.` prefix above, or publish the first prerelease, so that nobody else

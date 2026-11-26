@@ -508,7 +508,7 @@ Phase 1 turns this design into `docs/architecture.md` and ADRs, and Phase 2 turn
 
 ```
 Jiron.Umbraco.FormBuilder/
-├─ LICENSE.md  README.md  CLAUDE.md  ROADMAP.md  GOAL.md  CHANGELOG.md  SECURITY.md  SUPPORT.md
+├─ LICENSE.md  README.md  CLAUDE.md  ROADMAP.md  CHANGELOG.md  SECURITY.md  SUPPORT.md
 ├─ CONTRIBUTING.md  CODE_OF_CONDUCT.md  THIRD-PARTY-NOTICES.md
 ├─ umbraco-marketplace.json             # Marketplace metadata (read from the repo root once public)
 ├─ Jiron.Umbraco.FormBuilder.slnx
