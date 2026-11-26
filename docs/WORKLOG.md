@@ -1634,3 +1634,30 @@ its reason, and a handover block at the end of every phase.
   the changelog's section and the upgrade notes for 17.0.0, the version without a suffix, and the README, the
   getting-started page and the installation page without `--prerelease`. `docs/releasing.md` no longer says
   that publishing is off. The tag follows a gate and the install tests of exactly this version on this commit.
+- 2026-11-26 · 17.0.0 is released · f2bb2c43 · the first stable version, on the owner's word above. The tag
+  `v17.0.0` is on `f2bb2c43`: the release commit `f2b6ff8d` and one test fix after it.
+  - **The gate before the tag** (`node scripts/verify-clean.mjs`) passed on `f2bb2c43` in 2,808 s, with nothing
+    else running on the machine (a sampler beside it recorded no other session's load). The install tests then
+    passed with exactly `17.0.0`, on Umbraco 17.7.1 (219 s) and on the floor (266 s).
+  - **Two runs before it failed, on `f2b6ff8d`.** In the first, the timed export of 10,000 entries as CSV took
+    6.0 s of its 5 s, and the timed tests 317 s where they take 100 s: another project's test run had started
+    on this machine at 17:32, during the integration shares, and was still going afterwards. Nothing in the
+    code had changed since the run that measured 2.3 s, and the run after measured 1.8 s. The second stopped
+    after 51 s on a script test: "one key is reported by exactly one rule" built its key from random base64url
+    characters, and this one began with the two characters a reCAPTCHA key begins with, so that rule reported
+    it too. That happens about once in 4,000 runs and had never been met. The tests that name the only rules
+    that may report a value now build the random part from lower-case letters and digits, which no other
+    rule's shape fits, and a new test holds that such a key is reported by both rules (`f2bb2c43`).
+  - **The release run** (45870567002, #9) passed all 27 jobs: the build job, the integration shares on SQLite
+    and on SQL Server, the smoke tests, load balancing, the pack, the draft release and the publish job. It is
+    the first run of Phase 27's tests on Linux and on SQL Server. The four packages are on nuget.org as
+    `17.0.0`, and the release on GitHub is published from its draft in the owner's browser, as part of the
+    release they asked for.
+  - **A link in the notes.** The changelog links `docs/installation.md` from the repository's root, which leads
+    nowhere from a release's page. In the draft the link was made whole by hand before publishing, and
+    `node scripts/release.mjs notes` now writes such links to the file at the version's tag, with a test.
+  - **A new project** took `17.0.0` from nuget.org with the README's command, without `--prerelease`, in a
+    package cache of its own.
+  - **`main` moves on to `17.0.1-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.
+  - **Left for the owner:** the Umbraco Marketplace's two pages after its next daily scan
+    (`docs/OWNER-TODO.md`).
