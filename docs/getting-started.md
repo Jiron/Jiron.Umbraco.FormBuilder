@@ -16,11 +16,10 @@ From installing the package to the first entry in your Inbox, in about ten minut
 In the site's project folder:
 
 ```
-dotnet add package Jiron.Umbraco.FormBuilder --prerelease
+dotnet add package Jiron.Umbraco.FormBuilder
 ```
 
-`--prerelease` is needed while only prereleases are published. Then build. No change to `Program.cs` is needed: Umbraco
-finds the package by itself.
+Then build. No change to `Program.cs` is needed: Umbraco finds the package by itself.
 
 ## 2. Open Form Builder
 

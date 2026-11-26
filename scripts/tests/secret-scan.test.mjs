@@ -19,8 +19,11 @@ function randomFrom(alphabet, length) {
   return Array.from({ length }, () => alphabet[randomInt(alphabet.length)]).join('');
 }
 
+// Where a test says which rules report a value and no others, the random part is lower-case letters and digits: no
+// other rule's shape can turn up in it by chance. A body that began with a reCAPTCHA key's two characters was
+// reported by that rule too, once in about 4,000 runs.
 const generated = {
-  anthropic: () => 'sk-ant-' + randomBytes(30).toString('base64url'),
+  anthropic: () => 'sk-ant-' + randomFrom(LOWER_DIGITS, 40),
   openai: () => 'sk-proj-' + randomBytes(30).toString('base64url'),
   aws: () => 'AKIA' + randomFrom(UPPER_DIGITS, 16),
   github: () => 'ghp_' + randomFrom(ALNUM, 36),
@@ -54,6 +57,11 @@ describe('patterns', () => {
     assert.deepEqual(rulesOf(hits), ['anthropic-key'], 'one key is reported by exactly one rule');
     assert.equal(hits[0].line, 1);
     assert.ok(!JSON.stringify(hits).includes(secret));
+  });
+
+  test('a key whose body has the shape of another key is reported by both rules', () => {
+    const secret = 'sk-ant-' + '6L' + randomFrom(LOWER_DIGITS, 38);
+    assert.deepEqual(rulesOf(scanText('src/app.js', `key: ${secret}`)), ['anthropic-key', 'recaptcha-key']);
   });
 
   for (const [name, make, rule] of [
@@ -134,7 +142,7 @@ describe('JSON and appsettings keys', () => {
         ClientSecret: 'short',
         AccessToken: 'value-' + FAKE_MARKER + '-123456',
         PasswordResetUrl: 'https://example.test/reset-password',
-        Description: randomFrom(ALNUM, 40),
+        Description: randomFrom(LOWER_DIGITS, 40),
       },
       null,
       2,
@@ -145,7 +153,7 @@ describe('JSON and appsettings keys', () => {
 
 describe('allowlist', () => {
   test('an allowlisted fingerprint is accepted, but only for its own path', () => {
-    const line = JSON.stringify({ ExampleToken: randomFrom(ALNUM, 20) });
+    const line = JSON.stringify({ ExampleToken: randomFrom(LOWER_DIGITS, 20) });
     const allowlist = [{ path: 'docs/example.md', sha256: fingerprint(line), reason: 'documented example' }];
     assert.deepEqual(scanText('docs/example.md', line, { allowlist }), []);
     assert.deepEqual(rulesOf(scanText('docs/other.md', line, { allowlist })), ['json-secret']);

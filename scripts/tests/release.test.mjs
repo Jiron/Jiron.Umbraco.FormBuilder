@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
-import { comparePacks, normalisedEntries, packsOf, propsVersion, releaseNotes, releaseVersion, unwrap } from '../release.mjs';
+import { comparePacks, normalisedEntries, packsOf, propsVersion, releaseNotes, releaseVersion, unwrap, wholeLinks } from '../release.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -109,6 +109,17 @@ describe('the notes of a release', () => {
   test("are the version's section without its heading, up to the next section", () => {
     assert.equal(releaseNotes('17.0.0-alpha.1', changelog), '### Added\n\n- Everything.\n');
     assert.equal(releaseNotes('17.0.0-alpha.2', changelog), '### Fixed\n\n- A fix.\n');
+  });
+
+  test('name a file of the repository at the tag, as a release is not in the tree, and leave other links', () => {
+    const at = 'https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/v17.0.0';
+    assert.equal(
+      wholeLinks('See [installation.md](docs/installation.md), [here](./docs/a.md#part) and [the licence](LICENSE.md).', '17.0.0'),
+      `See [installation.md](${at}/docs/installation.md), [here](${at}/docs/a.md#part) and [the licence](${at}/LICENSE.md).`,
+    );
+    const kept = 'See [a site](https://example.test/a.md), [mail](mailto:a@example.test), [above](#added) and [root](/Jiron).';
+    assert.equal(wholeLinks(kept, '17.0.0'), kept);
+    assert.equal(releaseNotes('17.0.0', '## [17.0.0] - 2026-11-26\n\n- Read [the guide](docs/guide.md).\n'), `- Read [the guide](${at}/docs/guide.md).\n`);
   });
 
   test('refuse a version without a section, or with an empty one', () => {

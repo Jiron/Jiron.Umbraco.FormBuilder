@@ -26,8 +26,8 @@ What Jiron Form Builder needs, what installing it adds to a site, and the few th
 dotnet add package Jiron.Umbraco.FormBuilder
 ```
 
-While only prereleases are published, add `--prerelease`. Build and start the site; no change to `Program.cs` is
-needed, because Umbraco discovers the package's composers by itself.
+Build and start the site; no change to `Program.cs` is needed, because Umbraco discovers the package's composers by
+itself.
 
 Each package carries its licence, the [PolyForm Perimeter License 1.0.1](../LICENSE.md), and asks for it to be
 accepted where the tool supports that, as Visual Studio does. The [licence FAQ](license-faq.md) explains it in plain

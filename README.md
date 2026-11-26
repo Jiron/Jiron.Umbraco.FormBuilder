@@ -12,8 +12,8 @@ Editors build forms in a **Form Builder** section of the backoffice, with pages,
 in on the website, in Razor or headless. The site's team reviews the entries, approves and exports them, and keeps
 personal data in check with the privacy tools.
 
-> **Status:** beta. The packages are on [NuGet](https://www.nuget.org/packages/Jiron.Umbraco.FormBuilder) as
-> prereleases.
+> **Status:** stable since 17.0.0. The packages are on
+> [NuGet](https://www.nuget.org/packages/Jiron.Umbraco.FormBuilder).
 
 New here? [Getting started](docs/getting-started.md) takes about ten minutes.
 
@@ -88,7 +88,7 @@ More in [docs/screenshots](docs/screenshots/), and on the documentation's pages.
 You need Umbraco 18.1 or later (within 18) on .NET 10, with SQLite or SQL Server. In the site's project folder:
 
 ```
-dotnet add package Jiron.Umbraco.FormBuilder --prerelease
+dotnet add package Jiron.Umbraco.FormBuilder
 ```
 
 Start the site and choose **Form Builder** in the backoffice's top bar: its setup checklist leads you to a first form.

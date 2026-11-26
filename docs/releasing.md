@@ -1,8 +1,9 @@
 # Releasing
 
 For contributors and the owner: how a Jiron Form Builder version is built, packed and released, and the steps only the
-owner takes to publish it ([ADR-0247](decisions/0247-the-release-workflow.md)). Nothing is published during the build:
-the publish job stays off until the owner turns it on ([OWNER-TODO](OWNER-TODO.md)).
+owner takes to publish it ([ADR-0247](decisions/0247-the-release-workflow.md)). Publishing is on since 2026-11-25:
+every version tag's run pushes its packages to nuget.org, where a version stays for good, so a tag is pushed on the
+owner's word only.
 
 ## What the release workflow does
 
@@ -19,8 +20,9 @@ the publish job stays off until the owner turns it on ([OWNER-TODO](OWNER-TODO.m
    [ADR-0246](decisions/0246-the-packages-and-their-listings.md)). The files are kept as the run's `release-packages`
    artifact.
 4. **Draft release.** It creates a **draft** GitHub Release for the tag with the `.nupkg` and `.snupkg` files attached
-   and the version's section of `CHANGELOG.md` as its notes (`node scripts/release.mjs notes`). A version with a suffix
-   (`-alpha.1`) is marked as a prerelease. Nobody sees a draft until it is published by hand.
+   and the version's section of `CHANGELOG.md` as its notes (`node scripts/release.mjs notes`), in which a link to a
+   file of the repository names that file at the tag. A version with a suffix (`-alpha.1`) is marked as a
+   prerelease. Nobody sees a draft until it is published by hand.
 5. **Publish**, only when the repository variable `JFB_NUGET_PUBLISH` is `true`: it signs in to nuget.org with trusted
    publishing (`NuGet/login`, a key valid for one hour, no stored secret) and pushes the packages with their symbols
    (`dotnet nuget push --skip-duplicate`). Until then the job is skipped.

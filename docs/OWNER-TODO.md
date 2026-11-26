@@ -132,15 +132,16 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   environment `nuget`, then set the repository variables `JFB_NUGET_USER` (the nuget.org profile name) and
   `JFB_NUGET_PUBLISH` (`true`) (ROADMAP D17, §3.5, ADR-0247). [Releasing](releasing.md#turning-on-publishing-owner)
   walks through it.
-- [ ] **List on the Umbraco Marketplace: it waits for the first stable version, which is yours to call.**
+- [ ] **List on the Umbraco Marketplace: `17.0.0`, the first stable version, is on nuget.org since 2026-11-26;
+  look at the two pages after the next daily scan (04:00 UTC).** You said "Yes, release 17.0.0" that day; the tag
+  `v17.0.0` is on `f2bb2c43`, its release run passed all 27 jobs and published the four packages, and its release
+  on GitHub is published.
   - **Validated on 2026-11-26** at marketplace.umbraco.com/validate, both packages at `17.0.0-beta.3`: the tag is
     found, each package reads its own listing from the repository's root (the add-on its own file, not the
     product's), both listings match the schema, and the NuGet readme is used. The one thing in the way, in the
     validator's words: a prerelease version is not imported. Without a version filled in, the validator finds
     no version at all, since every published one is a prerelease.
-  - **So the product appears with `17.0.0`** (or any version without a suffix): at the next daily scan at 04:00
-    UTC, or at once through the single-package sync that `docs/releasing.md` links to. Say when, and the
-    version is tagged; a published version cannot be taken back.
+  - **So the product appears with `17.0.0`:** at the next daily scan at 04:00 UTC.
   - **Then look at the two pages:** that the add-on shows as a sub-package of the product (ADR-0246), and that
     the screenshots and categories read well.
   - What was asked: `17.0.0-beta.3` is on nuget.org since 2026-11-25, published by its

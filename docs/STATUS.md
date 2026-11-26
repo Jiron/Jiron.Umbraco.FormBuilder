@@ -3,15 +3,15 @@
 Where Jiron Form Builder stands at the end of its first build, on 2026-11-26, after the pass that made its backoffice
 simpler to find a way through, the fix that lets a field be called anything, the work that brought the tests from
 hours to half an hour, the change that leads an administrator to a user group's permissions, the day its tests
-first passed on Linux and on SQL Server, the evening it went public and onto NuGet and the fixes of what its first
-site found: what was built, how it is tested, what the budgets measured, what it does not do yet, and what only you,
+first passed on Linux and on SQL Server, the evening it went public and onto NuGet, the fixes of what its first site
+found and its first stable version: what was built, how it is tested, what the budgets measured, what it does not do yet, and what only you,
 the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). **The repository is public since 2026-11-25, and
-`17.0.0-beta.3` is on nuget.org** (`Jiron.Umbraco.FormBuilder`, `.Core`, `.Web` and `.AI`), with its release on
-GitHub. `main` is the Umbraco 17 line and names `17.0.0-beta.3.dev`. The earlier tags have no release:
-`17.0.0-alpha.1` and `17.0.0-beta.1` failed their runs, and `17.0.0-beta.2` passed its run but was not published
-(below). `v18/main` is the Umbraco 18 line at `18.0.0-alpha.0`, unpublished.
+`17.0.0`, the first stable version, is on nuget.org since 2026-11-26** (`Jiron.Umbraco.FormBuilder`, `.Core`,
+`.Web` and `.AI`), with its release on GitHub. `main` is the Umbraco 17 line and names `17.0.1-dev`. Of the
+prereleases, `17.0.0-beta.3` is published too; the earlier tags have no release: `17.0.0-alpha.1` and
+`17.0.0-beta.1` failed their runs, and `17.0.0-beta.2` passed its run but was not published (below). `v18/main` is the Umbraco 18 line at `18.0.0-alpha.0`, unpublished.
 
 **The simpler backoffice you asked for on 2026-11-16 is built:** Phase 22 of the roadmap, four steps
 ([ADR-0254](decisions/0254-a-simpler-backoffice.md)). [The concept](ux/simpler-backoffice.md) says what became of each
@@ -113,10 +113,13 @@ two servers. What the first runs there found, each fixed at its cause:
   passed all 27 jobs and published the four packages, and a new project installs them from nuget.org with the
   README's command. Its release is published on GitHub as a prerelease with seven files; the draft of
   17.0.0-beta.2 was deleted on your word.
+- **The first stable version (2026-11-26).** On your word ("Yes, release 17.0.0") the tag `v17.0.0` was pushed on
+  `f2bb2c43`. Its release run passed all 27 jobs, which was also the first time the tests of Phase 27 ran on Linux
+  and on SQL Server, and published the four packages; its release on GitHub is published with seven files.
 
 **What the first site found is fixed (Phase 27, 2026-11-26).** The first site outside the demo took the package on
-2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in `main` and
-in no published version yet ([CHANGELOG.md](../CHANGELOG.md), "Unreleased").
+2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in 17.0.0, the
+first stable version ([CHANGELOG.md](../CHANGELOG.md)).
 
 - **For visitors.**
   - A send with no answer at all names the required fields, at each field and in the summary, where it only said
@@ -184,9 +187,17 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 27 (27.1), on 2026-11-26 on origin's
-`main` at `4d7fb549`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 3,448 s. Two runs before it had failed, on `810fa9e7`. The first stopped after two minutes: the machine
+The clean-clone verification of ROADMAP 20.1 ran last for the release of 17.0.0, on 2026-11-26 on origin's `main` at
+`f2bb2c43`, the commit the tag is on, in a fresh clone with a NuGet cache of its own
+(`node scripts/verify-clean.mjs`). Every step passed, in 2,808 s, and the install tests then passed with exactly
+`17.0.0`, on Umbraco 17.7.1 and on the floor. Two runs before it had failed, on `f2b6ff8d`, the release's first
+commit. In the first, the CSV export of 10,000 entries took 6.0 s of its 5 s (2.3 s in the run before and 1.8 s in the
+run after), while another project's tests had started on this machine beside it. The second met a test of the secret
+scan that failed by chance about once in 4,000 runs: its random key began like another kind of key and was reported by
+both rules; the test now builds keys that cannot (`f2bb2c43`).
+
+At the end of Phase 27 (27.1) the verification had passed the same day on `4d7fb549`, in 3,448 s, after two failed
+runs on `810fa9e7`. The first stopped after two minutes: the machine
 had no memory left to give, most of it held by another project's emulator, and the client's lint stopped for lack
 of it. The second passed everything but one browser test, an older one that reached the server's page of errors by
 pressing Send while the form's script was loading, which Phase 27 changed on purpose; it now gets there with the
@@ -199,14 +210,14 @@ Web 97.7%. At the end of Phase 26 the verification had passed on `58ffbe2c` in 3
 | Integration tests (.NET), on real Umbraco hosts with SQLite | 2,324 | 2,318 |
 | The AI add-on's tests (.NET) | 60 | 60 |
 | The client's tests (Vitest), with the shared vectors in the browser's engine | 6,387 in 240 files | 6,363 in 240 files |
-| The repository's scripts (Node) | 534 | 526 |
+| The repository's scripts (Node) | 535 | 526 |
 | The browser tests' own support (Node) | 86 | 86 |
 | The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 602 | 597 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
-| A pack of `17.0.0-dev.202611261404` | 4 packages | 4 packages |
+| A pack of `17.0.0-dev.202611261723` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,349 commits, clean | 1,340 commits, clean |
+| The secret scan of the whole history | 1,354 commits, clean | 1,340 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 5 below) | skipped |
 
 No test went: every count is the one before or higher, the added ones being the tests of what Phase 27 fixed. The
@@ -361,17 +372,18 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
 1. **Done on 2026-11-25:** the repository is public, private vulnerability reporting and Discussions are on, `main`
    and `v18/main` are protected from deletion and force pushes, the `Jiron.*` prefix is reserved, the
    trusted-publishing policy and the two variables are set, and `17.0.0-beta.3` is on nuget.org with its release on
-   GitHub. Every later version tag publishes; set `JFB_NUGET_PUBLISH` to anything but `true` to stop that.
+   GitHub. Every version tag publishes; set `JFB_NUGET_PUBLISH` to anything but `true` to stop that.
 2. **Done on 2026-11-26: contributors are welcome, without an agreement**
    ([ADR-0265](decisions/0265-contributions-without-an-agreement.md)). The guide, the commit check and CI are
    open to them; what is left is reviewing what comes in. The first pull request shows whether every job runs
    from a fork.
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true` and raise the Dependabot limits, so every push to
    `main` runs the tests; in a public repository the runs cost nothing.
-4. **Call the first stable version.** The Umbraco Marketplace lists no package that has prereleases only; both
-   listings pass its validator otherwise (2026-11-26), so the product appears there with `17.0.0`
-   ([releasing.md](releasing.md)). What the first site found is fixed and waits in `main` for that version; its
-   tag publishes to nuget.org for good, so it is pushed on your word only.
+4. **Done on 2026-11-26: `17.0.0`, the first stable version, is on nuget.org** with what the first site found.
+   **Look at the Umbraco Marketplace** after its next daily scan (04:00 UTC): the product and the AI add-on should
+   be listed now that a version without a suffix exists, the add-on as a sub-package of the product
+   ([OWNER-TODO.md](OWNER-TODO.md)). The site that runs the package can move from its development pack to
+   `17.0.0`.
 5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run
    of `node scripts/term-guard.mjs --history` with your own term list in `.private/terms.txt`; optionally the full
    code of conduct in the repository, and a question to Umbraco HQ about "Umbraco" in the package id. Throughout:
@@ -380,9 +392,9 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    docs.
 7. **Legal judgements** for a lawyer on the privacy defaults: retention, proof of double opt-in, shortened IP addresses,
    the confirmation mail, the insights beacon, one consent for two things, and sorting into Spam.
-8. **Before the first stable release,** decide whether paid add-ons will exist: it shapes the add-on packages,
-   and without a contributor agreement a paid add-on builds on the packages without taking others' code from
-   this repository. Before monetising anything, paid support and donations included, check the
+8. **If paid add-ons come** (you said on 2026-11-25: maybe, and then in a private repository): without a
+   contributor agreement a paid add-on builds on the packages without taking others' code from this repository.
+   Before monetising anything, paid support and donations included, check the
    Cyber Resilience Act.
 9. **Decisions for later:** an importer from other form systems, and publishing the docs on a site of their own.
 10. **Report to Umbraco HQ** the backoffice problems above; OWNER-TODO lists each with its measurements.

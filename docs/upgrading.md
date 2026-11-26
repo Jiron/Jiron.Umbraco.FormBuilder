@@ -91,9 +91,10 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
 
-### Unreleased
+### 17.0.0 (2026-11-26)
 
-What the first site outside the demo found. A site on an earlier prerelease keeps its forms, entries and settings.
+The first stable version, with what the first site outside the demo found. A site on a prerelease keeps its forms,
+entries and settings.
 
 - **Migrations:** none new. The plan still ends at `jfb-015-entry-site`; steps 2 and 3 (the default settings rows and
   the section grant) now write before they read, which a site that ran them never runs again.
