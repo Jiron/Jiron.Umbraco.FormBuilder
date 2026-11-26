@@ -1661,3 +1661,7 @@ its reason, and a handover block at the end of every phase.
   - **`main` moves on to `17.0.1-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.
   - **Left for the owner:** the Umbraco Marketplace's two pages after its next daily scan
     (`docs/OWNER-TODO.md`).
+- 2026-11-26 · the Umbraco 18 line has 17.0.0 merged in · 808c03b8 · `main` at `55964885` merged into `v18/main`
+  in a temporary clone; `Directory.Build.props` was the one conflict and keeps the 18 line's `18.0.0-alpha.0`.
+  There the script tests (535 passed, 1 skipped), the client's tests (6,396 in 241 files) and the unit tests
+  (9,273 passed, 17 skipped) passed. Pushed; the clone is removed.
