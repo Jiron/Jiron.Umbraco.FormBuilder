@@ -1590,3 +1590,7 @@ its reason, and a handover block at the end of every phase.
     `17.0.0-beta.3`, passes the tag, the project address, each package's own listing file and the schema, and
     says that a prerelease version is not imported. So nothing is missing in the packages; the listing waits for
     the first stable version, which is the owner's call (`docs/OWNER-TODO.md`, `docs/releasing.md`).
+- 2026-11-26 · owner message · "Fix the findings": the ten findings of the first site (2026-11-19, above) come
+  before `17.0.0`, which the Marketplace needs. Phase 27 is added with one step, 27.1, that holds all ten
+  (ADR-0197: never small steps); the logo stays as it is until the owner picks another (a sheet with the mark and
+  four sketches was sent, `.local/icons/ideas.png`).
