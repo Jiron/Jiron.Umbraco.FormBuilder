@@ -38,7 +38,13 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     builds, hosting, maintenance, add-ons, starter kits). If you want a community fork to be allowed
     when the project stops being maintained, it should cover that too (Perimeter has no such clause).
     Never edit the PolyForm text itself.
-- [ ] **Set up a contributor licence agreement before accepting outside contributions** (ROADMAP §3.6).
+- [x] **Decided by you on 2026-11-26: no contributor licence agreement**
+  ([ADR-0265](decisions/0265-contributions-without-an-agreement.md)). Contributions stay their authors' and come
+  in under the project's licence, so changing the licence of contributed code, or putting it into a product under
+  another licence, needs its authors' consent. `CONTRIBUTING.md`, the README, the licence FAQ and the pull request
+  template say so in the project's own words (worth a lawyer's look together with the summaries above); the commit
+  check accepts contributors, and a pull request runs CI. What was asked: **Set up a contributor licence agreement
+  before accepting outside contributions** (ROADMAP §3.6).
   - Under GitHub's inbound = outbound rule, contributions would arrive under Perimeter, which would stop
     you from relicensing them later.
   - Use a CLA with a perpetual, worldwide, royalty-free, **sublicensable** copyright and patent licence
@@ -63,8 +69,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Check the Cyber Resilience Act before monetising anything** (paid add-ons, paid support,
   possibly donations). Non-monetised software is generally out of scope (ROADMAP §3.6).
 - [ ] **Decide later whether to offer an importer** from other form systems as a separate package.
-- [ ] **Decide whether paid add-ons will exist** before the first stable release. It affects the CLA, the
-  CRA check above and how the add-on packages are shaped. The open-core suggestions written for Tandem
+- [ ] **Decide whether paid add-ons will exist** before the first stable release. It affects the CRA check above
+  and how the add-on packages are shaped. Without a contributor agreement (ADR-0265) a paid add-on may build on
+  the packages, but may not take code out of this repository that others wrote unless they agree. The open-core suggestions written for Tandem
   (`docs/research/open-core-plan.md` in that repository) apply here too. The build adds no paid features.
 
 ## Repository, CI and dependencies
@@ -125,7 +132,18 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   environment `nuget`, then set the repository variables `JFB_NUGET_USER` (the nuget.org profile name) and
   `JFB_NUGET_PUBLISH` (`true`) (ROADMAP D17, §3.5, ADR-0247). [Releasing](releasing.md#turning-on-publishing-owner)
   walks through it.
-- [ ] **List on the Umbraco Marketplace.** `17.0.0-beta.3` is on nuget.org since 2026-11-25, published by its
+- [ ] **List on the Umbraco Marketplace: it waits for the first stable version, which is yours to call.**
+  - **Validated on 2026-11-26** at marketplace.umbraco.com/validate, both packages at `17.0.0-beta.3`: the tag is
+    found, each package reads its own listing from the repository's root (the add-on its own file, not the
+    product's), both listings match the schema, and the NuGet readme is used. The one thing in the way, in the
+    validator's words: a prerelease version is not imported. Without a version filled in, the validator finds
+    no version at all, since every published one is a prerelease.
+  - **So the product appears with `17.0.0`** (or any version without a suffix): at the next daily scan at 04:00
+    UTC, or at once through the single-package sync that `docs/releasing.md` links to. Say when, and the
+    version is tagged; a published version cannot be taken back.
+  - **Then look at the two pages:** that the add-on shows as a sub-package of the product (ADR-0246), and that
+    the screenshots and categories read well.
+  - What was asked: `17.0.0-beta.3` is on nuget.org since 2026-11-25, published by its
   release run; the Marketplace is what is left. Run the validator at
   marketplace.umbraco.com/validate after the repository is public, for `Jiron.Umbraco.FormBuilder` and for
   `Jiron.Umbraco.FormBuilder.AI`; check that the add-on shows its own listing as a sub-package of the product, not the

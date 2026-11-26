@@ -331,12 +331,14 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    and `v18/main` are protected from deletion and force pushes, the `Jiron.*` prefix is reserved, the
    trusted-publishing policy and the two variables are set, and `17.0.0-beta.3` is on nuget.org with its release on
    GitHub. Every later version tag publishes; set `JFB_NUGET_PUBLISH` to anything but `true` to stop that.
-2. **Contributors.** You want to invite people to collaborate. Decide whether they sign a contributor licence
-   agreement: without one the core stays under its licence as it is for what others wrote; with one you keep the
-   right to change that. Then the commit identity check and `CONTRIBUTING.md` are opened to them.
+2. **Done on 2026-11-26: contributors are welcome, without an agreement**
+   ([ADR-0265](decisions/0265-contributions-without-an-agreement.md)). The guide, the commit check and CI are
+   open to them; what is left is reviewing what comes in. The first pull request shows whether every job runs
+   from a fork.
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true` and raise the Dependabot limits, so every push to
    `main` runs the tests; in a public repository the runs cost nothing.
-4. **Validate both Marketplace listings** at marketplace.umbraco.com/validate; new packages are synced daily
+4. **Call the first stable version.** The Umbraco Marketplace lists no package that has prereleases only; both
+   listings pass its validator otherwise (2026-11-26), so the product appears there with `17.0.0`
    ([releasing.md](releasing.md)).
 5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run
    of `node scripts/term-guard.mjs --history` with your own term list in `.private/terms.txt`; optionally the full
@@ -346,8 +348,9 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
    docs.
 7. **Legal judgements** for a lawyer on the privacy defaults: retention, proof of double opt-in, shortened IP addresses,
    the confirmation mail, the insights beacon, one consent for two things, and sorting into Spam.
-8. **Before the first stable release,** decide whether paid add-ons will exist: it shapes the contributor licence
-   agreement and the add-on packages. Before monetising anything, paid support and donations included, check the
+8. **Before the first stable release,** decide whether paid add-ons will exist: it shapes the add-on packages,
+   and without a contributor agreement a paid add-on builds on the packages without taking others' code from
+   this repository. Before monetising anything, paid support and donations included, check the
    Cyber Resilience Act.
 9. **Decisions for later:** an importer from other form systems, and publishing the docs on a site of their own.
 10. **Report to Umbraco HQ** the backoffice problems above; OWNER-TODO lists each with its measurements.

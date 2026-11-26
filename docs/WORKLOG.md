@@ -1575,3 +1575,18 @@ its reason, and a handover block at the end of every phase.
     until then `CONTRIBUTING.md` and the commit identity check stay closed to others (`docs/OWNER-TODO.md`).
   - A bare project that takes the package resolves the oldest Umbraco it allows, 17.6, and with it three audit
     warnings about packages Umbraco 17.6 brings; a site on a current 17 patch has newer ones.
+- 2026-11-26 · owner message · "Nah ni need for them to sign an agreement. Also ensure btw that forms will be
+  displayed in umbraco marketplace": two things, after the last step, so no step is added (ADR-0197).
+  - **Contributors without an agreement (ADR-0265).** `CONTRIBUTING.md`, the README, the licence FAQ and the pull
+    request template invite pull requests and say under which licence a contribution comes. The `pre-commit`
+    check no longer asks for the maintainer's identity: it asks everyone for one of GitHub's private commit
+    addresses, and a clone may allow its own address (`git config jfb.ownEmail true`), so a fresh clone on this
+    machine still refuses the global identity. `ci.yml` runs for pull requests against `main` and `v18/main`, so
+    a stranger's change is tested on a hosted runner and not here; that trigger passes the workflow checks and
+    has not been seen running, since no pull request exists. Checked: the identity and hook tests (20), the
+    scripts' tests, `check-workflows`, `link-check`. `v18/main` takes it with its next merge.
+  - **The Marketplace.** Its documentation asks for two things, the tag `umbraco-marketplace` and a dependency on
+    an `Umbraco.Cms.*` package; both installed packages have them since 18.1. Its validator, run on both at
+    `17.0.0-beta.3`, passes the tag, the project address, each package's own listing file and the schema, and
+    says that a prerelease version is not imported. So nothing is missing in the packages; the listing waits for
+    the first stable version, which is the owner's call (`docs/OWNER-TODO.md`, `docs/releasing.md`).

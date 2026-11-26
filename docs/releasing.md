@@ -105,7 +105,10 @@ licence texts ([OWNER-TODO](OWNER-TODO.md)). Then:
    before the variables were set stay unpublished, and `--skip-duplicate` leaves a version already on nuget.org alone.
 4. **The Marketplace** lists `Jiron.Umbraco.FormBuilder` and the AI add-on by their `umbraco-marketplace` tag, with the
    listings `umbraco-marketplace.json` and `umbraco-marketplace-jiron.umbraco.formbuilder.ai.json`: new packages are
-   synced daily at 04:00 UTC, known ones every two hours. Validate both at https://marketplace.umbraco.com/validate
-   first; the build checks them against the Marketplace's schema with `node scripts/check-marketplace.mjs`.
+   synced daily at 04:00 UTC, known ones every two hours. **It imports stable versions only:** a package whose
+   versions are all prereleases is not listed, so the listings appear with the first version without a suffix.
+   Validate both at https://marketplace.umbraco.com/validate first, with the version filled in while only
+   prereleases exist; the build checks them against the Marketplace's schema with
+   `node scripts/check-marketplace.mjs`.
 
 To stop publishing, set `JFB_NUGET_PUBLISH` to anything but `true`.
