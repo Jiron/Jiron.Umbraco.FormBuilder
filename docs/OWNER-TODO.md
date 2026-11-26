@@ -15,7 +15,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [x] **The name is decided (2026-10-20): Jiron Form Builder (`Jiron.Umbraco.FormBuilder`).** A
   descriptive name under your own name, chosen after name research (ROADMAP D1, §3.6). The GitHub
   repository is already renamed.
-- [ ] **Reserve the NuGet prefix `Jiron.`.** It stops anyone else from publishing `Jiron.*` packages,
+- [x] **Done by you, seen on nuget.org on 2026-11-25: the prefix `Jiron.*` is reserved,** for the organization
+  Ligata, which is therefore the owner of the packages. What was asked: **Reserve the NuGet prefix `Jiron.`.** It stops anyone else from publishing `Jiron.*` packages,
   and yours get the verified checkmark.
   1. Create a nuget.org organization "Jiron", with your account as admin.
   2. Email account@nuget.org with the owner name, the prefix `Jiron.*` (private), and links that show it
@@ -25,7 +26,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Publish the docs** under docs.jiron.dev/form-builder when you want a docs site; until then the
   Marketplace points to the repository's `docs/` (ROADMAP 18.1).
 
-- [ ] **Have a lawyer review the licence choice and texts** before the repository becomes public:
+- [ ] **Have a lawyer review the licence choice and texts.** You made the repository public on 2026-11-25 without
+  it, which nothing forbade; it matters on the day you want to hold someone to the licence:
   - **`LICENSE.md`:** Perimeter's "competes" clause against your intent. Agencies building and hosting
     client sites, paid add-ons and starter kits should be fine; selling Jiron Form Builder, publishing
     your own version of it (free or paid, open source or not) or offering any other competing product
@@ -36,7 +38,13 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     builds, hosting, maintenance, add-ons, starter kits). If you want a community fork to be allowed
     when the project stops being maintained, it should cover that too (Perimeter has no such clause).
     Never edit the PolyForm text itself.
-- [ ] **Set up a contributor licence agreement before accepting outside contributions** (ROADMAP §3.6).
+- [x] **Decided by you on 2026-11-26: no contributor licence agreement**
+  ([ADR-0265](decisions/0265-contributions-without-an-agreement.md)). Contributions stay their authors' and come
+  in under the project's licence, so changing the licence of contributed code, or putting it into a product under
+  another licence, needs its authors' consent. `CONTRIBUTING.md`, the README, the licence FAQ and the pull request
+  template say so in the project's own words (worth a lawyer's look together with the summaries above); the commit
+  check accepts contributors, and a pull request runs CI. What was asked: **Set up a contributor licence agreement
+  before accepting outside contributions** (ROADMAP §3.6).
   - Under GitHub's inbound = outbound rule, contributions would arrive under Perimeter, which would stop
     you from relicensing them later.
   - Use a CLA with a perpetual, worldwide, royalty-free, **sublicensable** copyright and patent licence
@@ -61,13 +69,14 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Check the Cyber Resilience Act before monetising anything** (paid add-ons, paid support,
   possibly donations). Non-monetised software is generally out of scope (ROADMAP §3.6).
 - [ ] **Decide later whether to offer an importer** from other form systems as a separate package.
-- [ ] **Decide whether paid add-ons will exist** before the first stable release. It affects the CLA, the
-  CRA check above and how the add-on packages are shaped. The open-core suggestions written for Tandem
+- [ ] **Decide whether paid add-ons will exist** before the first stable release. It affects the CRA check above
+  and how the add-on packages are shaped. Without a contributor agreement (ADR-0265) a paid add-on may build on
+  the packages, but may not take code out of this repository that others wrote unless they agree. The open-core suggestions written for Tandem
   (`docs/research/open-core-plan.md` in that repository) apply here too. The build adds no paid features.
 
 ## Repository, CI and dependencies
 
-- [ ] **Make the repository public** when ready, after Phase 22 of the roadmap (a simpler backoffice), as you decided
+- [x] **Done by you on 2026-11-25: the repository is public.** What was asked: **Make the repository public** when ready, after Phase 22 of the roadmap (a simpler backoffice), as you decided
   on 2026-11-16 (ADR-0254). The Umbraco Marketplace reads the listings
   `umbraco-marketplace.json` (the product) and `umbraco-marketplace-jiron.umbraco.formbuilder.ai.json` (the AI
   add-on, shown with the product) from the repository's root, and their screenshots from GitHub's raw addresses, so
@@ -79,18 +88,22 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     match two of them when upper and lower case are ignored, in four commits, and name no product. Your own list
     was never on this machine, so that run is still yours.
   - **What becomes visible with it:** the whole history, the plan and work log (`ROADMAP.md`, `CLAUDE.md`,
-    `GOAL.md`, `docs/WORKLOG.md`, this file), the logs of past workflow runs, and the two old branches
+    `docs/WORKLOG.md`, this file; `GOAL.md` too until you had it removed on 2026-11-26, and it stays in the history), the logs of past workflow runs, and the two old branches
     `wip/6.4i-sending` and `wip/8.6b-resume-control` (one commit each beyond `main`; delete them on GitHub if you
     do not want them shown).
   - **The same day:** apply for the `Jiron.` prefix above, or publish the first prerelease, so that nobody else
     can take the package names on nuget.org; then say so, and `SUPPORT.md`, `SECURITY.md` and the README's status
     line are changed to say what is true from then on.
-- [ ] **Repository settings:**
+- [x] **Done on 2026-11-25:** private vulnerability reporting and Discussions enabled by you; on your word, set up in
+  your browser: the ruleset `protect main` on `main` and `v18/main` (no deletion, no force push, nothing else, so
+  ordinary pushes go on), and the Sponsor button (`.github/FUNDING.yml` and the Sponsorships feature). What was
+  asked: **Repository settings:**
   - enable private vulnerability reporting (`SECURITY.md` points to it);
   - enable Discussions (the issue template links questions there);
   - protect `main`.
 - [ ] **Set `JFB_CI`, raise the Dependabot limit, and check the first CI run (including the SQL Server and
-  load-balancing jobs)** (ROADMAP 3.5, ADR-0032).
+  load-balancing jobs)** (ROADMAP 3.5, ADR-0032). Points 3 and 4 are done: Phase 26 read the first runs and made
+  them pass (ROADMAP 26.1). Points 1 and 2 are left.
   1. Set the repository variable `JFB_CI` to `true`, so pushes to `main` and `v18/main` run the jobs of
      `.github/workflows/ci.yml`. Until then only a run started by hand or a `v*` tag runs them.
   2. Raise `open-pull-requests-limit` in `.github/dependabot.yml` for each ecosystem (nuget, npm,
@@ -111,11 +124,27 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Publishing
 
-- [ ] **Create the nuget.org trusted-publishing policy** for this repository, the workflow `release.yml` and the
+- [x] **Done on 2026-11-25, on your word, in your browser:** the policy "Jiron.Umbraco.FormBuilder release" (package
+  owner Ligata, ids starting `Jiron.Umbraco.FormBuilder`, push of new packages and versions), the environment
+  `nuget` limited to tags `v*`, and both variables. Every version tag publishes from now on; set
+  `JFB_NUGET_PUBLISH` to anything but `true` to stop that. What was asked: **Create the nuget.org
+  trusted-publishing policy** for this repository, the workflow `release.yml` and the
   environment `nuget`, then set the repository variables `JFB_NUGET_USER` (the nuget.org profile name) and
   `JFB_NUGET_PUBLISH` (`true`) (ROADMAP D17, §3.5, ADR-0247). [Releasing](releasing.md#turning-on-publishing-owner)
   walks through it.
-- [ ] **Publish to NuGet and list on the Umbraco Marketplace.** Run the validator at
+- [ ] **List on the Umbraco Marketplace: it waits for the first stable version, which is yours to call.**
+  - **Validated on 2026-11-26** at marketplace.umbraco.com/validate, both packages at `17.0.0-beta.3`: the tag is
+    found, each package reads its own listing from the repository's root (the add-on its own file, not the
+    product's), both listings match the schema, and the NuGet readme is used. The one thing in the way, in the
+    validator's words: a prerelease version is not imported. Without a version filled in, the validator finds
+    no version at all, since every published one is a prerelease.
+  - **So the product appears with `17.0.0`** (or any version without a suffix): at the next daily scan at 04:00
+    UTC, or at once through the single-package sync that `docs/releasing.md` links to. Say when, and the
+    version is tagged; a published version cannot be taken back.
+  - **Then look at the two pages:** that the add-on shows as a sub-package of the product (ADR-0246), and that
+    the screenshots and categories read well.
+  - What was asked: `17.0.0-beta.3` is on nuget.org since 2026-11-25, published by its
+  release run; the Marketplace is what is left. Run the validator at
   marketplace.umbraco.com/validate after the repository is public, for `Jiron.Umbraco.FormBuilder` and for
   `Jiron.Umbraco.FormBuilder.AI`; check that the add-on shows its own listing as a sub-package of the product, not the
   product's (ADR-0246). The build checks both listings against the Marketplace's schema
@@ -238,7 +267,9 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   render as intended on GitHub, and once the first prerelease is on nuget.org, that `docs/README.nuget.md`
   renders there with working links. The build checks both only through a local renderer
   (`node scripts/render-markdown.mjs`).
-- [ ] **The first release run: check the draft release.** The tag `v17.0.0-alpha.1` was pushed on 2026-11-13
+- [x] **Done on 2026-11-25:** the release run of `v17.0.0-beta.2` was the first to draft its release (seven files
+  and the changelog's notes, read in your browser); the release of `v17.0.0-beta.3` is published, and the draft of
+  17.0.0-beta.2 deleted on your word. What was asked: **The first release run: check the draft release.** The tag `v17.0.0-alpha.1` was pushed on 2026-11-13
   (ROADMAP 18.4), which starts the release workflow once, even before `JFB_CI` is set (if Actions are enabled for the
   repository at all). In GitHub, open **Actions › Release**: the run checks the version and its changelog section,
   runs CI, packs the four packages and drafts a release. Then open **Releases**: the draft should hold seven
@@ -258,7 +289,8 @@ keeps its defaults meanwhile, and `docs/privacy/` describes them; a site can cha
   **Fixed on 2026-11-23 (ROADMAP 26.1; you: "Yes, fix CI"):** a dry run of the release workflow passed every job
   and packed, on `de208db2` (Actions › Release, run #6). The tags `v17.0.0-alpha.1` and `v17.0.0-beta.1` stay
   without a release: a tag is never moved, and their commits fail the same way if run again.
-- [ ] **Decide when `v17.0.0-beta.2` is tagged: the account's Actions minutes for November are used up.** `main`
+- [x] **Decided on 2026-11-25: you made the repository public, and the tag was pushed that evening.** What was
+  asked: **Decide when `v17.0.0-beta.2` is tagged: the account's Actions minutes for November are used up.** `main`
   holds 17.0.0-beta.2 ready (its changelog section, its upgrade notes, its version; the install tests passed on it).
   Pushing the tag starts the release run, about 5 h 20 min of runner time over its 27 jobs. The account's
   included minutes for November are used up (they are the whole account's, not this repository's), nothing was

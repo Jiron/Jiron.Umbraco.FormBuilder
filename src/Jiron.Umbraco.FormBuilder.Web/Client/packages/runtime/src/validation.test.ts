@@ -175,12 +175,40 @@ describe('an empty submission', () => {
   it('links to the form on a page without a field that takes an answer', async () => {
     const intro: ModelPage[] = [
       { key: 'p1', groups: [{ key: 'g1', fields: [field('k-heading', 'heading', 'intro')] }] },
-      { key: 'p2', groups: [{ key: 'g2', fields: [field('k-name', 'text', 'name', { required: true })] }] },
+      { key: 'p2', groups: [{ key: 'g2', fields: [field('k-name', 'text', 'name')] }] },
     ];
     const form = formOf(`
       <section data-jfb-page="p1"><div data-jfb-group="g1"><div data-jfb-field="k-heading"><h2>Hi</h2></div></div></section>
       <section data-jfb-page="p2" hidden data-jfb-hidden><div data-jfb-group="g2">${text('k-name', 'name', 'Name')}</div></section>`);
     expect((await checked(form, modelOf(intro), 'send')).map((error) => error.target)).toEqual(['jfb-1']);
+  });
+
+  it('names a required field on another page, as a send with one answer does (ADR-0266)', async () => {
+    const intro: ModelPage[] = [
+      { key: 'p1', groups: [{ key: 'g1', fields: [field('k-heading', 'heading', 'intro')] }] },
+      { key: 'p2', groups: [{ key: 'g2', fields: [field('k-name', 'text', 'name', { required: true })] }] },
+    ];
+    const form = formOf(`
+      <section data-jfb-page="p1"><div data-jfb-group="g1"><div data-jfb-field="k-heading"><h2>Hi</h2></div></div></section>
+      <section data-jfb-page="p2" hidden data-jfb-hidden><div data-jfb-group="g2">${text('k-name', 'name', 'Name')}</div></section>`);
+    expect((await checked(form, modelOf(intro), 'send')).map((error) => [error.code, error.target])).toEqual([
+      ['required', 'jfb-1-name'],
+    ]);
+  });
+
+  it("leaves the send to the server when a required field's check is the server's, which names it or says the form is empty", async () => {
+    const files: ModelPage[] = [
+      {
+        key: 'p1',
+        groups: [
+          { key: 'g1', fields: [field('k-name', 'text', 'name'), field('k-cv', 'file', 'cv', { required: true })] },
+        ],
+      },
+    ];
+    const form = formOf(`
+      <section data-jfb-page="p1"><div data-jfb-group="g1">${text('k-name', 'name', 'Name')}
+        <div data-jfb-field="k-cv"><input type="file" name="cv"></div></div></section>`);
+    expect(await checked(form, modelOf(files), 'send')).toEqual([]);
   });
 
   it("is no error of Next's, which checks the page's fields", async () => {

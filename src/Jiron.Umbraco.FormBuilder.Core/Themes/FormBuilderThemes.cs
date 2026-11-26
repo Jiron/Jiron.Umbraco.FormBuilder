@@ -53,6 +53,12 @@ internal sealed partial class FormBuilderThemes
     // The characters of a URL path besides letters, digits and escapes (RFC 3986), which a stylesheet's address keeps to.
     private const string PathCharacters = "-._~!$&'()*+,;=:@/%";
 
+    // The characters of a URL query besides letters, digits and escapes (RFC 3986), which a stylesheet's query keeps to.
+    private const string QueryCharacters = "-._~!$&'()*+,;=:@/?";
+
+    // Where the package's own website assets are, which carry their own fingerprint.
+    private const string PackageAssets = "/jfb/assets/";
+
     private readonly FrozenDictionary<string, IFormBuilderTheme> _themes;
 
     private readonly ILogger<FormBuilderThemes> _logger;
@@ -140,9 +146,16 @@ internal sealed partial class FormBuilderThemes
                 problems.Add($"The theme '{theme.Name}' ({name}) has no label.");
             }
 
-            if (theme.Stylesheet is { } stylesheet && !IsLocalPath(stylesheet))
+            if (theme.Stylesheet is { } stylesheet && StylesheetParts(stylesheet) is var (path, query))
             {
-                problems.Add($"The theme '{theme.Name}' has the stylesheet '{stylesheet}': a stylesheet is a local path on the site, such as /css/forms.css, since nothing loads from another host on a visitor's page.");
+                if (!IsLocalPath(path) || (query is not null && !IsQuery(query)))
+                {
+                    problems.Add($"The theme '{theme.Name}' has the stylesheet '{stylesheet}': a stylesheet is a local path on the site, such as /css/forms.css, with a query if the site gives it one, such as /css/forms.css?v=3, since nothing loads from another host on a visitor's page.");
+                }
+                else if (query is not null && path.StartsWith(PackageAssets, StringComparison.OrdinalIgnoreCase))
+                {
+                    problems.Add($"The theme '{theme.Name}' has the stylesheet '{stylesheet}': a stylesheet below {PackageAssets} is one of the package's own, which carries its own fingerprint, so it takes no query.");
+                }
             }
 
             foreach (var (slot, classes) in theme.Classes ?? FrozenDictionary<string, string>.Empty)
@@ -199,6 +212,48 @@ internal sealed partial class FormBuilderThemes
     }
 
     // A path on the site: one leading slash, no second one after it, only a URL path's characters.
+    /// <summary>
+    /// A theme's stylesheet as its path and its query (27.1): the query is what follows the first <c>?</c>, as a site
+    /// fingerprints its file (<c>/css/forms.css?v=3</c>), and null when there is no <c>?</c>.
+    /// </summary>
+    /// <param name="stylesheet">The theme's stylesheet.</param>
+    internal static (string Path, string? Query) StylesheetParts(string stylesheet)
+    {
+        ArgumentNullException.ThrowIfNull(stylesheet);
+        var at = stylesheet.IndexOf('?', StringComparison.Ordinal);
+        return at < 0 ? (stylesheet, null) : (stylesheet[..at], stylesheet[(at + 1)..]);
+    }
+
+    // A query of one character at least, of the characters a URL's query takes, each escape a percent sign and two hex
+    // digits, so it is written as given.
+    private static bool IsQuery(string query)
+    {
+        if (query.Length == 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < query.Length; i++)
+        {
+            var character = query[i];
+            if (character == '%')
+            {
+                if (i + 2 >= query.Length || !char.IsAsciiHexDigit(query[i + 1]) || !char.IsAsciiHexDigit(query[i + 2]))
+                {
+                    return false;
+                }
+
+                i += 2;
+            }
+            else if (!char.IsAsciiLetterOrDigit(character) && !QueryCharacters.Contains(character, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static bool IsLocalPath(string path) =>
         path.Length > 1 && path[0] == '/' && path[1] != '/' && path.All(character => char.IsAsciiLetterOrDigit(character) || PathCharacters.Contains(character, StringComparison.Ordinal));
 

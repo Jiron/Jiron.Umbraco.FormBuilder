@@ -65,6 +65,13 @@ public sealed class FieldDisplay
     /// </summary>
     public bool IsListing { get; }
 
+    /// <summary>
+    /// Whether <see cref="Date"/> writes a date with its month's name and no weekday, the culture's medium format, as the
+    /// list of the answers does (<c>entry.answers</c>, <c>entry.table</c>, 27.1): a date in numbers alone reads as
+    /// another day in a culture that orders its parts otherwise.
+    /// </summary>
+    internal bool DatesInWords { get; init; }
+
     /// <summary>The word for a ticked box or a yes, in the culture.</summary>
     public string Yes => FieldDisplayWords.Yes(Culture);
 
@@ -132,13 +139,22 @@ public sealed class FieldDisplay
 
     /// <summary>
     /// A date, time or date-time in the wire form as the culture writes it: a date in its short format, a time in its
-    /// time format and both in its date-and-time format; as it is when it is none of them.
+    /// time format and both in its date-and-time format; in the list of the answers, a date in its medium format, with
+    /// the month's name, and a date-time as that date and the time; as it is when it is none of them.
     /// </summary>
     /// <param name="date">The date, time or date-time in the wire form.</param>
     public string Date(string date)
     {
         ArgumentNullException.ThrowIfNull(date);
-        var format = date.Length > 10 && date[10] == 'T' ? "dateTime" : date.Contains(':', StringComparison.Ordinal) ? "time" : "short";
+        var isDateTime = date.Length > 10 && date[10] == 'T';
+        if (DatesInWords && isDateTime
+            && CultureFormatting.FormatCalendar(date[..10], "medium", _formats) is { } day
+            && CultureFormatting.FormatCalendar(date[11..], "time", _formats) is { } time)
+        {
+            return day + " " + time;
+        }
+
+        var format = isDateTime ? "dateTime" : date.Contains(':', StringComparison.Ordinal) ? "time" : DatesInWords ? "medium" : "short";
         return CultureFormatting.FormatCalendar(date, format, _formats) ?? date;
     }
 

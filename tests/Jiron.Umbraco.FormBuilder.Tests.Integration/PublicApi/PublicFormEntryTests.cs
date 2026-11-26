@@ -324,7 +324,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
     }
 
     [Test]
-    public async Task AClosedForm_AFormForMembers_ATrashedForm_AndASubmissionWithoutAnAnswer_AreRefused_AndStoreNothing()
+    public async Task AClosedForm_AFormForMembers_ATrashedForm_AndASubmissionWithoutAnAnswer_AreRefused_WithTheRequiredFieldsWhereThereAreAny_AndStoreNothing()
     {
         var notYet = await PublishAsync("Not yet", change: definition => definition with
         {
@@ -337,6 +337,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
         var trashed = await PublishAsync("Trashed");
         await Forms.TrashAsync(trashed, (await Forms.GetAsync(trashed))!.ConcurrencyVersion, Editor);
         var open = await PublishAsync("Open", fields: [NameField, Email, Field("fullName", "name")]);
+        var asks = await PublishAsync("Asks", fields: [NameField with { Required = true }, Email, Field("fullName", "name") with { Required = true }]);
 
         var answers = new Dictionary<string, string>();
         foreach (var (what, form, body) in new[]
@@ -349,6 +350,9 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
             ("only empty answers", open, """{"revision":1,"values":{"name":"  ","email":null}}"""),
             ("only empty parts", open, """{"revision":1,"values":{"fullName.first":" ","fullName.last":""}}"""),
             ("no values", open, """{"revision":1}"""),
+            ("no answer at all where fields are required", asks, """{"revision":1,"values":{}}"""),
+            ("only empty answers where fields are required", asks, """{"revision":1,"values":{"name":"  ","email":null,"fullName.first":" "}}"""),
+            ("one answer where fields are required", asks, """{"revision":1,"values":{"email":"ada@example.com"}}"""),
         })
         {
             using var response = await PostAsync(form, body);
@@ -356,7 +360,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
         }
 
         var stored = 0;
-        foreach (var form in new[] { notYet, members, trashed, open })
+        foreach (var form in new[] { notYet, members, trashed, open, asks })
         {
             stored += (await Entries.ListIdsAsync((await FormRows.GetAsync(form))!.Id, 10)).Count;
         }
@@ -373,6 +377,9 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
                 ["only empty answers"] = "422 validation_failed empty at ",
                 ["only empty parts"] = "422 validation_failed empty at ",
                 ["no values"] = "422 validation_failed empty at ",
+                ["no answer at all where fields are required"] = "422 validation_failed required at name; required at fullName",
+                ["only empty answers where fields are required"] = "422 validation_failed required at name; required at fullName",
+                ["one answer where fields are required"] = "422 validation_failed required at name; required at fullName",
             }), string.Join(" | ", answers));
             Assert.That(stored, Is.Zero);
         });

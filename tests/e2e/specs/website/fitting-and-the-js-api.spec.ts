@@ -6,8 +6,9 @@ import { formPages, pathOf, type Language } from '../../support/demo-content.ts'
 import { fontsOf } from '../../support/fonts.ts';
 
 // Fitting a form to its page, and the developer surface (ROADMAP 6.4l, ADR-0022, section 4.9). The ground check: a form
-// with no scheme class on a dark ground gets `jfb-scheme-dark` and passes contrast, a form the site set stays as it is, and
-// a light page changes nothing. Step folding: six steps fold where a word of a name would break, and unfold when the window
+// with no scheme class on a dark ground gets `jfb-scheme-dark` and passes contrast, a form the site set stays as it is, a
+// light page changes nothing, a theme without a dark scheme keeps its light tokens on a dark page, and a form follows its
+// ground when the site's own switch changes it (27.1). Step folding: six steps fold where a word of a name would break, and unfold when the window
 // grows. `window.JironFormBuilder`: `init(root)` for a form added later, `get(form)` with `validate()`, `submit()` and
 // `values()`, and every DOM event of 6.4. The HTML of a page is changed on its way to the browser where the demo has no
 // such page, as all of this reads only what the page shows.
@@ -87,6 +88,35 @@ test.describe('the ground check', () => {
 
     expect(before).not.toContain('jfb-scheme');
     expect(await formOn(page).getAttribute('class')).toBe(before);
+  });
+
+  test('a form whose theme has no dark scheme keeps its light tokens on a dark page', async ({ page }) => {
+    await rewrite(page, (html) => html.replace(/(<html[^>]*?) class="jfb-scheme-dark"/, '$1'));
+    await page.goto(`${pathOfForm('contact')}?scheme=dark&theme=bootstrap5`);
+    await page.waitForFunction(() => 'JironFormBuilder' in window);
+    const form = formOn(page);
+    // The frame fits every form as it starts, before the first frame is drawn.
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+    await expect(form).toHaveClass(/jfb-theme-bootstrap5/);
+    await expect(form).toHaveAttribute('data-jfb-light-only', '');
+    await expect(form).not.toHaveClass(/jfb-scheme-dark/);
+  });
+
+  test("a form follows its ground when the site's own switch changes it, there and back", async ({ page }) => {
+    await page.goto(pathOfForm('contact'));
+    await page.waitForFunction(() => 'JironFormBuilder' in window);
+    const form = formOn(page);
+    await expect(form).not.toHaveClass(/jfb-scheme-dark/);
+
+    // The demo's own switch: a data attribute on <html> that its stylesheet darkens the page by.
+    await page.evaluate(() => document.documentElement.setAttribute('data-demo-scheme', 'dark'));
+    await expect(form, 'the site turned its page dark').toHaveClass(/(^| )jfb-scheme-dark( |$)/);
+    await page.waitForFunction(() => document.getAnimations().every((each) => each.playState !== 'running'));
+    await axe(page, 'a form after the switch to dark');
+
+    await page.evaluate(() => document.documentElement.removeAttribute('data-demo-scheme'));
+    await expect(form, 'and light again').not.toHaveClass(/jfb-scheme-dark/);
   });
 
   test('an outcome stands on the same ground as its form', async ({ page }) => {

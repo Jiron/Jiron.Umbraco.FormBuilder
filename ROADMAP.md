@@ -462,6 +462,7 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
 - **Contributions:** GitHub's terms make contributions inbound = outbound, which under Perimeter would leave the owner unable to relicense contributed code. Outside contributions therefore wait for a **contributor licence agreement**, an OWNER-TODO item with a lawyer:
   - under German law it must be a broad, sublicensable licence grant (§§ 29, 31(5), 31a UrhG), not an assignment;
   - it includes an original-work attestation.
+  - **Decided by the owner on 2026-11-26 (ADR-0265): no agreement.** Contributions are accepted as GitHub's terms bring them, under Perimeter; relicensing contributed code would need its authors' consent. `CONTRIBUTING.md`, the commit check and CI are open to contributors.
 - **The Cyber Resilience Act** (EU 2024/2847): reporting duties apply from 2026-09-11 and most obligations from 2027-12-11. Non-monetised software is generally outside its scope; any monetisation (paid add-ons, paid support, possibly donations) needs a check first (OWNER-TODO). Jiron Form Builder's `SECURITY.md` and vulnerability handling follow good practice either way.
 - **The Umbraco name:** Umbraco's brand rules forbid "Umbraco" in product names without permission and any suggestion of being part of Umbraco A/S.
   - The package id uses "Umbraco" only as a platform qualifier after the owner's prefix (`Jiron.Umbraco.FormBuilder`), a common pattern for community packages. The product name "Jiron Form Builder" never contains it.
@@ -507,7 +508,7 @@ Phase 1 turns this design into `docs/architecture.md` and ADRs, and Phase 2 turn
 
 ```
 Jiron.Umbraco.FormBuilder/
-├─ LICENSE.md  README.md  CLAUDE.md  ROADMAP.md  GOAL.md  CHANGELOG.md  SECURITY.md  SUPPORT.md
+├─ LICENSE.md  README.md  CLAUDE.md  ROADMAP.md  CHANGELOG.md  SECURITY.md  SUPPORT.md
 ├─ CONTRIBUTING.md  CODE_OF_CONDUCT.md  THIRD-PARTY-NOTICES.md
 ├─ umbraco-marketplace.json             # Marketplace metadata (read from the repo root once public)
 ├─ Jiron.Umbraco.FormBuilder.slnx
@@ -3501,7 +3502,7 @@ The owner, before the first release (2026-11-22): on the first site they made a 
 
 The owner, after 17.0.0-beta.1 was tagged (2026-11-23): "Yes, fix CI". Seen that day in the owner's browser (WORKLOG): the release run of `v17.0.0-beta.1` failed in CI, as the run of `v17.0.0-alpha.1` had, so neither tag has a draft release. It was the first time the workflow's tests ran on Linux and on SQL Server; everything before ran on one Windows machine with SQLite. What failed: a script test of the lanes' PID file on Linux; four rendering fixtures whose culture data (a time pattern, the countries) Linux writes differently; a time zone the browser lists under an older name, which a Linux server refuses; the blob store's tests without their emulator; on SQL Server, queries past their budget that are not stopped as the tests expect, a date outside SQL Server's `datetime` in the answers of Insights, and the answer summaries of 100,000 entries at 3.95 s against 1 s; and the browser jobs' test host, whose fake AI is set up before the AI package has made its tables. The owner allowed Docker on the development machine for Linux runs and the download of the run's artifact.
 
-- [~] **26.1 The workflow's tests pass on Linux and on SQL Server, a release run drafts its release, and phase review** (the owner, 2026-11-23)
+- [x] **26.1 The workflow's tests pass on Linux and on SQL Server, a release run drafts its release, and phase review** (the owner, 2026-11-23) (2026-11-26, 58ffbe2c)
   - **Each failure at its cause:** what is a fault of the product (the time zone on a Linux server, the date on SQL Server, a budget that does not stop a query there, if that is what it is) is fixed in the product with a test that fails without the fix; what is a fault of a test or of the workflow is fixed there. No test is skipped on a system to make it pass.
   - **No test depends on the system's culture data:** a fixture or an expectation that holds what the operating system's ICU writes (date and time patterns, region names, a culture's sort order) is compared so that Windows and Linux agree, and a test of the product's own says what it does with each form the systems write.
   - **Linux on the development machine:** a script runs the workflow's Linux steps in a container (the build job's checks and tests, the integration tests on SQLite, the browser smoke tests), so a Linux failure is found before a run on GitHub; `tests/README.md` says how. It makes no SQL Server.
@@ -3516,7 +3517,37 @@ The owner, after 17.0.0-beta.1 was tagged (2026-11-23): "Yes, fix CI". Seen that
     - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
     - `v18/main` has the step merged in, and its unit and client tests pass there;
     - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
+  - **Unblocked on 2026-11-25:** the owner made the repository public, where the runs cost nothing. The tag `v17.0.0-beta.2` was pushed that evening; its release run passed all 26 jobs and drafted a release with seven files, read in the owner's browser. On the owner's word publishing was turned on and `v17.0.0-beta.3`, the same code, followed: its run passed all 27 jobs and published the four packages to nuget.org. The clean-clone gate passed on `58ffbe2c` (3,170 s), `main` names `17.0.0-beta.3.dev`, and `v18/main` has it merged. What the note said while the step waited:
   - **Blocked on 2026-11-23 by an owner-only item:** every check above has passed but the tag's. A dry run of the release workflow passed every job and packed (`de208db2`), the clean-clone gate passed on the last work commit (`75b6c921`, 2,837 s, Core coverage 97.6%, name scan 0 hits), and 17.0.0-beta.2 is ready on `main` with its install tests passed. Its tag starts a release run of about 5 h 20 min of runner time, and the account's Actions minutes for November are used up; nothing was charged, and nothing runs until 1 December unless the owner adds a budget (`docs/OWNER-TODO.md`, "Decide when `v17.0.0-beta.2` is tagged"). On the owner's word: read the billing page, push the tag, read its run and its draft release, move `main` on to `beta.2.dev`, merge it into `v18/main`, and tick.
+
+### Phase 27: What the first site found
+
+The owner, before the first stable version (2026-11-26): "Fix the findings". The first site outside the demo took the package on 2026-11-19 and found ten things in it (WORKLOG, that day's two entries), which the owner had left until after the release. The Umbraco Marketplace lists a package from its first stable version (WORKLOG, 2026-11-26), so they come before `17.0.0`. Two of them a visitor meets: a send with no answer at all says only that the form is empty, never which fields are required, and the first press of Send on an untouched form posts the page, because the form's script starts loading on that same press. The others are a site developer's: warnings while the package's migrations are pending, a dark scheme given to a theme that has none, a theme stylesheet without a fingerprint, a setting without a configuration key, a table's dates, a migration step that loses its place beside a second process, and three things the guides do not say.
+
+- [ ] **27.1 The first site's ten findings are fixed or told, and phase review** (the owner, 2026-11-26)
+  - **An empty send names what is required (1):** a send with no answer at all, of a form with shown required fields, is refused with each such field's own error, at the field and in the error summary, as a send with one answer is; the general message for an empty form stays for a form that requires nothing. The same on the page without JavaScript, in the browser and from the public API, held by the shared vectors; ADR-0112's order is amended by an ADR.
+  - **The first press of Send (2):** a press of Send before the form's script is there is held, not posted: the script finishes loading and takes that same send, with the button the visitor pressed. Where the script cannot be loaded, the form posts as it does without JavaScript. No send is made twice.
+  - **Pending migrations are quiet (3):** while the package's tables are not there yet, a change of a content type writes no warning and no stack trace; what the change would have recorded is there once the migrations have run.
+  - **The ground check keeps to what a theme has (4):** a theme without a dark scheme never gets the dark scheme's class from the check, and a form the check fitted follows its ground when the site's own switch changes it, not only the system's.
+  - **A theme's stylesheet may carry a query (5):** a site's fingerprint (`?v=…`) is accepted and written as given; what the path refused before it still refuses.
+  - **The general settings from configuration (7):** a site's default time zone has a configuration key, used where none was saved, and the package's and the migration plan's names are public constants with XML docs; `docs/configuration.md` follows from the generator.
+  - **A table's dates in words (9):** `{{ entry.table }}` writes a date with its month's name in the entry's culture, never a form that reads as another day elsewhere; no test of it depends on a system's culture data (ADR-0263).
+  - **Migration steps write first (10):** a step that fills a table does it in one statement that reads nothing first, so beside a second process on the same SQLite file it waits its turn or fails at once; running it twice changes nothing.
+  - **Told (6, 8, 10):** `docs/rendering.md` says what `<jfb-assets />` writes on a page without a form and how a site limits it; `docs/installation.md` says what an unattended install does with the package's migrations, as seen on a throwaway site, and that two instances must not share one SQLite file during an upgrade. CHANGELOG, `docs/upgrading.md` and `docs/STATUS.md` follow, and `v18/main` gets it by merge.
+  - Done when:
+    - a send with no answer at all gets the required fields' errors from the submission pipeline, the page's post handler and the browser's checks, and the empty message where nothing is required, each with a test that fails without the fix; the shared vectors hold both cases for C# and the client;
+    - in a browser, with the form's script held back by the test, the first press of Send on an untouched form leaves the page where it is and shows the errors in place, a complete form is sent once (one entry), and with the script refused the form posts as without JavaScript;
+    - an integration test changes a content type while the package's migrations are pending and finds no warning in the log, and after the migrations what the change concerns is found;
+    - the ground check's unit tests cover a theme without a dark scheme on a dark ground (no class) and a ground that changes with a site's switch; in a browser a form of such a theme on a dark page keeps its light tokens;
+    - a theme stylesheet with a query renders with it, and the paths refused before are refused still, by unit tests;
+    - with the configuration key set and nothing saved, a site's time is read in that zone; a saved zone wins; a zone that does not exist is refused at start-up as other wrong settings are; the public API snapshot holds the constants;
+    - `{{ entry.table }}` of an entry in en-US and in de-DE writes the month by name, by a test that passes on Windows and in the Linux container;
+    - the step that fills the default settings is one statement, run twice leaves one row, and an upgrade from the first prerelease still passes (`node scripts/verify-clean.mjs` holds that);
+    - `docs/installation.md` says what was seen on a throwaway unattended install, and the docs' link check passes;
+    - the sizes stay inside section 4.12's budgets, and every rendering fixture is regenerated and read;
+    - the phase-review gate passes as the clean-clone verification of 20.1 (`node scripts/verify-clean.mjs`) on the final work commit, with Core coverage at 85% or more and the name scan at 0 hits; `docs/STATUS.md` names that run;
+    - `v18/main` has the step merged in, and its unit and client tests pass there;
+    - the handover note is written, both branches are pushed, and `node scripts/roadmap-status.mjs` shows `open=0` and `clean=yes` with `head` equal to `origin_main`.
 
 ---
 

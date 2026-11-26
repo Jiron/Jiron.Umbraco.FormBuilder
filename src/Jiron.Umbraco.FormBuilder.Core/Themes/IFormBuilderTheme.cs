@@ -20,8 +20,9 @@ public interface IFormBuilderTheme
     string Label { get; }
 
     /// <summary>
-    /// The address of the theme's stylesheet on the site, a local path such as <c>/css/acme-forms.css</c>, or null for
-    /// none. Nothing loads from another host on a visitor's page, so the registry refuses any other address.
+    /// The address of the theme's stylesheet on the site, a local path such as <c>/css/acme-forms.css</c>, with a query
+    /// where the site fingerprints its file, such as <c>/css/acme-forms.css?v=3</c>, written as given; or null for none.
+    /// Nothing loads from another host on a visitor's page, so the registry refuses any other address.
     /// </summary>
     string? Stylesheet { get; }
 

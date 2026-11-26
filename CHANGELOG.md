@@ -7,6 +7,55 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+What the first site outside the demo found. It adds no migration; a site that ran the earlier versions' migrations sees
+no difference in its database.
+
+### Added
+
+- **A default time zone from configuration:** `JironFormBuilder:General:DefaultTimeZone` is the time zone of a site
+  that has saved none in Settings › General, and the settings show it. A zone saved there, for every site or for one,
+  wins, and saving the General settings stores the zone they show. A zone the server does not know stops the site at
+  start-up, naming the key, as other wrong settings do.
+- **The package's and the migration plan's names are public:** `FormBuilderConstants.PackageName` and
+  `FormBuilderConstants.MigrationPlanName`, for a site that runs Umbraco's package migrations itself.
+- **A theme's stylesheet may carry a query,** so a site can fingerprint its file: `/css/forms.css?v=3` is accepted and
+  written as given. The path's rules are unchanged, and a stylesheet below `/jfb/assets/`, which has its fingerprint
+  already, takes none.
+
+### Changed
+
+- **A send with no answer at all names what is required.** It used to say only "Answer at least one question before you
+  send the form"; now it shows each required field's error, at the field and in the error summary, as a send with one
+  answer does, with or without JavaScript and from the public API (`required` errors in place of `empty`). The general
+  message stays for a form that requires nothing.
+- **`{{ entry.table }}` and `{{ entry.answers }}` write a date with its month's name,** in the entry's culture and
+  without the weekday, such as "Mar 4, 2026" or "4. März 2026", so it never reads as another day; a date and time as
+  that date and the time. A tag that names the field keeps the short format.
+- **The readmes say plainly that there is no warranty.** Jiron Form Builder is a hobby project that comes as is, as its
+  licence has always said, and no lawyer has checked its privacy-policy and accessibility statement templates or its
+  default texts; the templates and the licence FAQ say so too.
+
+### Fixed
+
+- **The first press of Send on an untouched form no longer posts the page.** The form's script loads on the visitor's
+  first touch, so that press came before it. It is now held while the script loads, and then the script takes it, with
+  the button pressed: the errors show in place, or the form is sent once. Where the script cannot load within ten
+  seconds, the form posts as it does without JavaScript, once; the `<jfb-form>` element's form, which has no address to
+  post to, goes on waiting for its script and says so if it cannot load.
+- **No dark scheme for a theme that has none.** The runtime gave a form `jfb-scheme-dark` on a dark background also in
+  `bootstrap5`, `unstyled` or a site's theme without a dark scheme, whose colours then mixed; such a form now keeps its
+  light colours. A form the runtime did switch now follows its background when the site's own light and dark switch
+  changes it (a class, `style` or `data-*` attribute of `<html>` or `<body>`), not only the system's scheme.
+- **Quiet while the migrations are pending.** Before the package's tables are there, a change of a document type, a page
+  saved or deleted, a member or a user group deleted wrote a warning with a stack trace each time (86 in one install),
+  and deleting a user group failed. They now do nothing and leave one line in the log; the "used on" rebuild the plan
+  asks for reads every page once it has run.
+- **Migration steps write first.** The steps that create the default settings rows and grant the Form Builder section
+  each wrote after reading; beside a second process on the same SQLite file such a step could lose its turn for good,
+  and Umbraco then retried it for minutes. They now write before they read, and running them twice still changes
+  nothing. Never let two instances share one SQLite file during an upgrade ([installation.md](docs/installation.md)).
+
+
 ## [17.0.0-beta.3] - 2026-11-25
 
 The first version on NuGet. Its packages hold the same code as 17.0.0-beta.2, which was tagged and whose release was

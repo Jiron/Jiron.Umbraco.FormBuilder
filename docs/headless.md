@@ -163,7 +163,10 @@ Refusals are `application/problem+json` with a stable `code`:
 
 For `validation_failed`, each error names the field by its alias path and the kind of problem, such as `required`,
 `maxLength` or `fileType`. Show the form's own message for it from the definition, not `message`, which is a line for
-developers.
+developers. A submission with no answer at all gets its required fields' errors, as one with a single answer does; only
+when no field has an error does it get the one error `empty` at the path `""`, which belongs to the form, not to a
+field ([ADR-0266](decisions/0266-an-empty-send-names-what-is-required.md)). Either way it is refused before its challenge
+and its captcha are checked, so it spends neither.
 
 | Status | Code | Means |
 | --- | --- | --- |

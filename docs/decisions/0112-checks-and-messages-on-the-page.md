@@ -6,6 +6,8 @@
 - Date: 2026-10-30
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a summary link names a label that recalls answers as
   it renders for the answers checked, an empty one as none
+- Amended in 27.1 by [ADR-0266](0266-an-empty-send-names-what-is-required.md): a send with no answer at all is checked
+  as any send and names its fields' errors; it is refused as empty only when no field has one
 - Roadmap step: 6.4d (decided and built); 6.4e shows the errors on the page, 6.4g names a label that recalls answers
   as the page shows it, 6.4i sends what passes
 

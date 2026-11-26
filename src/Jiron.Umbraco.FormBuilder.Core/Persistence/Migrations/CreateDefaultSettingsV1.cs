@@ -10,6 +10,12 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 /// missing property means "use the default", so these rows never freeze a default; they give every later save of a
 /// global section a row and a version to check. Idempotent: a section that already has its global row is skipped.
 /// </summary>
+/// <remarks>
+/// One statement writes every missing row and reads nothing before it (27.1): a step that counted first and then
+/// inserted held a read beside a second process writing the same SQLite file, which its insert could then never get
+/// past, so Umbraco retried it for minutes. Writing first, it waits its turn for the write lock as any write does, on
+/// SQLite and SQL Server alike.
+/// </remarks>
 internal sealed class CreateDefaultSettingsV1(IMigrationContext context, TimeProvider timeProvider) : AsyncMigrationBase(context)
 {
     /// <summary>The scope of the values every site shares.</summary>
@@ -21,28 +27,17 @@ internal sealed class CreateDefaultSettingsV1(IMigrationContext context, TimePro
     /// <inheritdoc />
     protected override async Task MigrateAsync()
     {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        var added = 0;
-        foreach (var section in Sections)
-        {
-            var existing = await Database.ExecuteScalarAsync<int>(
-                Sql().SelectCount().From<SettingDto>().Where<SettingDto>(row => row.Scope == GlobalScope && row.Section == section));
-            if (existing > 0)
-            {
-                continue;
-            }
+        var table = SqlSyntax.GetQuotedTableName(FormBuilderTables.Setting);
+        string C(string column) => SqlSyntax.GetQuotedColumnName(column);
 
-            await Database.InsertAsync(new SettingDto
-            {
-                Scope = GlobalScope,
-                Section = section,
-                SchemaVersion = 1,
-                Version = 1,
-                Json = "{}",
-                UpdatedUtc = now,
-            });
-            added++;
-        }
+        // @0 the scope, @1 the empty values, @2 the time, then each section's name as a row of its own.
+        var sections = string.Join(" UNION ALL ", Sections.Select((_, index) => $"SELECT @{index + 3} AS {C("section")}"));
+        object[] arguments = [GlobalScope, "{}", timeProvider.GetUtcNow().UtcDateTime, .. Sections];
+        var added = await Database.ExecuteAsync(Sql(
+            $"INSERT INTO {table} ({C("scope")}, {C("section")}, {C("schemaVersion")}, {C("version")}, {C("json")}, {C("updatedUtc")}) "
+            + $"SELECT @0, s.{C("section")}, 1, 1, @1, @2 FROM ({sections}) s "
+            + $"WHERE NOT EXISTS (SELECT 1 FROM {table} t WHERE t.{C("scope")} = @0 AND t.{C("section")} = s.{C("section")})",
+            arguments));
 
         FormBuilderMigrationLog.DefaultSettings(Logger, added);
     }

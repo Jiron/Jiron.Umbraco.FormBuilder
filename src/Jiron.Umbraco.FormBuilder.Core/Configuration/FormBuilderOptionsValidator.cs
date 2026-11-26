@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -15,7 +16,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Configuration;
 /// </summary>
 /// <param name="folders">The site's folders, for the file store's root.</param>
 /// <param name="section">The configuration the options are bound from, for keys they do not have.</param>
-internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigurationSection section) : IValidateOptions<FormBuilderOptions>
+/// <param name="links">The server's links between time zone names, for the default time zone; the system's when none is given.</param>
+internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigurationSection section, SystemTimeZoneLinks? links = null) : IValidateOptions<FormBuilderOptions>
 {
     /// <summary>The longest type alias and setting name of a designer lock.</summary>
     public const int MaxNameLength = 64;
@@ -47,6 +49,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             failures.Add(mirrorProblem);
         }
 
+        CheckGeneral(options.General, links ?? new SystemTimeZoneLinks(), failures);
         CheckFileLimits(options.Files, failures);
         CheckDefinitionLimits(options.Limits.Definitions, failures);
         CheckRateLimits(options.Limits, failures);
@@ -70,6 +73,16 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
     /// <summary>Whether <paramref name="setting"/> can name a setting: a lowercase letter, then letters and digits.</summary>
     internal static bool IsSettingName(string? setting) =>
         setting is { Length: > 0 and <= MaxNameLength } && char.IsAsciiLetterLower(setting[0]) && setting.All(char.IsAsciiLetterOrDigit);
+
+    // The default time zone, a zone this server knows in its exact spelling, as the General settings take one (27.1). An
+    // empty value is none, as a host's template writes a variable it leaves unset.
+    private static void CheckGeneral(FormBuilderGeneralOptions general, SystemTimeZoneLinks links, List<string> failures)
+    {
+        if (general.DefaultTimeZone is { Length: > 0 } zone && CalendarValues.FindExactTimeZone(zone, links) is null)
+        {
+            failures.Add($"{FormBuilderGeneralOptions.DefaultTimeZoneKey} ('{zone}') must be an IANA time zone this server knows, in its exact spelling, such as Europe/Berlin.");
+        }
+    }
 
     // The most bytes of a file and of what waits within their bounds, and each blocked extension lowercase letters and digits, once (ADR-0087).
     private static void CheckFileLimits(FormBuilderFilesOptions files, List<string> failures)

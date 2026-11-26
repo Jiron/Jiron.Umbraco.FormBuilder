@@ -1,15 +1,16 @@
 # Status
 
-Where Jiron Form Builder stands at the end of its first build, on 2026-11-23, after the pass that made its backoffice
+Where Jiron Form Builder stands at the end of its first build, on 2026-11-26, after the pass that made its backoffice
 simpler to find a way through, the fix that lets a field be called anything, the work that brought the tests from
-hours to half an hour, the change that leads an administrator to a user group's permissions and the day its tests
-first passed on Linux and on SQL Server: what was built, how it is tested, what the budgets measured, what it does
-not do yet, and what only you, the owner, can do next.
+hours to half an hour, the change that leads an administrator to a user group's permissions, the day its tests
+first passed on Linux and on SQL Server and the evening it went public and onto NuGet: what was built, how it is
+tested, what the budgets measured, what it does not do yet, and what only you, the owner, can do next.
 
-This report is the last step of [ROADMAP.md](../ROADMAP.md). `main` is the Umbraco 17 line and holds
-`17.0.0-beta.2`, ready and not yet tagged: its tag waits for the account's Actions minutes (below). Its prereleases
-`17.0.0-alpha.1` and `17.0.0-beta.1` are tagged, and neither has a release, as their runs failed. `v18/main` is the
-Umbraco 18 line at `18.0.0-alpha.0`. Nothing is published, and the repository is private.
+This report is the last step of [ROADMAP.md](../ROADMAP.md). **The repository is public since 2026-11-25, and
+`17.0.0-beta.3` is on nuget.org** (`Jiron.Umbraco.FormBuilder`, `.Core`, `.Web` and `.AI`), with its release on
+GitHub. `main` is the Umbraco 17 line and names `17.0.0-beta.3.dev`. The earlier tags have no release:
+`17.0.0-alpha.1` and `17.0.0-beta.1` failed their runs, and `17.0.0-beta.2` passed its run but was not published
+(below). `v18/main` is the Umbraco 18 line at `18.0.0-alpha.0`, unpublished.
 
 **The simpler backoffice you asked for on 2026-11-16 is built:** Phase 22 of the roadmap, four steps
 ([ADR-0254](decisions/0254-a-simpler-backoffice.md)). [The concept](ux/simpler-backoffice.md) says what became of each
@@ -102,6 +103,15 @@ two servers. What the first runs there found, each fixed at its cause:
   full runs and seven targeted ones; nothing was charged ([OWNER-TODO.md](OWNER-TODO.md)).
 - **Known and left:** on SQL Server the Answers view of 100,000 entries takes 3 to 5 s on a hosted runner, and a
   few deadlocks remain possible; both need a SQL Server to measure on.
+- **Public and published (2026-11-25).** You made the repository public, enabled private vulnerability reporting
+  and Discussions, and had the rest set up in your browser: the ruleset `protect main` (no deletion and no force
+  push on `main` and `v18/main`), the Sponsor button, nuget.org's trusted-publishing policy under the
+  organization that holds the `Jiron.*` prefix, the environment `nuget` for tags `v*`, and the two variables that
+  turn publishing on. The release run of `v17.0.0-beta.2` passed all its 26 jobs and drafted its release, the
+  first run to get that far, but had started before publishing was on. `v17.0.0-beta.3` is the same code: its run
+  passed all 27 jobs and published the four packages, and a new project installs them from nuget.org with the
+  README's command. Its release is published on GitHub as a prerelease with seven files; the draft of
+  17.0.0-beta.2 was deleted on your word.
 
 ## Contents
 
@@ -145,10 +155,13 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 26 (26.1), on 2026-11-23 on origin's
-`main` at `75b6c921`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
-passed, in 2,837 s, the browser tests on their first run. It was that day's sixth run of it, each on a later
-commit, and every one passed. The coverage was measured again, on `de208db2`: Core 97.6% of its lines.
+The clean-clone verification of ROADMAP 20.1 ran again at the end of Phase 26 (26.1), on 2026-11-25 on origin's
+`main` at `58ffbe2c`, in a fresh clone with a NuGet cache of its own (`node scripts/verify-clean.mjs`). Every step
+passed, in 3,170 s. The run before it, on `355c7f31`, had failed: one client test of the AI add-on named a limit of
+30 s, half of what the run gives every test, and ran out of it while other work loaded the machine; it has the
+run's minute now. On 2026-11-23 the verification had passed six times, last on `75b6c921` in 2,837 s. The coverage
+was measured on `de208db2`: Core 97.6% of its lines; since then one local variable was renamed in Core and no
+statement added or removed.
 
 | What ran | Count | At the end of Phase 25 |
 | --- | --- | --- |
@@ -163,8 +176,8 @@ commit, and every one passed. The coverage was measured again, on `de208db2`: Co
 | A pack of `17.0.0-dev.202611231800` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,329 commits, clean | 1,305 commits, clean |
-| The term guard of the whole history | skipped: your private term list is not on this machine (item 1 below) | skipped |
+| The secret scan of the whole history | 1,340 commits, clean | 1,305 commits, clean |
+| The term guard of the whole history | skipped: your private term list is not on this machine (item 5 below) | skipped |
 
 No test went: every count is the one before or higher, the added ones being the tests of what Phase 26 fixed and of
 its tools.
@@ -314,29 +327,30 @@ how to repeat it. Sizes are gzip.
 
 Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its steps. A sensible order:
 
-1. **Before the repository goes public:**
-   - have a lawyer review the licence and its plain-language summaries, and draft an optional additional permission;
-   - set up a contributor licence agreement, then let the commit identity check accept contributors' names;
-   - run `node scripts/term-guard.mjs --history` with your term list in `.private/terms.txt`;
-   - optionally: put the full code of conduct in the repository; ask Umbraco HQ about "Umbraco" in the package id.
-   - Throughout: never call Jiron Form Builder "open source"; it is free and source-available.
-2. **Make the repository public,** then in its settings enable private vulnerability reporting and Discussions, and
-   protect `main`.
-3. **Turn on CI:** set the repository variable `JFB_CI` to `true`, raise the Dependabot limits, and check the first run:
-   the first on Linux, and the first of the parts above that never ran.
-4. **Say when `v17.0.0-beta.2` is tagged:** its release run needs about 5 h 20 min of runner time, and the
-   account's minutes for November are used up. On 1 December they are there again; in a public repository the
-   run costs nothing, and a budget for Actions would allow it sooner too. Then check its draft release: seven
-   files and the changelog's notes. The tags
-   `v17.0.0-alpha.1` and `v17.0.0-beta.1` have no release and get none.
-5. **Publishing:** reserve the NuGet prefix `Jiron.`, create the trusted-publishing policy and set `JFB_NUGET_USER` and
-   `JFB_NUGET_PUBLISH`, then publish and validate both Marketplace listings ([releasing.md](releasing.md)).
+1. **Done on 2026-11-25:** the repository is public, private vulnerability reporting and Discussions are on, `main`
+   and `v18/main` are protected from deletion and force pushes, the `Jiron.*` prefix is reserved, the
+   trusted-publishing policy and the two variables are set, and `17.0.0-beta.3` is on nuget.org with its release on
+   GitHub. Every later version tag publishes; set `JFB_NUGET_PUBLISH` to anything but `true` to stop that.
+2. **Done on 2026-11-26: contributors are welcome, without an agreement**
+   ([ADR-0265](decisions/0265-contributions-without-an-agreement.md)). The guide, the commit check and CI are
+   open to them; what is left is reviewing what comes in. The first pull request shows whether every job runs
+   from a fork.
+3. **Turn on CI:** set the repository variable `JFB_CI` to `true` and raise the Dependabot limits, so every push to
+   `main` runs the tests; in a public repository the runs cost nothing.
+4. **Call the first stable version.** The Umbraco Marketplace lists no package that has prereleases only; both
+   listings pass its validator otherwise (2026-11-26), so the product appears there with `17.0.0`
+   ([releasing.md](releasing.md)).
+5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run
+   of `node scripts/term-guard.mjs --history` with your own term list in `.private/terms.txt`; optionally the full
+   code of conduct in the repository, and a question to Umbraco HQ about "Umbraco" in the package id. Throughout:
+   never call Jiron Form Builder "open source"; it is free and source-available.
 6. **Real-world checks** of the stubbed services and screen readers above, and of how GitHub and nuget.org render the
    docs.
 7. **Legal judgements** for a lawyer on the privacy defaults: retention, proof of double opt-in, shortened IP addresses,
    the confirmation mail, the insights beacon, one consent for two things, and sorting into Spam.
-8. **Before the first stable release,** decide whether paid add-ons will exist: it shapes the contributor licence
-   agreement and the add-on packages. Before monetising anything, paid support and donations included, check the
+8. **Before the first stable release,** decide whether paid add-ons will exist: it shapes the add-on packages,
+   and without a contributor agreement a paid add-on builds on the packages without taking others' code from
+   this repository. Before monetising anything, paid support and donations included, check the
    Cyber Resilience Act.
 9. **Decisions for later:** an importer from other form systems, and publishing the docs on a site of their own.
 10. **Report to Umbraco HQ** the backoffice problems above; OWNER-TODO lists each with its measurements.

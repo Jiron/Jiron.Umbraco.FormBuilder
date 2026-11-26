@@ -11,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 /// </summary>
 internal sealed record GeneralSettings : ISettingsSection
 {
-    /// <summary>The time zone of a site that has not chosen one.</summary>
+    /// <summary>The time zone of a site that has not chosen one, unless the host configuration gives another (<see cref="Configuration.FormBuilderGeneralOptions.DefaultTimeZone"/>).</summary>
     public const string DefaultTimeZone = "UTC";
 
     /// <inheritdoc />

@@ -9,7 +9,9 @@ easy to find, hand over and erase. This page is the tour of those tools. Three m
 - privacy-policy templates in [English](privacy/policy-template.en.md) and [German](privacy/policy-template.de.md), to
   adapt with your data protection adviser.
 
-None of this is legal advice: your site decides what it collects and why.
+None of this is legal advice, and no lawyer has checked these pages or the templates: your site decides what it
+collects and why, and whether that meets the law that applies to it is yours to check. They come without any warranty
+or liability, as the package does ([licence FAQ](license-faq.md#is-there-a-warranty)).
 
 ## Contents
 

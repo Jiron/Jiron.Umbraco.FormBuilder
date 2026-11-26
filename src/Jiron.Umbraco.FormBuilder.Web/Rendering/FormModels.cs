@@ -185,7 +185,8 @@ internal sealed partial class FormModels(
             // Only a form on show reads it, and a notice or an outcome must not give away what a visitor it does not admit may not see (ADR-0150).
             display == FormDisplay.Form ? ModelData.Of(render.Shown.Answer.Body) : HtmlString.Empty,
             parts,
-            classes);
+            classes,
+            !render.Theme.DarkScheme);
         var model = display switch
         {
             FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words, classes, root.Views, await CopyAsync(render, root, post.Outcome!.Copy, words, culture, cancellationToken))),
@@ -1066,7 +1067,8 @@ internal sealed partial class FormModels(
         string ApiBase,
         IHtmlContent ModelData,
         FormViewPaths Views,
-        ThemeClassesModel Classes)
+        ThemeClassesModel Classes,
+        bool IsLightOnly)
     {
         // The form's address opening at another element of the page than the form (ADR-0101).
         public string? At(string id) => Action is null ? null : Action[..(Action.LastIndexOf('#') + 1)] + id;
@@ -1109,6 +1111,7 @@ internal sealed partial class FormModels(
                 ModelData = ModelData,
                 Views = Views,
                 Classes = Classes,
+                IsLightOnly = IsLightOnly,
                 Pages = pages ?? [],
                 DefaultButton = defaultButton,
                 Progress = progress,

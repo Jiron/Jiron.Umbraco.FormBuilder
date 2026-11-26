@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { REQUIRED_EMAIL, REQUIRED_NAME } from '../lib/identity.mjs';
+import { MAINTAINER_EMAIL, MAINTAINER_NAME } from '../lib/identity.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
@@ -50,8 +50,8 @@ describe('the git hooks in a throwaway clone', () => {
     for (const folder of ['scripts', '.githooks']) {
       cpSync(join(ROOT, folder), join(clone, folder), { recursive: true, filter: (source) => !source.includes('node_modules') });
     }
-    execFileSync('git', ['config', 'user.name', REQUIRED_NAME], { cwd: clone });
-    execFileSync('git', ['config', 'user.email', REQUIRED_EMAIL], { cwd: clone });
+    execFileSync('git', ['config', 'user.name', MAINTAINER_NAME], { cwd: clone });
+    execFileSync('git', ['config', 'user.email', MAINTAINER_EMAIL], { cwd: clone });
     execFileSync('git', ['config', 'core.autocrlf', 'false'], { cwd: clone });
     execFileSync(process.execPath, ['scripts/install-hooks.mjs'], { cwd: clone, stdio: 'pipe' });
     mkdirSync(join(clone, '.private'), { recursive: true });
@@ -91,18 +91,18 @@ describe('the git hooks in a throwaway clone', () => {
       expect: /check-text: 1 problem/,
     },
     {
-      name: 'a commit made with another email address',
+      name: 'a commit made with a personal email address',
       file: 'other.md',
       content: () => 'harmless\n',
       options: { config: ['user.email=someone@example.invalid'] },
-      expect: /refused, the author is not .* and the committer is not/,
+      expect: /refused, the author's address is not .* and the committer's address is not/,
     },
     {
-      name: 'a commit with another author',
+      name: 'a commit whose author has a personal email address',
       file: 'author.md',
       content: () => 'harmless\n',
       options: { extra: ['--author', 'Someone Else <someone@example.invalid>'] },
-      expect: /refused, the author is not/,
+      expect: /refused, the author's address is not one of GitHub's private commit addresses\./,
     },
   ];
 
@@ -123,12 +123,30 @@ describe('the git hooks in a throwaway clone', () => {
     });
   }
 
-  test('accepts a clean commit with the right identity, so the refusals above are real', () => {
+  test("accepts a clean commit with the maintainer's identity, so the refusals above are real", () => {
     const before = head();
     const result = tryCommit('fine.md', 'all good\n', { message: 'docs: a clean commit' });
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     assert.notEqual(head(), before);
     const ident = git(['log', '-1', '--format=%an <%ae> | %cn <%ce>']).stdout.trim();
-    assert.equal(ident, `${REQUIRED_NAME} <${REQUIRED_EMAIL}> | ${REQUIRED_NAME} <${REQUIRED_EMAIL}>`);
+    assert.equal(ident, `${MAINTAINER_NAME} <${MAINTAINER_EMAIL}> | ${MAINTAINER_NAME} <${MAINTAINER_EMAIL}>`);
+  });
+
+  test("accepts a contributor's commit made with their private commit address", () => {
+    const before = head();
+    const address = '1234567+ada-example@users.noreply.github.com';
+    const config = ['user.name=Ada Example', `user.email=${address}`];
+    const result = tryCommit('contributed.md', 'a change\n', { message: 'docs: a contribution', config });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.notEqual(head(), before);
+    assert.equal(git(['log', '-1', '--format=%an <%ae>']).stdout.trim(), `Ada Example <${address}>`);
+  });
+
+  test('accepts a personal address once the clone allows its own address', () => {
+    const before = head();
+    const config = ['user.name=Ada Example', 'user.email=someone@example.invalid', 'jfb.ownEmail=true'];
+    const result = tryCommit('own.md', 'a change\n', { message: 'docs: under my own address', config });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.notEqual(head(), before);
   });
 });

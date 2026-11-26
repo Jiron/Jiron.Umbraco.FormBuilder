@@ -210,6 +210,10 @@ URLs, and a reader never sees a file that is still being written.
 
 `IFormBuilderTheme` names a stylesheet, a class map onto the slots of `FormBuilderThemeSlots`, tokens for the
 `--jfb-*` custom properties, a dark scheme (`DarkTokens`, `--jfb-color-*` only, with `DarkScheme` on) and a view folder.
+The stylesheet is a path on the site, such as `/css/acme-forms.css`, and may carry a query that fingerprints the file,
+such as `/css/acme-forms.css?v=3`: the query takes the characters a URL's query takes, each `%` followed by two hex
+digits, and no `#`; a stylesheet below `/jfb/assets/` is one of the package's own, which has its fingerprint already,
+and takes none. A theme without a dark scheme is never switched to dark by the runtime, on any background.
 The registry must keep a theme named `default`: replace it if you like, but don't remove it. A token's value is colours, sizes, keywords and quoted
 font names, calling only colour, arithmetic, `var()`, gradient and easing functions: no address, image set or escape, so
 nothing a token feeds (a `background`, say) loads from another host. The site does not start with a theme that breaks this.

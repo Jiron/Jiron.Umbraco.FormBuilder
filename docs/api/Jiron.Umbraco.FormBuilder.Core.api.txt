@@ -301,6 +301,11 @@ public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderDesi
   IList<DesignerSettingLock> SettingLocks { get; }
   ctor()
 
+public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderGeneralOptions
+  const string DefaultTimeZoneKey = "JironFormBuilder:General:DefaultTimeZone"
+  ctor()
+  string? DefaultTimeZone { get; set; }
+
 public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderLimitsOptions
   DefinitionLimits Definitions { get; }
   FormBuilderMailLimitsOptions Mail { get; }
@@ -332,6 +337,7 @@ public sealed class Jiron.Umbraco.FormBuilder.Core.Configuration.FormBuilderOpti
   FormBuilderDefinitionsOptions Definitions { get; }
   FormBuilderDesignerOptions Designer { get; }
   FormBuilderFilesOptions Files { get; }
+  FormBuilderGeneralOptions General { get; }
   FormBuilderLimitsOptions Limits { get; }
   FormBuilderPrivacyOptions Privacy { get; }
   FormBuilderPublicApiOptions PublicApi { get; }
@@ -2619,6 +2625,10 @@ public interface Jiron.Umbraco.FormBuilder.Core.Files.IFormBuilderFileStore
   Task DeleteAsync(string id, CancellationToken cancellationToken = default)
   Task SaveAsync(string id, Stream content, CancellationToken cancellationToken = default)
   Task<Stream?> OpenReadAsync(string id, CancellationToken cancellationToken = default)
+
+public static class Jiron.Umbraco.FormBuilder.Core.FormBuilderConstants
+  const string MigrationPlanName = "Jiron.Umbraco.FormBuilder"
+  const string PackageName = "Jiron Form Builder"
 
 public sealed record Jiron.Umbraco.FormBuilder.Core.Forms.CancelMessage
   bool Equals(CancelMessage? other)

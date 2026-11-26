@@ -46,7 +46,36 @@ The plan creates 25 tables, all named `jfb…`, and keeps its state in Umbraco's
 [database.md](database.md) describes each table and step.
 
 **While migrations are pending, Jiron Form Builder pauses:** visitors see no forms, nothing goes out, and the Overview
-says only that the migrations need to run. Nothing is half done.
+says only that the migrations need to run. Nothing is half done. Changes made in Umbraco meanwhile, such as a document
+type saved or a page deleted, write nothing to the package's tables, which are not there yet, and leave one line in the
+log, not a warning each; the plan's step that rebuilds which pages use which form reads every page once it has run.
+
+**An unattended install** (`Umbraco:CMS:Unattended:InstallUnattended` on, with the administrator's name, email and
+password in configuration) runs the plan in the same boot. Seen on throwaway sites with SQLite on Umbraco 17.6.2 and
+17.7.1: Umbraco installs the database, starts listening, and its unattended upgrade service runs the package's plan in
+the background a few seconds later, without waiting for a request; on a fresh database the plan took about 0.3
+seconds. For those few seconds after the site first answers, the package still counts as pending, as above. With
+`PackageMigrationsUnattended` off, the log says that package migrations need to run from the backoffice and the plan
+stays pending, for requests too; the next start with it on runs the plan as that boot starts, before the first request.
+
+A site with an install command of its own, such as a container's entry script that installs Umbraco and exits, may
+finish before Umbraco's background service gets to the plan. Run the plan there yourself after the install, from a
+small console or a start-up step of the site's code, with Umbraco's `PackageMigrationRunner`:
+
+```csharp
+// After Umbraco has installed the database, with Umbraco running.
+var results = await packageMigrationRunner.RunPackagePlansAsync([FormBuilderConstants.MigrationPlanName]);
+if (results.Any(result => !result.Successful)) { /* the plan failed: see the log, and run it again */ }
+```
+
+`FormBuilderConstants.PackageName` (`Jiron Form Builder`) is the name `RunPackageMigrationsIfPendingAsync` takes, and
+`FormBuilderConstants.MigrationPlanName` (`Jiron.Umbraco.FormBuilder`) the plan's name, which is also the key of its
+state in `umbracoKeyValue`. Otherwise the plan runs at the site's next normal start.
+
+**Never let two instances share one SQLite file while the plan runs,** as a host that starts the new container before
+it stops the old one does. The steps that fill tables write before they read, so a second writer makes them wait their
+turn rather than lose it, but SQLite takes one writer at a time, and a step that waits too long still fails. Stop the old instance first, or put
+the start of the new one behind the end of the old one; on SQL Server, upgrade one server first (below).
 
 ### What it adds
 

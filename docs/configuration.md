@@ -55,6 +55,14 @@ How the forms placed on the site's pages are written.
 | --- | --- | --- | --- |
 | `Rendering:IncludeAssetsAutomatically` | true or false | `true` | Whether a form placed on a page writes the tags that load the website runtime, the base rules and its theme's stylesheet, once per page, when its placement does not say: true by default. Turned off, a placement writes them only when it asks (assets="true" on &lt;jfb-render&gt;, assets = true for the view component), and the site loads them itself, with a &lt;jfb-assets&gt; in its layout for example. |
 
+## General
+
+The defaults of the General settings for a site that has saved none.
+
+| Key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `General:DefaultTimeZone` | text |  | The time zone of a site that has saved none, an IANA id in the server's exact spelling, such as Europe/Zurich: "today", opening dates and relative dates are in it. Missing or empty for UTC. A zone saved in the Form Builder section's General settings, for every site or for one, wins, and saving the General settings stores the zone they show. A zone the server does not know stops the site at start-up. |
+
 ## Files
 
 Where uploaded files are kept, how large one may be, and which extensions no field takes.

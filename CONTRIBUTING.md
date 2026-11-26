@@ -2,18 +2,28 @@
 
 Thank you for your interest. This page says how work is done in this repository.
 
-## Outside contributions are not open yet
+## Pull requests are welcome
 
-Pull requests from outside contributors can be accepted only once a contributor licence agreement exists
-(it is being prepared). Until then:
+Bugs and ideas go into issues and discussions ([SUPPORT.md](SUPPORT.md)), and security problems are reported
+privately ([SECURITY.md](SECURITY.md)). For a change of your own:
 
-- please open an issue to report a bug or suggest a feature (see [SUPPORT.md](SUPPORT.md));
-- please report security problems privately (see [SECURITY.md](SECURITY.md)).
+1. **Say what you plan first** when it is more than a small fix: open an issue or a discussion, so nobody builds
+   something that cannot be merged.
+2. **Fork the repository, work on a branch and open a pull request against `main`,** the Umbraco 17 line. The
+   maintainer carries merged changes over to `v18/main`, the Umbraco 18 line.
+3. **CI runs on the pull request;** for a first contribution GitHub asks the maintainer to approve the run. The
+   maintainer reviews every change, and the [code of conduct](CODE_OF_CONDUCT.md) applies to everyone.
 
 ## Licence and original work
 
 Jiron Form Builder is free and source-available under the [PolyForm Perimeter License 1.0.1](LICENSE.md). It
-is not "open source" in the OSI sense. Every contribution must be your own original work:
+is not "open source" in the OSI sense.
+
+There is no agreement to sign. By opening a pull request you confirm that you wrote the contribution yourself and may
+contribute it, and you agree that it is licensed under that same licence and distributed as part of Jiron Form
+Builder. It stays yours.
+
+Every contribution must be your own original work:
 
 - never copy, decompile or derive code, markup, styles, text or icons from another product, open or closed;
 - feature ideas may come from public descriptions, but write them down in your own words and design them
@@ -40,8 +50,19 @@ The `pre-commit` hook checks the commit identity and runs these checks on the st
 | `node scripts/term-guard.mjs` | terms from the maintainer's private list (skipped where the list is not present) |
 | `node scripts/check-text.mjs` | control characters, byte-order marks and damaged encodings, and non-ASCII characters in code |
 
-While the repository is being built, the identity check accepts only the maintainer's commit identity. It
-will be opened up together with outside contributions.
+**Your commit identity.** The history is public and cannot be rewritten, so the hook accepts a name with one of
+GitHub's private commit addresses. GitHub shows yours under **Settings › Emails** once "Keep my email addresses
+private" is on:
+
+```
+git config user.email "<id>+<login>@users.noreply.github.com"
+```
+
+To commit under your own address instead, allow it once in your clone:
+
+```
+git config jfb.ownEmail true
+```
 
 **Test values** that look like secrets must contain the marker `JFB_FAKE`, so the secret scan can tell them
 apart from real ones. Real keys never go into the repository, not even in tests.
@@ -152,8 +173,8 @@ afterwards and prints a summary; its logs land in `.local/verify/`.
 node scripts/verify-clean.mjs
 ```
 
-CI runs on a push only when the repository variable `JFB_CI` is `true`, and always when it is started by hand or for
-a version tag.
+CI runs for every pull request, for a version tag and when it is started by hand; on a push to `main` it runs only
+when the repository variable `JFB_CI` is `true`.
 
 **The demo site** (`demo/`, Umbraco 18 on SQLite at http://127.0.0.1:5541) is started, stopped and reset only with
 `scripts/demo.ps1`, which generates its accounts into the git-ignored `.local/credentials.json`;

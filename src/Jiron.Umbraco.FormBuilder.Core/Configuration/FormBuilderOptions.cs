@@ -22,6 +22,9 @@ public sealed class FormBuilderOptions
     /// <summary>How the forms placed on the site's pages are written.</summary>
     public FormBuilderRenderingOptions Rendering { get; } = new();
 
+    /// <summary>The defaults of the General settings for a site that has saved none.</summary>
+    public FormBuilderGeneralOptions General { get; } = new();
+
     /// <summary>Where uploaded files are kept, how large one may be, and which extensions no field takes.</summary>
     public FormBuilderFilesOptions Files { get; } = new();
 
@@ -114,6 +117,25 @@ public sealed class FormBuilderCaptchaKeys
     /// one on this machine, as the secret key goes with each token.
     /// </summary>
     public string? VerifyAddress { get; set; }
+}
+
+/// <summary>
+/// The defaults of the General settings (section 4.8): what a site's forms use where nothing is saved in the Form
+/// Builder section's settings. A value saved there, for every site or for one, wins; saving the General settings stores
+/// the values they show, these defaults among them.
+/// </summary>
+public sealed class FormBuilderGeneralOptions
+{
+    /// <summary>The configuration key of <see cref="DefaultTimeZone"/>.</summary>
+    public const string DefaultTimeZoneKey = FormBuilderOptions.SectionName + ":General:DefaultTimeZone";
+
+    /// <summary>
+    /// The time zone of a site that has saved none, an IANA id in the server's exact spelling, such as
+    /// <c>Europe/Zurich</c>: "today", opening dates and relative dates are in it. Missing or empty for UTC. A zone saved in the
+    /// Form Builder section's General settings, for every site or for one, wins, and saving the General settings stores
+    /// the zone they show. A zone the server does not know stops the site at start-up.
+    /// </summary>
+    public string? DefaultTimeZone { get; set; }
 }
 
 /// <summary>How the forms placed on the site's pages are written (section 4.8).</summary>

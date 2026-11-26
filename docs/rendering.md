@@ -137,6 +137,12 @@ same tags, for every form the page renders, including those in the body below it
 </head>
 ```
 
+**On a page that shows no form,** `<jfb-assets />` still writes the base stylesheet and the runtime script, though no
+theme's stylesheet, since no form uses a theme there. The script finds no form and loads nothing more, and the browser
+keeps both files for a year, so a visitor who goes on to a page with a form has them already. A site that wants neither
+on such pages puts `<jfb-assets />` only in the layout or template of the pages that show forms, or behind a condition of
+its own, or leaves it out and lets each form write its own tags just before it (the automatic tags above).
+
 A site that loads them itself turns the automatic tags off, and a placement then writes them only with
 `assets="true"`:
 
@@ -162,7 +168,7 @@ with it as with plain `.jfb-form` rules. The form element carries `jfb-theme-<al
 theme's class too.
 
 **A theme of your own** in code implements `IFormBuilderTheme`: its name and label, a stylesheet (a local path or
-none), classes for the slots of `FormBuilderThemeSlots` (such as `control`, `button-primary` or `error-summary`, added
+none; a query after the path, such as `/css/acme-forms.css?v=3`, fingerprints the file and is written as given), classes for the slots of `FormBuilderThemeSlots` (such as `control`, `button-primary` or `error-summary`, added
 to the package's own classes, never replacing them), tokens, whether it has a dark scheme, and its view folder.
 Register it with `builder.JironFormBuilder().Themes().Append<AcmeTheme>()`. The site refuses to start with a theme that
 breaks the rules, and says why ([extending.md](extending.md#themes-and-views)).
@@ -281,7 +287,10 @@ column lays out as on a phone. Typed text is never smaller than 16 px, and with 
 **Dark scheme:** the `default` theme has one, for a class on the form or any ancestor: `jfb-scheme-dark` always, or
 `jfb-scheme-auto` when the visitor's system asks for dark, such as `<html class="jfb-scheme-auto">`. A site that sets a
 colour sets it for the dark scheme too. Without a class, the runtime switches a form to dark by itself when it stands on
-a dark background; on a background image, set the class.
+a dark background, and back when the background turns light: when the system's scheme changes, when a site's own switch
+changes a class, a `style` or a `data-*` attribute of `<html>` or `<body>`, and when a background behind the form ends
+its colour transition. On a background image, set the class. A theme without a dark scheme (`unstyled`, `bootstrap5`, or
+a theme of your own whose `DarkScheme` is false) is never switched: its form element carries `data-jfb-light-only`.
 
 ## JavaScript
 

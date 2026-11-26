@@ -8763,6 +8763,394 @@
         "context": {},
         "query": {}
       }
+    },
+    {
+      "id": "an-empty-send-names-each-required-field",
+      "send": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "terms",
+            "type": "consent",
+            "required": true
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text",
+                "required": true
+              },
+              {
+                "alias": "diet",
+                "type": "text"
+              }
+            ]
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "required",
+            "path": "name"
+          },
+          {
+            "code": "required",
+            "path": "terms"
+          }
+        ]
+      }
+    },
+    {
+      "id": "blanks-and-a-consents-wording-are-empty-and-name-each-required-field-in-each-row",
+      "send": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "terms",
+            "type": "consent",
+            "required": true
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text",
+                "required": true
+              },
+              {
+                "alias": "diet",
+                "type": "text"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            "  \t\r\n "
+          ],
+          [
+            "story",
+            ""
+          ],
+          [
+            "jfb-consent-terms",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "jfb-rows-guests",
+            "2"
+          ],
+          [
+            "guests[1].diet",
+            "  \t\r\n "
+          ]
+        ]
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "required",
+            "path": "name"
+          },
+          {
+            "code": "required",
+            "path": "terms"
+          },
+          {
+            "code": "required",
+            "path": "guests[0].guest"
+          },
+          {
+            "code": "required",
+            "path": "guests[1].guest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a-send-with-one-answer-names-the-same-fields",
+      "send": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "terms",
+            "type": "consent",
+            "required": true
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text",
+                "required": true
+              },
+              {
+                "alias": "diet",
+                "type": "text"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "story",
+            "Hi"
+          ]
+        ]
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "required",
+            "path": "name"
+          },
+          {
+            "code": "required",
+            "path": "terms"
+          }
+        ]
+      }
+    },
+    {
+      "id": "an-answer-in-a-row-is-an-answer",
+      "send": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "terms",
+            "type": "consent",
+            "required": true
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text",
+                "required": true
+              },
+              {
+                "alias": "diet",
+                "type": "text"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].diet",
+            "vegan"
+          ]
+        ]
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "required",
+            "path": "name"
+          },
+          {
+            "code": "required",
+            "path": "terms"
+          },
+          {
+            "code": "required",
+            "path": "guests[0].guest"
+          }
+        ]
+      }
+    },
+    {
+      "id": "an-empty-send-of-a-form-that-requires-nothing-is-empty",
+      "send": {
+        "fields": [
+          {
+            "alias": "nickname",
+            "type": "text"
+          },
+          {
+            "alias": "note",
+            "type": "textarea"
+          },
+          {
+            "alias": "agree",
+            "type": "consent"
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "empty",
+            "path": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "blanks-and-a-consents-wording-of-a-form-that-requires-nothing-are-empty",
+      "send": {
+        "fields": [
+          {
+            "alias": "nickname",
+            "type": "text"
+          },
+          {
+            "alias": "note",
+            "type": "textarea"
+          },
+          {
+            "alias": "agree",
+            "type": "consent"
+          }
+        ],
+        "entries": [
+          [
+            "nickname",
+            "  \t\r\n "
+          ],
+          [
+            "note",
+            ""
+          ],
+          [
+            "jfb-consent-agree",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "problems": [
+          {
+            "code": "empty",
+            "path": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "one-answer-of-a-form-that-requires-nothing-passes",
+      "send": {
+        "fields": [
+          {
+            "alias": "nickname",
+            "type": "text"
+          },
+          {
+            "alias": "note",
+            "type": "textarea"
+          },
+          {
+            "alias": "agree",
+            "type": "consent"
+          }
+        ],
+        "entries": [
+          [
+            "note",
+            "Hi"
+          ]
+        ]
+      },
+      "expect": {
+        "problems": []
+      }
+    },
+    {
+      "id": "a-ticked-consent-alone-passes",
+      "send": {
+        "fields": [
+          {
+            "alias": "nickname",
+            "type": "text"
+          },
+          {
+            "alias": "note",
+            "type": "textarea"
+          },
+          {
+            "alias": "agree",
+            "type": "consent"
+          }
+        ],
+        "entries": [
+          [
+            "agree",
+            "true"
+          ],
+          [
+            "jfb-consent-agree",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "problems": []
+      }
     }
   ]
 }

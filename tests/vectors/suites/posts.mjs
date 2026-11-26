@@ -4,7 +4,10 @@
 // settings, a repeatable group's child fields) and the page's names and values in the order a browser posts them, and
 // expects `{ fields, rows, context, query }`: each field's answer by its alias as `{ values, parts? }` (parts as pairs
 // of a name and texts, in the order first posted), each repeatable group's rows of its children's answers, and the
-// context and query values by name. Every expectation is written out here, never computed by the code under test.
+// context and query values by name. A `send` case posts the same way to a form whose fields may be `required`, and
+// expects the problems the send is refused with as `{ code, path }`, in the form's order, none when it passes: a send
+// with no answer at all names its fields' errors as a send with one answer does, and the empty submission's problem
+// only when no field has one (ADR-0266). Every expectation is written out here, never computed by the code under test.
 // Special characters are built from code points, so this file stays ASCII.
 
 /** Text with code points written as {hex}, so this file stays ASCII. */
@@ -289,9 +292,45 @@ const signatures = [
   ),
 ];
 
+// Sends (ADR-0266): a form that requires a text, a consent and a guest's name in each row, and one that requires nothing.
+const requiring = [
+  { ...field('name', 'text'), required: true },
+  field('story', 'textarea'),
+  { ...field('terms', 'consent'), required: true },
+  field('guests', 'repeater', { minRows: 0, maxRows: 10 }, [{ ...field('guest', 'text'), required: true }, field('diet', 'text')]),
+];
+const optional = [field('nickname', 'text'), field('note', 'textarea'), field('agree', 'consent')];
+const send = (id, entries, problems, fields = requiring) => ({ id, send: { fields, entries }, expect: { problems } });
+const problem = (code, path) => ({ code, path });
+const blank = x('  {09}{0d}{0a} ');
+
+const sends = [
+  send('an-empty-send-names-each-required-field', [], [problem('required', 'name'), problem('required', 'terms')]),
+  send(
+    'blanks-and-a-consents-wording-are-empty-and-name-each-required-field-in-each-row',
+    [['name', blank], ['story', ''], ['jfb-consent-terms', hash], ['jfb-rows-guests', '2'], ['guests[1].diet', blank]],
+    [problem('required', 'name'), problem('required', 'terms'), problem('required', 'guests[0].guest'), problem('required', 'guests[1].guest')],
+  ),
+  send('a-send-with-one-answer-names-the-same-fields', [['story', 'Hi']], [problem('required', 'name'), problem('required', 'terms')]),
+  send(
+    'an-answer-in-a-row-is-an-answer',
+    [['jfb-rows-guests', '1'], ['guests[0].diet', 'vegan']],
+    [problem('required', 'name'), problem('required', 'terms'), problem('required', 'guests[0].guest')],
+  ),
+  send('an-empty-send-of-a-form-that-requires-nothing-is-empty', [], [problem('empty', '')], optional),
+  send(
+    'blanks-and-a-consents-wording-of-a-form-that-requires-nothing-are-empty',
+    [['nickname', blank], ['note', ''], ['jfb-consent-agree', hash]],
+    [problem('empty', '')],
+    optional,
+  ),
+  send('one-answer-of-a-form-that-requires-nothing-passes', [['note', 'Hi']], [], optional),
+  send('a-ticked-consent-alone-passes', [['agree', 'true'], ['jfb-consent-agree', hash]], [], optional),
+];
+
 export default {
   suite: 'posts',
   defaults: {},
   fields: {},
-  cases: [...texts, ...parts, ...strangers, ...rows, ...consents, ...switches, ...values, ...signatures],
+  cases: [...texts, ...parts, ...strangers, ...rows, ...consents, ...switches, ...values, ...signatures, ...sends],
 };

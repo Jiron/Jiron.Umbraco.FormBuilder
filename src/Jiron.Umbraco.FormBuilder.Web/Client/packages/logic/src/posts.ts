@@ -306,6 +306,14 @@ export function isEmptyPost(post: ReadPost): boolean {
 const isBlank = (text: string): boolean => clean(text).length === 0;
 
 /**
+ * What a send is refused with (ADR-0266), as Core's FormSubmissions decides it: its shown fields' errors when it has
+ * any, a send with no answer at all among them, and `empty` only for a send with no answer at all and no field's error.
+ */
+export function sendRefusal<E>(post: ReadPost, errors: readonly E[]): readonly E[] | 'empty' {
+  return errors.length === 0 && isEmptyPost(post) ? 'empty' : errors;
+}
+
+/**
  * A whole number as .NET reads one without styles: ASCII digits only, then any number of NUL characters, which .NET's
  * parsing passes over; at most 2,147,483,647.
  */

@@ -287,7 +287,12 @@ public sealed partial class FormBuilderThemesTests
     [TestCase("/assets/acme%20forms/forms.min.css")]
     [TestCase("/jfb/assets/themes/acme.css")]
     [TestCase("/a")]
-    public void ALocalPath_IsAStylesheet(string stylesheet) =>
+    [TestCase("/css/forms.css?v=abc")]
+    [TestCase("/css/forms.css?v=1&t=2")]
+    [TestCase("/css/forms.css?v=%C3%A9")]
+    [TestCase("/css/forms.css?3")]
+    [TestCase("/css/forms.css?v=a/b?c:d@e")]
+    public void ALocalPath_WithOrWithoutAQuery_IsAStylesheet(string stylesheet) =>
         Assert.That(FormBuilderThemes.Problems([.. BuiltIn, new Custom("acme") { Stylesheet = stylesheet }]), Is.Empty);
 
     [TestCase("https://cdn.example.com/forms.css")]
@@ -295,8 +300,18 @@ public sealed partial class FormBuilderThemesTests
     [TestCase("css/forms.css")]
     [TestCase("/")]
     [TestCase("")]
-    [TestCase("/forms.css?v=1")]
     [TestCase("/forms.css#top")]
+    [TestCase("/forms.css?")]
+    [TestCase("/forms.css?v=1#top")]
+    [TestCase("/forms.css?v=a b")]
+    [TestCase("/forms.css?v=%zz")]
+    [TestCase("/forms.css?v=%4")]
+    [TestCase("/forms.css?v=<x>")]
+    [TestCase("/forms.css?v=\"1\"")]
+    [TestCase("https://cdn.example.com/forms.css?v=1")]
+    [TestCase("//cdn.example.com/forms.css?v=1")]
+    [TestCase("?v=1")]
+    [TestCase("/?v=1")]
     [TestCase("/forms css.css")]
     [TestCase("/forms\".css")]
     [TestCase("/forms<x>.css")]
@@ -304,7 +319,14 @@ public sealed partial class FormBuilderThemesTests
     public void AnythingElse_IsRefused_SinceNothingLoadsFromAnotherHost(string stylesheet) =>
         Assert.That(FormBuilderThemes.Problems([.. BuiltIn, new Custom("acme") { Stylesheet = stylesheet }]), Is.EqualTo(new[]
         {
-            $"The theme 'acme' has the stylesheet '{stylesheet}': a stylesheet is a local path on the site, such as /css/forms.css, since nothing loads from another host on a visitor's page.",
+            $"The theme 'acme' has the stylesheet '{stylesheet}': a stylesheet is a local path on the site, such as /css/forms.css, with a query if the site gives it one, such as /css/forms.css?v=3, since nothing loads from another host on a visitor's page.",
+        }));
+
+    [Test]
+    public void APackageStylesheet_TakesNoQuery_AsItCarriesItsOwnFingerprint() =>
+        Assert.That(FormBuilderThemes.Problems([.. BuiltIn, new Custom("acme") { Stylesheet = "/JFB/assets/themes/acme.css?v=1" }]), Is.EqualTo(new[]
+        {
+            "The theme 'acme' has the stylesheet '/JFB/assets/themes/acme.css?v=1': a stylesheet below /jfb/assets/ is one of the package's own, which carries its own fingerprint, so it takes no query.",
         }));
 
     [TestCase("a")]

@@ -111,12 +111,23 @@ projects. You may not sell it, or publish your own version of it or any product 
 The [licence FAQ](docs/license-faq.md) answers the usual questions in plain words. It is not legal advice: the
 [PolyForm Perimeter License 1.0.1](LICENSE.md) governs.
 
+## No warranty
+
+Jiron Form Builder is a hobby project, built and looked after by one person in their spare time. As far as the law
+allows, it comes as is, without any warranty, and its author and contributors accept no liability for any damage that
+comes from using it; the licence's "No Liability" section says so in full.
+
+That holds for the texts as much as for the code. No lawyer has checked the privacy-policy templates, the accessibility
+statement template, the privacy pages or the default texts a form shows and sends. They are a starting point, not legal
+advice: what your site collects, what it tells its visitors and whether that meets the law that applies to you is
+yours to check, with an adviser of your own.
+
 ## Contributing
 
 Bug reports and ideas are welcome as issues ([SUPPORT.md](SUPPORT.md)), and security problems are reported privately
-([SECURITY.md](SECURITY.md)). Pull requests from outside contributors open once the contributor licence agreement is
-ready; [CONTRIBUTING.md](CONTRIBUTING.md) says how work is done here, and the
-[code of conduct](CODE_OF_CONDUCT.md) applies to everyone.
+([SECURITY.md](SECURITY.md)). Pull requests are welcome too, with no agreement to sign:
+[CONTRIBUTING.md](CONTRIBUTING.md) says how work is done here, and the [code of conduct](CODE_OF_CONDUCT.md) applies
+to everyone.
 
 The components the package ships with are listed with their licences in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

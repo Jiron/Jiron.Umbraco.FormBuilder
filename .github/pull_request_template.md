@@ -9,6 +9,8 @@
 ## Checklist
 
 - [ ] I wrote this myself and did not copy, decompile or derive it from proprietary software.
+- [ ] I agree that this contribution is licensed under the project's licence (`LICENSE.md`) and distributed as part of
+      Jiron Form Builder (`CONTRIBUTING.md`).
 - [ ] No secrets, personal data or real third-party keys are in this change (test fakes carry `JFB_FAKE`).
 - [ ] New dependencies have a licence the project accepts and are listed in `THIRD-PARTY-NOTICES.md`.
 - [ ] Every new behaviour has a test, and the docs are updated in the same change.

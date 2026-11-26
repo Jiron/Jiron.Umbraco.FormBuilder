@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence;
 
 /// <summary>
 /// The pending-migration state against a real database (ADR-0033): it notices a migration that ran on another server
-/// once its "pending" answer is a few seconds old, and it stays current once current.
+/// once its "pending" answer is a few seconds old, and it stays current once current; the package's tables are there
+/// from the plan's first step on, though later ones are pending (27.1).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -56,6 +57,26 @@ public sealed class MigrationStateTests : FormBuilderMigrationTestBase
         {
             Assert.That(withinInterval, Is.True, "the remembered answer");
             Assert.That(afterInterval, Is.False, "read again");
+        });
+    }
+
+    [Test]
+    public async Task TheTables_AreThereFromThePlansFirstStep_ThoughLaterOnesArePending()
+    {
+        var state = GetRequiredService<IFormBuilderMigrationState>();
+        var before = (await state.HasTablesAsync(), await state.IsPendingAsync());
+        await RunAsync(new TestPlan(1));
+        state.Invalidate();
+        var first = (await state.HasTablesAsync(), await state.IsPendingAsync());
+        await RunAsync(new FormBuilderMigrationPlan());
+        state.Invalidate();
+        var complete = (await state.HasTablesAsync(), await state.IsPendingAsync());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(before, Is.EqualTo((false, true)), "no state, no tables");
+            Assert.That(first, Is.EqualTo((true, true)), "the first step creates every table");
+            Assert.That(complete, Is.EqualTo((true, false)));
         });
     }
 

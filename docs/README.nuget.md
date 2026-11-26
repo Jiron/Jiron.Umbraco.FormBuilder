@@ -48,6 +48,9 @@ Jiron Form Builder is **free to use and change, including commercially; no selli
 [licence FAQ](https://github.com/Jiron/Jiron.Umbraco.FormBuilder/blob/main/docs/license-faq.md) explains it in plain
 words.
 
+It is a hobby project: as far as the law allows, it comes as is, without any warranty or liability, and no lawyer has
+checked its privacy templates or default texts. Whether your forms meet the law that applies to you is yours to check.
+
 Made by [Manassés Zähnler](https://jiron.dev) · [Ligata](https://ligata.ch). Issues and security reports go to the
 [repository](https://github.com/Jiron/Jiron.Umbraco.FormBuilder).
 

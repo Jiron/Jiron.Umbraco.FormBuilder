@@ -1556,3 +1556,58 @@ its reason, and a handover block at the end of every phase.
   publish job was skipped: the variable was set while the run was going, and a run reads its variables when it
   starts, which I had expected otherwise and told the owner so. **17.0.0-beta.3** is therefore the same code
   with the version moved on, so that a run that starts with publishing on publishes it.
+- 2026-11-26 · 26.1 The workflow's tests pass on Linux and on SQL Server, a release run drafts its release, and phase review · 58ffbe2c · the last check of the step ran on 2026-11-25, once the owner had made the repository public. **The release run of `v17.0.0-beta.3` (45709768067) passed all 27 jobs,** the publish job among them, its first time: the four packages are on nuget.org (read from its package index), and a new web project under `%TEMP%` took 17.0.0-beta.3 with the README's command and built. On the owner's word ("Ye publish 3 and delete 2 then") its release is published on GitHub as a prerelease with seven files and the draft of 17.0.0-beta.2 is deleted; its tag stays. **The clean-clone gate** failed once, on `355c7f31`: one client test of the AI add-on named a limit of 30 s, half of the run's, and ran out of it while another project's tests and an emulator loaded the machine (nothing of this repository was left running). With the run's minute (`1e185445`) the gate passed on `58ffbe2c` in 3,170 s: ci-local 2,202 s, pack 104 s, install 240 s, floor 289 s, upgrade 328 s, the secret scan of 1,340 commits clean; the name scan 0 hits. `main` names 17.0.0-beta.3.dev (ADR-0249). `v18/main` has it merged (`cd47d42c`, its own version kept): client tests, script tests and 9,228 unit tests passed there, 17 skipped as before.
+
+### Handover after Phase 26 (2026-11-26)
+
+- **State:** every step of ROADMAP.md is done and nothing is blocked. The repository is public, `17.0.0-beta.3` is
+  on nuget.org and released on GitHub, and `main` and `v18/main` are on origin. `docs/STATUS.md` names the runs.
+- **What changed outside the repository on 2026-11-25,** each on the owner's word: the repository's visibility and
+  two features (theirs), the ruleset `protect main`, the Sponsor button, nuget.org's trusted-publishing policy, the
+  environment `nuget` and the variables `JFB_NUGET_USER` and `JFB_NUGET_PUBLISH`. **Every `v*` tag now publishes to
+  nuget.org,** and a published version cannot be taken back: tag only on the owner's word.
+- **What to know:**
+  - A run reads its repository variables when it starts; set them before the tag.
+  - Runs, jobs and published releases are read signed out through GitHub's public API; logs, drafts and settings
+    still need the owner's browser and their word.
+  - `JFB_CI` is not set, so pushes to `main` run no tests on GitHub; the local gate is still the check.
+  - The owner wants to invite contributors and has not yet said whether with a contributor licence agreement;
+    until then `CONTRIBUTING.md` and the commit identity check stay closed to others (`docs/OWNER-TODO.md`).
+  - A bare project that takes the package resolves the oldest Umbraco it allows, 17.6, and with it three audit
+    warnings about packages Umbraco 17.6 brings; a site on a current 17 patch has newer ones.
+- 2026-11-26 · owner message · "Nah ni need for them to sign an agreement. Also ensure btw that forms will be
+  displayed in umbraco marketplace": two things, after the last step, so no step is added (ADR-0197).
+  - **Contributors without an agreement (ADR-0265).** `CONTRIBUTING.md`, the README, the licence FAQ and the pull
+    request template invite pull requests and say under which licence a contribution comes. The `pre-commit`
+    check no longer asks for the maintainer's identity: it asks everyone for one of GitHub's private commit
+    addresses, and a clone may allow its own address (`git config jfb.ownEmail true`), so a fresh clone on this
+    machine still refuses the global identity. `ci.yml` runs for pull requests against `main` and `v18/main`, so
+    a stranger's change is tested on a hosted runner and not here; that trigger passes the workflow checks and
+    has not been seen running, since no pull request exists. Checked: the identity and hook tests (20), the
+    scripts' tests, `check-workflows`, `link-check`. `v18/main` takes it with its next merge.
+  - **The Marketplace.** Its documentation asks for two things, the tag `umbraco-marketplace` and a dependency on
+    an `Umbraco.Cms.*` package; both installed packages have them since 18.1. Its validator, run on both at
+    `17.0.0-beta.3`, passes the tag, the project address, each package's own listing file and the schema, and
+    says that a prerelease version is not imported. So nothing is missing in the packages; the listing waits for
+    the first stable version, which is the owner's call (`docs/OWNER-TODO.md`, `docs/releasing.md`).
+- 2026-11-26 · owner message · "Fix the findings": the ten findings of the first site (2026-11-19, above) come
+  before `17.0.0`, which the Marketplace needs. Phase 27 is added with one step, 27.1, that holds all ten
+  (ADR-0197: never small steps); the logo stays as it is until the owner picks another (a sheet with the mark and
+  four sketches was sent, `.local/icons/ideas.png`).
+- 2026-11-26 · owner message · asked, while 27.1's gate ran, for a disclaimer with the next commit: the privacy
+  texts and templates are not checked by a lawyer, and nobody is liable for anything, as it is a hobby project;
+  "if that aint in there yet and its needed". What was there: the licence's "No Liability" section, the licence
+  FAQ's answer on warranty, and "not legal advice" on each template and on the privacy page. What was missing and
+  is added, in docs only and with no step (ADR-0197): a "No warranty" section in `README.md`, two sentences in each
+  NuGet readme, and the sentence that no lawyer has checked the text in the licence FAQ, `docs/privacy.md`, both
+  privacy-policy templates and the accessibility statement template. Each template's first line stays as its test
+  reads it, and `LICENSE.md` is untouched. The readmes and the FAQ say "as far as the law allows", as the licence
+  does: a disclaimer cannot exclude what the law does not let it exclude, which is among the things the lawyer's
+  look in `docs/OWNER-TODO.md` is for.
+- 2026-11-26 · owner message · for the final version, the files that tell the owner how to run the build go:
+  "the GOAL.md for example ... Claude.md can stay", and general context is fine. `GOAL.md` is removed (the text
+  of the goal and the tips for the run; the owner's own copy is in `.private/`, and the history keeps it). The
+  layout in ROADMAP §4.1 no longer lists it; step 0.1 still names it, as that step describes the root commit.
+  Nothing else in the repository tells the owner how to start or steer a run. Asked back, as only the owner can
+  say: whether `docs/OWNER-TODO.md` and the "What is left for you" list of `docs/STATUS.md`, which speak to the
+  owner too, stay in the public repository.

@@ -1,6 +1,4 @@
-using NPoco;
 using Umbraco.Cms.Infrastructure.Migrations;
-using Umbraco.Extensions;
 using UmbracoConstants = Umbraco.Cms.Core.Constants;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
@@ -15,6 +13,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 /// permissions and publishes notifications that may fail inside a migration. The user group cache is refreshed on
 /// every server once the plan has run (<see cref="FormBuilderMigrationsExecutedHandler"/>). Other groups get the
 /// section from an administrator in Umbraco's Users section; the Access settings list each group that lacks it (ADR-0218).
+/// It writes before it reads (27.1): the grant and then the flag are each one statement that checks what it needs as it
+/// writes, so beside a second process on the same SQLite file it waits its turn for the write lock instead of holding a
+/// read its write can never get past; only the log's words are read afterwards.
 /// </remarks>
 internal sealed class GrantFormsSectionV1(IMigrationContext context, TimeProvider timeProvider) : AsyncMigrationBase(context)
 {
@@ -24,61 +25,45 @@ internal sealed class GrantFormsSectionV1(IMigrationContext context, TimeProvide
     /// <inheritdoc />
     protected override async Task MigrateAsync()
     {
-        if (await Database.ExecuteScalarAsync<int>(Sql().SelectCount().From<KeyValueDto>().Where<KeyValueDto>(flag => flag.Key == GrantedFlag)) > 0)
-        {
-            FormBuilderMigrationLog.SectionGrantedBefore(Logger);
-            return;
-        }
-
+        var flags = SqlSyntax.GetQuotedTableName(FormBuilderTables.KeyValue);
         var groups = SqlSyntax.GetQuotedTableName(UmbracoConstants.DatabaseSchema.Tables.UserGroup);
         var grants = SqlSyntax.GetQuotedTableName(UmbracoConstants.DatabaseSchema.Tables.UserGroup2App);
+        var key = SqlSyntax.GetQuotedColumnName("key");
+        var value = SqlSyntax.GetQuotedColumnName("value");
+        var updated = SqlSyntax.GetQuotedColumnName("updatedUtc");
         var id = SqlSyntax.GetQuotedColumnName("id");
         var groupAlias = SqlSyntax.GetQuotedColumnName("userGroupAlias");
         var groupId = SqlSyntax.GetQuotedColumnName("userGroupId");
         var app = SqlSyntax.GetQuotedColumnName("app");
         var alias = UmbracoConstants.Security.AdminGroupAlias;
+        var unflagged = $"NOT EXISTS (SELECT 1 FROM {flags} f WHERE f.{key} = @0)";
 
-        var granted = string.Empty;
-        var admins = await Database.ExecuteScalarAsync<int?>(Sql($"SELECT {id} FROM {groups} WHERE {groupAlias} = @0", alias));
-        if (admins is null)
+        // The administrators get the section unless the flag says it was granted before, or they have it already.
+        await Database.ExecuteAsync(Sql(
+            $"INSERT INTO {grants} ({groupId}, {app}) SELECT g.{id}, @1 FROM {groups} g WHERE g.{groupAlias} = @2 AND {unflagged} "
+            + $"AND NOT EXISTS (SELECT 1 FROM {grants} a WHERE a.{groupId} = g.{id} AND a.{app} = @1)",
+            GrantedFlag,
+            FormBuilderConstants.SectionAlias,
+            alias));
+
+        // The flag, naming the group when there is one, so a rerun never grants again and an administrator's later removal stands.
+        var flagged = await Database.ExecuteAsync(Sql(
+            $"INSERT INTO {flags} ({key}, {value}, {updated}) SELECT @0, COALESCE((SELECT g.{groupAlias} FROM {groups} g WHERE g.{groupAlias} = @1), @2), @3 WHERE {unflagged}",
+            GrantedFlag,
+            alias,
+            string.Empty,
+            timeProvider.GetUtcNow().UtcDateTime));
+        if (flagged == 0)
         {
-            FormBuilderMigrationLog.GroupMissing(Logger, alias);
+            FormBuilderMigrationLog.SectionGrantedBefore(Logger);
+        }
+        else if (await Database.ExecuteScalarAsync<string?>(Sql($"SELECT {value} FROM {flags} WHERE {key} = @0", GrantedFlag)) is { Length: > 0 } granted)
+        {
+            FormBuilderMigrationLog.SectionGranted(Logger, granted);
         }
         else
         {
-            var has = await Database.ExecuteScalarAsync<int>(
-                Sql($"SELECT COUNT(*) FROM {grants} WHERE {groupId} = @0 AND {app} = @1", admins.Value, FormBuilderConstants.SectionAlias));
-            if (has == 0)
-            {
-                await Database.ExecuteAsync(
-                    Sql($"INSERT INTO {grants} ({groupId}, {app}) VALUES (@0, @1)", admins.Value, FormBuilderConstants.SectionAlias));
-            }
-
-            FormBuilderMigrationLog.SectionGranted(Logger, alias);
-            granted = alias;
+            FormBuilderMigrationLog.GroupMissing(Logger, alias);
         }
-
-        await Database.InsertAsync(new KeyValueDto
-        {
-            Key = GrantedFlag,
-            Value = granted,
-            UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime,
-        });
-    }
-
-    // Frozen snapshot of jfbKeyValue as of step 3. Never edit.
-    [TableName(FormBuilderTables.KeyValue)]
-    [PrimaryKey("key", AutoIncrement = false)]
-    [ExplicitColumns]
-    internal sealed class KeyValueDto
-    {
-        [Column("key")]
-        public string Key { get; set; } = string.Empty;
-
-        [Column("value")]
-        public string? Value { get; set; }
-
-        [Column("updatedUtc")]
-        public DateTime UpdatedUtc { get; set; }
     }
 }

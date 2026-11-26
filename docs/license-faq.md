@@ -59,10 +59,10 @@ so you know where you stand before you invest in it.
 
 ### Can I contribute?
 
-Yes, through this repository: report bugs and suggest features as issues, and once outside contributions open,
-propose changes as pull requests from a fork. A fork you keep for contributing back is not a published version of
-your own. Outside pull requests can be accepted only once a contributor licence agreement exists, which is being
-prepared; [CONTRIBUTING.md](../CONTRIBUTING.md) says how it works today.
+Yes, through this repository: report bugs and suggest features as issues, and propose changes as pull requests from
+a fork. A fork you keep for contributing back is not a published version of your own. There is no agreement to sign:
+what you contribute stays yours and comes under this same licence. [CONTRIBUTING.md](../CONTRIBUTING.md) says how it
+works.
 
 ### Why can't I publish my own version, even for free?
 
@@ -100,6 +100,10 @@ continues if you stop and put things right within 32 days.
 
 No. As far as the law allows, the software comes as is, without any warranty, and the licensor is not liable for
 damages. Test it on your sites before you rely on it.
+
+Jiron Form Builder is a hobby project, built by one person in their spare time, and that holds for its texts too: no
+lawyer has checked the privacy-policy templates, the accessibility statement template, the privacy pages or the
+default texts a form shows and sends. Whether your forms meet the law that applies to you is yours to check.
 
 ### What about patents?
 

@@ -49,6 +49,12 @@ public sealed class FormViewModel
     /// <summary>The classes of the form's root: <c>jfb-form</c>, the theme's and the form's own.</summary>
     public required string CssClass { get; init; }
 
+    /// <summary>
+    /// Whether the form's theme offers no dark scheme (<c>data-jfb-light-only</c>), so the runtime's ground check
+    /// never gives it the dark scheme's class on a dark background, whose tokens the theme does not have.
+    /// </summary>
+    public bool IsLightOnly { get; init; }
+
     /// <summary>What the form shows.</summary>
     public required FormDisplay Display { get; init; }
 
