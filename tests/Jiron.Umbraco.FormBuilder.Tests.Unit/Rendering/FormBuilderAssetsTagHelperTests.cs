@@ -65,6 +65,16 @@ public sealed class FormBuilderAssetsTagHelperTests
     }
 
     [Test]
+    public void ASitesStylesheetWithAQuery_IsWrittenWithIt_BelowThePathBase_AsAnAttributeIsEncoded()
+    {
+        var http = Request();
+        http.Request.PathBase = "/site";
+        PageAssets.Use(http, new Theme("fingerprinted", "/css/acme%20forms.css?v=3&t=a%2Fb"));
+
+        Assert.That(Run(http), Is.EqualTo(BaseRules(pathBase: "/site") + "<link href=\"/site/css/acme%20forms.css?v=3&amp;t=a%2Fb\" rel=\"stylesheet\">" + Script(pathBase: "/site")));
+    }
+
+    [Test]
     public void ATagNamedTwice_WritesOnce_AndTheSecondLeavesNothing()
     {
         var http = Request(new Provider("from-the-site"));
@@ -283,6 +293,8 @@ public sealed class FormBuilderAssetsTagHelperTests
     [TestCase("/jfb/assetsx/calm.css", null)]
     [TestCase("/jfb/calm.css", null)]
     [TestCase("/css/jfb/assets/calm.css", null)]
+    [TestCase("/jfb/assets/themes/calm.css?v=1", "themes/calm.css")]
+    [TestCase("/css/calm.css?v=/jfb/assets/x.css", null)]
     public void AStylesheetBelowTheAssetsPath_IsOneOfThePackages(string stylesheet, string? name) =>
         Assert.That(PageAssets.AssetName(stylesheet), Is.EqualTo(name));
 

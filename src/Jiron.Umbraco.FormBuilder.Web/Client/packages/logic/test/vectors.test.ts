@@ -18,6 +18,7 @@ import {
   messageWordsOf,
   readField,
   readPost,
+  sendRefusal,
   summaryEntry,
   summaryHeading,
   type Calculation,
@@ -78,6 +79,7 @@ interface VectorCase {
   readonly read?: { readonly field: ReadField; readonly answer: PostedAnswer };
   readonly rowCount?: { readonly field: ReadField; readonly count: number };
   readonly post?: { readonly fields: readonly PostField[]; readonly entries: readonly (readonly [string, string])[] };
+  readonly send?: { readonly fields: readonly SendField[]; readonly entries: readonly (readonly [string, string])[] };
   readonly options?: Readonly<Record<string, readonly string[]>>;
   readonly conflict?: {
     readonly requiring: SearchRule;
@@ -90,6 +92,62 @@ interface VectorCase {
     readonly several?: readonly string[];
   };
   readonly expect: unknown;
+}
+
+/** A field of a send's form: as a post names it, and whether it is required (ADR-0266). */
+interface SendField extends PostField {
+  readonly required?: boolean;
+  readonly fields?: readonly SendField[];
+}
+
+/** The context a send's fields are checked in, as the NUnit runner's SubmissionReader reads them. */
+const SEND_CONTEXT: Context = {
+  now: '2026-06-15T10:00:00Z',
+  timeZone: 'Europe/Zurich',
+  culture: 'en-GB',
+  member: { signedIn: false, groups: [] },
+  query: {},
+  hidden: [],
+};
+
+/**
+ * A send's problems (ADR-0266): the post read, each field's answer read and checked, a repeatable group's children in
+ * each row, each error by its path, and the refusal of a send with no answer at all as the runtime decides it.
+ */
+function sendProblems(
+  id: string,
+  send: NonNullable<VectorCase['send']>,
+): { problems: { code: string; path: string }[] } {
+  const read = readPost(send.fields, send.entries);
+  const problems: { code: string; path: string }[] = [];
+  const check = (field: SendField, answer: PostAnswer | undefined, path: string): void => {
+    const reading = readField(field, answer);
+    if (reading === null) throw new Error(`${id}: ${field.type} is no built-in type`);
+    if (reading.limit !== null) {
+      problems.push({ code: reading.limit, path });
+      return;
+    }
+    const checked: CheckedField = {
+      type: field.type,
+      required: field.required === true,
+      settings: field.settings ?? {},
+    };
+    for (const code of checkField(checked, reading.answers, SEND_CONTEXT).errors) problems.push({ code, path });
+  };
+  for (const field of send.fields) {
+    const alias = field.alias;
+    if (alias == null) continue;
+    if (field.fields === undefined) {
+      check(field, read.fields.get(alias), alias);
+      continue;
+    }
+    (read.rows.get(alias) ?? []).forEach((row, index) => {
+      for (const child of field.fields ?? [])
+        if (child.alias != null) check(child, row.get(child.alias), `${alias}[${index}].${child.alias}`);
+    });
+  }
+  const refusal = sendRefusal(read, problems);
+  return { problems: refusal === 'empty' ? [{ code: 'empty', path: '' }] : [...refusal] };
 }
 
 /** A template rendered in its context over sources given as data: each known path and its value (ADR-0064). */
@@ -246,6 +304,7 @@ const RUNNABLE = [
   'read',
   'rowCount',
   'post',
+  'send',
   'fileKind',
   'typedName',
   'typedPng',
@@ -389,6 +448,7 @@ function run(file: VectorFile, vector: VectorCase): unknown {
       };
     }
     if (vector.rowCount !== undefined) return checkRows(vector.rowCount.field, vector.rowCount.count);
+    if (vector.send !== undefined) return sendProblems(vector.id, vector.send);
     if (vector.post !== undefined) {
       const read = readPost(vector.post.fields, vector.post.entries);
       const answers = (map: ReadonlyMap<string, PostAnswer>) =>

@@ -1,7 +1,8 @@
 // Fitting a form to its page (ROADMAP 6.4l, ADR-0022): the ground check takes the first opaque background behind a form
-// and leaves a site's own class alone; the steps fold where a word of a name is wider than its step.
+// and leaves a site's own class alone, never darkens a theme without a dark scheme and follows a site's own switch
+// (27.1); the steps fold where a word of a name is wider than its step.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkGround, foldSteps, type ReadColour, followSteps } from './fit';
+import { checkGround, foldSteps, followGround, type ReadColour, followSteps } from './fit';
 
 /** Reads the colours these tests write, which is all a test's browser has. */
 const read: ReadColour = (css) => {
@@ -98,6 +99,77 @@ describe('the ground check', () => {
     checkGround(form, () => null);
 
     expect(form.className).toBe('jfb-form');
+  });
+
+  it('never gives the dark tokens to a form whose theme has no dark scheme, on the darkest ground', () => {
+    const form = formOn('rgb(0, 0, 0)');
+    form.setAttribute('data-jfb-light-only', '');
+    checkGround(form, read);
+
+    expect(form.className).toBe('jfb-form');
+  });
+
+  it("checks a form again when the site's own switch changes the ground, by a class, a style or a data attribute", async () => {
+    const form = formOn();
+    const check = (root: Element): void => checkGround(root, read);
+    checkGround(form, read);
+    followGround(form, check);
+    const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.body.classList.add('night');
+    document.body.style.backgroundColor = 'rgb(16, 20, 24)';
+    await settled();
+    expect(form.classList.contains('jfb-scheme-dark'), 'the switch darkened the body').toBe(true);
+
+    document.body.style.backgroundColor = 'rgb(250, 250, 250)';
+    await settled();
+    expect(form.classList.contains('jfb-scheme-dark'), 'and lightened it').toBe(false);
+
+    document.body.style.backgroundColor = 'rgb(16, 20, 24)';
+    document.documentElement.setAttribute('data-theme', 'dark');
+    await settled();
+    expect(form.classList.contains('jfb-scheme-dark'), 'a data attribute of the document element').toBe(true);
+
+    // A site's own class wins over what the check gave.
+    document.documentElement.classList.add('jfb-scheme-dark');
+    await settled();
+    expect(form.classList.contains('jfb-scheme-dark')).toBe(false);
+  });
+
+  it('checks again when a background behind the form ends its transition, and for no other change', async () => {
+    const form = formOn('rgb(250, 250, 250)');
+    const checked: Element[] = [];
+    followGround(form, (root) => checked.push(root));
+    const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.body.setAttribute('aria-busy', 'true');
+    form.parentElement?.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    const done = new Event('transitionend', { bubbles: true });
+    Object.defineProperty(done, 'propertyName', { value: 'color' });
+    form.parentElement?.dispatchEvent(done);
+    await settled();
+    expect(checked, 'an attribute of no switch, and a transition of another property').toEqual([]);
+
+    const ground = new Event('transitionend', { bubbles: true });
+    Object.defineProperty(ground, 'propertyName', { value: 'background-color' });
+    form.parentElement?.dispatchEvent(ground);
+    const own = new Event('transitionend', { bubbles: true });
+    Object.defineProperty(own, 'propertyName', { value: 'background-color' });
+    form.dispatchEvent(own);
+    expect(checked, "behind the form, not the form's own").toEqual([form]);
+  });
+
+  it('follows nothing for a form whose theme has no dark scheme, and lets go of a form taken off the page', async () => {
+    const light = formOn();
+    light.setAttribute('data-jfb-light-only', '');
+    const gone = formOn();
+    const checked: Element[] = [];
+    followGround(light, (root) => checked.push(root));
+    followGround(gone, (root) => checked.push(root));
+    gone.remove();
+    document.body.classList.add('night');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(checked).toEqual([]);
   });
 
   it('takes back what it gave when the ground turned light, and no class of the site', () => {

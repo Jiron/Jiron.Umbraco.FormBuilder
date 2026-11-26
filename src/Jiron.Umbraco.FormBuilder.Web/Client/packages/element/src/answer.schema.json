@@ -786,6 +786,9 @@
         "cssClass": {
           "type": "string"
         },
+        "isLightOnly": {
+          "type": "boolean"
+        },
         "display": {
           "enum": [
             "form",
@@ -876,6 +879,7 @@
         "culture",
         "direction",
         "cssClass",
+        "isLightOnly",
         "display",
         "apiBase",
         "asksAtOnce",

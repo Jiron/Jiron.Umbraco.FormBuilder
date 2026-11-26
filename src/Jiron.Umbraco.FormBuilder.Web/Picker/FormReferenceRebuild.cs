@@ -152,9 +152,10 @@ internal sealed partial class FormReferenceRebuild(
 /// document or element type changed or deleted, as removing a picker property or turning a text property into a picker
 /// does; a data type deleted, which takes its properties away; a data type given another editor; and a language deleted,
 /// which takes its values away. A type that is new has no content yet, and another setting of a data type leaves what its values name as it was. The request is a row
-/// the job reads, so many changes in a row cost one walk. A request that fails is logged and never fails the change.
+/// the job reads, so many changes in a row cost one walk. A request that fails is logged and never fails the change. While
+/// the package's tables are not there, it asks nothing: the plan's step 4 asks for the walk once they are (27.1).
 /// </summary>
-internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebuild, ILogger<FormReferenceTypeHandler> logger)
+internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebuild, FormBuilderTablesCheck tables, ILogger<FormReferenceTypeHandler> logger)
     : INotificationAsyncHandler<ContentTypeChangedNotification>,
         INotificationAsyncHandler<DataTypeSavedNotification>,
         INotificationAsyncHandler<DataTypeDeletedNotification>,
@@ -180,6 +181,11 @@ internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebu
     {
         try
         {
+            if (!await tables.AreThereAsync(cancellationToken))
+            {
+                return;
+            }
+
             await rebuild.RequestAsync(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

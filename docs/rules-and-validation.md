@@ -155,6 +155,10 @@ site slow. A pattern may be up to 500 characters; one it can't take is refused w
 - On **Send** or **Next**, every problem on the page shows at once. With **List of problems** on (Settings ›
   Appearance; on by default), a list above the form names each one and links to it, and takes the focus so screen
   readers read it.
+- A **Send with no answer at all** is checked like any other: it shows each required field's problem, as a Send with
+  one answer would. Only a form that requires nothing says "Answer at least one question before you send the form"
+  instead, at the top, linked to the first field
+  ([ADR-0266](decisions/0266-an-empty-send-names-what-is-required.md)).
 - Without JavaScript, the server checks the post and shows the form again with the same messages.
 
 ## The form check

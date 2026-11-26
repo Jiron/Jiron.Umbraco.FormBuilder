@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
@@ -90,9 +91,10 @@ internal sealed class FormReferenceIndex(DataValueReferenceFactoryCollection fac
 /// Keeps the "used on" index current (ADR-0017): a content item that is saved, published, unpublished, moved to the
 /// recycle bin, moved (a restore among them) or copied gets its rows anew, and a deleted one loses them. It runs once
 /// Umbraco's own unit has completed, on the server that made the change; the table is shared, so a load-balanced site
-/// needs nothing more. A write that fails is logged and leaves the content as saved: the rebuild repairs the rows.
+/// needs nothing more. A write that fails is logged and leaves the content as saved: the rebuild repairs the rows. While
+/// the package's tables are not there, it keeps nothing, and the rebuild the plan asks for reads every document (27.1).
 /// </summary>
-internal sealed partial class FormReferenceHandler(FormReferenceIndex index, ILogger<FormReferenceHandler> logger)
+internal sealed partial class FormReferenceHandler(FormReferenceIndex index, FormBuilderTablesCheck tables, ILogger<FormReferenceHandler> logger)
     : INotificationAsyncHandler<ContentSavedNotification>,
         INotificationAsyncHandler<ContentPublishedNotification>,
         INotificationAsyncHandler<ContentUnpublishedNotification>,
@@ -128,6 +130,11 @@ internal sealed partial class FormReferenceHandler(FormReferenceIndex index, ILo
     /// <inheritdoc />
     public async Task HandleAsync(ContentDeletedNotification notification, CancellationToken cancellationToken)
     {
+        if (!await tables.AreThereAsync(cancellationToken))
+        {
+            return;
+        }
+
         foreach (var content in notification.DeletedEntities)
         {
             await GuardAsync(content.Key, () => index.RemoveAsync(content.Key, cancellationToken), cancellationToken);
@@ -136,6 +143,12 @@ internal sealed partial class FormReferenceHandler(FormReferenceIndex index, ILo
 
     private async Task IndexAsync(IEnumerable<IContent> items, CancellationToken cancellationToken)
     {
+        // Before the package's tables are there, nothing is kept; the plan's rebuild reads every document (27.1).
+        if (!await tables.AreThereAsync(cancellationToken))
+        {
+            return;
+        }
+
         foreach (var content in items)
         {
             await GuardAsync(content.Key, () => index.IndexAsync(content, cancellationToken), cancellationToken);

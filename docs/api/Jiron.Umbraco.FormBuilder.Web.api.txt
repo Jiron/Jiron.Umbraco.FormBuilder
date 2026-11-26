@@ -377,6 +377,7 @@ public sealed class Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormViewModel
   bool Hooks { get; init; }
   bool Insights { get; init; }
   bool InsightsContinued { get; init; }
+  bool IsLightOnly { get; init; }
   bool IsPosted { get; init; }
   bool IsRequiredNoteHidden { get; init; }
   const int ContractVersion = 1

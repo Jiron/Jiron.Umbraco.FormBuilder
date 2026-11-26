@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
@@ -11,19 +12,27 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 /// deleted it, or no user when Umbraco did, and an item that was no site removes nothing. A root in the Recycle Bin keeps
 /// its rows, as it may come back. A failure is logged and never undoes the deletion, which has happened already; the rows
 /// then stay unread, as no page or domain names the gone site, until the next deletion of that key, which never comes.
+/// Before the package's tables are there, no site has settings, and it does nothing (27.1).
 /// </summary>
 /// <param name="settings">The settings, whose site rows go.</param>
 /// <param name="backOffice">The backoffice user on the request, if any.</param>
+/// <param name="tables">Whether the package's tables are there.</param>
 /// <param name="logger">Where a failed removal is logged, with the root's key only.</param>
 internal sealed partial class SiteSettingsRemoval(
     IFormBuilderSettingsService settings,
     IBackOfficeSecurityAccessor backOffice,
+    FormBuilderTablesCheck tables,
     ILogger<SiteSettingsRemoval> logger) : INotificationAsyncHandler<ContentDeletedNotification>
 {
     /// <inheritdoc />
     public async Task HandleAsync(ContentDeletedNotification notification, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(notification);
+        if (!await tables.AreThereAsync(cancellationToken))
+        {
+            return;
+        }
+
         var user = backOffice.BackOfficeSecurity?.CurrentUser?.Key;
         foreach (var root in notification.DeletedEntities.Select(content => content.Key).Where(key => key != Guid.Empty).Distinct())
         {

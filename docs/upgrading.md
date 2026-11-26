@@ -35,6 +35,10 @@ The policy is [ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.
    migrations** health check say so.
 4. On a site with more than one server, upgrade one server first and let it finish its migrations before the others
    start the new version.
+5. **On SQLite, never run two instances on one database file during the upgrade,** as a host that starts the new
+   container a few seconds before it stops the old one does: stop the old instance first. The steps that fill tables
+   write before they read, so a second writer makes a step wait for its turn, but one that waits too long still fails,
+   and the plan then runs again at the next start ([installation.md](installation.md#the-database)).
 
 Read the release's notes below before you upgrade: they list anything a site's own code, views or scripts should look
 at.
@@ -49,6 +53,23 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
+
+### Unreleased
+
+What the first site outside the demo found. A site on an earlier prerelease keeps its forms, entries and settings.
+
+- **Migrations:** none new. The plan still ends at `jfb-015-entry-site`; steps 2 and 3 (the default settings rows and
+  the section grant) now write before they read, which a site that ran them never runs again.
+- **Theme views:** every view still carries contract version 1. `Form.cshtml` writes `data-jfb-light-only` on the
+  form's root for a theme without a dark scheme; a site's own copy of the view that leaves it out lets the runtime
+  switch such a form to dark on a dark background, as before.
+- **To check:**
+  - A headless site that showed a message of its own for the error `empty`: a submission with no answer at all now
+    gets the required fields' `required` errors where the form has any, and `empty` only where it requires nothing.
+  - A site's own text built from `{{ entry.table }}` or `{{ entry.answers }}`: dates now read "Mar 4, 2026" rather
+    than "3/4/2026".
+  - A site whose host starts the new instance before it stops the old one, on SQLite: see step 5 above.
+  - Optionally, `JironFormBuilder:General:DefaultTimeZone` sets the time zone of a site that has saved none.
 
 ### 17.0.0-beta.3 (2026-11-25)
 

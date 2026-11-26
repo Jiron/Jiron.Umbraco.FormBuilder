@@ -3,9 +3,9 @@
 // loaded on a form's first interaction only, what the visitor answered and left until it woke handed to it, or at once for a form with a default the page fills in (6.4h, ADR-0118),
 // the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123), every form
 // root fitted to its page once, a form to work with through `get` (6.4l, section 4.9), and what visitors do with a form
-// counted where its markup names where to (ROADMAP 11.5, ADR-0211).
+// counted where its markup names where to (ROADMAP 11.5, ADR-0211), and a press before the logic woke held for it (27.1).
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFrame, followResumeLinks, type Chunk, type ReadyDetail } from './frame';
+import { createFrame, followResumeLinks, HOLD_MS, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
 import { stubMembers } from './testing-cover';
 
@@ -409,6 +409,142 @@ describe('what the visitor does before the logic woke', () => {
       handed[0]?.[2].map((event) => `${event.type} ${named(event.target)}`),
       "the browser's events from the first touch until the logic woke, the leaving while it woke among them",
     ).toEqual(['input box', 'change box', 'focusout text', 'focusout box']);
+  });
+});
+
+describe('a press before the logic woke (27.1)', () => {
+  /**
+   * A form with a Send button whose requestSubmit does what a browser's does: it fires a submit event pressed by the
+   * button, and the form posts when no listener prevents it. Each press and each post is written down.
+   */
+  function sending() {
+    const host = form('jfb-1');
+    host.setAttribute('action', '/contact');
+    host.insertAdjacentHTML('beforeend', '<button type="submit" name="jfb-nav" value="submit">Send</button>');
+    document.body.append(host);
+    const button = host.querySelector('button');
+    if (button === null) throw new Error('no button');
+    const happened: string[] = [];
+    const press = (submitter: HTMLElement | null = button): SubmitEvent => {
+      const event = new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter });
+      host.dispatchEvent(event);
+      if (!event.defaultPrevented)
+        happened.push(`posted ${submitter instanceof HTMLButtonElement ? submitter.value : ''}`);
+      return event;
+    };
+    stubMembers(host, {
+      requestSubmit: (submitter?: HTMLElement | null) => {
+        happened.push(`handed ${submitter instanceof HTMLButtonElement ? submitter.value : 'none'}`);
+        press(submitter ?? null);
+      },
+    });
+    // The logic as the chunk attaches it: it answers every press itself, with the button pressed.
+    const logic: Chunk = {
+      attach: (element) => {
+        element.addEventListener('submit', (event) => {
+          event.preventDefault();
+          happened.push(`logic ${(event.submitter as HTMLButtonElement | null)?.value ?? 'none'}`);
+        });
+        return {};
+      },
+    };
+    return { host, button, happened, press, logic };
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is held while the logic loads, and the logic takes that same press with the button pressed, once', async () => {
+    const { button, happened, press, logic } = sending();
+    let arrive: (loaded: Chunk) => void = () => undefined;
+    const load = vi.fn(() => new Promise<Chunk>((resolve) => (arrive = resolve)));
+    createFrame(load).init();
+
+    button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    const first = press();
+    const second = press();
+    expect([first.defaultPrevented, second.defaultPrevented, button.hasAttribute('data-jfb-busy')]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(happened, 'nothing posted while the logic loads').toEqual([]);
+
+    arrive(logic);
+    await settled();
+    await settled();
+    await settled();
+    expect(happened, 'the one press, handed to the logic once; the second press was the same press').toEqual([
+      'handed submit',
+      'logic submit',
+    ]);
+    expect([load.mock.calls.length, button.hasAttribute('data-jfb-busy')]).toEqual([1, false]);
+
+    press();
+    expect(happened.slice(2), 'the logic answers a later press itself').toEqual(['logic submit']);
+  });
+
+  it('starts the logic loading when a press comes before any touch', async () => {
+    const { happened, press, logic } = sending();
+    const load = vi.fn(() => Promise.resolve(logic));
+    createFrame(load).init();
+    expect(press().defaultPrevented).toBe(true);
+    await settled();
+    await settled();
+    await settled();
+    expect([load.mock.calls.length, happened]).toEqual([1, ['handed submit', 'logic submit']]);
+  });
+
+  it('posts as without JavaScript, once, when the logic cannot load', async () => {
+    const { button, happened, press } = sending();
+    createFrame(() => Promise.reject(new Error('offline'))).init();
+    button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    expect(press().defaultPrevented).toBe(true);
+    press();
+    await settled();
+    await settled();
+    await settled();
+    expect(happened).toEqual(['handed submit', 'posted submit']);
+    expect(press().defaultPrevented, 'a later press posts as before').toBe(false);
+  });
+
+  it('posts as without JavaScript, once, when the logic does not come in time, and the logic that comes later sends nothing', async () => {
+    vi.useFakeTimers();
+    const { button, happened, press, logic } = sending();
+    let arrive: (loaded: Chunk) => void = () => undefined;
+    createFrame(() => new Promise<Chunk>((resolve) => (arrive = resolve))).init();
+    button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    press();
+    await vi.advanceTimersByTimeAsync(HOLD_MS - 1);
+    expect(happened, 'still held').toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    // The press goes on in a task of its own.
+    await vi.runOnlyPendingTimersAsync();
+    expect(happened).toEqual(['handed submit', 'posted submit']);
+
+    arrive(logic);
+    await vi.advanceTimersByTimeAsync(HOLD_MS);
+    expect(happened).toEqual(['handed submit', 'posted submit']);
+  });
+
+  it('goes on waiting where the form has no address to post to, and the logic takes the press whenever it comes', async () => {
+    vi.useFakeTimers();
+    const { host, button, happened, press, logic } = sending();
+    host.removeAttribute('action');
+    let arrive: (loaded: Chunk) => void = () => undefined;
+    createFrame(() => new Promise<Chunk>((resolve) => (arrive = resolve))).init();
+    press();
+    await vi.advanceTimersByTimeAsync(HOLD_MS * 3);
+    expect([happened, button.hasAttribute('data-jfb-busy')], 'still held: there is no post to fall back to').toEqual([
+      [],
+      true,
+    ]);
+
+    arrive(logic);
+    await vi.advanceTimersByTimeAsync(1);
+    await vi.runOnlyPendingTimersAsync();
+    expect([happened, button.hasAttribute('data-jfb-busy')]).toEqual([['handed submit', 'logic submit'], false]);
   });
 });
 

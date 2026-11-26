@@ -704,8 +704,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   digest `SubmissionDigest`) answered with its entry's receipt and outcome before anything else, the answers mapped
   from the aliases of the revision the page showed (an older one through the newest version published with it) to
   the live version's keys, `form_changed` when they do not fit or a ticked consent's wording changed, the
-  availability (`FormAvailability`, which the form endpoint's `open` and the uploads share), the empty submission,
-  then the reader; `SubmissionEntries` stores the entry with its `submitted` event, its action runs and its daily
+  availability (`FormAvailability`, which the form endpoint's `open` and the uploads share), the empty submission
+  (read and checked without its proof or uploads, refused with its fields' errors, or as empty when it has none,
+  [ADR-0266](decisions/0266-an-empty-send-names-what-is-required.md)), then the reader; `SubmissionEntries` stores the entry with its `submitted` event, its action runs and its daily
   count in the store's one unit, which counts the entry limit again after the form's counter, and
   `SubmissionOutcomes` renders the outcome, a redirect checked again by the publish rule. A page's check runs the
   same steps but idempotency, the empty submission and the unit, and answers only the errors of the page's fields;
@@ -1073,7 +1074,7 @@ names and traits are read once, at start-up
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
 | `IFormBuilderFileScanner` | scanning and quarantine, through `FileScanners()`: asked in the background; any scanner's quarantine decides, and one that fails or takes over 5 minutes leaves the file waiting | ADR-0006, ADR-0144 |
 | `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |
-| `IFormBuilderTheme` | a theme, added, replaced or removed in a composer through `Themes()`: its alias and label, a local stylesheet, a class map onto the slots of `FormBuilderThemeSlots`, tokens, a dark scheme and a view folder; start-up refuses one with a problem, naming it | ADR-0015, ADR-0105 |
+| `IFormBuilderTheme` | a theme, added, replaced or removed in a composer through `Themes()`: its alias and label, a local stylesheet (with a query that fingerprints it, if any), a class map onto the slots of `FormBuilderThemeSlots`, tokens, a dark scheme and a view folder; start-up refuses one with a problem, naming it | ADR-0015, ADR-0105 |
 | `IFormBuilderCspNonceProvider` | the request's CSP nonce, for the tags `<jfb-assets>` writes without a `nonce` attribute | ADR-0004, ADR-0092 |
 | The form views and their view models | a site's own view at a built-in view's path below `Views/JironFormBuilder/default/` or a theme's own folder, or in `_forms/<alias>/` there for one form, over the public models of `Jiron.Umbraco.FormBuilder.Web.Rendering.Models` with `FormBuilderHtml` for the contract's attributes; a contract header says the version it follows | ADR-0015, ADR-0093 |
 | `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9, ADR-0055 |

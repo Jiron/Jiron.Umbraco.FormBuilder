@@ -31,28 +31,37 @@ internal sealed partial class FormBuilderMigrationState(
     private volatile Snapshot? _snapshot;
 
     /// <inheritdoc />
-    public async ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default) =>
+        await SnapshotAsync(cancellationToken) is not { Pending: false };
+
+    /// <inheritdoc />
+    public async ValueTask<bool> HasTablesAsync(CancellationToken cancellationToken = default) =>
+        await SnapshotAsync(cancellationToken) is { HasTables: true };
+
+    // The remembered state, read again while it is pending and older than RecheckAfter; null while Umbraco is not running.
+    private async ValueTask<Snapshot?> SnapshotAsync(CancellationToken cancellationToken)
     {
         var snapshot = _snapshot;
         if (snapshot is { Pending: false })
         {
-            return false;
+            return snapshot;
         }
 
         if (runtimeState.Level != RuntimeLevel.Run)
         {
-            return true;
+            return null;
         }
 
         var now = timeProvider.GetUtcNow();
         if (snapshot is not null && now - snapshot.CheckedAt < RecheckAfter)
         {
-            return true;
+            return snapshot;
         }
 
-        var pending = !string.Equals(await ReadStoredStateAsync(cancellationToken), FinalState, StringComparison.Ordinal);
-        _snapshot = new Snapshot(pending, now);
-        return pending;
+        var stored = await ReadStoredStateAsync(cancellationToken);
+        snapshot = new Snapshot(!string.Equals(stored, FinalState, StringComparison.Ordinal), !string.IsNullOrEmpty(stored), now);
+        _snapshot = snapshot;
+        return snapshot;
     }
 
     /// <inheritdoc />
@@ -84,5 +93,6 @@ internal sealed partial class FormBuilderMigrationState(
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder could not read its migration state; it treats its migrations as pending")]
     private static partial void LogStateUnreadable(ILogger logger, LoggedException exception);
 
-    private sealed record Snapshot(bool Pending, DateTimeOffset CheckedAt);
+    // HasTables: the plan has a state at all, so its first step, which creates every table, has run.
+    private sealed record Snapshot(bool Pending, bool HasTables, DateTimeOffset CheckedAt);
 }

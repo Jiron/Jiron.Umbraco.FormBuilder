@@ -2,15 +2,19 @@
  * Fitting a form to its page (ROADMAP 6.4l, ADR-0022 as amended in 2.4), in the frame, as both show before the visitor
  * touches anything. The ground check: a form with no scheme class, on itself or an ancestor (ADR-0106), takes the dark
  * tokens when the first opaque background behind it is dark, so its text never sits dark on dark; a class the site set
- * is never changed. Step folding: the steps fold into "Page 2 of 6" when a word of a step name is wider than its step, so
- * no name breaks inside a word where the browser cannot hyphenate, after layout, once the fonts are in, and on every
- * change of width.
+ * is never changed, and a form whose theme has no dark scheme (`data-jfb-light-only`) never gets one. It runs again when
+ * the system's scheme changes and when a site's own switch may have changed the ground: a class, `style` or `data-*`
+ * attribute of the document element or the body, and the end of a background's transition behind a form (27.1). Step
+ * folding: the steps fold into "Page 2 of 6" when a word of a step name is wider than its step, so no name breaks inside
+ * a word where the browser cannot hyphenate, after layout, once the fonts are in, and on every change of width.
  */
 import { proto } from '@jfb/logic/proto';
 
 const SCHEME = 'jfb-scheme-';
 const DARK = `${SCHEME}dark`;
 const COMPACT = 'data-jfb-compact';
+/** On a form root whose theme offers no dark scheme (27.1). */
+const LIGHT_ONLY = 'data-jfb-light-only';
 /** Below this luminance white text has more contrast than black text, so the ground counts as dark. */
 const DARK_BELOW = 0.179;
 
@@ -75,7 +79,7 @@ export function checkGround(form: Element, read: ReadColour = readColour): void 
     proto(form).classList.remove(DARK);
     madeDark.delete(form);
   }
-  if (hasScheme(form)) return;
+  if (hasScheme(form) || proto(form).hasAttribute(LIGHT_ONLY)) return;
   const view = proto(form).ownerDocument.defaultView;
   for (let element = proto(form).parentElement; element !== null && view !== null; element = element.parentElement) {
     const colour = read(view.getComputedStyle(element).backgroundColor);
@@ -86,6 +90,52 @@ export function checkGround(form: Element, read: ReadColour = readColour): void 
     }
     return;
   }
+}
+
+/** The form roots each document's ground is followed for, and what follows it, once per document. */
+const followed = new WeakMap<Document, Map<Element, (form: Element) => void>>();
+
+/** Whether an attribute's change can be a site's switch of its ground: a class, a style or a `data-*` attribute. */
+const switches = (name: string | null): boolean =>
+  name === 'class' || name === 'style' || name?.startsWith('data-') === true;
+
+/**
+ * Checks a form root's ground again whenever a site's own switch may have changed it (27.1): a change of a class, `style`
+ * or `data-*` attribute of the document element or the body, and the end of a background colour's transition on an
+ * element behind it. One observer and one listener per document, whatever the number of forms; a form taken off the page
+ * is let go. A form whose theme has no dark scheme has nothing to follow.
+ */
+export function followGround(form: Element, check: (form: Element) => void = (root) => checkGround(root)): void {
+  if (proto(form).hasAttribute(LIGHT_ONLY)) return;
+  const page = proto(form).ownerDocument;
+  let roots = followed.get(page);
+  if (roots === undefined) {
+    const all = new Map<Element, (form: Element) => void>();
+    roots = all;
+    followed.set(page, all);
+    const again = (behind?: EventTarget | null): void => {
+      for (const [root, checks] of all) {
+        if (!proto(root).isConnected) all.delete(root);
+        else if (behind === undefined || (behind instanceof Node && behind !== root && proto(behind).contains(root)))
+          checks(root);
+      }
+    };
+    if (typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver((changes) => {
+        if (changes.some((change) => switches(change.attributeName))) again();
+      });
+      observer.observe(page.documentElement, { attributes: true });
+      if (page.body !== null) observer.observe(page.body, { attributes: true });
+    }
+    page.addEventListener(
+      'transitionend',
+      (event) => {
+        if (event.propertyName === 'background-color') again(event.target);
+      },
+      true,
+    );
+  }
+  roots.set(form, check);
 }
 
 /** The name's own words: its text, without what its marks add. */

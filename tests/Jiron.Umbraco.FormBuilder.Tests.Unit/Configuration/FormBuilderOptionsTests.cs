@@ -168,6 +168,7 @@ public sealed class FormBuilderOptionsTests
             [$"{Root}:Webhooks:AllowedHosts:0"] = "events.example.com",
             [$"{Root}:Webhooks:AllowHttp"] = "true",
             [$"{Root}:Rendering:IncludeAssetsAutomatically"] = "false",
+            [$"{Root}:General:DefaultTimeZone"] = "Europe/Zurich",
             [$"{Root}:Definitions:Mirror"] = "true",
             [$"{Root}:Definitions:Folder"] = "~/forms",
         };
@@ -191,10 +192,29 @@ public sealed class FormBuilderOptionsTests
             Assert.That(options.Captcha.UseRecaptchaNet, Is.True);
             Assert.That((options.Webhooks.AllowedHosts.Single(), options.Webhooks.AllowHttp), Is.EqualTo(("events.example.com", true)));
             Assert.That(options.Rendering.IncludeAssetsAutomatically, Is.False);
+            Assert.That(options.General.DefaultTimeZone, Is.EqualTo("Europe/Zurich"));
             Assert.That((options.Definitions.Mirror, options.Definitions.Folder), Is.EqualTo((true, "~/forms")));
             Assert.That(HostOptions.Failures(settings), Is.Empty);
         });
     }
+
+    [TestCase("Mars/Olympus_Mons")]
+    [TestCase("europe/zurich")]
+    [TestCase(" ")]
+    [TestCase("Europe/Zurich ")]
+    public void ADefaultTimeZoneTheServerDoesNotKnow_InItsExactSpelling_StopsTheSite_NamingItsKey(string zone)
+    {
+        var failures = HostOptions.Failures(new Dictionary<string, string?> { [FormBuilderGeneralOptions.DefaultTimeZoneKey] = zone });
+
+        Assert.That(failures, Is.EqualTo(new[] { $"JironFormBuilder:General:DefaultTimeZone ('{zone}') must be an IANA time zone this server knows, in its exact spelling, such as Europe/Berlin." }));
+    }
+
+    [TestCase("Europe/Zurich")]
+    [TestCase("Pacific/Auckland")]
+    [TestCase("UTC")]
+    [TestCase("", Description = "An empty value is none, as a template writes a variable it leaves unset.")]
+    public void ADefaultTimeZoneTheServerKnows_OrNone_Passes(string zone) =>
+        Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [FormBuilderGeneralOptions.DefaultTimeZoneKey] = zone }), Is.Empty);
 
     [Test]
     public void AMirrorFolderInsideTheWebRoot_StopsTheSite_NamingItsKey_OnlyWhileTheMirrorIsOn()
@@ -565,10 +585,10 @@ public sealed class FormBuilderOptionsTests
     public void ACaptchaProvidersVerifyAddress_IsHttps_OrHttpOnThisMachine(string provider, string address, bool saved) =>
         Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Captcha:{provider}:VerifyAddress"] = address }), saved ? Is.Empty : Is.EqualTo(new[] { $"{Root}:Captcha:{provider}:VerifyAddress must be an https address, or an http one on this machine (localhost, 127.0.0.1 or ::1) for a test stub, as the secret key goes with each token." }));
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Definitions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, General, Files, Actions, Definitions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions, Mail, MaxTrackedClients, ServerKeyFactor, Read, Challenge, Submit, Upload, Events and Verify.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Actions, Definitions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, General, Files, Actions, Definitions, Limits, Designer, Access, Captcha, Privacy, Secrets, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

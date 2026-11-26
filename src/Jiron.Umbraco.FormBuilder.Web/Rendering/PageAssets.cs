@@ -32,11 +32,12 @@ internal sealed class PageAssets(WebsiteAssets assets)
     /// The name below <c>/jfb/assets/</c> of a stylesheet that is one of the package's website assets, or null for a
     /// path of the site's own: the first segments match in any letter case, as the assets are served (ADR-0092).
     /// </summary>
-    /// <param name="stylesheet">A theme's stylesheet, a local path.</param>
+    /// <param name="stylesheet">A theme's stylesheet, a local path; a query after it is no part of the name.</param>
     public static string? AssetName(string stylesheet)
     {
         ArgumentNullException.ThrowIfNull(stylesheet);
-        return stylesheet.StartsWith(AssetsPrefix, StringComparison.OrdinalIgnoreCase) ? stylesheet[AssetsPrefix.Length..] : null;
+        var path = FormBuilderThemes.StylesheetParts(stylesheet).Path;
+        return path.StartsWith(AssetsPrefix, StringComparison.OrdinalIgnoreCase) ? path[AssetsPrefix.Length..] : null;
     }
 
     /// <summary>
@@ -183,8 +184,17 @@ internal sealed class PageAssets(WebsiteAssets assets)
     }
 
     // A stylesheet's address: one of the package's under its fingerprint, the site's own below its path base.
-    private string StylesheetUrl(PathString pathBase, string stylesheet) =>
-        AssetName(stylesheet) is { } name ? assets.Url(pathBase, name) : pathBase.Add(stylesheet).ToString();
+    // A site's own stylesheet keeps the query it was given, which the registry held to a query's characters (27.1).
+    private string StylesheetUrl(PathString pathBase, string stylesheet)
+    {
+        if (AssetName(stylesheet) is { } name)
+        {
+            return assets.Url(pathBase, name);
+        }
+
+        var (path, query) = FormBuilderThemes.StylesheetParts(stylesheet);
+        return pathBase.Add(path).ToString() + (query is null ? string.Empty : "?" + query);
+    }
 
     private static TagBuilder Nonced(TagBuilder tag, string? nonce)
     {

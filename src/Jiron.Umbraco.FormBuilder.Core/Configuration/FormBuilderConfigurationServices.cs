@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -19,7 +20,7 @@ internal static class FormBuilderConfigurationServices
         var section = configuration.GetSection(FormBuilderOptions.SectionName);
         services.AddOptions<FormBuilderOptions>().Bind(section).ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderOptions>, FormBuilderOptionsValidator>(
-            provider => new FormBuilderOptionsValidator(provider.GetRequiredService<IHostFolders>(), section)));
+            provider => new FormBuilderOptionsValidator(provider.GetRequiredService<IHostFolders>(), section, provider.GetService<SystemTimeZoneLinks>())));
         services.TryAddSingleton(provider => provider.GetRequiredService<IOptions<FormBuilderOptions>>().Value.Limits.Definitions);
 
         services.TryAddSingleton(_ => GlobalizationFacts.OfThisRuntime());

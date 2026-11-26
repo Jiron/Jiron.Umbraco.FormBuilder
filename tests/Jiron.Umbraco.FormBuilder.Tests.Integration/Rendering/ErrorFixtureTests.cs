@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
+using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
@@ -28,6 +29,7 @@ public sealed class ErrorFixtureTests : RenderingTestBase
     private static readonly Guid ChecksKey = Guid.Parse("30000000-0000-4000-8000-0000000000e1");
     private static readonly Guid PagedKey = Guid.Parse("30000000-0000-4000-8000-0000000000e2");
     private static readonly Guid BootstrapKey = Guid.Parse("30000000-0000-4000-8000-0000000000e3");
+    private static readonly Guid OptionalKey = Guid.Parse("30000000-0000-4000-8000-0000000000e4");
 
     private static readonly Guid Name = K(0x10);
     private static readonly Guid Email = K(0x12);
@@ -43,14 +45,15 @@ public sealed class ErrorFixtureTests : RenderingTestBase
         var checks = await PublishFormAsync("renderingErrors", Checks);
         var paged = await PublishFormAsync("renderingErrorsPaged", Paged);
         var bootstrap = await PublishFormAsync("renderingErrorsBootstrap", definition => Checks(definition) with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = "bootstrap5", RequiredMarker = RequiredMarker.Required } } });
-        string[] pages = ["errors", "errors-paged", "errors-bootstrap"];
+        var optional = await PublishFormAsync("renderingErrorsOptional", Optional);
+        string[] pages = ["errors", "errors-paged", "errors-bootstrap", "errors-optional"];
         _ = language == "de" ? await CulturePagesAsync("de-DE", "German", pages) : await PagesAsync(pages);
 
         var cases = new JsonArray();
         foreach (var (name, page, nav, answers) in Cases())
         {
             var form = await FormAtAsync(page);
-            var first = Normalised(form, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey));
+            var first = Normalised(form, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey), (optional, OptionalKey));
             foreach (var (field, values) in answers)
             {
                 Fill(form, field, values);
@@ -61,13 +64,22 @@ public sealed class ErrorFixtureTests : RenderingTestBase
             Assert.That(Succeeded(response), Is.True, $"{name}: {(int)response.StatusCode} {html}");
             var shown = (await new HtmlParser().ParseDocumentAsync(html)).QuerySelector("form.jfb-form") ?? throw new AssertionException($"{name}: no form in {html}");
             Assert.That(shown.QuerySelectorAll("[data-jfb-summary]"), Is.Not.Empty, $"{name}: the post was refused with its errors");
+            if (name.StartsWith("empty", StringComparison.Ordinal))
+            {
+                // A send with no answer at all names the required fields as a send with one answer does, and says the
+                // form is empty only where nothing is required (ADR-0266).
+                var links = shown.QuerySelectorAll("[data-jfb-summary] a").Select(link => link.TextContent).ToList();
+                Assert.That(links, name == "empty" ? Has.Count.EqualTo(Errors(shown)).And.Count.GreaterThan(1) : Has.Count.EqualTo(1), $"{name}: {string.Join(" | ", links)}");
+                Assert.That(Errors(shown), Is.EqualTo(name == "empty" ? links.Count : 0), $"{name}: the fields' errors");
+            }
+
             cases.Add(new JsonObject
             {
                 ["name"] = name,
                 ["scope"] = nav == FormPostFields.Next ? "page" : "send",
                 ["now"] = Now.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
                 ["first"] = first,
-                ["html"] = Normalised(shown, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey)),
+                ["html"] = Normalised(shown, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey), (optional, OptionalKey)),
             });
         }
 
@@ -87,7 +99,9 @@ public sealed class ErrorFixtureTests : RenderingTestBase
     }
 
     // The posts: every required field left empty with one answer given, so the post is not empty; answers each check
-    // refuses; nothing at all; Next on the first page of two with its errors; and the first two in bootstrap5.
+    // refuses; nothing at all, which names the required fields too (ADR-0266); nothing at all of a form that requires
+    // nothing, which is the empty submission; Next on the first page of two with its errors; and the first two in
+    // bootstrap5.
     private static IEnumerable<(string Name, string Path, string Nav, (string Field, string[] Values)[] Answers)> Cases()
     {
         (string Field, string[] Values)[] required = [("promo", ["1234"])];
@@ -118,6 +132,7 @@ public sealed class ErrorFixtureTests : RenderingTestBase
         yield return ("required", "/errors/", FormPostFields.Submit, required);
         yield return ("refused", "/errors/", FormPostFields.Submit, refused);
         yield return ("empty", "/errors/", FormPostFields.Submit, []);
+        yield return ("empty, nothing required", "/errors-optional/", FormPostFields.Submit, []);
         yield return ("next", "/errors-paged/", FormPostFields.Next, [("pagedEmail", ["nope"])]);
         yield return ("bootstrap5 required", "/errors-bootstrap/", FormPostFields.Submit, required);
         yield return ("bootstrap5 refused", "/errors-bootstrap/", FormPostFields.Submit, refused);
@@ -208,6 +223,34 @@ public sealed class ErrorFixtureTests : RenderingTestBase
             new FormPage { Key = K(0x54), Groups = [new FormGroup { Key = K(0x55), Fields = [Field(K(0x56), "later", "text", "Later") with { Required = true }] }] },
         ],
     };
+
+    // A text, a choice and a consent, none of them required.
+    private static FormDefinition Optional(FormDefinition definition) => definition with
+    {
+        Pages =
+        [
+            new FormPage
+            {
+                Key = K(0x60),
+                Groups =
+                [
+                    new FormGroup
+                    {
+                        Key = K(0x61),
+                        Fields =
+                        [
+                            Field(K(0x62), "remark", "text", "Remark"),
+                            Field(K(0x63), "colour", "radio", "Colour") with { Options = Options(("red", "Red"), ("blue", "Blue")) },
+                            Field(K(0x64), "news", "consent", "News", """{"text":{"":"<p>Send me the news.</p>"}}"""),
+                        ],
+                    },
+                ],
+            },
+        ],
+    };
+
+    // The number of fields' errors a page shows.
+    private static int Errors(IElement shown) => shown.QuerySelectorAll("[data-jfb-error]").Count(error => error.TextContent.Trim().Length > 0);
 
     private static FormField Field(Guid key, string alias, string type, string label, string settings = "{}") => new()
     {

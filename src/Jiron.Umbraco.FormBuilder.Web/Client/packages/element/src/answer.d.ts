@@ -210,6 +210,7 @@ export type FormViewModel = {
   culture: string;
   direction: string;
   cssClass: string;
+  isLightOnly: boolean;
   display: "form" | "notice" | "outcome";
   apiBase: string;
   contentKey?: string;

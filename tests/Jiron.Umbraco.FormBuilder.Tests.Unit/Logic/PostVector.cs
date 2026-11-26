@@ -19,6 +19,23 @@ internal static class PostVector
     /// <summary>The post as both runners write it: <c>{ "fields", "rows", "context", "query" }</c>.</summary>
     public static JsonObject Run(string id, JsonElement post)
     {
+        var reader = FormPostReader.Read(Collection(post), Definition(id, post), TestFieldTypes.Registry);
+        var (fields, rows) = reader.Posted();
+        return new JsonObject
+        {
+            ["fields"] = Answers(fields),
+            ["rows"] = new JsonObject(rows.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)new JsonArray([.. pair.Value.Select(row => (JsonNode)Answers(row))])))),
+            ["context"] = new JsonObject(reader.Context.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)pair.Value))),
+            ["query"] = new JsonObject(reader.Query.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)Texts(pair.Value)))),
+        };
+    }
+
+    /// <summary>
+    /// The form a case's <c>fields</c> make, on one page: each field by its alias, type and settings, a repeatable
+    /// group's children, and whether it is <c>required</c>.
+    /// </summary>
+    public static FormDefinition Definition(string id, JsonElement post)
+    {
         var number = 0;
         FormField Field(JsonElement given)
         {
@@ -34,18 +51,22 @@ internal static class PostVector
                 Type = given.GetProperty("type").GetString()!,
                 Alias = alias,
                 Label = new LocalizedText(alias ?? "content"),
+                Required = given.TryGetProperty("required", out var required) && required.GetBoolean(),
                 Settings = given.TryGetProperty("settings", out var settings) ? SettingsObject.Parse(settings.GetRawText()) : null,
                 Fields = given.TryGetProperty("fields", out var children) ? [.. children.EnumerateArray().Select(Field)] : [],
             };
         }
 
-        var definition = new FormDefinition
+        return new FormDefinition
         {
             Key = Key(0),
             Pages = [new FormPage { Key = Key(1000), Groups = [new FormGroup { Key = Key(1001), Fields = [.. post.GetProperty("fields").EnumerateArray().Select(Field)] }] }],
         };
+    }
 
-        // A form collection holds a name's values together, in the order posted, as ASP.NET Core reads a body.
+    /// <summary>The page's names and values as ASP.NET Core reads a body: a name's values together, in the order posted.</summary>
+    public static FormCollection Collection(JsonElement post)
+    {
         var names = new Dictionary<string, List<string?>>(StringComparer.Ordinal);
         foreach (var entry in post.GetProperty("entries").EnumerateArray())
         {
@@ -58,18 +79,7 @@ internal static class PostVector
             values.Add(entry[1].GetString());
         }
 
-        var reader = FormPostReader.Read(
-            new FormCollection(names.ToDictionary(pair => pair.Key, pair => new StringValues([.. pair.Value]), StringComparer.Ordinal)),
-            definition,
-            TestFieldTypes.Registry);
-        var (fields, rows) = reader.Posted();
-        return new JsonObject
-        {
-            ["fields"] = Answers(fields),
-            ["rows"] = new JsonObject(rows.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)new JsonArray([.. pair.Value.Select(row => (JsonNode)Answers(row))])))),
-            ["context"] = new JsonObject(reader.Context.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)pair.Value))),
-            ["query"] = new JsonObject(reader.Query.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)Texts(pair.Value)))),
-        };
+        return new FormCollection(names.ToDictionary(pair => pair.Key, pair => new StringValues([.. pair.Value]), StringComparer.Ordinal));
     }
 
     private static JsonObject Answers(IReadOnlyDictionary<string, PostedAnswer> answers) =>

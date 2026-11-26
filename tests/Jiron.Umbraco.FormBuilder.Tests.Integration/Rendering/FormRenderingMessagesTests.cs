@@ -70,7 +70,8 @@ public sealed class FormRenderingMessagesTests : RenderingTestBase
             },
         },
         "one" => new FormPostState { Errors = new Dictionary<Guid, FormPostError> { [Name] = new("required") } },
-        "empty" => new FormPostState { IsEmpty = true, Errors = new Dictionary<Guid, FormPostError> { [Name] = new("required") } },
+        // The pipeline names an empty send's fields' errors when it has any (ADR-0266), so its own problem comes alone.
+        "empty" => new FormPostState { IsEmpty = true },
         _ => null,
     };
 
@@ -147,11 +148,11 @@ public sealed class FormRenderingMessagesTests : RenderingTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(Links(form), Is.EqualTo(new[] { ("#jfb-1-name", "Answer at least one question before you send the form"), ("#jfb-1-name", "Name: Enter an answer") }), "first, to the first field past the heading");
-            Assert.That(Text(form, ".jfb-error-summary h2"), Is.EqualTo("These answers need a change"));
+            Assert.That(Links(form), Is.EqualTo(new[] { ("#jfb-1-name", "Answer at least one question before you send the form") }), "to the first field past the heading");
+            Assert.That(Text(form, ".jfb-error-summary h2"), Is.EqualTo("This answer needs a change"));
+            Assert.That(Errors(form), Is.Empty, "no field's error");
             Assert.That(Links(quiet), Is.EqualTo(new[] { ("#jfb-1-name", "Answer at least one question before you send the form") }), "a form without the summary shows the message that belongs to no field");
             Assert.That(Text(quiet, ".jfb-error-summary h2"), Is.EqualTo("This answer needs a change"));
-            Assert.That(Errors(quiet), Is.EqualTo(new[] { ("jfb-1-name-error", "Enter an answer") }), "and the field's error under the field only");
         });
     }
 

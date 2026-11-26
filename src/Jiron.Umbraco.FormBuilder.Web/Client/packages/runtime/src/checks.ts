@@ -42,7 +42,8 @@ export interface PageError {
 /**
  * The errors of the shown fields in the form's order, every one: a group's row count's and the validation rules' at
  * it, then each row's shown children's; for a field its type's error kinds, its own checks and the validation rules
- * whose message shows at it or at one of a grid's rows.
+ * whose message shows at it or at one of a grid's rows. The keys of the shown required fields whose check is the
+ * server's go into `left`, so a send with no answer at all can tell whether the server would name one (ADR-0266).
  */
 export function errorsOf(
   model: FormModel,
@@ -50,6 +51,7 @@ export function errorsOf(
   state: FormState,
   context: Context,
   onPage: ReadonlySet<string> = new Set(),
+  left: string[] = [],
 ): PageError[] {
   const hidden = new Set(state.hidden);
   const required = new Set(state.required);
@@ -61,7 +63,7 @@ export function errorsOf(
     if (group === undefined) {
       const from = errors.length;
       const read = reading.fields.get(field.key);
-      check(errors, model, field, read, null, required.has(field.key), others, context, onPage);
+      check(errors, model, field, read, null, required.has(field.key), others, context, onPage, left);
       messages(errors, state.messages, field, null);
       withParts(errors, from, model, field, read, required.has(field.key));
       continue;
@@ -81,7 +83,7 @@ export function errorsOf(
         if (rowState.hidden.includes(child.key)) continue;
         const from = errors.length;
         const isRequired = rowState.required.includes(child.key);
-        check(errors, model, child, children.get(child.key), row, isRequired, rowOthers, context, onPage);
+        check(errors, model, child, children.get(child.key), row, isRequired, rowOthers, context, onPage, left);
         messages(errors, rowState.messages, child, row);
         withParts(errors, from, model, child, children.get(child.key), isRequired);
       }
@@ -101,6 +103,7 @@ function check(
   others: Readonly<Record<string, readonly string[]>>,
   context: Context,
   onPage: ReadonlySet<string>,
+  left: string[],
 ): void {
   const logic = own(model.fields, field.key);
   const builtIn = logic?.builtIn === true;
@@ -112,8 +115,14 @@ function check(
   }
   // The server's to decide: a calculation's value, a value it resolves, and the files it was sent, but for a field whose
   // files the page takes, which reads them all (ADR-0152).
-  if (field.type === 'calculation' && builtIn) return;
-  if (declared?.serverOnly === true || (declared?.storage === 'file' && !onPage.has(field.key))) return;
+  if (
+    (field.type === 'calculation' && builtIn) ||
+    declared?.serverOnly === true ||
+    (declared?.storage === 'file' && !onPage.has(field.key))
+  ) {
+    if (isRequired) left.push(field.key);
+    return;
+  }
   const checked: CheckedField = {
     type: field.type,
     ...(logic?.kind == null ? {} : { kind: logic.kind as Kind }),

@@ -825,7 +825,7 @@ stands alone, and a legend made only of spaces is left out (ADR-0109).
 | `check`: a pattern without a message | Enter the answer in the format asked for | Geben Sie die Antwort im vorgegebenen Format ein |
 | `check`: the same as another field, named by its label | Enter the same as for {field} | Geben Sie dasselbe ein wie bei {field} |
 | `check`: unique per form | This answer has already been given. Enter another one. | Diese Antwort wurde bereits gegeben. Geben Sie eine andere ein. |
-| a submission without an answer, in the summary | Answer at least one question before you send the form | Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Answer at least one question before you send the form | Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden |
 | the error summary's heading, by the number of its links | This answer needs a change · These answers need a change | Diese Antwort muss noch geändert werden · Diese Antworten müssen noch geändert werden |
 | a summary link to a default | {label}: {message} | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} | {label} {message} |
@@ -941,7 +941,7 @@ least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every 
 | `check`: a pattern without a message | Saisissez la réponse au format demandé |
 | `check`: the same as another field, named by its label | Saisissez la même réponse que pour {field} |
 | `check`: unique per form | Cette réponse a déjà été donnée. Saisissez-en une autre. |
-| a submission without an answer, in the summary | Répondez à au moins une question avant d’envoyer le formulaire |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Répondez à au moins une question avant d’envoyer le formulaire |
 | the error summary's heading, by the number of its links | Cette réponse doit être modifiée · Ces réponses doivent être modifiées |
 | a summary link to a default | {label} : {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
@@ -1049,7 +1049,7 @@ least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every 
 | `check`: a pattern without a message | Inserisci la risposta nel formato richiesto |
 | `check`: the same as another field, named by its label | Inserisci lo stesso valore di {field} |
 | `check`: unique per form | Questa risposta è già stata data. Inseriscine un’altra. |
-| a submission without an answer, in the summary | Rispondi ad almeno una domanda prima di inviare il modulo |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Rispondi ad almeno una domanda prima di inviare il modulo |
 | the error summary's heading, by the number of its links | Questa risposta va corretta · Queste risposte vanno corrette |
 | a summary link to a default | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
@@ -1157,7 +1157,7 @@ least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every 
 | `check`: a pattern without a message | Vul het antwoord in de gevraagde vorm in |
 | `check`: the same as another field, named by its label | Vul hetzelfde in als bij {field} |
 | `check`: unique per form | Dit antwoord is al gegeven. Vul een ander antwoord in. |
-| a submission without an answer, in the summary | Beantwoord minstens één vraag voordat u het formulier verstuurt |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Beantwoord minstens één vraag voordat u het formulier verstuurt |
 | the error summary's heading, by the number of its links | Dit antwoord moet nog worden aangepast · Deze antwoorden moeten nog worden aangepast |
 | a summary link to a default | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
@@ -1265,7 +1265,7 @@ least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every 
 | `check`: a pattern without a message | Escriba la respuesta en el formato indicado |
 | `check`: the same as another field, named by its label | Escriba lo mismo que en {field} |
 | `check`: unique per form | Esta respuesta ya está en uso. Escriba otra. |
-| a submission without an answer, in the summary | Responda al menos a una pregunta antes de enviar el formulario |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Responda al menos a una pregunta antes de enviar el formulario |
 | the error summary's heading, by the number of its links | Hay que corregir esta respuesta · Hay que corregir estas respuestas |
 | a summary link to a default | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |
@@ -1373,7 +1373,7 @@ least 1. `tests/vectors/tables/message-words.json` holds both runtimes to every 
 | `check`: a pattern without a message | Skriv svaret i det ønskede format |
 | `check`: the same as another field, named by its label | Skriv det samme som ved {field} |
 | `check`: unique per form | Dette svar er allerede brugt. Skriv et andet. |
-| a submission without an answer, in the summary | Besvar mindst ét spørgsmål, før du sender formularen |
+| a submission without an answer, of a form whose fields show no error (ADR-0266), in the summary | Besvar mindst ét spørgsmål, før du sender formularen |
 | the error summary's heading, by the number of its links | Dette svar skal rettes · Disse svar skal rettes |
 | a summary link to a default | {label}: {message} |
 | a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} |

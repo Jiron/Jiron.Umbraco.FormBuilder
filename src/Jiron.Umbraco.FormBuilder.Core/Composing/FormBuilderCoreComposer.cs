@@ -51,6 +51,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         // Umbraco also finds the plan by type scanning; its collection keeps one of each type.
         builder.PackageMigrationPlans().Add<FormBuilderMigrationPlan>();
         builder.Services.TryAddSingleton<IFormBuilderMigrationState, FormBuilderMigrationState>();
+        builder.Services.TryAddSingleton<FormBuilderTablesCheck>();
         builder.AddNotificationHandler<MigrationPlansExecutedNotification, FormBuilderMigrationsExecutedHandler>();
 
         // Form definitions (ADR-0002, ADR-0034): the upgrader chain (no upgraders while v1 is the only schema) and the

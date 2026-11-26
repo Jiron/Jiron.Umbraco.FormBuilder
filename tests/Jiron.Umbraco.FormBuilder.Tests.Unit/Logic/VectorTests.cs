@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["fileKind", "typedName", "typedPng", "condition", "rule", "number", "calc", "formula", "form", "field", "template", "recall", "message", "read", "rowCount", "post", "conflict", "shows"];
+    private static readonly string[] Runnable = ["fileKind", "typedName", "typedPng", "condition", "rule", "number", "calc", "formula", "form", "field", "template", "recall", "message", "read", "rowCount", "post", "send", "conflict", "shows"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -62,6 +62,7 @@ public sealed class VectorTests
             : vector.TryGetProperty("read", out var read) ? ReadingVector.Read(id, read)
             : vector.TryGetProperty("rowCount", out var rows) ? ReadingVector.RowCount(id, rows)
             : vector.TryGetProperty("post", out var post) ? PostVector.Run(id, post)
+            : vector.TryGetProperty("send", out var send) ? await SendVector.RunAsync(id, send)
             : vector.TryGetProperty("fileKind", out var fileKind) ? FileKindVector.Run(fileKind)
             : vector.TryGetProperty("typedName", out var typedName) ? TypedNameVector.Clean(typedName)
             : vector.TryGetProperty("typedPng", out _) ? TypedNameVector.Read(vector.GetProperty("expect"))

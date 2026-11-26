@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Events;
@@ -25,14 +26,23 @@ internal static class FormBuilderAccessServices
     }
 }
 
-/// <summary>Follows Umbraco's user groups (ADR-0048): a deleted group's grants go, and any change drops the snapshot.</summary>
-internal sealed class FormBuilderUserGroupHandler(IFormBuilderAccessService access, AccessSnapshotInvalidator snapshots)
+/// <summary>
+/// Follows Umbraco's user groups (ADR-0048): a deleted group's grants go, and any change drops the snapshot. Before the
+/// package's tables are there, a group has no grants to take away (27.1).
+/// </summary>
+internal sealed class FormBuilderUserGroupHandler(IFormBuilderAccessService access, AccessSnapshotInvalidator snapshots, FormBuilderTablesCheck tables)
     : INotificationAsyncHandler<UserGroupDeletedNotification>, INotificationHandler<UserGroupSavedNotification>
 {
     /// <inheritdoc />
     public async Task HandleAsync(UserGroupDeletedNotification notification, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(notification);
+        if (!await tables.AreThereAsync(cancellationToken))
+        {
+            snapshots.Changed();
+            return;
+        }
+
         foreach (var group in notification.DeletedEntities)
         {
             await access.RemoveGroupAsync(group.Key, cancellationToken);

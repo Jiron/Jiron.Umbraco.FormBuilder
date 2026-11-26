@@ -417,11 +417,27 @@ describe('a refused send', () => {
     expect(shownOf(form).inline).not.toContain('jfb-1-detail-error: Enter an answer');
   });
 
-  it('says the empty submission in the summary, linked to the first field, until the visitor answers', async () => {
+  it('names the required fields of a send with no answer at all, as of a send with one (ADR-0266)', async () => {
     const { form, invalid } = contact(ONE_PAGE, FIELDS);
     press(form, 'send');
     await settle();
-    // The name is required, but a send with no answer at all is refused as empty, alone.
+    expect(shownOf(form)).toEqual({
+      inline: ['jfb-1-name-error: Enter an answer', 'jfb-1-email-error: Enter an email address'],
+      summary: ['#jfb-1-name Name: Enter an answer', '#jfb-1-email Email address: Enter an email address'],
+    });
+    expect(invalid.map((each) => each.errors.map((error) => error.kind))).toEqual([['required', 'required']]);
+  });
+
+  it('says the empty submission in the summary of a form that requires nothing, linked to the first field, until the visitor answers', async () => {
+    const optional = modelOf([
+      {
+        key: 'p1',
+        groups: [{ key: 'g1', fields: [{ ...NAME, required: false }, { ...EMAIL, required: false }, WAY] }],
+      },
+    ]);
+    const { form, invalid } = contact(optional, FIELDS);
+    press(form, 'send');
+    await settle();
     expect(shownOf(form)).toEqual({
       inline: [],
       summary: ['#jfb-1-name Answer at least one question before you send the form'],
@@ -674,7 +690,7 @@ describe("the server's errors after a post without JavaScript", () => {
     form.querySelector('[data-jfb-field="k-email"]')?.remove();
     press(form, 'send');
     await settle();
-    expect(shownOf(form).summary).toEqual(['#jfb-1-name Answer at least one question before you send the form']);
+    expect(shownOf(form).summary).toEqual(['#jfb-1-name Name: Enter an answer']);
   });
 
   it("let a send go on when the page's own checks pass, as the server checks it again (6.8b)", async () => {

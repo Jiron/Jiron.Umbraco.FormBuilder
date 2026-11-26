@@ -15,6 +15,13 @@ internal interface IFormBuilderMigrationState
     /// </summary>
     ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// True once the package's tables are there: the plan's first step has run, though later ones may still be pending.
+    /// False while Umbraco is not running yet, before the first step, and when the state cannot be read. A state that
+    /// cannot tell the two apart says the tables are there only once nothing is pending.
+    /// </summary>
+    async ValueTask<bool> HasTablesAsync(CancellationToken cancellationToken = default) => !await IsPendingAsync(cancellationToken);
+
     /// <summary>Forgets the remembered answer, for example after the plan ran on this server.</summary>
     void Invalidate();
 }

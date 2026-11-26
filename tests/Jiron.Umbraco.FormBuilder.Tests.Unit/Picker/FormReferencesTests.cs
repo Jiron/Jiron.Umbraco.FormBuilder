@@ -14,6 +14,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.Changes;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Picker;
 
@@ -217,10 +218,41 @@ public sealed class FormReferencesTests
         var broken = new InvalidOperationException("JFB_TEST: the database is gone");
         values.SetAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).ThrowsAsync(broken);
         var logger = new RecordingLogger<FormReferenceTypeHandler>();
-        var handler = new FormReferenceTypeHandler(new FormReferenceRebuild(_references, values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance), logger);
+        var handler = new FormReferenceTypeHandler(new FormReferenceRebuild(_references, values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance), Tables(), logger);
 
         Assert.DoesNotThrowAsync(() => handler.HandleAsync(new DataTypeDeletedNotification(Substitute.For<IDataType>(), new EventMessages()), CancellationToken.None));
         Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception?.Message)), Is.EqualTo(new[] { (LogLevel.Warning, LoggedException.Of(broken).Message) }));
+    }
+
+    [Test]
+    public async Task ChangesBeforeThePackagesTablesAreThere_WriteNothing_AndTheLogHearsOfItOnce_WithoutAStackTrace()
+    {
+        // As jfbKeyValue and the index throw while their tables are missing.
+        var values = Substitute.For<IKeyValueRepository>();
+        values.SetAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("JFB_TEST: no such table: jfbKeyValue"));
+        _references.ReplaceContentAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("JFB_TEST: no such table"));
+        var told = new RecordingLogger<FormBuilderTablesCheck>();
+        var tables = Tables(there: false, told);
+        var typeLog = new RecordingLogger<FormReferenceTypeHandler>();
+        var contentLog = new RecordingLogger<FormReferenceHandler>();
+        var types = new FormReferenceTypeHandler(new FormReferenceRebuild(_references, values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance), tables, typeLog);
+        var change = new ContentTypeChange<IContentType>(Substitute.For<IContentType>(), ContentTypeChangeTypes.RefreshMain);
+
+        for (var i = 0; i < 3; i++)
+        {
+            await types.HandleAsync(new ContentTypeChangedNotification(change, new EventMessages()), CancellationToken.None);
+            await Handler(contentLog, tables).HandleAsync(new ContentSavedNotification(Content(i + 1), new EventMessages()), CancellationToken.None);
+            await Handler(contentLog, tables).HandleAsync(new ContentDeletedNotification(Content(i + 1), new EventMessages()), CancellationToken.None);
+        }
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(typeLog.Entries.Select(entry => entry.Message).Concat(contentLog.Entries.Select(entry => entry.Message)), Is.Empty, "no warning for any change");
+            Assert.That(told.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Information, (Exception?)null) }), "one line, once");
+            await values.DidNotReceive().SetAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            await _references.DidNotReceive().ReplaceContentAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
+            await _references.DidNotReceive().DeleteContentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        });
     }
 
     [Test]
@@ -403,7 +435,11 @@ public sealed class FormReferencesTests
     private FormReferenceIndex Index() =>
         new(new DataValueReferenceFactoryCollection(() => [], NullLogger<DataValueReferenceFactoryCollection>.Instance), new PropertyEditorCollection(new DataEditorCollection(() => [])), _references);
 
-    private FormReferenceHandler Handler(ILogger<FormReferenceHandler> logger) => new(Index(), logger);
+    private FormReferenceHandler Handler(ILogger<FormReferenceHandler> logger, FormBuilderTablesCheck? tables = null) => new(Index(), tables ?? Tables(), logger);
+
+    // The package's tables, there unless said otherwise.
+    private static FormBuilderTablesCheck Tables(bool there = true, ILogger<FormBuilderTablesCheck>? logger = null) =>
+        new(new FixedMigrationState(pending: !there, hasTables: there), logger ?? NullLogger<FormBuilderTablesCheck>.Instance);
 
     private FormReferenceRebuild Rebuild() => new(_references, _values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance);
 
@@ -414,9 +450,11 @@ public sealed class FormReferencesTests
         return new FormReferenceRebuildJob(runtime, new FixedMigrationState(pending), Rebuild(), _clock, logger);
     }
 
-    private sealed class FixedMigrationState(bool pending) : IFormBuilderMigrationState
+    private sealed class FixedMigrationState(bool pending, bool hasTables = true) : IFormBuilderMigrationState
     {
         public ValueTask<bool> IsPendingAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult(pending);
+
+        public ValueTask<bool> HasTablesAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult(hasTables);
 
         public void Invalidate()
         {

@@ -358,7 +358,8 @@ internal sealed partial class FormBuilderSettingsService(
     private SettingsSnapshot<T> Snapshot<T>(StoredScope stored)
         where T : class, ISettingsSection, new()
     {
-        var (value, locks) = SettingsHostRules.Apply(SettingsSectionJson.Combine<T>(stored.Global, stored.Site), options.Value, Rules<T>());
+        var combined = SettingsHostDefaults.Apply(SettingsSectionJson.Combine<T>(stored.Global, stored.Site), stored.Global, stored.Site, options.Value);
+        var (value, locks) = SettingsHostRules.Apply(combined, options.Value, Rules<T>());
         return new SettingsSnapshot<T>(value, stored.Version, SettingsSectionJson.Overrides<T>(stored.Site), locks);
     }
 

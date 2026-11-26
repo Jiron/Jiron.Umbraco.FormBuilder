@@ -5,14 +5,16 @@
  * handed to it (ADR-0113); a form with a default value for the page to fill in loads it at
  * once, so the default is there before the visitor touches the form (ADR-0118), as does a form whose view says it asks
  * at once, for what only the challenge's answer can tell a cached page (ADR-0156). A form of another contract version,
- * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
+ * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. A press
+ * of a form's button before its logic is there is held, not posted: the logic takes that same press once it woke, and
+ * where it cannot load in time the form posts as without JavaScript, once (27.1). Below
  * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123). It
  * fits every form root to its page (6.4l), and gives a site's code a form to work with (`get`, section 4.9). Where the
  * form's markup names where to count (`data-jfb-insights`), it counts what visitors do with the form (ROADMAP 11.5,
  * ADR-0211). What one form throws is reported as an uncaught error is, and the page's other forms go on (16.4, ADR-0237).
  */
 import { proto } from '@jfb/logic/proto';
-import { checkGround, followSteps } from './fit';
+import { checkGround, followGround, followSteps } from './fit';
 import type { JironFormBuilderForm } from './global';
 import { parseModel, type FormModel } from './model';
 
@@ -27,6 +29,16 @@ const TOUCHES = ['focusin', 'pointerdown', 'input', 'change'] as const;
 
 /** What the logic hears of a visitor once it woke, which the frame keeps for it until then: an answer and a leaving. */
 const HEARD = ['input', 'change', 'focusout'] as const;
+
+/**
+ * How long a press waits for the logic before the form posts as without JavaScript: the chunk comes from the site
+ * itself and is cached for a year, so a connection that cannot bring it in this time is better served by the post,
+ * and ten seconds is as long as a visitor's attention stays on a press that shows nothing but its busy state.
+ */
+export const HOLD_MS = 10_000;
+
+/** Marks the button whose press is held while the logic loads, as the logic marks one while it sends. */
+const BUSY = 'data-jfb-busy';
 
 /** What the chunk offers the frame. */
 export interface Chunk {
@@ -145,6 +157,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     checkGround(root);
     const follows = proto(root).ownerDocument.defaultView?.matchMedia?.('(prefers-color-scheme: dark)');
     follows?.addEventListener('change', () => checkGround(root));
+    followGround(root);
     const steps = proto(root).querySelector(':scope > .jfb-progress-steps');
     if (steps !== null) followSteps(steps);
   }
@@ -163,16 +176,22 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       if (event.isTrusted) heard.push(event);
     };
     for (const type of HEARD) proto(form).addEventListener(type, hear);
+    // Where the logic is: a press is held for it until it woke or failed (27.1); the press let go after the wait passes.
+    let phase: 'asleep' | 'loading' | 'woken' | 'failed' = 'asleep';
+    let held = false;
+    let releasing = false;
     const touched = (): void => {
       if (sessions.has(form)) return;
+      phase = 'loading';
       for (const type of TOUCHES) proto(form).removeEventListener(type, touched);
       chunk ??= load().catch(() => null);
       const session = chunk.then((loaded) => loaded?.attach(form, model, heard));
       sessions.set(form, session);
       // A form with no address to post to (the element's) has nothing to answer a press once its logic cannot load:
       // the next press says so in the form's own words, tells the site, and loads the logic again, which goes on hearing.
-      const settle = (woken?: unknown): void => {
-        if (woken != null || proto(form).hasAttribute('action')) {
+      const settle = (logic?: unknown): void => {
+        phase = logic != null ? 'woken' : 'failed';
+        if (logic != null || proto(form).hasAttribute('action')) {
           for (const type of HEARD) proto(form).removeEventListener(type, hear);
           return;
         }
@@ -205,6 +224,39 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       void session.then(settle, () => settle());
     };
     wakes.set(form, touched);
+    // A press before the logic woke would post the page while the chunk is on its way: it is held, the logic loads, and
+    // the same press goes to it with the button pressed, so the visitor gets the errors in place or one send. Where the
+    // logic cannot load, or not within HOLD_MS, the press goes on as without JavaScript. A form that cannot post has
+    // nothing to go on to: its press waits for the logic however long that takes, and says so, as above, once the logic
+    // has failed. A second press while one is held is the same press. A browser without requestSubmit cannot hand a
+    // press on, and posts as before.
+    proto(form).addEventListener('submit', (event) => {
+      if (phase === 'woken' || phase === 'failed' || releasing || !('requestSubmit' in proto(form))) return;
+      event.preventDefault();
+      if (held) return;
+      held = true;
+      const pressed = event.submitter;
+      pressed?.setAttribute(BUSY, '');
+      touched();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const waited = new Promise<void>((resolve) => {
+        if (proto(form).hasAttribute('action')) timer = setTimeout(resolve, HOLD_MS);
+      });
+      void Promise.race([sessions.get(form)?.catch(() => undefined), waited]).then(() => {
+        clearTimeout(timer);
+        // In a task of its own: a form ignores a submission asked for while it still fires one.
+        setTimeout(() => {
+          pressed?.removeAttribute(BUSY);
+          held = false;
+          releasing = phase !== 'woken';
+          try {
+            proto(form).requestSubmit(pressed instanceof HTMLElement && pressed.isConnected ? pressed : undefined);
+          } finally {
+            releasing = false;
+          }
+        });
+      });
+    });
     // Counting is the site's, not the visitor's: a form that cannot count works all the same.
     alone(() => count(form));
     for (const type of TOUCHES) proto(form).addEventListener(type, touched);

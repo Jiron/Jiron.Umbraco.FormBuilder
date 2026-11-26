@@ -1,12 +1,13 @@
 /**
  * Validation on the page (ROADMAP 6.4d, ADR-0112): the page's answers read (6.4b), its rules decided (6.4c), its
  * shown fields checked as the pipeline checks a post, and each field's first error worded as the server's render
- * words it. A send checks every page and refuses an empty submission; Next checks the page shown; the fields' own
- * check, as the visitor answers, leaves the empty submission to the send (6.4e). A label that recalls answers is
+ * words it. A send checks every page, and a send with no answer at all names its fields' errors as any send does, and
+ * is refused as empty only when no field has one (ADR-0266); Next checks the page shown; the fields' own check, as the
+ * visitor answers, leaves the empty submission to the send (6.4e). A label that recalls answers is
  * named as it renders for the answers checked (6.4g, ADR-0115). The server's errors of a refused send are worded and
  * placed as the page's own (6.4i, ADR-0120).
  */
-import { isEmptyPost } from '@jfb/logic';
+import { sendRefusal } from '@jfb/logic';
 import { proto } from '@jfb/logic/proto';
 import { errorsOf, type PageError } from './checks';
 import type { PageEngine } from './engine';
@@ -94,7 +95,7 @@ async function check(
   const state = engine.decide(reading.answers, context);
   const words = await formWords(model);
   const server = typeof scope === 'object';
-  if (server ? scope.some((problem) => problem.code === 'empty') : scope === 'send' && isEmptyPost(reading.post))
+  if (server && scope.some((problem) => problem.code === 'empty'))
     return [formError(form, model, 'empty', words.empty)];
   // A site's handler's errors at the form come first, in its words or those of a check without its own (ADR-0233).
   const atForm = server
@@ -102,6 +103,7 @@ async function check(
         .filter((problem) => problem.code === 'custom' && problem.path === '')
         .map((problem) => formError(form, model, 'custom', problem.text || words.checkThis))
     : [];
+  const left: string[] = [];
   let errors = server
     ? scope.map((problem) => placeOf(model, problem)).filter((error) => error !== null)
     : errorsOf(
@@ -114,7 +116,12 @@ async function check(
             (each) => each.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? [],
           ),
         ),
+        left,
       );
+  // A send with no answer at all and no field's error is the empty submission (ADR-0266); where a required field's check
+  // is the server's, the send goes there, which names that field or says the form is empty.
+  if (scope === 'send' && sendRefusal(reading.post, errors) === 'empty')
+    return left.length === 0 ? [formError(form, model, 'empty', words.empty)] : [];
   if (scope === 'page') {
     const key = proto(form).querySelector<HTMLElement>('[data-jfb-page]:not([hidden])')?.dataset['jfbPage'];
     const page = model.form.pages.find((each) => each.key === key);

@@ -564,23 +564,23 @@ internal sealed class FormSubmissions(
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.AlreadySubmitted));
         }
 
-        // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072). A draft of
-        // nothing yet is a draft: its link comes back to the page the visitor was on (ADR-0252).
-        if (pageKey is null && !draft && IsEmpty(request))
-        {
-            return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
-        }
+        // A send with no answer at all is still checked, so it names the fields it lacks, but it goes no further than its
+        // fields' errors: no proof, captcha or spam score is asked of it, it names no upload (a token is an answer) and
+        // nothing of it is stored (ADR-0266). A draft of nothing yet is a draft: its link comes back to the page the
+        // visitor was on (ADR-0252).
+        var empty = pageKey is null && !draft && IsEmpty(request.Fields, request.Rows);
 
         // The puzzle comes with the challenge, so an answer that does not solve it asks for a new challenge (ADR-0141). A
         // preview's ticket stands in for the puzzle, the captcha and the spam score, which tell a person from a script, not
         // an editor from a visitor: a test entry never lands in Spam (ADR-0204).
         var tested = request.Preview is not null;
-        var protects = await protection.SettingsOfAsync(form.Form.Key, page, cancellationToken);
-        if (pageKey is null && !tested && !SubmissionProtection.HasItsProof(request, definition, protects))
+        var protects = empty ? null : await protection.SettingsOfAsync(form.Form.Key, page, cancellationToken);
+        if (protects is not null && pageKey is null && !tested && !SubmissionProtection.HasItsProof(request, definition, protects))
         {
             return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.ChallengeRequired));
         }
 
+        // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072).
         var zone = await timeZones.GetAsync(page.Site, cancellationToken);
         var read = await reader.ReadAsync(
             new PostedSubmission
@@ -590,13 +590,18 @@ internal sealed class FormSubmissions(
                 TimeZone = zone.Id,
                 Fields = answers.Fields,
                 Rows = answers.Rows,
-                Uploads = await UploadsAsync(request, answers, definition, served.Row.Id, cancellationToken),
+                Uploads = empty ? new Dictionary<string, StoredEntryFile>(StringComparer.Ordinal) : await UploadsAsync(request, answers, definition, served.Row.Id, cancellationToken),
                 // The rules see the member as the page does: signed in, and in the groups they name (ADR-0138, ADR-0231).
                 MemberSignedIn = request.Member is not null,
                 MemberGroups = await GroupsOfAsync(request, definition),
             },
             cancellationToken);
         var paths = new FieldPaths(definition);
+        if (protects is null)
+        {
+            // The empty send, the only one that reads no protection settings: its refusal ends here.
+            return Reading.Refused(Invalid(aliases, read.Errors, EmptySend([.. read.Errors.Select(paths.Problem)])));
+        }
 
         // A token is spent when it is verified, so only answers that can be stored ask the provider (ADR-0142).
         var captcha = pageKey is null && !tested && (draft || read.Errors.IsEmpty) ? await protection.CheckCaptchaAsync(request, definition, protects, cancellationToken) : FormBuilderCaptchaOutcome.Passed;
@@ -621,13 +626,26 @@ internal sealed class FormSubmissions(
         ImmutableArray<SubmissionError> errors = onPage is null ? all : [.. all.Where(error => onPage.Contains(error.Field))];
         if (!errors.IsEmpty)
         {
-            return Reading.Refused(aliases.IsCurrent || errors.All(error => aliases.Shown.Contains(error.Field))
-                ? SubmissionResult.Invalid(errors.Select(paths.Problem))
-                : SubmissionResult.Refused(SubmissionRefusal.FormChanged));
+            return Reading.Refused(Invalid(aliases, errors, [.. errors.Select(paths.Problem)]));
         }
 
         return new Reading(null, new ReadSubmission(scope, page, read, wordings), verdict);
     }
+
+    // The fields' errors as the refusal names them; an older revision's page that did not show a field in error showed
+    // a form that has changed since.
+    private static SubmissionResult Invalid(Aliases aliases, ImmutableArray<SubmissionError> errors, IReadOnlyList<SubmissionProblem> problems) =>
+        aliases.IsCurrent || errors.All(error => aliases.Shown.Contains(error.Field))
+            ? SubmissionResult.Invalid(problems)
+            : SubmissionResult.Refused(SubmissionRefusal.FormChanged);
+
+    /// <summary>
+    /// The problems a send with no answer at all is refused with (ADR-0266): its shown fields' errors when it has any, as a
+    /// send with one answer gets them, and the empty submission's problem alone only when no field has one.
+    /// </summary>
+    /// <param name="fields">The shown fields' problems, in the form's order.</param>
+    internal static IReadOnlyList<SubmissionProblem> EmptySend(IReadOnlyList<SubmissionProblem> fields) =>
+        fields.Count > 0 ? fields : [new SubmissionProblem(SubmissionProblems.Empty, string.Empty)];
 
     // A retry of an entry's submission id: the same answers get the entry's receipt and outcome, others 409.
     private async Task<SubmissionResult> RetryAsync(StoredEntry entry, string digest, PublishedForm form, Guid? placement, CancellationToken cancellationToken) =>
@@ -836,14 +854,18 @@ internal sealed class FormSubmissions(
         }
     }
 
-    // Whether the submission holds no answer at all: no text but blanks in any value or part, a consent's wording hash
-    // aside, which says what the page showed and not what the visitor answered.
-    private static bool IsEmpty(SubmissionRequest request)
+    /// <summary>
+    /// Whether a submission's answers hold no answer at all: no text but blanks in any value or part, a consent's wording
+    /// hash aside, which says what the page showed and not what the visitor answered.
+    /// </summary>
+    /// <param name="fields">The answers outside repeatable groups, by alias.</param>
+    /// <param name="rows">The repeatable groups' rows, by the group's alias.</param>
+    internal static bool IsEmpty(IReadOnlyDictionary<string, PostedAnswer> fields, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>> rows)
     {
         static bool Blank(PostedAnswer answer) =>
             answer.Values.All(IsBlank) && (answer.Parts ?? new Dictionary<string, IReadOnlyList<string?>>())
                 .Where(part => part.Key != ConsentFieldType.WordingPart).All(part => part.Value.All(IsBlank));
-        return request.Fields.Values.All(Blank) && request.Rows.Values.SelectMany(rows => rows).SelectMany(row => row.Values).All(Blank);
+        return fields.Values.All(Blank) && rows.Values.SelectMany(each => each).SelectMany(row => row.Values).All(Blank);
     }
 
     private static bool IsBlank(string? text) => text is null || TextSemantics.Clean(text).Length == 0;
@@ -952,7 +974,7 @@ internal sealed class FormSubmissions(
 
     // Where each field, child and grid row of the live version is, as a problem's path names it, and its place in the
     // order of the form and its rows, the order the reader lists errors in.
-    private sealed class FieldPaths
+    internal sealed class FieldPaths
     {
         private readonly Dictionary<Guid, (string Alias, FormField? Group)> _fields = [];
         private readonly Dictionary<Guid, (FormField Grid, FormField? Group)> _rows = [];

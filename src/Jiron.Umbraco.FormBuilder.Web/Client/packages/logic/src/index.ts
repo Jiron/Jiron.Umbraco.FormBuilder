@@ -104,6 +104,7 @@ export {
   MOST_QUERY_VALUES,
   MOST_ROWS,
   readPost,
+  sendRefusal,
   type PostAnswer,
   type PostField,
   type ReadPost,

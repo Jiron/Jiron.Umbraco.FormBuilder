@@ -200,7 +200,8 @@ internal sealed partial class MergeTagAnswerTexts(
     /// <summary>
     /// <c>entry.answers</c>: every answered field the rules did not hide, in the order of the form, as <c>Label: answer</c>
     /// lines, and as a table in HTML; what the place leaves out is not listed (ADR-0014). With <paramref name="unanswered"/>,
-    /// <c>entry.table</c>: the fields without an answer are listed too, with nothing beside them.
+    /// <c>entry.table</c>: the fields without an answer are listed too, with nothing beside them. A date is written with its
+    /// month's name and no weekday, so it reads as one day in every culture (27.1).
     /// </summary>
     public MergeTagValue Answers(MergeTagScope scope, MergeTagPlace place, ScopeTexts texts, bool unanswered = false)
     {
@@ -216,7 +217,7 @@ internal sealed partial class MergeTagAnswerTexts(
             var label = Label(field, scope.Culture, texts.Dictionary);
             if (IsRepeater(field))
             {
-                var rows = RowTexts(field, scope, place, listing: true, texts);
+                var rows = RowTexts(field, scope, place, listing: true, texts, datesInWords: true);
                 if (rows.Count > 0)
                 {
                     listed.Add(showing == Showing.Masked ? (label, Masked, []) : (label, null, rows));
@@ -228,7 +229,7 @@ internal sealed partial class MergeTagAnswerTexts(
             }
             else if (scope.Answers.Find(field.Key) is { } answer)
             {
-                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(field, answer, scope.Culture, listing: true, texts, shared: false));
+                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(field, answer, scope.Culture, listing: true, texts, shared: false, datesInWords: true));
                 if (answerText.Length > 0 || unanswered)
                 {
                     listed.Add((label, answerText, []));
@@ -397,7 +398,7 @@ internal sealed partial class MergeTagAnswerTexts(
     /// (<paramref name="shared"/>, ADR-0068), only a built-in type writes its own; a site's type shows the default of its
     /// rule kind, which the browser knows too.
     /// </summary>
-    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, ScopeTexts texts, bool shared = false)
+    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, ScopeTexts texts, bool shared = false, bool datesInWords = false)
     {
         if (types.FindType(field.Type) is not { } type)
         {
@@ -406,7 +407,7 @@ internal sealed partial class MergeTagAnswerTexts(
 
         var formats = cultures.For(culture);
         var labels = texts.LabelsOf(field.Key, answer.Row);
-        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures);
+        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures) { DatesInWords = datesInWords };
         try
         {
             if (shared && !BuiltInFieldTypes.All.Contains(type.GetType()))
@@ -423,7 +424,7 @@ internal sealed partial class MergeTagAnswerTexts(
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             LogDisplayFailed(logger, type.Declaration.Alias, exception.GetType().FullName, exception.StackTrace);
-            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures);
+            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels, cultures) { DatesInWords = datesInWords };
             FieldDisplayDefaults.Display(type.Declaration, fallback);
             return fallback.Texts;
         }
@@ -464,7 +465,7 @@ internal sealed partial class MergeTagAnswerTexts(
     }
 
     /// <summary>Each answered row of a repeatable group as its children's <c>Label: answer</c> apart by "; ", in the order of its rows.</summary>
-    private List<string> RowTexts(FormField repeater, MergeTagScope scope, MergeTagPlace place, bool listing, ScopeTexts texts)
+    private List<string> RowTexts(FormField repeater, MergeTagScope scope, MergeTagPlace place, bool listing, ScopeTexts texts, bool datesInWords = false)
     {
         var rows = new List<string>();
         foreach (var row in scope.Answers.Rows(repeater.Fields.Select(child => child.Key)))
@@ -479,7 +480,7 @@ internal sealed partial class MergeTagAnswerTexts(
                     continue;
                 }
 
-                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(child, answer, scope.Culture, listing, texts, !listing && Shared(place)));
+                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(child, answer, scope.Culture, listing, texts, !listing && Shared(place), datesInWords));
                 if (answerText.Length > 0)
                 {
                     pieces.Add(Label(child, scope.Culture, texts.Dictionary) + ": " + answerText);
