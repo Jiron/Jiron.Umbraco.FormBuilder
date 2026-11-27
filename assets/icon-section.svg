@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
   <!--
-    Jiron Form Builder's backoffice icon (ROADMAP 17.1, assets/brand.md): the mark as a line icon in Umbraco's style
-    (24 px, a 1.75 stroke in currentColor): the card, its two fields and the check mark in the submit button's place.
+    Jiron Form Builder's backoffice icon (ADR-0267, assets/brand.md): the mark as a line icon in Umbraco's style
+    (24 px, a 1.75 stroke in currentColor): the ribbon J in outline, a line where it folds, and its dipped end solid.
   -->
-  <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
-  <path d="M7.5 7h9" />
-  <path d="M7.5 10.5h9" />
-  <path d="m7.5 15.5 1.75 1.75 3.5-3.5" />
+  <path d="M4.5 3h15v11a7.5 7.5 0 0 1-15 0v-3H9v3a3 3 0 0 0 6 0V7.5H4.5l2.25-2.25z" />
+  <path d="m15 7.5 4.5-4.5" />
+  <path d="M4.5 11H9v3H4.5z" fill="currentColor" />
 </svg>

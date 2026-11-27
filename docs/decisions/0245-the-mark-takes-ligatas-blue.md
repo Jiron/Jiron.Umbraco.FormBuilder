@@ -1,6 +1,8 @@
 # 0245. The mark takes Ligata's blue
 
-- Status: accepted (the owner, 2026-11-13)
+- Status: accepted (the owner, 2026-11-13); amended by
+  [ADR-0267](0267-the-mark-is-a-ribbon-folded-into-a-j.md): the mark is a ribbon folded into a J, and the blue is its
+  stem and hook
 - Date: 2026-11-13
 - Roadmap step: 17.1 (the logo and icon)
 

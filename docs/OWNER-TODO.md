@@ -23,6 +23,10 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
      is you (github.com/Jiron, jiron.dev).
 
   No published package is needed to apply.
+- [ ] **Optionally check the new mark against registered marks** (added 2026-11-27, ADR-0267). You chose the ribbon J;
+  it was drawn from nothing but the name and the letter, and no other product's mark was looked at. Whether a
+  registered mark in your classes looks alike is a search in the trademark registers (EUIPO, IGE), which the build
+  cannot do.
 - [ ] **Publish the docs** under docs.jiron.dev/form-builder when you want a docs site; until then the
   Marketplace points to the repository's `docs/` (ROADMAP 18.1).
 

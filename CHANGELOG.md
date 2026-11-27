@@ -9,6 +9,9 @@ follows the Umbraco major).
 
 ### Changed
 
+- **A new mark:** a strip of ribbon folded into a J, in place of the card with two fields and a check. The packages'
+  icon on NuGet and the Marketplace, the README and the icon beside the form picker in the backoffice show it
+  (`assets/brand.md`).
 - **What sits at a box's edge in the Form Builder section has room.** A dropdown's arrow is drawn by the section, as
   far from the box's end as its text is from the start; the browser's own sat against the edge. The field picker's
   search icon keeps the box's inset. What a sidebar's footer holds at its start (Paste questions…, Delete rule, Test)
