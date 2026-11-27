@@ -236,11 +236,6 @@ export class EntriesViewElement extends UmbLitElement {
         max-inline-size: 28rem;
       }
 
-      .search uui-icon {
-        margin-inline-start: var(--uui-size-space-3);
-        color: var(--jfb-bo-color-text-muted);
-      }
-
       /* The count and the "..." keep together at the toolbar's end, also once the toolbar wraps. */
       .toolbar-end {
         display: flex;

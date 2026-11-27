@@ -79,9 +79,26 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
       }
 
       uui-input,
-      uui-textarea,
-      uui-select {
+      uui-textarea {
         width: 100%;
+      }
+
+      /* The browser's own dropdown, drawn as the section's others are, with the arrow the section draws. */
+      select {
+        box-sizing: border-box;
+        inline-size: 100%;
+        min-block-size: 36px;
+        padding: 0 var(--uui-size-space-3);
+        border: 1px solid var(--jfb-bo-color-control-border);
+        border-radius: var(--uui-border-radius);
+        background-color: var(--uui-color-surface);
+        color: var(--uui-color-text);
+        font: inherit;
+      }
+
+      select:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 1px;
       }
 
       .options {
@@ -354,15 +371,16 @@ export class EntryFilterModalElement extends UmbModalBaseElement<EntryFilterModa
     return html`<div class="stack">
       <div>
         <uui-label for="test">${this.#term('edit_test')}</uui-label>
-        <uui-select
+        <select
           id="test"
-          label=${this.#term('edit_test')}
-          .options=${tests}
+          aria-label=${this.#term('edit_test')}
           @change=${(event: Event) => {
             this._test = (event.target as HTMLSelectElement).value;
             this._problem = '';
           }}
-        ></uui-select>
+        >
+          ${tests.map((one) => html`<option value=${one.value} ?selected=${one.selected}>${one.name}</option>`)}
+        </select>
       </div>
       ${this.#valuesOf(field)}
     </div>`;

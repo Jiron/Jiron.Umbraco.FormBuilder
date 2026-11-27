@@ -40,6 +40,61 @@ export const jfbBackofficeTokens = css`
   :is(uui-button, uui-input, uui-textarea, uui-select, uui-toggle, uui-checkbox, uui-ref-node, uui-menu-item) {
     --uui-color-focus: var(--jfb-bo-color-focus);
   }
+
+  /*
+   * A dropdown's arrow, drawn by the section: the browser's own sits against the box's edge wherever the padding ends.
+   * Two short strokes in the text's colour, so the arrow follows Umbraco's themes and forced colours, as far from the
+   * box's end as its text is from the start. A list box (several rows) has no arrow, and a visitor's form shown in
+   * the section (the designer's canvas) keeps its theme's own.
+   */
+  :host select:not([multiple], [size], .jfb-form *) {
+    appearance: none;
+    padding-inline-end: calc(var(--uui-size-space-4) * 2 + 10px);
+    background-image:
+      linear-gradient(
+        45deg,
+        transparent calc(50% - 1.1px),
+        currentColor calc(50% - 0.6px),
+        currentColor calc(50% + 0.6px),
+        transparent calc(50% + 1.1px)
+      ),
+      linear-gradient(
+        135deg,
+        transparent calc(50% - 1.1px),
+        currentColor calc(50% - 0.6px),
+        currentColor calc(50% + 0.6px),
+        transparent calc(50% + 1.1px)
+      );
+    background-repeat: no-repeat;
+    background-position:
+      calc(100% - var(--uui-size-space-4) - 5px) 50%,
+      calc(100% - var(--uui-size-space-4)) 50%;
+    background-size: 5px 5px;
+  }
+
+  :host select:not([multiple], [size], .jfb-form *):dir(rtl) {
+    background-position:
+      var(--uui-size-space-4) 50%,
+      calc(var(--uui-size-space-4) + 5px) 50%;
+  }
+
+  /* A search box's icon keeps the box's own inset from its edge: UUI puts what is prepended against the border. */
+  uui-input > uui-icon[slot='prepend'] {
+    margin-inline-start: var(--uui-size-space-3);
+    color: var(--jfb-bo-color-text-muted);
+  }
+
+  /*
+   * What a sidebar's or dialog's footer holds at its start lines up with the content above it: Umbraco's footer gives
+   * its actions at the end their inset, and what is put at the start none.
+   */
+  umb-body-layout > [slot='footer-info'] {
+    margin-inline-start: var(--uui-size-layout-1);
+  }
+
+  umb-body-layout > [slot='footer-info'] ~ [slot='footer-info'] {
+    margin-inline-start: var(--uui-size-space-2);
+  }
 `;
 
 /**

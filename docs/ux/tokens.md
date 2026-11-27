@@ -204,6 +204,18 @@ depth is used; a box on the page is a border, not a shade.
 | `--uui-size-space-6` | 24 px |
 | `--uui-size-12` | 36 px, page gutters and the gap between a workspace's columns |
 
+**At a box's edge** (17.0.1). Three rules in the section's tokens, which every element takes, so no screen states them
+itself:
+
+- **A dropdown's arrow** is drawn by the section: two short strokes in the text's colour, 12 px from the box's end, with
+  the text ending 34 px before it. The browser's own arrow sits against the edge wherever the padding ends. A list box
+  has no arrow, and a visitor's form shown in the section keeps its theme's own. The section uses the browser's
+  `<select>` in its screens; Umbraco's own select, whose arrow cannot be moved, only among Umbraco's controls (the form
+  picker's theme).
+- **A search box's icon** stands 9 px in from the box's edge.
+- **What a sidebar's or dialog's footer holds at its start** (Paste questions…, Delete rule, Test) starts 24 px in, under
+  the content's start; a second one follows 6 px after the first.
+
 ### Type
 
 | Token | Value | Used for |

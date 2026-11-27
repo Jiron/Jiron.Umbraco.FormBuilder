@@ -124,7 +124,7 @@ async function open(data: object = { form: 'f1', filter: { states: [], fields: [
   element.modalContext = context as never;
   element.data = data as never;
   host.append(element);
-  await vi.waitFor(() => expect(shadow(element).querySelector('uui-select, [role="alert"]')).not.toBeNull());
+  await vi.waitFor(() => expect(shadow(element).querySelector('select, [role="alert"]')).not.toBeNull());
   await settle(element);
   await settle(element);
   const root = shadow(element);
@@ -135,7 +135,7 @@ async function open(data: object = { form: 'f1', filter: { states: [], fields: [
     await settle(element);
   };
   const choose = async (format: string) => {
-    const select = must(root.querySelector<HTMLSelectElement>('uui-select'), 'the format');
+    const select = must(root.querySelector<HTMLSelectElement>('select'), 'the format');
     select.value = format;
     select.dispatchEvent(new Event('change'));
     await settle(element);
@@ -179,17 +179,16 @@ describe('the export sidebar', () => {
   it('names the format, the entries and the fields, and leaves out the sensitive ones unless asked', async () => {
     const { root, button, checkbox } = await open();
 
-    const select = must(root.querySelector('uui-select'), 'the format') as unknown as {
-      options: { name: string; selected: boolean }[];
-    };
-    expect(select.options.map((one) => one.name)).toEqual([
+    const select = must(root.querySelector<HTMLSelectElement>('select'), 'the format');
+    expect([...select.options].map((one) => one.text)).toEqual([
       'CSV',
       'Excel',
       'JSON',
       'Printable view',
       'ZIP of the uploaded files',
     ]);
-    expect(select.options.find((one) => one.selected)?.name).toBe('CSV');
+    expect(select.selectedOptions[0]?.text).toBe('CSV');
+    expect(select.getAttribute('aria-label')).toBe('Format');
     expect(text(root.querySelector('.field p'))).toBe('All, no filters');
     expect(checkbox('All fields (2)')?.checked).toBe(true);
     expect(checkbox('Include sensitive fields')?.checked).toBe(false);

@@ -286,6 +286,41 @@ export class TranslateModalElement extends UmbModalBaseElement<TranslateModalDat
       border-radius: var(--uui-border-radius);
     }
 
+    /*
+     * The dropdown's arrow as the Form Builder section draws it: two short strokes in the text's colour, as far from
+     * the box's end as its text is from the start. The browser's own sits against the box's edge.
+     */
+    select {
+      appearance: none;
+      padding-inline-end: calc(var(--uui-size-space-4) * 2 + 10px);
+      background-image:
+        linear-gradient(
+          45deg,
+          transparent calc(50% - 1.1px),
+          currentColor calc(50% - 0.6px),
+          currentColor calc(50% + 0.6px),
+          transparent calc(50% + 1.1px)
+        ),
+        linear-gradient(
+          135deg,
+          transparent calc(50% - 1.1px),
+          currentColor calc(50% - 0.6px),
+          currentColor calc(50% + 0.6px),
+          transparent calc(50% + 1.1px)
+        );
+      background-repeat: no-repeat;
+      background-position:
+        calc(100% - var(--uui-size-space-4) - 5px) 50%,
+        calc(100% - var(--uui-size-space-4)) 50%;
+      background-size: 5px 5px;
+    }
+
+    select:dir(rtl) {
+      background-position:
+        var(--uui-size-space-4) 50%,
+        calc(var(--uui-size-space-4) + 5px) 50%;
+    }
+
     .text {
       inline-size: 100%;
     }

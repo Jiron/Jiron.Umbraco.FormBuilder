@@ -2,7 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
 import { axeInside } from '../../support/axe.ts';
 import { API, blankForm, contactForm, formOf, publishWithLabel, unique } from '../../support/forms-api.ts';
-import { addFieldOf, openPicker, pick, pickerClosed, pickerOf } from '../../support/picker.ts';
+import { addFieldOf, openPicker, pick, pickerClosed, pickerItem, pickerOf } from '../../support/picker.ts';
 import { openSearch } from '../../support/search.ts';
 import { shownRow, treeRow } from '../../support/tree.ts';
 
@@ -263,6 +263,48 @@ test('fields side by side in two columns are each selected by a click on them', 
     // It leaves out the padding below a field that spaces the rows, and nothing more.
     expect(button.height, 'the button covers its field').toBeGreaterThan(box.height - 32);
   }
+});
+
+test("a search box's icon, a sidebar footer's first button and a dropdown's arrow keep their room from the edge", async ({
+  page,
+  loginAs,
+  apiAs,
+}) => {
+  const api = await apiAs('designer');
+  const key = await blankForm(api, unique('Edges'));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs('designer');
+  await page.goto(workspaceOf(key));
+  const design = page.locator('jfb-form-design-view');
+  await expect(design).toContainText('Add your first field');
+
+  // The picker: the search icon stands in from the box's edge, and Paste questions... starts where the box starts.
+  const picker = await openPicker(page, addFieldOf(design));
+  const box = (await picker.locator('uui-input').boundingBox())!;
+  const icon = (await picker.locator('uui-input > uui-icon[slot="prepend"]').boundingBox())!;
+  expect(icon.x - box.x, "the search icon's room at the box's start").toBeGreaterThanOrEqual(8);
+  const paste = (await picker.getByRole('button', { name: 'Paste questions\u2026' }).boundingBox())!;
+  expect(Math.abs(paste.x - box.x), 'the footer button under the start of the content').toBeLessThanOrEqual(1);
+  await pickerItem(page, 'Dropdown').click();
+  await pickerClosed(page);
+
+  // The inspector's dropdown: the section draws its arrow, a text's inset from the box's end, with room before it.
+  const from = design.locator('jfb-designer-inspector').getByRole('combobox', { name: 'Options from' });
+  await expect(from).toBeVisible();
+  const arrow = await from.evaluate((select) => {
+    const style = getComputedStyle(select);
+    return {
+      appearance: style.appearance,
+      strokes: style.backgroundImage.split('linear-gradient').length - 1,
+      end: parseFloat(style.paddingInlineEnd),
+      start: parseFloat(style.paddingInlineStart),
+      at: style.backgroundPosition,
+    };
+  });
+  expect(arrow.appearance, "the browser's own arrow is off").toBe('none');
+  expect(arrow.strokes, 'two strokes drawn in its place').toBe(2);
+  expect(arrow.end, 'room for the arrow and the gap before it').toBeGreaterThanOrEqual(arrow.start + 20);
+  expect(arrow.at, "the arrow's inset from the box's end").toBe('calc(100% - 17px) 50%, calc(100% - 12px) 50%');
 });
 
 test('in the narrowest workspace the picker opens from Add field, and a delete comes back with Undo', async ({
