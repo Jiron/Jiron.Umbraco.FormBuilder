@@ -1676,3 +1676,23 @@ its reason, and a handover block at the end of every phase.
     (536 script tests passed, 1 skipped). The Marketplace reads the listings from `main` again within hours; not
     yet seen on the page.
   - **Ticked in `docs/OWNER-TODO.md`:** the Marketplace listing.
+- 2026-11-27 · owner message · tight edges, an update and the listings · e74e4565 · The owner, from the
+  screenshots: a search icon too near its box's start, a dropdown's arrow too near its end, the buttons at the start
+  of a sidebar's footer too near the side; "check stuff like that and please adjust and release an update", and look
+  at the AI listing so both descriptions read well. No step is added (ADR-0197).
+  - **Done:** three rules in the section's tokens (the arrow drawn by the section, the search icon's inset, the
+    footer's start), the browser's `<select>` in the Export and Filter dialogs in place of Umbraco's, a gap under
+    Edit answers, and the same arrow in the AI add-on's Translate dialog (`docs/ux/tokens.md`).
+  - **Looked at** on the demo in Edge at 1600 x 900: every place and tab, the Contact form's six views, the
+    inspector, the field picker, the rules overview and builder, an action's sheet, Export, Filter, Forward, the
+    entry panel read and edited, Publish. Nothing else stood against an edge. 11 screenshots retaken.
+  - **Checked:** the client's typecheck and lint; 157 unit tests of the entries, the styles and the AI add-on; 25
+    browser tests of the designer, its rules, a form's actions, the entry panel, the export and the dark theme (one
+    export test failed first on two lines that still named the old select, and passed with them corrected); the
+    sizes (the backoffice bundle 509.85 of 512 KB).
+  - **The listings:** the Marketplace still shows the old descriptions after one of its two-hourly refreshes, so it
+    reads a listing again with a new version; to be looked at after 17.0.1.
+- 2026-11-27 · owner message · a new mark before the next release · none · "before u do another release we need a
+  new icon, gimme a couple more ideas this one is a tiiiny bit too simplistic and AI-slop". Six sketches away from the
+  tile with bars are sent (`.local/icons/ideas-2.png`): a ribbon J, two pages, bricks, drag and drop, the inbox, a
+  merge tag. The release waits for the owner's pick; the mark is the owner's to choose (ADR-0245).
