@@ -7,6 +7,11 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.1] - 2026-11-27
+
+A new mark and room at the edges of the Form Builder section. It adds no migration and changes nothing a visitor
+sees.
+
 ### Changed
 
 - **A new mark:** a strip of ribbon folded into a J, in place of the card with two fields and a check. The packages'
