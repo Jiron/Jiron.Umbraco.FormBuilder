@@ -1665,3 +1665,14 @@ its reason, and a handover block at the end of every phase.
   in a temporary clone; `Directory.Build.props` was the one conflict and keeps the 18 line's `18.0.0-alpha.0`.
   There the script tests (535 passed, 1 skipped), the client's tests (6,396 in 241 files) and the unit tests
   (9,273 passed, 17 skipped) passed. Pushed; the clone is removed.
+- 2026-11-27 · owner message · "Can u check if its in marketplace" · 127041a3 · It is. The Umbraco Marketplace
+  lists `Jiron.Umbraco.FormBuilder` since that day's scan: version 17.0.0 for Umbraco 17, free, in Editor Tools and
+  Campaign & Marketing, with the icon, the readme, the install commands, the links and all 21 screenshots; a search
+  for "Jiron" finds it. The AI add-on has a page of its own and shows under the product as a related package, and
+  as a sub-package it is no search result of its own (ADR-0246). No step is added (ADR-0197).
+  - **Changed:** the Marketplace shows a description as one paragraph, so the feature list in both listings ran
+    together above the readme, which gives the same list properly. Both descriptions are plain sentences now
+    (553 and 754 characters), `scripts/check-marketplace.mjs` refuses a line break in one, and a test holds that
+    (536 script tests passed, 1 skipped). The Marketplace reads the listings from `main` again within hours; not
+    yet seen on the page.
+  - **Ticked in `docs/OWNER-TODO.md`:** the Marketplace listing.
