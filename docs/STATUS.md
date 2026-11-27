@@ -210,7 +210,7 @@ Web 97.7%. At the end of Phase 26 the verification had passed on `58ffbe2c` in 3
 | Integration tests (.NET), on real Umbraco hosts with SQLite | 2,324 | 2,318 |
 | The AI add-on's tests (.NET) | 60 | 60 |
 | The client's tests (Vitest), with the shared vectors in the browser's engine | 6,387 in 240 files | 6,363 in 240 files |
-| The repository's scripts (Node) | 535 | 526 |
+| The repository's scripts (Node) | 536 | 526 |
 | The browser tests' own support (Node) | 86 | 86 |
 | The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 602 | 597 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
@@ -380,8 +380,7 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true` and raise the Dependabot limits, so every push to
    `main` runs the tests; in a public repository the runs cost nothing.
 4. **Done on 2026-11-26: `17.0.0`, the first stable version, is on nuget.org** with what the first site found.
-   **Look at the Umbraco Marketplace** after its next daily scan (04:00 UTC): the product and the AI add-on should
-   be listed now that a version without a suffix exists, the add-on as a sub-package of the product
+   **The Umbraco Marketplace lists it since 2026-11-27,** the AI add-on as a sub-package under the product
    ([OWNER-TODO.md](OWNER-TODO.md)). The site that runs the package can move from its development pack to
    `17.0.0`.
 5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run

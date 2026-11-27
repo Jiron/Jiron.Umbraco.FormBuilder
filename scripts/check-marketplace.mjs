@@ -89,6 +89,8 @@ export function checkListing(id, listing, { screenshots = screenshotsOnDisk(), e
   const description = String(listing.Description ?? '');
   expect(description.includes(LICENCE_WORDS), 'the description does not give the licence in its plain words');
   expect(!/open[ -]source/i.test(description.replace(LICENCE_WORDS, '')), 'the description calls Jiron Form Builder open source');
+  // Seen on the listing's page on 2026-11-27: a description is shown as one paragraph, so a list in it runs together.
+  expect(!/[\r\n]/.test(description), 'the description has a line break, which the Marketplace shows as a space: write sentences, not a list');
 
   const author = listing.AuthorDetails ?? {};
   expect(author.Name === 'Jiron', 'the author is not "Jiron"');
