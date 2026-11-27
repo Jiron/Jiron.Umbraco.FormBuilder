@@ -36,8 +36,8 @@
     (ADR-0249), so no build looks like a release. Tests and scripts read these two values from this file.
   -->
   <PropertyGroup>
-    <VersionPrefix>17.0.1</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>17.0.2</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
   </PropertyGroup>
 
   <!--

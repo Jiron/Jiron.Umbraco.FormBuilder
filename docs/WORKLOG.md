@@ -1696,3 +1696,24 @@ its reason, and a handover block at the end of every phase.
   new icon, gimme a couple more ideas this one is a tiiiny bit too simplistic and AI-slop". Six sketches away from the
   tile with bars are sent (`.local/icons/ideas-2.png`): a ribbon J, two pages, bricks, drag and drop, the inbox, a
   merge tag. The release waits for the owner's pick; the mark is the owner's to choose (ADR-0245).
+- 2026-11-27 · owner message · the ribbon, then 17.0.1 · 879e2920 · "Icon the ribbon please, then release new
+  version 17.0.1 i guess with the changes we did". ADR-0267; no step is added (ADR-0197).
+  - **The mark** (`879e2920`): the ribbon J drawn from the sketch on even units of the 64 unit grid: the deep bar
+    with its swallowtail, the fold, the stem and hook in Ligata's blue, the end in marigold; the one-colour mark
+    with a cut at the fold and at the end; the backoffice's line icon in outline with its end solid. Eight
+    drawings of the fold and six of the line icon were rendered and looked at before these stayed. The mark's
+    test decodes every PNG and reads its pixels. Seen on the preview sheet and in the demo in Edge, beside the
+    form picker in Umbraco's list of property editors and in the data types' tree; both pictures went to the
+    owner. On near-black the deep bar holds 1.8:1 only, which `assets/brand.md` says.
+  - **The release commit** (`43a77eca`): the changelog's and the upgrade notes' section, the version without a
+    suffix.
+  - **The gate before the tag** (`node scripts/verify-clean.mjs`) passed on `43a77eca` at its first run in
+    2,845 s, on an idle machine: unit 9,261 and 17 skipped, AI 60, integration 2,324, client 6,393 in 241 files,
+    scripts 538 and 1 skipped, e2e support 86, browser 603, the pack, the install test, the floor, the upgrade
+    with data, the secret scan of 1,364 commits. The install tests then passed with exactly `17.0.1`, on
+    Umbraco 17.7.1 (213 s) and on the floor (267 s).
+  - **The release run** (46031015192, #10) passed all 27 jobs and published the four packages; nuget.org listed
+    `17.0.1` of all four about seven minutes after the run. The release on GitHub is published from its draft
+    in the owner's browser, as part of the release they asked for: seven files, marked Latest.
+  - **A new project** took `17.0.1` from nuget.org with the README's command, in a package cache of its own.
+  - **`main` moves on to `17.0.2-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.
