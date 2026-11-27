@@ -73,8 +73,22 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
         justify-items: start;
       }
 
-      .field > uui-select {
-        width: 100%;
+      /* The browser's own dropdown, drawn as the section's others are, with the arrow the section draws. */
+      .field > select {
+        box-sizing: border-box;
+        inline-size: 100%;
+        min-block-size: 36px;
+        padding: 0 var(--uui-size-space-3);
+        border: 1px solid var(--jfb-bo-color-control-border);
+        border-radius: var(--uui-border-radius);
+        background-color: var(--uui-color-surface);
+        color: var(--uui-color-text);
+        font: inherit;
+      }
+
+      .field > select:focus-visible {
+        outline: 2px solid var(--jfb-bo-color-focus);
+        outline-offset: 1px;
       }
 
       fieldset {
@@ -345,12 +359,13 @@ export class EntryExportModalElement extends UmbModalBaseElement<EntryExportModa
     }));
     return html`<div class="field">
       <uui-label for="format">${this.#term('export_format')}</uui-label>
-      <uui-select
+      <select
         id="format"
-        label=${this.#term('export_format')}
-        .options=${options}
+        aria-label=${this.#term('export_format')}
         @change=${(event: Event) => this.#change({ format: (event.target as HTMLSelectElement).value })}
-      ></uui-select>
+      >
+        ${options.map((one) => html`<option value=${one.value} ?selected=${one.selected}>${one.name}</option>`)}
+      </select>
     </div>`;
   }
 

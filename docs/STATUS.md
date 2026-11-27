@@ -9,7 +9,8 @@ the owner, can do next.
 
 This report is the last step of [ROADMAP.md](../ROADMAP.md). **The repository is public since 2026-11-25, and
 `17.0.0`, the first stable version, is on nuget.org since 2026-11-26** (`Jiron.Umbraco.FormBuilder`, `.Core`,
-`.Web` and `.AI`), with its release on GitHub. `main` is the Umbraco 17 line and names `17.0.1-dev`. Of the
+`.Web` and `.AI`), with its release on GitHub. **`17.0.1` followed on 2026-11-27,** with the new mark and room at the
+edges of the Form Builder section. `main` is the Umbraco 17 line and names `17.0.2-dev`. Of the
 prereleases, `17.0.0-beta.3` is published too; the earlier tags have no release: `17.0.0-alpha.1` and
 `17.0.0-beta.1` failed their runs, and `17.0.0-beta.2` passed its run but was not published (below). `v18/main` is the Umbraco 18 line at `18.0.0-alpha.0`, unpublished.
 
@@ -116,6 +117,11 @@ two servers. What the first runs there found, each fixed at its cause:
 - **The first stable version (2026-11-26).** On your word ("Yes, release 17.0.0") the tag `v17.0.0` was pushed on
   `f2bb2c43`. Its release run passed all 27 jobs, which was also the first time the tests of Phase 27 ran on Linux
   and on SQL Server, and published the four packages; its release on GitHub is published with seven files.
+- **17.0.1 (2026-11-27).** You asked for two things after the Marketplace listed the product: room where an icon
+  or a button sat against the edge of its box, and a new mark, as the card with a check was "a tiiiny bit too
+  simplistic". You chose the ribbon J among six sketches ([ADR-0267](decisions/0267-the-mark-is-a-ribbon-folded-into-a-j.md),
+  [assets/brand.md](../assets/brand.md)) and said to release. The tag `v17.0.1` is on `43a77eca`; its release run
+  passed all 27 jobs and published the four packages, and its release on GitHub is published with seven files.
 
 **What the first site found is fixed (Phase 27, 2026-11-26).** The first site outside the demo took the package on
 2026-11-19 and found ten things in it; you said to fix them before the first stable version. They are in 17.0.0, the
@@ -187,10 +193,13 @@ listings are in the repository too.
 
 ## How it is tested
 
-The clean-clone verification of ROADMAP 20.1 ran last for the release of 17.0.0, on 2026-11-26 on origin's `main` at
-`f2bb2c43`, the commit the tag is on, in a fresh clone with a NuGet cache of its own
-(`node scripts/verify-clean.mjs`). Every step passed, in 2,808 s, and the install tests then passed with exactly
-`17.0.0`, on Umbraco 17.7.1 and on the floor. Two runs before it had failed, on `f2b6ff8d`, the release's first
+The clean-clone verification of ROADMAP 20.1 ran last for the release of 17.0.1, on 2026-11-27 on origin's `main` at
+`43a77eca`, the commit the tag is on, in a fresh clone with a NuGet cache of its own
+(`node scripts/verify-clean.mjs`). Every step passed at the first run, in 2,845 s, and the install tests then passed
+with exactly `17.0.1`, on Umbraco 17.7.1 and on the floor. The counts below are that run's.
+
+For the release of 17.0.0 it had passed on 2026-11-26 on `f2bb2c43` in 2,808 s, with the install tests on exactly
+`17.0.0`. Two runs before it had failed, on `f2b6ff8d`, that release's first
 commit. In the first, the CSV export of 10,000 entries took 6.0 s of its 5 s (2.3 s in the run before and 1.8 s in the
 run after), while another project's tests had started on this machine beside it. The second met a test of the secret
 scan that failed by chance about once in 4,000 runs: its random key began like another kind of key and was reported by
@@ -209,15 +218,15 @@ Web 97.7%. At the end of Phase 26 the verification had passed on `58ffbe2c` in 3
 | Unit tests (.NET), with the shared vectors in the server's engine | 9,261; 17 skipped, the webhook signature's PHP sample, as this machine has no PHP | 9,199; 17 skipped |
 | Integration tests (.NET), on real Umbraco hosts with SQLite | 2,324 | 2,318 |
 | The AI add-on's tests (.NET) | 60 | 60 |
-| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,387 in 240 files | 6,363 in 240 files |
-| The repository's scripts (Node) | 535 | 526 |
+| The client's tests (Vitest), with the shared vectors in the browser's engine | 6,393 in 241 files | 6,363 in 240 files |
+| The repository's scripts (Node) | 538; 1 skipped | 526 |
 | The browser tests' own support (Node) | 86 | 86 |
-| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 602 | 597 |
+| The browser tests (Playwright in Edge): the backoffice, the website and the budgets | 603 | 597 |
 | Lint, formatting, the build with no warning, licences and notices, the size budgets | all clean | all clean |
-| A pack of `17.0.0-dev.202611261723` | 4 packages | 4 packages |
+| A pack of `17.0.1-dev.202611271545` | 4 packages | 4 packages |
 | The install test on Umbraco 17.7.1, and on the floor, 17.6.0 | 18 checks each, and 4 on the floor's cache | the same |
 | The upgrade from `17.0.0-alpha.1`, with data | 53 checks | 53 checks |
-| The secret scan of the whole history | 1,354 commits, clean | 1,340 commits, clean |
+| The secret scan of the whole history | 1,364 commits, clean | 1,340 commits, clean |
 | The term guard of the whole history | skipped: your private term list is not on this machine (item 5 below) | skipped |
 
 No test went: every count is the one before or higher, the added ones being the tests of what Phase 27 fixed. The
@@ -380,10 +389,9 @@ Only you can do these; [OWNER-TODO.md](OWNER-TODO.md) has each in full, with its
 3. **Turn on CI:** set the repository variable `JFB_CI` to `true` and raise the Dependabot limits, so every push to
    `main` runs the tests; in a public repository the runs cost nothing.
 4. **Done on 2026-11-26: `17.0.0`, the first stable version, is on nuget.org** with what the first site found.
-   **Look at the Umbraco Marketplace** after its next daily scan (04:00 UTC): the product and the AI add-on should
-   be listed now that a version without a suffix exists, the add-on as a sub-package of the product
-   ([OWNER-TODO.md](OWNER-TODO.md)). The site that runs the package can move from its development pack to
-   `17.0.0`.
+   **The Umbraco Marketplace lists it since 2026-11-27,** the AI add-on as a sub-package under the product
+   ([OWNER-TODO.md](OWNER-TODO.md)). **`17.0.1` is on nuget.org since 2026-11-27,** with the new mark as the
+   packages' icon. The site that runs the package can move from its development pack to `17.0.1`.
 5. **Still worth doing, none of them in the way:** a lawyer's look at the licence's plain-language summaries; a run
    of `node scripts/term-guard.mjs --history` with your own term list in `.private/terms.txt`; optionally the full
    code of conduct in the repository, and a question to Umbraco HQ about "Umbraco" in the package id. Throughout:

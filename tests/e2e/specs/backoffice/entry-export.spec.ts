@@ -120,15 +120,15 @@ test('Export selected... exports only the ticked entries, Export... the search, 
   await expect(rows).toHaveCount(1);
   await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
   await expect(sidebar.getByText('Those that match the filters', { exact: true })).toBeVisible();
-  const format = sidebar.locator('uui-select');
-  await format.locator('select').selectOption('json');
+  const format = sidebar.locator('select#format');
+  await format.selectOption('json');
   await expect(sidebar.getByRole('button', { name: 'More options', exact: true })).toHaveCount(0);
   const json = page.waitForEvent('download');
   await sidebar.getByRole('button', { name: 'Export 1 entry', exact: true }).click();
   const exported = JSON.parse(readFileSync(await (await json).path(), 'utf8')) as { answers: { name: string } }[];
   expect(exported.map((entry) => entry.answers.name)).toEqual(['Person 0005']);
   await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
-  await expect(format.locator('select')).toHaveValue('json');
+  await expect(format).toHaveValue('json');
   await sidebar.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(sidebar).toHaveCount(0);
   // A search that finds nothing: Export... is not offered while the list shows no entries (ROADMAP 22.4).
@@ -160,7 +160,7 @@ test('Export selected... exports only the ticked entries, Export... the search, 
   // One entry's print leaves the sidebar's choices as they were.
   await panel.getByRole('button', { name: 'Close the entry', exact: true }).click();
   await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
-  await expect(format.locator('select')).toHaveValue('json');
+  await expect(format).toHaveValue('json');
   await sidebar.getByRole('button', { name: 'Cancel', exact: true }).click();
 });
 
@@ -185,7 +185,7 @@ test("A ZIP of the files goes to the background, and its toast's Download saves 
 
   await view.getByRole('button', { name: 'Export\u2026', exact: true }).click();
   const sidebar = page.locator('jfb-entry-export-modal');
-  await sidebar.locator('uui-select select').selectOption('files');
+  await sidebar.locator('select#format').selectOption('files');
   await expect(
     sidebar.getByText('This export continues in the background; a notification links to the file.'),
   ).toBeVisible();

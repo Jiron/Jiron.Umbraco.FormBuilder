@@ -91,6 +91,16 @@ the tests upgrade on SQLite and SQL Server ([ADR-0240](decisions/0240-the-upgrad
 Each release adds its own section here, newest first: what changed for sites, the migrations it runs, the theme views
 whose contract changed, and anything to check. [CHANGELOG.md](../CHANGELOG.md) lists every change.
 
+### 17.0.1 (2026-11-27)
+
+A new icon for the packages and small changes to the backoffice's look. Nothing changes for visitors, for a
+headless site or in the database.
+
+- **Migrations:** none.
+- **Theme views:** none changed; every view still carries contract version 1.
+- **To check:** nothing. The icon beside the form picker in Umbraco's list of property editors is the new mark,
+  and the dropdowns in the Form Builder section draw their own arrow.
+
 ### 17.0.0 (2026-11-26)
 
 The first stable version, with what the first site outside the demo found. A site on a prerelease keeps its forms,

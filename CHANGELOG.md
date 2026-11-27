@@ -7,6 +7,21 @@ follows the Umbraco major).
 
 ## [Unreleased]
 
+## [17.0.1] - 2026-11-27
+
+A new mark and room at the edges of the Form Builder section. It adds no migration and changes nothing a visitor
+sees.
+
+### Changed
+
+- **A new mark:** a strip of ribbon folded into a J, in place of the card with two fields and a check. The packages'
+  icon on NuGet and the Marketplace, the README and the icon beside the form picker in the backoffice show it
+  (`assets/brand.md`).
+- **What sits at a box's edge in the Form Builder section has room.** A dropdown's arrow is drawn by the section, as
+  far from the box's end as its text is from the start; the browser's own sat against the edge. The field picker's
+  search icon keeps the box's inset. What a sidebar's footer holds at its start (Paste questions…, Delete rule, Test)
+  lines up with the content above it. The Export and Filter dialogs' dropdowns look like the section's others.
+
 ## [17.0.0] - 2026-11-26
 
 The first stable version, for Umbraco 17.6 or later (within 17). It holds everything the prereleases brought, and what

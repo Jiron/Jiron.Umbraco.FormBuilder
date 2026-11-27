@@ -206,6 +206,11 @@ export class EntryPanelElement extends UmbLitElement {
         gap: var(--uui-size-space-3);
       }
 
+      /* Edit answers, wrapped under the details in a narrow panel, keeps a gap to the first answer under it. */
+      .details-top > uui-button {
+        margin-block-end: var(--uui-size-space-3);
+      }
+
       .link,
       .reveal,
       .file {

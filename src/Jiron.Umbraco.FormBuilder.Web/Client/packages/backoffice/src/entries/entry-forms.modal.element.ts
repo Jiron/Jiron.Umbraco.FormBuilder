@@ -33,11 +33,6 @@ export class EntryFormsModalElement extends UmbModalBaseElement<EntryFormsModalD
         width: 100%;
       }
 
-      uui-input uui-icon {
-        margin-inline-start: var(--uui-size-space-3);
-        color: var(--jfb-bo-color-text-muted);
-      }
-
       fieldset {
         display: grid;
         gap: var(--uui-size-space-3);

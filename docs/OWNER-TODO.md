@@ -23,6 +23,10 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
      is you (github.com/Jiron, jiron.dev).
 
   No published package is needed to apply.
+- [ ] **Optionally check the new mark against registered marks** (added 2026-11-27, ADR-0267). You chose the ribbon J;
+  it was drawn from nothing but the name and the letter, and no other product's mark was looked at. Whether a
+  registered mark in your classes looks alike is a search in the trademark registers (EUIPO, IGE), which the build
+  cannot do.
 - [ ] **Publish the docs** under docs.jiron.dev/form-builder when you want a docs site; until then the
   Marketplace points to the repository's `docs/` (ROADMAP 18.1).
 
@@ -132,18 +136,22 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   environment `nuget`, then set the repository variables `JFB_NUGET_USER` (the nuget.org profile name) and
   `JFB_NUGET_PUBLISH` (`true`) (ROADMAP D17, §3.5, ADR-0247). [Releasing](releasing.md#turning-on-publishing-owner)
   walks through it.
-- [ ] **List on the Umbraco Marketplace: `17.0.0`, the first stable version, is on nuget.org since 2026-11-26;
-  look at the two pages after the next daily scan (04:00 UTC).** You said "Yes, release 17.0.0" that day; the tag
-  `v17.0.0` is on `f2bb2c43`, its release run passed all 27 jobs and published the four packages, and its release
-  on GitHub is published.
+- [x] **List on the Umbraco Marketplace: done, both packages are listed since 2026-11-27.** You said "Yes, release
+  17.0.0" on 2026-11-26; the tag `v17.0.0` is on `f2bb2c43`, its release run passed all 27 jobs and published the
+  four packages, and its release on GitHub is published.
+  - **Looked at on 2026-11-27, at your word:** marketplace.umbraco.com/package/jiron.umbraco.formbuilder shows
+    version 17.0.0 for Umbraco 17, free, in Editor Tools and Campaign & Marketing, with the icon, the readme, the
+    install commands, the links and all 21 screenshots, and a search for "Jiron" finds it. The AI add-on has its
+    page at .../package/jiron.umbraco.formbuilder.ai and shows under the product as a related package; as a
+    sub-package it is not a search result of its own (ADR-0246).
+  - **One thing read badly and is changed:** the Marketplace shows a listing's description as one paragraph, so
+    the feature list in it ran together above the readme, which gives the same list properly. Both descriptions
+    are plain sentences now; the Marketplace reads them again within a few hours.
   - **Validated on 2026-11-26** at marketplace.umbraco.com/validate, both packages at `17.0.0-beta.3`: the tag is
     found, each package reads its own listing from the repository's root (the add-on its own file, not the
     product's), both listings match the schema, and the NuGet readme is used. The one thing in the way, in the
     validator's words: a prerelease version is not imported. Without a version filled in, the validator finds
     no version at all, since every published one is a prerelease.
-  - **So the product appears with `17.0.0`:** at the next daily scan at 04:00 UTC.
-  - **Then look at the two pages:** that the add-on shows as a sub-package of the product (ADR-0246), and that
-    the screenshots and categories read well.
   - What was asked: `17.0.0-beta.3` is on nuget.org since 2026-11-25, published by its
   release run; the Marketplace is what is left. Run the validator at
   marketplace.umbraco.com/validate after the repository is public, for `Jiron.Umbraco.FormBuilder` and for

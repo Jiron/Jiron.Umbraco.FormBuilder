@@ -1661,3 +1661,59 @@ its reason, and a handover block at the end of every phase.
   - **`main` moves on to `17.0.1-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.
   - **Left for the owner:** the Umbraco Marketplace's two pages after its next daily scan
     (`docs/OWNER-TODO.md`).
+- 2026-11-26 · the Umbraco 18 line has 17.0.0 merged in · 808c03b8 · `main` at `55964885` merged into `v18/main`
+  in a temporary clone; `Directory.Build.props` was the one conflict and keeps the 18 line's `18.0.0-alpha.0`.
+  There the script tests (535 passed, 1 skipped), the client's tests (6,396 in 241 files) and the unit tests
+  (9,273 passed, 17 skipped) passed. Pushed; the clone is removed.
+- 2026-11-27 · owner message · "Can u check if its in marketplace" · 127041a3 · It is. The Umbraco Marketplace
+  lists `Jiron.Umbraco.FormBuilder` since that day's scan: version 17.0.0 for Umbraco 17, free, in Editor Tools and
+  Campaign & Marketing, with the icon, the readme, the install commands, the links and all 21 screenshots; a search
+  for "Jiron" finds it. The AI add-on has a page of its own and shows under the product as a related package, and
+  as a sub-package it is no search result of its own (ADR-0246). No step is added (ADR-0197).
+  - **Changed:** the Marketplace shows a description as one paragraph, so the feature list in both listings ran
+    together above the readme, which gives the same list properly. Both descriptions are plain sentences now
+    (553 and 754 characters), `scripts/check-marketplace.mjs` refuses a line break in one, and a test holds that
+    (536 script tests passed, 1 skipped). The Marketplace reads the listings from `main` again within hours; not
+    yet seen on the page.
+  - **Ticked in `docs/OWNER-TODO.md`:** the Marketplace listing.
+- 2026-11-27 · owner message · tight edges, an update and the listings · e74e4565 · The owner, from the
+  screenshots: a search icon too near its box's start, a dropdown's arrow too near its end, the buttons at the start
+  of a sidebar's footer too near the side; "check stuff like that and please adjust and release an update", and look
+  at the AI listing so both descriptions read well. No step is added (ADR-0197).
+  - **Done:** three rules in the section's tokens (the arrow drawn by the section, the search icon's inset, the
+    footer's start), the browser's `<select>` in the Export and Filter dialogs in place of Umbraco's, a gap under
+    Edit answers, and the same arrow in the AI add-on's Translate dialog (`docs/ux/tokens.md`).
+  - **Looked at** on the demo in Edge at 1600 x 900: every place and tab, the Contact form's six views, the
+    inspector, the field picker, the rules overview and builder, an action's sheet, Export, Filter, Forward, the
+    entry panel read and edited, Publish. Nothing else stood against an edge. 11 screenshots retaken.
+  - **Checked:** the client's typecheck and lint; 157 unit tests of the entries, the styles and the AI add-on; 25
+    browser tests of the designer, its rules, a form's actions, the entry panel, the export and the dark theme (one
+    export test failed first on two lines that still named the old select, and passed with them corrected); the
+    sizes (the backoffice bundle 509.85 of 512 KB).
+  - **The listings:** the Marketplace still shows the old descriptions after one of its two-hourly refreshes, so it
+    reads a listing again with a new version; to be looked at after 17.0.1.
+- 2026-11-27 · owner message · a new mark before the next release · none · "before u do another release we need a
+  new icon, gimme a couple more ideas this one is a tiiiny bit too simplistic and AI-slop". Six sketches away from the
+  tile with bars are sent (`.local/icons/ideas-2.png`): a ribbon J, two pages, bricks, drag and drop, the inbox, a
+  merge tag. The release waits for the owner's pick; the mark is the owner's to choose (ADR-0245).
+- 2026-11-27 · owner message · the ribbon, then 17.0.1 · 879e2920 · "Icon the ribbon please, then release new
+  version 17.0.1 i guess with the changes we did". ADR-0267; no step is added (ADR-0197).
+  - **The mark** (`879e2920`): the ribbon J drawn from the sketch on even units of the 64 unit grid: the deep bar
+    with its swallowtail, the fold, the stem and hook in Ligata's blue, the end in marigold; the one-colour mark
+    with a cut at the fold and at the end; the backoffice's line icon in outline with its end solid. Eight
+    drawings of the fold and six of the line icon were rendered and looked at before these stayed. The mark's
+    test decodes every PNG and reads its pixels. Seen on the preview sheet and in the demo in Edge, beside the
+    form picker in Umbraco's list of property editors and in the data types' tree; both pictures went to the
+    owner. On near-black the deep bar holds 1.8:1 only, which `assets/brand.md` says.
+  - **The release commit** (`43a77eca`): the changelog's and the upgrade notes' section, the version without a
+    suffix.
+  - **The gate before the tag** (`node scripts/verify-clean.mjs`) passed on `43a77eca` at its first run in
+    2,845 s, on an idle machine: unit 9,261 and 17 skipped, AI 60, integration 2,324, client 6,393 in 241 files,
+    scripts 538 and 1 skipped, e2e support 86, browser 603, the pack, the install test, the floor, the upgrade
+    with data, the secret scan of 1,364 commits. The install tests then passed with exactly `17.0.1`, on
+    Umbraco 17.7.1 (213 s) and on the floor (267 s).
+  - **The release run** (46031015192, #10) passed all 27 jobs and published the four packages; nuget.org listed
+    `17.0.1` of all four about seven minutes after the run. The release on GitHub is published from its draft
+    in the owner's browser, as part of the release they asked for: seven files, marked Latest.
+  - **A new project** took `17.0.1` from nuget.org with the README's command, in a package cache of its own.
+  - **`main` moves on to `17.0.2-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.

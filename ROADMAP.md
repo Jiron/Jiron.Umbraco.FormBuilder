@@ -3175,6 +3175,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **17.1 Logo and icon**:
     - **Design `assets/logo.svg`:**
       - **Concept:** a minimal form card (stacked field lines) whose submit button is a small check mark, drawn to sit next to the "Jiron" wordmark and to work alone as a 32 px section icon.
+        - **Replaced on 2026-11-27 (the owner, ADR-0267):** the mark is a strip of ribbon folded into a J, standing free, in Ligata's blue, a deep blue and marigold (three brand colours and a neutral). The other requirements stand, and `scripts/tests/icons.test.mjs` now reads every PNG's pixels.
       - **Shapes and colours:** simple geometric shapes, legible at 32 px, with two brand colours and a neutral defined in `assets/brand.md`.
       - **No Umbraco logo, no "U" mark, and no resemblance to any other product's mark.**
     - Also design a monochrome variant and the section icon (registered through the `icons` manifest).

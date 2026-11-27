@@ -117,6 +117,13 @@ describe("Jiron Form Builder's rules for a listing", () => {
     ]);
   });
 
+  test('keep the description on one line, as the Marketplace shows it as one paragraph', () => {
+    const plain = main();
+    assert.deepEqual(checkListing(MAIN, { ...plain, Description: plain.Description.replace('. ', '.\n\nFeatures:\n- ') }), [
+      'the description has a line break, which the Marketplace shows as a space: write sentences, not a list',
+    ]);
+  });
+
   test('need links into the repository that name files it holds, and the author with the owner and Ligata', () => {
     assert.deepEqual(checkListing(MAIN, main(), { exists: () => false }), ['docs/README.md is not in the repository']);
     assert.deepEqual(checkListing(MAIN, { ...main(), IssueTrackerUrl: 'https://example.test/issues' }), [
