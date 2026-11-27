@@ -146,7 +146,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     sub-package it is not a search result of its own (ADR-0246).
   - **One thing read badly and is changed:** the Marketplace shows a listing's description as one paragraph, so
     the feature list in it ran together above the readme, which gives the same list properly. Both descriptions
-    are plain sentences now; the Marketplace reads them again within a few hours.
+    are plain sentences now. **Seen on 2026-11-27 after the release of 17.0.1:** the Marketplace holds the
+    sentences for both packages (the product's page seen, the add-on's text read from its data); it had read the
+    listings again by itself that afternoon, before the new version existed.
   - **Validated on 2026-11-26** at marketplace.umbraco.com/validate, both packages at `17.0.0-beta.3`: the tag is
     found, each package reads its own listing from the repository's root (the add-on its own file, not the
     product's), both listings match the schema, and the NuGet readme is used. The one thing in the way, in the

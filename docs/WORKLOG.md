@@ -1717,3 +1717,10 @@ its reason, and a handover block at the end of every phase.
     in the owner's browser, as part of the release they asked for: seven files, marked Latest.
   - **A new project** took `17.0.1` from nuget.org with the README's command, in a package cache of its own.
   - **`main` moves on to `17.0.2-dev`** (ADR-0249), and `v18/main` gets `main` merged, keeping its own version.
+  - **`v18/main`** is at `db41ca64`: `main` at `bd838899` merged in a temporary clone, `Directory.Build.props`
+    kept as the 18 line's own (18.0.0-alpha.0). There its script tests (538, 1 skipped), client tests (6,402 in
+    242 files) and unit tests (9,273, 17 skipped) passed before the push.
+  - **The Marketplace's descriptions** are the sentences for both packages: its own data says the listings were read
+    again at 12:47 UTC, hours after the change and before 17.0.1 existed, so the earlier entry's guess that it
+    takes a new version was wrong. Read signed out from `api.marketplace.umbraco.com/api/v1.0/packages/<id>`
+    and seen on the product's page.
