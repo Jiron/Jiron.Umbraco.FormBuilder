@@ -1724,3 +1724,9 @@ its reason, and a handover block at the end of every phase.
     again at 12:47 UTC, hours after the change and before 17.0.1 existed, so the earlier entry's guess that it
     takes a new version was wrong. Read signed out from `api.marketplace.umbraco.com/api/v1.0/packages/<id>`
     and seen on the product's page.
+  - **The Marketplace's page still shows 17.0.0 and the old mark** at 19:58 UTC, three and a half hours after
+    nuget.org published 17.0.1 (16:27 UTC). Its data was written at 16:48 UTC and is of two minds: the version
+    it offers for Umbraco 17.6 and later (`versionDetails`) is already `17.0.1`, while the headline
+    (`latestVersionNumber`), the publish date and the icon's source are still 17.0.0's. nuget.org's search names
+    17.0.1, so nothing on our side is missing; the page follows at a later sync of the Marketplace's own. A first
+    watch of 200 minutes ended without it; a second one runs for up to 26 hours on the headline and the icon.
